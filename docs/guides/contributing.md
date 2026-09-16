@@ -45,9 +45,14 @@ Do not add `Co-authored-by` for bots or AI assistants.
 - Include a test plan for UI changes (which panels, signed-in / signed-out, empty states)
 - Do not commit `.env`, credentials, or generated `dist/`
 
+## Changelog
+
+User-visible work (features, fixes, security) gets a bullet under `[Unreleased]` in [CHANGELOG.md](../../CHANGELOG.md). Follow [Keep a Changelog](https://keepachangelog.com/). Release process: [Releasing](releasing.md).
+
 ## What we will not merge
 
 - New `fetch()` wrappers around the Kwami API (use `apiClient`)
 - Zep or provider secrets in `VITE_*`
 - Coverage threshold decreases
 - Drive-by reformatting of unrelated files
+- Undocumented `kwami:*` window events or a second event bus

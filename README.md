@@ -11,7 +11,7 @@ Web, PWA, and optional desktop client for **Kwami** — 3D AI companions with re
 
 This repository is the **frontend**. The voice agent, token issuer, memory service, and model catalogues live on the Kwami API and LiveKit.
 
-**Documentation:** [docs/](docs/README.md)
+**Documentation:** [docs/](docs/README.md) · [Changelog](CHANGELOG.md) · [Security](SECURITY.md) · [FAQ](docs/faq.md)
 
 ---
 
@@ -114,10 +114,11 @@ Full walkthrough: [Getting started](docs/guides/getting-started.md)
 
 | Variable | Purpose |
 | --- | --- |
-| `VITE_API_URL` | Kwami API base URL |
+| `VITE_API_URL` | Kwami API base URL (`POST /token` lives here) |
 | `VITE_LIVEKIT_URL` | LiveKit WebSocket URL |
 | `VITE_SUPABASE_URL` | Supabase project URL |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase anon / publishable key |
+| `VITE_AUTH_PROVIDERS` | Optional. Comma-separated sign-in buttons (default `google`) |
 
 These are public (`VITE_*` is inlined into the bundle). Provider secrets stay on the API. Reference: [Environment variables](docs/reference/environment-variables.md)
 
@@ -167,10 +168,14 @@ Maps: [Stores](docs/reference/stores.md) · [Composables](docs/reference/composa
 
 | Section | Contents |
 | --- | --- |
-| [Guides](docs/guides/getting-started.md) | Install, env, development, desktop, testing, i18n, contributing |
-| [Architecture](docs/architecture/overview.md) | System design and mermaid flows |
+| [Guides](docs/guides/getting-started.md) | Install, env, development, desktop, testing, i18n, troubleshooting, releasing |
+| [Architecture](docs/architecture/overview.md) | System design, deployment, mermaid flows |
+| [Security](docs/security.md) | Trust boundaries and what must never ship in `VITE_*` |
+| [ADRs](docs/adr/README.md) | Accepted architecture decisions |
 | [Concepts](docs/concepts/kwami-runtime.md) | Runtime, workspaces, voice, memory, avatars, soul, credits, comms, tools |
 | [Reference](docs/reference/stores.md) | Stores, composables, components, API, events, shortcuts |
+| [FAQ](docs/faq.md) | Short answers |
+| [Changelog](CHANGELOG.md) | Keep a Changelog |
 
 ---
 

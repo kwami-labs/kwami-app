@@ -26,7 +26,7 @@ The following must **never** appear in this repository, in `VITE_*`, or in clien
 - Supabase `service_role` keys
 - Any user's access token in logs, issues, or fixtures
 
-Memory and billing always go through the backend. See [Backend integration](docs/architecture/backend-integration.md).
+Memory and billing always go through the backend. Threat model and review list: [docs/security.md](docs/security.md). HTTP contract: [Backend integration](docs/architecture/backend-integration.md).
 
 ## Reporting a vulnerability
 
