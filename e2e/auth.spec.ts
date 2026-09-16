@@ -1,4 +1,4 @@
-import { test, expect, gotoApp, stubApi, stubKwamiRuntime, stubSupabase, WELCOME_MS } from './fixtures';
+import { test, expect, gotoApp, stubApi, stubKwamiRuntime, WELCOME_MS } from './fixtures';
 
 test.describe('unauthenticated', () => {
   test('shows the welcome layer, then the auth page', async ({ signedOut: page }) => {

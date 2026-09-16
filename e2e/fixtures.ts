@@ -145,5 +145,22 @@ export const test = base.extend<{ signedOut: Page; app: Page }>({
 
 export { expect } from '@playwright/test';
 
+/**
+ * Seeds the UI store's persisted state before the app boots, so a spec can land
+ * directly on a panel instead of driving the sidebar to get there.
+ *
+ * `mode` picks the sidebar's panel set: 'settings' or 'apps'.
+ */
+export async function seedUi(page: Page, { mode = 'settings', panel }: { mode?: 'settings' | 'apps'; panel: string }) {
+  await page.addInitScript(
+    ([m, p]) => {
+      window.localStorage.setItem('kwami-sidebar-mode', m as string);
+      window.localStorage.setItem('kwami-active-panel', p as string);
+      window.localStorage.setItem('kwami-panel-open', 'true');
+    },
+    [mode, panel] as const,
+  );
+}
+
 /** AuthGuard holds the welcome rings for MIN_WELCOME_MS (3500ms) before resolving. */
 export const WELCOME_MS = 3500;
