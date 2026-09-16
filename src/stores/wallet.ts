@@ -1,9 +1,8 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { useAuthStore } from '@/stores/auth';
+import { api, createRequestGuard, isAbortError } from '@/lib/apiClient';
 import { useWorkspaceStore } from '@/stores/workspace';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 export interface WalletToken {
   id: string;
@@ -41,23 +40,6 @@ export interface FundingIntent {
   created_at: string;
 }
 
-async function authHeaders(): Promise<HeadersInit> {
-  const authStore = useAuthStore();
-  const token = await authStore.getAccessToken();
-  return {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-}
-
-async function parseJson<T>(res: Response): Promise<T> {
-  if (!res.ok) {
-    const err = (await res.json().catch(() => ({}))) as Record<string, unknown>;
-    const detail = err.detail ?? err.message;
-    throw new Error(typeof detail === 'string' ? detail : `Request failed: ${res.status}`);
-  }
-  return res.json() as Promise<T>;
-}
 
 export const useWalletStore = defineStore('wallet', () => {
   const loading = ref(false);
@@ -70,8 +52,8 @@ export const useWalletStore = defineStore('wallet', () => {
   const fundingIntents = ref<FundingIntent[]>([]);
   const phantomPubkey = ref<string | null>(null);
 
-  // Guards against a stale response landing after the user switched kwami.
-  let refreshRequestNonce = 0;
+  // Aborts the previous overview load when the user switches kwami.
+  const guard = createRequestGuard();
 
   function activeKwamiId(): string {
     return useWorkspaceStore().activeWorkspaceId;
@@ -81,25 +63,26 @@ export const useWalletStore = defineStore('wallet', () => {
     const kwamiId = activeKwamiId();
     if (!kwamiId) return;
     loading.value = true;
-    const requestNonce = ++refreshRequestNonce;
+    const { signal, isCurrent } = guard.begin();
     try {
-      const headers = await authHeaders();
-      const res = await fetch(`${API_BASE}/wallets/kwamis/${kwamiId}`, { headers });
-      const data = await parseJson<{
+      const data = await api.get<{
         wallet: KwamiWallet | null;
         balances: WalletBalance[];
         transactions: Record<string, unknown>[];
         allowlist: WalletToken[];
         funding_intents: FundingIntent[];
-      }>(res);
-      if (requestNonce !== refreshRequestNonce) return;
+      }>(`/wallets/kwamis/${kwamiId}`, { signal });
+      if (!isCurrent()) return;
       wallet.value = data.wallet;
       balances.value = data.balances || [];
       transactions.value = data.transactions || [];
       allowlist.value = data.allowlist || [];
       fundingIntents.value = data.funding_intents || [];
+    } catch (e) {
+      if (isAbortError(e)) return;
+      throw e;
     } finally {
-      if (requestNonce === refreshRequestNonce) loading.value = false;
+      if (isCurrent()) loading.value = false;
     }
   }
 
@@ -108,12 +91,7 @@ export const useWalletStore = defineStore('wallet', () => {
     if (!kwamiId) throw new Error('No active kwami selected');
     creating.value = true;
     try {
-      const headers = await authHeaders();
-      const res = await fetch(`${API_BASE}/wallets/kwamis/${kwamiId}`, {
-        method: 'POST',
-        headers,
-      });
-      const data = await parseJson<{ wallet: KwamiWallet }>(res);
+      const data = await api.post<{ wallet: KwamiWallet }>(`/wallets/kwamis/${kwamiId}`);
       wallet.value = data.wallet;
       await refresh();
     } finally {
@@ -140,24 +118,22 @@ export const useWalletStore = defineStore('wallet', () => {
     if (!kwamiId) throw new Error('No active kwami selected');
     funding.value = true;
     try {
-      const headers = await authHeaders();
-      const route = payload.provider === 'phantom_transfer'
-        ? 'phantom-intent'
-        : 'card-intent';
+      const route = payload.provider === 'phantom_transfer' ? 'phantom-intent' : 'card-intent';
       const idempotencyKey = crypto.randomUUID();
-      const res = await fetch(`${API_BASE}/wallets/kwamis/${kwamiId}/fund/${route}`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
+      const data = await api.post<{ intent: FundingIntent }>(
+        `/wallets/kwamis/${kwamiId}/fund/${route}`,
+        {
           assetMint: payload.assetMint,
           assetSymbol: payload.assetSymbol,
           amount: payload.amount,
           amountUsd: payload.amountUsd,
           senderWalletPubkey: phantomPubkey.value,
           idempotencyKey,
-        }),
-      });
-      const data = await parseJson<{ intent: FundingIntent }>(res);
+        },
+        // Money movement: the key makes this the one POST safe to retry, and
+        // a slow funding provider needs more than the default budget.
+        { idempotencyKey, timeoutMs: 30_000 },
+      );
       await refresh();
       return data.intent;
     } finally {
@@ -171,13 +147,7 @@ export const useWalletStore = defineStore('wallet', () => {
     decimals: number;
     isStablecoin: boolean;
   }) {
-    const headers = await authHeaders();
-    const res = await fetch(`${API_BASE}/wallets/allowlist`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(payload),
-    });
-    await parseJson<{ token: WalletToken }>(res);
+    await api.post<{ token: WalletToken }>('/wallets/allowlist', payload);
     await refresh();
   }
 
