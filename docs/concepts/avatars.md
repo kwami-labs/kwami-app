@@ -2,6 +2,22 @@
 
 The companion is a Three.js object rendered by the Kwami SDK onto `#kwami-canvas`. This app owns **parameters and presets**; the SDK owns the shaders and animation loop.
 
+```mermaid
+flowchart LR
+  Panel[Avatar panel] --> Facade[avatar store]
+  Facade --> B[blob-xyz]
+  Facade --> H[black-hole]
+  Facade --> P[particles-face]
+  Facade --> E[eye-iris]
+  B --> Sync[sync composables]
+  H --> Sync
+  P --> Sync
+  E --> Sync
+  Sync --> SDK[kwami.avatar]
+  Scene[scene store] --> BG[useSceneBackground]
+  BG --> SDK
+```
+
 ## Renderers
 
 | Id | Store | Sync composable | Look |

@@ -28,7 +28,7 @@ flowchart TB
 `useKwami.init` builds a `KwamiConfig`:
 
 - **avatar** — renderer (`blob-xyz` by default), blob colors/spikes, orbit controls
-- **agent** — `adapter: 'livekit'`, URL, token endpoint, `memoryUserId`, voice snapshot, optional `onSearchResults`
+- **agent** — `adapter: 'livekit'`, LiveKit URL, `memoryUserId`, voice snapshot, optional `onSearchResults`. No `tokenEndpoint`: `connect()` mints via `POST /token` ([ADR 0005](../adr/0005-token-minting-via-api-client.md))
 - **soul** — name, personality, traits, style, length, tone
 
 There is **no `memory` block**. The SDK's browser `Memory` class is a stub (`addMessage` no-ops, `search` returns `[]`). Putting Zep keys here would also leak them through `VITE_*`. Real recall is the backend `/memory/*` API.
