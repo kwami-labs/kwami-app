@@ -1,5 +1,5 @@
-import { ref, computed } from 'vue';
-
+import { computed } from 'vue';
+import { createSimpleResource } from '@/lib/catalogResource';
 // Types for API responses
 
 export interface ProviderPricing {
@@ -157,224 +157,86 @@ export interface VideoInputModels {
 }
 
 // Singleton state for caching
-const llmInferenceModels = ref<InferenceModelsResponse | null>(null);
-const llmPluginModels = ref<PluginModelsResponse | null>(null);
-const sttInferenceModels = ref<InferenceSTTResponse | null>(null);
-const sttPluginModels = ref<PluginSTTResponse | null>(null);
-const ttsInferenceModels = ref<InferenceTTSResponse | null>(null);
-const ttsPluginModels = ref<PluginTTSResponse | null>(null);
-const realtimeModels = ref<ModelsResponse | null>(null);
-const capabilities = ref<CapabilitiesResponse | null>(null);
 
-const isLoading = ref(false);
-const error = ref<string | null>(null);
+/**
+ * Eight independent catalogue endpoints.
+ *
+ * Previously each had its own hand-written fetch-cache-swallow block sharing a
+ * single module-level `isLoading`, so the first request to finish cleared the
+ * flag for all eight and the four model tabs rendered empty. Each resource now
+ * owns its own ref-counted loading state and de-duplicates in-flight requests.
+ */
+const resources = {
+  llmInference: createSimpleResource<InferenceModelsResponse>({
+    path: '/models/llm',
+    label: 'LLM inference models',
+  }),
+  llmPlugin: createSimpleResource<PluginModelsResponse>({
+    path: '/models/llm/plugins',
+    label: 'LLM plugin models',
+  }),
+  sttInference: createSimpleResource<InferenceSTTResponse>({
+    path: '/models/stt',
+    label: 'STT inference models',
+  }),
+  sttPlugin: createSimpleResource<PluginSTTResponse>({
+    path: '/models/stt/plugins',
+    label: 'STT plugin models',
+  }),
+  ttsInference: createSimpleResource<InferenceTTSResponse>({
+    path: '/models/tts',
+    label: 'TTS inference models',
+  }),
+  ttsPlugin: createSimpleResource<PluginTTSResponse>({
+    path: '/models/tts/plugins',
+    label: 'TTS plugin models',
+  }),
+  realtime: createSimpleResource<ModelsResponse>({
+    path: '/models/realtime',
+    label: 'realtime models',
+  }),
+  capabilities: createSimpleResource<CapabilitiesResponse>({
+    path: '/models/capabilities',
+    label: 'model capabilities',
+  }),
+};
 
-// API base URL
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const allResources = Object.values(resources);
 
 export function useModelsApi() {
-  
-  async function fetchLLMInferenceModels(): Promise<InferenceModelsResponse | null> {
-    if (llmInferenceModels.value) return llmInferenceModels.value;
-    
-    isLoading.value = true;
-    error.value = null;
-    
-    try {
-      const response = await fetch(`${API_BASE}/models/llm`);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      llmInferenceModels.value = await response.json();
-      return llmInferenceModels.value;
-    } catch (e) {
-      error.value = `Failed to fetch LLM inference models: ${e}`;
-      console.error(error.value);
-      return null;
-    } finally {
-      isLoading.value = false;
-    }
-  }
-
-  async function fetchLLMPluginModels(): Promise<PluginModelsResponse | null> {
-    if (llmPluginModels.value) return llmPluginModels.value;
-    
-    isLoading.value = true;
-    error.value = null;
-    
-    try {
-      const response = await fetch(`${API_BASE}/models/llm/plugins`);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      llmPluginModels.value = await response.json();
-      return llmPluginModels.value;
-    } catch (e) {
-      error.value = `Failed to fetch LLM plugin models: ${e}`;
-      console.error(error.value);
-      return null;
-    } finally {
-      isLoading.value = false;
-    }
-  }
-
-  async function fetchSTTInferenceModels(): Promise<InferenceSTTResponse | null> {
-    if (sttInferenceModels.value) return sttInferenceModels.value;
-    
-    isLoading.value = true;
-    error.value = null;
-    
-    try {
-      const response = await fetch(`${API_BASE}/models/stt`);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      sttInferenceModels.value = await response.json();
-      return sttInferenceModels.value;
-    } catch (e) {
-      error.value = `Failed to fetch STT inference models: ${e}`;
-      console.error(error.value);
-      return null;
-    } finally {
-      isLoading.value = false;
-    }
-  }
-
-  async function fetchSTTPluginModels(): Promise<PluginSTTResponse | null> {
-    if (sttPluginModels.value) return sttPluginModels.value;
-    
-    isLoading.value = true;
-    error.value = null;
-    
-    try {
-      const response = await fetch(`${API_BASE}/models/stt/plugins`);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      sttPluginModels.value = await response.json();
-      return sttPluginModels.value;
-    } catch (e) {
-      error.value = `Failed to fetch STT plugin models: ${e}`;
-      console.error(error.value);
-      return null;
-    } finally {
-      isLoading.value = false;
-    }
-  }
-
-  async function fetchTTSInferenceModels(): Promise<InferenceTTSResponse | null> {
-    if (ttsInferenceModels.value) return ttsInferenceModels.value;
-    
-    isLoading.value = true;
-    error.value = null;
-    
-    try {
-      const response = await fetch(`${API_BASE}/models/tts`);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      ttsInferenceModels.value = await response.json();
-      return ttsInferenceModels.value;
-    } catch (e) {
-      error.value = `Failed to fetch TTS inference models: ${e}`;
-      console.error(error.value);
-      return null;
-    } finally {
-      isLoading.value = false;
-    }
-  }
-
-  async function fetchTTSPluginModels(): Promise<PluginTTSResponse | null> {
-    if (ttsPluginModels.value) return ttsPluginModels.value;
-    
-    isLoading.value = true;
-    error.value = null;
-    
-    try {
-      const response = await fetch(`${API_BASE}/models/tts/plugins`);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      ttsPluginModels.value = await response.json();
-      return ttsPluginModels.value;
-    } catch (e) {
-      error.value = `Failed to fetch TTS plugin models: ${e}`;
-      console.error(error.value);
-      return null;
-    } finally {
-      isLoading.value = false;
-    }
-  }
-
-  async function fetchRealtimeModels(): Promise<ModelsResponse | null> {
-    if (realtimeModels.value) return realtimeModels.value;
-    
-    isLoading.value = true;
-    error.value = null;
-    
-    try {
-      const response = await fetch(`${API_BASE}/models/realtime`);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      realtimeModels.value = await response.json();
-      return realtimeModels.value;
-    } catch (e) {
-      error.value = `Failed to fetch Realtime models: ${e}`;
-      console.error(error.value);
-      return null;
-    } finally {
-      isLoading.value = false;
-    }
-  }
-
-  async function fetchCapabilities(): Promise<CapabilitiesResponse | null> {
-    if (capabilities.value) return capabilities.value;
-    
-    isLoading.value = true;
-    error.value = null;
-    
-    try {
-      const response = await fetch(`${API_BASE}/models/capabilities`);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      capabilities.value = await response.json();
-      return capabilities.value;
-    } catch (e) {
-      error.value = `Failed to fetch capabilities: ${e}`;
-      console.error(error.value);
-      return null;
-    } finally {
-      isLoading.value = false;
-    }
-  }
-
-  // Helper to check if a model supports vision
   function isVisionCapable(provider: string, model: string): boolean {
-    if (!capabilities.value?.vision?.models) return false;
-    const providerModels = capabilities.value.vision.models[provider.toLowerCase()];
-    return providerModels?.some(m => model.includes(m) || m.includes(model)) ?? false;
+    const vision = resources.capabilities.data.value?.vision?.models;
+    if (!vision) return false;
+    const providerModels = vision[provider.toLowerCase()];
+    return providerModels?.some((m) => model.includes(m) || m.includes(model)) ?? false;
   }
 
-  // Clear cache to force refresh
   function clearCache() {
-    llmInferenceModels.value = null;
-    llmPluginModels.value = null;
-    sttInferenceModels.value = null;
-    sttPluginModels.value = null;
-    ttsInferenceModels.value = null;
-    ttsPluginModels.value = null;
-    realtimeModels.value = null;
-    capabilities.value = null;
+    allResources.forEach((r) => r.clear());
   }
 
   return {
     // State
-    llmInferenceModels: computed(() => llmInferenceModels.value),
-    llmPluginModels: computed(() => llmPluginModels.value),
-    sttInferenceModels: computed(() => sttInferenceModels.value),
-    sttPluginModels: computed(() => sttPluginModels.value),
-    ttsInferenceModels: computed(() => ttsInferenceModels.value),
-    ttsPluginModels: computed(() => ttsPluginModels.value),
-    realtimeModels: computed(() => realtimeModels.value),
-    capabilities: computed(() => capabilities.value),
-    isLoading: computed(() => isLoading.value),
-    error: computed(() => error.value),
-    
+    llmInferenceModels: resources.llmInference.data,
+    llmPluginModels: resources.llmPlugin.data,
+    sttInferenceModels: resources.sttInference.data,
+    sttPluginModels: resources.sttPlugin.data,
+    ttsInferenceModels: resources.ttsInference.data,
+    ttsPluginModels: resources.ttsPlugin.data,
+    realtimeModels: resources.realtime.data,
+    capabilities: resources.capabilities.data,
+    isLoading: computed(() => allResources.some((r) => r.isLoading.value)),
+    error: computed(() => allResources.find((r) => r.error.value)?.error.value ?? null),
+
     // Methods
-    fetchLLMInferenceModels,
-    fetchLLMPluginModels,
-    fetchSTTInferenceModels,
-    fetchSTTPluginModels,
-    fetchTTSInferenceModels,
-    fetchTTSPluginModels,
-    fetchRealtimeModels,
-    fetchCapabilities,
+    fetchLLMInferenceModels: resources.llmInference.fetch,
+    fetchLLMPluginModels: resources.llmPlugin.fetch,
+    fetchSTTInferenceModels: resources.sttInference.fetch,
+    fetchSTTPluginModels: resources.sttPlugin.fetch,
+    fetchTTSInferenceModels: resources.ttsInference.fetch,
+    fetchTTSPluginModels: resources.ttsPlugin.fetch,
+    fetchRealtimeModels: resources.realtime.fetch,
+    fetchCapabilities: resources.capabilities.fetch,
     isVisionCapable,
     clearCache,
   };
