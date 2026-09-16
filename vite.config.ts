@@ -14,6 +14,19 @@ export default defineConfig({
         }
       }
     }),
+    {
+      // Strip console/debugger from production bundles only.
+      //
+      // `apply: 'build'` rather than a top-level esbuild.drop: vitest merges
+      // this config, and a global drop would strip console from the test run
+      // and break any test asserting on a warning. It must also not fire in
+      // `vite dev`, where console is the debugging channel.
+      name: 'kwami:drop-console-in-build',
+      apply: 'build',
+      config() {
+        return { esbuild: { drop: ['console', 'debugger'] as const } }
+      }
+    },
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['sphere.svg', 'welcome.mp3'],
