@@ -7,6 +7,7 @@ Start here if you are new:
 1. [Getting started](guides/getting-started.md) — install, configure, and run the app
 2. [Architecture overview](architecture/overview.md) — how the pieces fit together
 3. [Kwami runtime](concepts/kwami-runtime.md) — the SDK the UI drives
+4. [FAQ](faq.md) / [Troubleshooting](guides/troubleshooting.md)
 
 ## Guides
 
@@ -18,6 +19,8 @@ Start here if you are new:
 | [Desktop](guides/desktop.md) | Tauri 2 desktop shell |
 | [Testing](guides/testing.md) | Vitest, Playwright, coverage, CI |
 | [Internationalization](guides/i18n.md) | `vue-i18n`, locales, persistence |
+| [Troubleshooting](guides/troubleshooting.md) | Boot, auth, voice, memory, PWA |
+| [Releasing](guides/releasing.md) | SemVer, changelog, baked `VITE_*` |
 | [Contributing](guides/contributing.md) | Branching, commits, pull requests |
 
 ## Architecture
@@ -28,6 +31,9 @@ Start here if you are new:
 | [Frontend](architecture/frontend.md) | Vue boot, Pinia, panels, layout |
 | [Data flow](architecture/data-flow.md) | Auth, workspace, voice, memory, credits |
 | [Backend integration](architecture/backend-integration.md) | HTTP client, LiveKit, Supabase |
+| [Deployment](architecture/deployment.md) | CI, static host, PWA, Tauri |
+| [Security](security.md) | Trust boundaries, XSS, tokens |
+| [ADRs](adr/README.md) | Accepted architecture decisions |
 
 ## Concepts
 
@@ -55,6 +61,18 @@ Start here if you are new:
 | [Keyboard shortcuts](reference/keyboard-shortcuts.md) | Global and panel keys |
 | [Environment variables](reference/environment-variables.md) | `VITE_*` contract |
 | [Panels](reference/panels.md) | Settings and apps sidebar |
+
+## Project files
+
+| File | Role |
+| --- | --- |
+| [README.md](../README.md) | Product overview and quick start |
+| [CHANGELOG.md](../CHANGELOG.md) | Keep a Changelog |
+| [CONTRIBUTING.md](../CONTRIBUTING.md) | Pointer into the contributor guide |
+| [CODE_OF_CONDUCT.md](../CODE_OF_CONDUCT.md) | Contributor Covenant |
+| [SECURITY.md](../SECURITY.md) | Vulnerability reporting |
+| [SUPPORT.md](../SUPPORT.md) | Where to ask for help |
+| [LICENSE](../LICENSE) | Apache-2.0 |
 
 ## Related repositories
 
