@@ -1,9 +1,7 @@
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
-import { useAuthStore } from '@/stores/auth';
+import { api, createRequestGuard, isAbortError } from '@/lib/apiClient';
 import { useWorkspaceStore } from '@/stores/workspace';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 export interface ContactRecord {
   id: string;
@@ -19,23 +17,6 @@ export interface ContactRecord {
   updated_at: string;
 }
 
-async function authHeaders(): Promise<HeadersInit> {
-  const authStore = useAuthStore();
-  const token = await authStore.getAccessToken();
-  return {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-}
-
-async function parseJson<T>(res: Response): Promise<T> {
-  if (!res.ok) {
-    const err = (await res.json().catch(() => ({}))) as Record<string, unknown>;
-    const detail = err.detail ?? err.message;
-    throw new Error(typeof detail === 'string' ? detail : `Request failed: ${res.status}`);
-  }
-  return res.json() as Promise<T>;
-}
 
 export const useContactsStore = defineStore('contacts', () => {
   const contacts = ref<ContactRecord[]>([]);
@@ -62,9 +43,9 @@ export const useContactsStore = defineStore('contacts', () => {
     );
   });
 
-  // Guards against a stale response landing after a kwami switch or a newer
-  // search keystroke.
-  let contactsRequestNonce = 0;
+  // One guard key covers both racing callers: the kwami switch and the
+  // undebounced search-as-you-type watcher. Both write contacts.value.
+  const guard = createRequestGuard();
 
   function activeKwamiId(): string {
     const workspaceStore = useWorkspaceStore();
@@ -81,20 +62,20 @@ export const useContactsStore = defineStore('contacts', () => {
     if (!search) {
       contacts.value = contactsByKwami.value[kwamiId] ?? [];
     }
-    // One nonce covers both racing callers: the kwami switch and the
-    // search-as-you-type watcher. Both write contacts.value.
-    const requestNonce = ++contactsRequestNonce;
+    const { signal, isCurrent } = guard.begin('list');
     try {
-      const headers = await authHeaders();
-      const params = new URLSearchParams({ kwamiId });
-      if (search.trim()) params.set('q', search.trim());
-      const res = await fetch(`${API_BASE}/contacts?${params.toString()}`, { headers });
-      const data = await parseJson<{ contacts: ContactRecord[] }>(res);
-      if (requestNonce !== contactsRequestNonce) return;
+      const data = await api.get<{ contacts: ContactRecord[] }>('/contacts', {
+        query: { kwamiId, q: search.trim() || undefined },
+        signal,
+      });
+      if (!isCurrent()) return;
       if (!search.trim()) contactsByKwami.value[kwamiId] = data.contacts;
       contacts.value = data.contacts;
+    } catch (e) {
+      if (isAbortError(e)) return;
+      throw e;
     } finally {
-      if (requestNonce === contactsRequestNonce) loading.value = false;
+      if (isCurrent()) loading.value = false;
     }
   }
 
@@ -110,13 +91,7 @@ export const useContactsStore = defineStore('contacts', () => {
     if (!kwamiId) throw new Error('No active kwami selected');
     saving.value = true;
     try {
-      const headers = await authHeaders();
-      const res = await fetch(`${API_BASE}/contacts`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ kwamiId, ...payload }),
-      });
-      await parseJson<{ contact: ContactRecord }>(res);
+      await api.post<{ contact: ContactRecord }>('/contacts', { kwamiId, ...payload });
       await fetchContacts();
     } finally {
       saving.value = false;
@@ -138,13 +113,10 @@ export const useContactsStore = defineStore('contacts', () => {
     if (!kwamiId) throw new Error('No active kwami selected');
     saving.value = true;
     try {
-      const headers = await authHeaders();
-      const res = await fetch(`${API_BASE}/contacts/${contactId}`, {
-        method: 'PATCH',
-        headers,
-        body: JSON.stringify({ kwamiId, ...payload }),
+      await api.patch<{ contact: ContactRecord }>(`/contacts/${contactId}`, {
+        kwamiId,
+        ...payload,
       });
-      await parseJson<{ contact: ContactRecord }>(res);
       await fetchContacts();
     } finally {
       saving.value = false;
@@ -156,12 +128,7 @@ export const useContactsStore = defineStore('contacts', () => {
     if (!kwamiId) throw new Error('No active kwami selected');
     deleting.value = true;
     try {
-      const headers = await authHeaders();
-      const res = await fetch(
-        `${API_BASE}/contacts/${contactId}?kwamiId=${encodeURIComponent(kwamiId)}`,
-        { method: 'DELETE', headers },
-      );
-      await parseJson<{ ok: boolean }>(res);
+      await api.del<{ ok: boolean }>(`/contacts/${contactId}`, { query: { kwamiId } });
       await fetchContacts();
     } finally {
       deleting.value = false;
