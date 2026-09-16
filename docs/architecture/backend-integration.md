@@ -71,7 +71,7 @@ Web search runs **on the agent**. Results arrive on the LiveKit data channel and
 | `VITE_SUPABASE_URL` | Project URL |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Anon / publishable key |
 
-Client: [`src/lib/supabase.ts`](../../src/lib/supabase.ts). Missing credentials log a warning; auth simply does not work.
+Client: [`src/lib/supabase.ts`](../../src/lib/supabase.ts). Missing URL or publishable key fails boot (`isEnvValid` in [`src/lib/env.ts`](../../src/lib/env.ts)).
 
 Tables the app uses directly:
 
@@ -80,7 +80,7 @@ Tables the app uses directly:
 | `user_kwamis` | Companion rows: `id`, `user_id`, `name`, `emoji`, `colors`, `config` |
 | `user_app_settings` | Per-user locale (`locale`, upsert on `user_id`) |
 
-Auth is Google (popup / ID token) via `@supabase/supabase-js`. Email magic-link can be enabled in the project; the UI ships a Google button as the primary path.
+Auth is Supabase OAuth (and optional wallet sign-in). Buttons are gated by `VITE_AUTH_PROVIDERS` (default `google`). Only list providers enabled in the dashboard — an unconfigured provider returns 400.
 
 Row Level Security must restrict `user_kwamis` and `user_app_settings` to `auth.uid()`. This repo does not ship migrations; they live with the backend / Supabase project.
 

@@ -13,9 +13,10 @@ This client is tightly coupled to the Kwami API. Security fixes land on `main` f
 
 The browser bundle only contains `VITE_*` values. Those are **public**:
 
-- API origin
-- LiveKit WebSocket URL and token endpoint URL
+- API origin (`POST /token` is on this origin)
+- LiveKit WebSocket URL
 - Supabase URL and publishable (anon) key
+- Optional `VITE_AUTH_PROVIDERS` list
 
 The following must **never** appear in this repository, in `VITE_*`, or in client code:
 

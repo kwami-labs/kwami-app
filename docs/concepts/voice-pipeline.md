@@ -67,4 +67,4 @@ After connect, changing TTS voice calls `agent.updateTtsLive` (or `updateRealtim
 
 ## Credits
 
-Token minting and per-session usage happen on the API. A 402 from the token endpoint becomes `kwami:insufficient-credits`. After disconnect, the credits store reloads balance and usage logs (STT / LLM / TTS / realtime line items).
+Token minting (`POST /token`) and per-session usage happen on the API. A 402 becomes `kwami:insufficient-credits`. After disconnect, the credits store reloads balance and usage logs (STT / LLM / TTS / realtime line items).

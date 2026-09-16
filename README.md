@@ -26,7 +26,7 @@ This repository is the **frontend**. The voice agent, token issuer, memory servi
 - **Scene & theme** — HDRI / video / image backgrounds, glass UI, light/dark/auto
 - **Apps** — Contacts, email, calendar, phone, WhatsApp, SMS, wallet
 - **Energy** — Metered credits, packs, usage logs
-- **Auth** — [Supabase](https://supabase.com/) (Google)
+- **Auth** — [Supabase](https://supabase.com/) (Google by default; optional Apple, Microsoft, GitHub, wallets)
 - **PWA** — `vite-plugin-pwa` with Workbox precache
 - **Desktop** — Optional [Tauri 2](https://v2.tauri.app/) shell
 - **i18n** — English and Spanish

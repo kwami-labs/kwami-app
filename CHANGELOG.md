@@ -58,5 +58,5 @@ Initial documented snapshot of the Vue 3 / PWA / optional Tauri client:
 - English and Spanish via `vue-i18n`
 - Vitest + MSW unit tests and Playwright e2e
 
-[Unreleased]: https://github.com/kwami-labs/kwami-app/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/kwami-labs/kwami-app/releases/tag/v0.1.0
+[Unreleased]: https://github.com/kwami-labs/kwami-app/commits/main
+[0.1.0]: https://github.com/kwami-labs/kwami-app
