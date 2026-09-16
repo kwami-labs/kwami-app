@@ -32,8 +32,18 @@ const form = ref({
   description: '',
 });
 
+/**
+ * Local calendar-day key (YYYY-MM-DD).
+ *
+ * Must NOT go through toISOString(): the grid is built from local-midnight
+ * Dates, and converting those to UTC shifts the key by a day for anyone east
+ * of UTC, so events were filed against the wrong cell.
+ */
 function toDateKey(date: Date) {
-  return date.toISOString().slice(0, 10);
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 const weekDayLabels = computed(() => {
@@ -111,8 +121,13 @@ const weekDays = computed(() => {
 
 const hours = Array.from({ length: 13 }, (_, i) => `${String(i + 8).padStart(2, '0')}:00`);
 
+/**
+ * The stored timestamp is UTC, so slicing the raw string yields the UTC day.
+ * Convert to the viewer's local day instead, matching toDateKey — otherwise a
+ * late-evening event west of UTC lands on tomorrow's cell.
+ */
 function eventDateKey(event: CalendarEvent) {
-  return event.starts_at.slice(0, 10);
+  return toDateKey(new Date(event.starts_at));
 }
 
 function timeRange(event: CalendarEvent) {
@@ -238,7 +253,16 @@ function rangeForView() {
     end.setHours(23, 59, 59, 999);
     return { start, end };
   }
+  if (viewMode.value === 'day') {
+    const start = new Date(referenceDate.value);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start);
+    end.setHours(23, 59, 59, 999);
+    return { start, end };
+  }
+  // agenda: a rolling two-week look-ahead
   const start = new Date(referenceDate.value);
+  start.setHours(0, 0, 0, 0);
   const end = addDays(start, 14);
   end.setHours(23, 59, 59, 999);
   return { start, end };

@@ -5,6 +5,9 @@ import type { User, Session, AuthError } from '@supabase/supabase-js';
 
 
 export const useAuthStore = defineStore('auth', () => {
+  // initAuth runs from AuthGuard's onMounted; a remount would otherwise stack
+  // a second message listener and a second onAuthStateChange subscription.
+  let initialized = false;
   const user = ref<User | null>(null);
   const session = ref<Session | null>(null);
   const loading = ref(true);
@@ -33,25 +36,53 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  /** Popup -> parent OAuth relay. Named so it can be removed again. */
+  function onPopupMessage(event: MessageEvent) {
+    // Verify origin for security
+    if (event.origin !== window.location.origin) return;
+
+    if (event.data?.type === 'supabase-auth-callback' && event.data?.session) {
+      // Update our session from the popup's callback
+      session.value = event.data.session;
+      user.value = event.data.session.user;
+      loading.value = false;
+    }
+  }
+
   // Initialize auth state listener
   function initAuth() {
+    if (initialized) return;
+    initialized = true;
+
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
-      session.value = initialSession;
-      user.value = initialSession?.user ?? null;
-      loading.value = false;
-      
-      // If we're in a popup and have a session, notify parent and close
-      if (isInPopup() && initialSession) {
-        handlePopupCallback(initialSession);
-        return;
-      }
-      
-      // Clean up URL hash after OAuth callback (Supabase returns tokens in hash)
-      if (window.location.hash && window.location.hash.includes('access_token')) {
-        window.history.replaceState({}, '', window.location.pathname);
-      }
-    });
+    supabase.auth
+      .getSession()
+      .then(({ data: { session: initialSession } }) => {
+        session.value = initialSession;
+        user.value = initialSession?.user ?? null;
+
+        // If we're in a popup and have a session, notify parent and close
+        if (isInPopup() && initialSession) {
+          handlePopupCallback(initialSession);
+          return;
+        }
+
+        // Clean up URL hash after OAuth callback (Supabase returns tokens in hash)
+        if (window.location.hash && window.location.hash.includes('access_token')) {
+          window.history.replaceState({}, '', window.location.pathname);
+        }
+      })
+      .catch((e: unknown) => {
+        // Without this the promise rejects silently, `loading` never clears and
+        // AuthGuard holds the welcome screen up forever with no way out.
+        console.error('Failed to restore session:', e);
+        session.value = null;
+        user.value = null;
+        error.value = e instanceof Error ? e.message : 'Failed to restore session';
+      })
+      .finally(() => {
+        loading.value = false;
+      });
 
     // Listen for auth changes
     supabase.auth.onAuthStateChange((event, newSession) => {
@@ -72,17 +103,13 @@ export const useAuthStore = defineStore('auth', () => {
     });
 
     // Listen for messages from OAuth popup (if we're the parent)
-    window.addEventListener('message', (event) => {
-      // Verify origin for security
-      if (event.origin !== window.location.origin) return;
-      
-      if (event.data?.type === 'supabase-auth-callback' && event.data?.session) {
-        // Update our session from the popup's callback
-        session.value = event.data.session;
-        user.value = event.data.session.user;
-        loading.value = false;
-      }
-    });
+    window.addEventListener('message', onPopupMessage);
+  }
+
+  /** Detach the popup relay. Paired with initAuth for tests and HMR. */
+  function teardownAuth() {
+    window.removeEventListener('message', onPopupMessage);
+    initialized = false;
   }
 
   // Sign in with Google ID token (for popup flow)
@@ -161,6 +188,7 @@ export const useAuthStore = defineStore('auth', () => {
     userEmail,
     // Actions
     initAuth,
+    teardownAuth,
     signInWithGoogleIdToken,
     signOut,
     getAccessToken,

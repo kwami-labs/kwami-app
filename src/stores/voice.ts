@@ -235,12 +235,20 @@ export const useVoiceStore = defineStore('voice', () => {
       if (settings.enhancementsState && typeof settings.enhancementsState === 'object') {
         const s = settings.enhancementsState as Record<string, unknown>;
         const e = enhancementsState.value;
-        if (s.turnDetection && typeof s.turnDetection === 'object') e.turnDetection = { ...e.turnDetection, ...s.turnDetection } as typeof e.turnDetection;
-        if (s.interruptions && typeof s.interruptions === 'object') e.interruptions = { ...e.interruptions, ...s.interruptions } as typeof e.interruptions;
-        if (s.noiseCancellation && typeof s.noiseCancellation === 'object') e.noiseCancellation = { ...e.noiseCancellation, ...s.noiseCancellation } as typeof e.noiseCancellation;
-        if (s.vad && typeof s.vad === 'object') e.vad = { ...e.vad, ...s.vad } as typeof e.vad;
-        if (s.audioProcessing && typeof s.audioProcessing === 'object') e.audioProcessing = { ...e.audioProcessing, ...s.audioProcessing } as typeof e.audioProcessing;
-        if (s.performance && typeof s.performance === 'object') e.performance = { ...e.performance, ...s.performance } as typeof e.performance;
+        // Object.assign, not reassignment: EnhancementsPanel captures these
+        // nested objects once at setup (`const vad = enhancementsState.value.vad`).
+        // Replacing them left the panel's v-models and watchers bound to
+        // orphaned objects after a kwami switch — the controls still moved,
+        // but nothing reached the store or the agent.
+        const merge = (target: Record<string, unknown>, source: unknown) => {
+          if (source && typeof source === 'object') Object.assign(target, source);
+        };
+        merge(e.turnDetection, s.turnDetection);
+        merge(e.interruptions, s.interruptions);
+        merge(e.noiseCancellation, s.noiseCancellation);
+        merge(e.vad, s.vad);
+        merge(e.audioProcessing, s.audioProcessing);
+        merge(e.performance, s.performance);
         e.initialized = true;
       }
     } catch (e) {
