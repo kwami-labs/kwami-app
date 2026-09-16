@@ -4,7 +4,7 @@ import { useAuthStore } from '@/stores/auth';
 import AuthPage from './AuthPage.vue';
 import WelcomeRings from '@/components/welcome/WelcomeRings.vue';
 
-const WELCOME_SOUND = '/aud/fx/welcome.mp3';
+const WELCOME_SOUND = '/welcome.mp3';
 const MIN_WELCOME_MS = 3500;
 
 const authStore = useAuthStore();

@@ -16,7 +16,7 @@ export default defineConfig({
     }),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['sphere.svg'],
+      includeAssets: ['sphere.svg', 'welcome.mp3'],
       manifest: {
         name: 'Kwami App',
         short_name: 'Kwami',
@@ -39,14 +39,17 @@ export default defineConfig({
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,mp3}'],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.(?:gstatic|googleapis)\.com\/.*/i,
             handler: 'CacheFirst',
             options: {
               cacheName: 'google-fonts',
-              expiration: { maxEntries: 4, maxAgeSeconds: 60 * 60 * 24 * 365 }
+              expiration: { maxEntries: 16, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              // Cross-origin font responses are opaque (status 0); without
+              // this they cache unpredictably.
+              cacheableResponse: { statuses: [0, 200] }
             }
           }
         ]
