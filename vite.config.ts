@@ -61,5 +61,21 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true
+  },
+  build: {
+    // The entry chunk was 2.63 MB, over workbox's 2 MiB precache ceiling, so
+    // vite-plugin-pwa (>=0.20.2) failed the build outright. Splitting the
+    // heavy vendors keeps every chunk precacheable and lets the app shell
+    // load without waiting on Three.js or LiveKit.
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          three: ['three'],
+          kwami: ['kwami'],
+          supabase: ['@supabase/supabase-js'],
+          vendor: ['vue', 'pinia', 'vue-i18n', 'vue-toastification']
+        }
+      }
+    }
   }
 })
