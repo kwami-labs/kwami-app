@@ -384,9 +384,10 @@ export const useAvatarStore = defineStore('avatar', () => {
     lightIntensity: number;
     getWireframe: () => boolean;
     getCurrentSkinType: () => string;
-    audioEffects?: any;
-    interaction?: any;
-    scene?: any;
+    // Copied wholesale via Object.assign, so only their presence matters here.
+    audioEffects?: Record<string, unknown>;
+    interaction?: Record<string, unknown>;
+    scene?: Record<string, unknown>;
   }) {
     const c = externalBlob.getColors();
     blob.colors = { x: c.x, y: c.y, z: c.z };
@@ -416,8 +417,7 @@ export const useAvatarStore = defineStore('avatar', () => {
     getColorScheme: () => { scheme: string };
     getColors: () => { hot: string; mid1: string; mid2: string; mid3: string; outer: string };
     getScale: () => number;
-    getConfig: () => any;
-    audioEffects?: any;
+    audioEffects?: Record<string, unknown>;
   }) {
     try {
       blackHole.colorScheme = externalBlackHole.getColorScheme().scheme as BlackHoleColorScheme;

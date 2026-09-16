@@ -122,7 +122,7 @@ export const useWalletStore = defineStore('wallet', () => {
   }
 
   async function connectPhantom() {
-    const provider = (window as any)?.solana;
+    const provider = window.solana;
     if (!provider?.isPhantom) throw new Error('Phantom wallet not found');
     const response = await provider.connect();
     phantomPubkey.value = response?.publicKey?.toString?.() || null;

@@ -26,6 +26,18 @@ let camera: THREE.PerspectiveCamera
 let renderer: THREE.WebGLRenderer
 let controls: OrbitControls
 let animationId: number
+/** What we stash on each node mesh via Three's Object3D.userData. */
+interface NodeUserData {
+  nodeData: MemoryNode
+  nodeRadius: number
+}
+
+/** Typed read-back of the userData written when nodes are built. */
+function nodeUserData(object: THREE.Object3D): NodeUserData | null {
+  const data = object.userData as Partial<NodeUserData>
+  return data?.nodeData ? (data as NodeUserData) : null
+}
+
 const nodeObjects: Map<string, THREE.Mesh> = new Map()
 let edgeObjects: THREE.Line[] = []
 const labelSprites: Map<string, THREE.Sprite> = new Map()
@@ -346,8 +358,7 @@ function buildGraphObjects() {
     })
     const sphere = new THREE.Mesh(geometry, material)
     sphere.position.copy(pos)
-    ;(sphere as any).nodeData = node
-    ;(sphere as any).nodeRadius = radius
+    sphere.userData = { nodeData: node, nodeRadius: radius } satisfies NodeUserData
     scene.add(sphere)
     nodeObjects.set(node.id, sphere)
     
@@ -481,7 +492,7 @@ function hitTestNode(event: MouseEvent): MemoryNode | null {
   const meshes = Array.from(nodeObjects.values())
   const intersects = raycaster.intersectObjects(meshes)
   if (intersects.length > 0) {
-    return (intersects[0]!.object as any).nodeData as MemoryNode || null
+    return nodeUserData(intersects[0]!.object)?.nodeData ?? null
   }
   return null
 }
@@ -578,7 +589,7 @@ function updateLinkPreview() {
   const meshes = Array.from(nodeObjects.values())
   const intersects = raycaster.intersectObjects(meshes)
   if (intersects.length > 0) {
-    const hoveredNode = (intersects[0]!.object as any).nodeData as MemoryNode
+    const hoveredNode = nodeUserData(intersects[0]!.object)?.nodeData
     if (hoveredNode && hoveredNode.id !== props.linkingNodeId) {
       const snapPos = positions3D.get(hoveredNode.id)
       if (snapPos) targetPos.copy(snapPos)

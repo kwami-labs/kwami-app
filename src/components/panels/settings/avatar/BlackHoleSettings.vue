@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { InteractionAction } from '@/stores/avatar';
 import { ref, watch, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
@@ -49,7 +50,7 @@ const { executeAction } = useAvatarInteractions({
   getRenderer: getBlackHole,
 });
 
-function testAction(action: any) {
+function testAction(action: InteractionAction) {
   executeAction(action);
 }
 

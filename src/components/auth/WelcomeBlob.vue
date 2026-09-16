@@ -69,7 +69,10 @@ onMounted(async () => {
         wireframe: false,
         shininess: rand(10, 120),
         colors: shuffleColors(),
-        skin: { skin: 'tricolor', subtype: 'poles' } as any,
+        // NOTE: no `skin` here on purpose. BlobXyzConfig.skin is a flat
+        // BlobXyzSkin string used as `presets[skin]`; the object form this
+        // used to pass resolved to undefined and silently fell back to
+        // 'radial'. The real skin is chosen below via setSkin().
         cursorFollow: { enabled: true, sensitivity: 1.0 },
       },
       scene: { enableControls: false },

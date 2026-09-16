@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { LLMProvider } from 'kwami';
 import { ref, computed, onMounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useModelsApi, type InferenceModel } from '@/composables/useModelsApi';
@@ -155,7 +156,7 @@ function selectModel(modelId: string, provider: string) {
   selectedModel.value = modelId;
   
   voiceStore.updateLLM({
-    provider: provider as any,
+    provider: provider as LLMProvider,
     model: modelId,
   });
   

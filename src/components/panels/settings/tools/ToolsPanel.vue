@@ -22,9 +22,15 @@ const tools = ref<ToolDefinition[]>([]);
 const newTool = ref({ name: '', description: '', parameters: '' });
 const mcp = ref({ name: '', url: '', apiKey: '' });
 const mcps = ref<Array<{ name: string; url: string }>>([]);
+interface ToolTemplate {
+  name: string;
+  description: string;
+  parameters: Record<string, { type: string; enum?: string[] }>;
+}
+
 const exec = ref({ toolName: '', params: '', result: '', loading: false, error: '' });
 
-const templates: Record<string, any> = {
+const templates: Record<string, ToolTemplate> = {
   weather: {
     name: 'get_weather',
     description: t('tools.templateWeatherDescription'),

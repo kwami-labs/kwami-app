@@ -323,10 +323,11 @@ function onGlobalKeydown(e: KeyboardEvent) {
 
   if (!isBareShortcut(e)) return;
 
+  // NOTE: panel keys (digits, 0, -, =, and `p`) belong to usePanelShortcuts,
+  // which SidebarNavigation mounts. Handling `p` here too toggled the panel
+  // twice per press and cancelled itself out. Keep this switch to
+  // renderer/avatar keys only.
   switch (e.key.toLowerCase()) {
-    case 'p':
-      uiStore.togglePanel();
-      break;
     case 'b':
       switchRenderer('blob-xyz');
       break;

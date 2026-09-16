@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { STTProvider } from 'kwami';
 import { ref, computed, onMounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useModelsApi, type InferenceSTTModel } from '@/composables/useModelsApi';
@@ -138,7 +139,7 @@ function selectModel(modelId: string, provider: string) {
   selectedModel.value = modelId;
   
   voiceStore.updateSTT({
-    provider: provider as any,
+    provider: provider as STTProvider,
     model: modelId,
   });
   
