@@ -13,7 +13,10 @@ import type { Component } from 'vue';
  */
 export function mountWithPinia<C extends Component>(
   component: C,
-  options: MountingOptions<any> & { stubActions?: boolean; initialState?: Record<string, unknown> } = {},
+  options: MountingOptions<Record<string, unknown>> & {
+    stubActions?: boolean;
+    initialState?: Record<string, unknown>;
+  } = {},
 ): ReturnType<typeof mount> & { pinia: TestingPinia } {
   const { stubActions = false, initialState, ...mountOptions } = options;
 
