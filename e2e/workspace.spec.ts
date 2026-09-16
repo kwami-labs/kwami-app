@@ -1,4 +1,4 @@
-import { test, expect, gotoApp, reloadApp, WELCOME_MS } from './fixtures';
+import { test, expect, gotoApp, pressPanelKey, reloadApp, WELCOME_MS } from './fixtures';
 
 const READY = { timeout: WELCOME_MS + 10_000 };
 
@@ -20,14 +20,9 @@ test.describe('panel navigation', () => {
 
   test('number keys switch settings panels', async ({ app: page }) => {
     // SETTINGS_PANEL_KEYS: 1 avatar, 2 scene, 3 audio, ...
-    await page.keyboard.press('2');
-    await expect.poll(() => page.evaluate(() => localStorage.getItem('kwami-active-panel'))).toBe('scene');
-
-    await page.keyboard.press('3');
-    await expect.poll(() => page.evaluate(() => localStorage.getItem('kwami-active-panel'))).toBe('audio');
-
-    await page.keyboard.press('1');
-    await expect.poll(() => page.evaluate(() => localStorage.getItem('kwami-active-panel'))).toBe('avatar');
+    await pressPanelKey(page, '2', 'scene');
+    await pressPanelKey(page, '3', 'audio');
+    await pressPanelKey(page, '1', 'avatar');
   });
 
   /**
@@ -37,6 +32,12 @@ test.describe('panel navigation', () => {
    */
   test('p toggles the panel exactly once per press', async ({ app: page }) => {
     const sidebar = page.locator('.sidebar');
+
+    // `p` toggles, so it can't be retried idempotently. Prove the keydown
+    // listener is live with a press that CAN be retried, then the toggles below
+    // are guaranteed to land.
+    await pressPanelKey(page, '1', 'avatar');
+
     await expect(sidebar).not.toHaveClass(/collapsed/);
 
     await page.keyboard.press('p');
@@ -47,8 +48,7 @@ test.describe('panel navigation', () => {
   });
 
   test('ignores shortcuts while typing in a field', async ({ app: page }) => {
-    await page.keyboard.press('2');
-    await expect.poll(() => page.evaluate(() => localStorage.getItem('kwami-active-panel'))).toBe('scene');
+    await pressPanelKey(page, '2', 'scene');
 
     const field = page.locator('input[type="text"], input:not([type]), textarea').first();
     if (await field.count()) {
@@ -62,10 +62,7 @@ test.describe('panel navigation', () => {
 
 test.describe('persistence', () => {
   test('restores the active panel across a reload', async ({ app: page }) => {
-    await page.keyboard.press('3');
-    await expect
-      .poll(() => page.evaluate(() => localStorage.getItem('kwami-active-panel')), { timeout: 10_000 })
-      .toBe('audio');
+    await pressPanelKey(page, '3', 'audio');
 
     await reloadApp(page);
     await expect(page.locator('.control-bar-container')).toBeVisible(READY);
