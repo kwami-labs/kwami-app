@@ -107,12 +107,12 @@ function normalizeColorToHex(raw: string): string | null {
   const value = raw.trim();
 
   const hex6 = /^#([0-9a-f]{6})$/i.exec(value);
-  if (hex6) return `#${hex6[1].toLowerCase()}`;
+  if (hex6?.[1]) return `#${hex6[1].toLowerCase()}`;
 
   const hex3 = /^#([0-9a-f]{3})$/i.exec(value);
-  if (hex3) {
+  if (hex3?.[1]) {
     const [r, g, b] = hex3[1].toLowerCase().split('');
-    return `#${r}${r}${g}${g}${b}${b}`;
+    if (r && g && b) return `#${r}${r}${g}${g}${b}${b}`;
   }
 
   const hsl = /^hsla?\(\s*(-?\d+(?:\.\d+)?)\s*(?:deg)?\s*,\s*(\d+(?:\.\d+)?)%\s*,\s*(\d+(?:\.\d+)?)%/i.exec(value);

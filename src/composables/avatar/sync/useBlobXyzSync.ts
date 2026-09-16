@@ -5,7 +5,7 @@
  * Extracts all watcher logic from AvatarPanel.vue for better separation of concerns.
  */
 
-import { watch, type Ref } from 'vue';
+import { watch as vueWatch, type Ref } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useBlobXyzStore } from '@/stores/avatar.blob-xyz';
 
@@ -17,6 +17,14 @@ type KwamiInstance = ReturnType<typeof import('@/composables/useKwami').useKwami
 // =====================================================
 
 export interface UseBlobXyzSyncOptions {
+  /**
+   * Register the reactive store -> renderer watchers. Defaults to true.
+   *
+   * Pass false when the caller only needs syncFromKwami/applyToKwami; App.vue
+   * already owns the always-on watcher set, and AvatarPanel instantiating them
+   * again doubled every setter call while the panel was open.
+   */
+  registerWatchers?: boolean;
     /** Reactive reference to the Kwami instance */
     kwami: Ref<KwamiInstance>;
     /** Function to get the blob renderer instance */
@@ -28,6 +36,12 @@ export interface UseBlobXyzSyncOptions {
 // =====================================================
 
 export function useBlobXyzSync(options: UseBlobXyzSyncOptions) {
+    const { registerWatchers = true } = options;
+    // A no-op stand-in keeps the ~25 watch() call sites below unchanged.
+    const watch: typeof vueWatch = registerWatchers
+      ? vueWatch
+      : ((() => () => {}) as unknown as typeof vueWatch);
+
     const { kwami, getBlob } = options;
     const blobStore = useBlobXyzStore();
     const { skin, shape, animation, cursorTouch, audio } = storeToRefs(blobStore);

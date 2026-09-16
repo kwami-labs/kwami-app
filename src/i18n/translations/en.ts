@@ -281,6 +281,7 @@ export const en = {
     tool: 'Tool',
     execute: 'Execute',
     running: 'Running...',
+    removeTool: 'Remove tool',
     removeToolConfirm: 'Remove tool "{name}"?',
     requiredNameDescription: 'Name and description are required',
     invalidJsonParams: 'Invalid JSON in parameters',

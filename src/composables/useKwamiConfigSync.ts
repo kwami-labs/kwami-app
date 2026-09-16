@@ -105,7 +105,10 @@ export function useKwamiConfigWatchers() {
   // savedConfig) don't permanently flag the config as unsaved.
   watch(
     () => workspaceStore.activeWorkspaceId,
-    async () => {
+    async (kwamiId) => {
+      // Skip the immediate pass before a workspace is resolved: there is
+      // nothing to apply, and rebasing against nothing is pure churn.
+      if (!kwamiId) return;
       const config = workspaceStore.getActiveWorkspace()?.config;
       if (config && typeof config === 'object' && Object.keys(config as object).length > 0) {
         applyConfig(config as KwamiConfig);

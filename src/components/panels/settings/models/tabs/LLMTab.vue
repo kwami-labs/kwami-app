@@ -160,7 +160,7 @@ function selectModel(modelId: string, provider: string) {
   });
   
   if (isConnected.value && kwami.value) {
-    kwami.value.agent.updateLlmLive({
+    kwami.value.agent.syncConfigToBackend('llm', {
       provider,
       model: modelId,
       temperature: llm.value.temperature,
@@ -180,7 +180,7 @@ function updateTemperature(value: number) {
   voiceStore.updateLLM({ temperature: value });
   
   if (isConnected.value && kwami.value) {
-    kwami.value.agent.updateLlmLive({
+    kwami.value.agent.syncConfigToBackend('llm', {
       provider: llm.value.provider,
       model: llm.value.model,
       temperature: value,
@@ -192,7 +192,7 @@ function updateTemperature(value: number) {
 function updateMaxTokens(value: number) {
   voiceStore.updateLLM({ maxTokens: value });
   if (isConnected.value && kwami.value) {
-    kwami.value.agent.updateLlmLive({
+    kwami.value.agent.syncConfigToBackend('llm', {
       provider: llm.value.provider,
       model: llm.value.model,
       temperature: llm.value.temperature,

@@ -1,10 +1,10 @@
 import { onMounted, onUnmounted } from 'vue';
 import { useUIStore } from '@/stores/ui';
+import { isBareShortcut } from '@/utils/keyboard';
 
 const SETTINGS_PANEL_KEYS: (string | null)[] = [
   'avatar',
   'scene',
-  'interaction',
   'audio',
   'voice',
   'enhancements',
@@ -31,7 +31,7 @@ export function usePanelShortcuts() {
   const uiStore = useUIStore();
 
   function handleKeydown(e: KeyboardEvent) {
-    if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) return;
+    if (!isBareShortcut(e)) return;
     const panelKeys = uiStore.sidebarMode === 'apps' ? APPS_PANEL_KEYS : SETTINGS_PANEL_KEYS;
     if (e.key >= '1' && e.key <= '9') {
       const idx = parseInt(e.key) - 1;

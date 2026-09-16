@@ -85,7 +85,6 @@ function applyTemplate(template: SoulPreset) {
 
   kwami.value.soul.updateConfig(soulConfig);
   syncSoulToBackend(soulConfig);
-  syncExpressiveVoiceToBackend();
   syncFromKwami();
 }
 
@@ -104,7 +103,6 @@ function syncSoulToBackend(soulConfig?: Record<string, unknown>) {
     responseLength: config.responseLength,
     emotionalTone: config.emotionalTone,
     emotionalTraits: { ...emotionalTraits },
-    emotionalTraitWeights: { ...emotionalTraitWeights },
   };
 
   kwami.value.agent.syncConfigToBackend('soul', configToSync);
@@ -191,6 +189,10 @@ function syncFromKwami() {
 // Save current local state to the persisted store
 function saveToStore() {
   savedSoulConfig.value = {
+    // Spread first so fields this panel does not own (currently `language`,
+    // which is edited from the models panel) survive a save instead of being
+    // silently reset to the store default.
+    ...savedSoulConfig.value,
     name: config.name,
     personality: config.personality,
     conversationStyle: config.conversationStyle,

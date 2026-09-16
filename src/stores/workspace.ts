@@ -268,8 +268,17 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     }
   }
 
+  /**
+   * Pure read. It must NOT call ensureLocalWorkspace(): this runs from
+   * computeds and from the config watcher's immediate pass, which fire before
+   * loadFromDb() resolves. Creating a workspace here spawned a throwaway
+   * "phantom" kwami that config was then rebased against, moments before
+   * loadFromDb() replaced workspaces wholesale.
+   *
+   * The genuine "no workspaces yet" cases are handled explicitly by
+   * loadFromDb() and deleteWorkspace().
+   */
   function getActiveWorkspace(): KwamiWorkspace | undefined {
-    ensureLocalWorkspace();
     return workspaces.value.find((w) => w.id === activeWorkspaceId.value);
   }
 

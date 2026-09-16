@@ -42,6 +42,7 @@ import { useWorkspaceStore } from '@/stores/workspace';
 import { useKwamiConfigWatchers } from '@/composables/useKwamiConfigSync';
 import { useSearchResults } from '@/composables/useSearchResults';
 import { useNavigation } from '@/composables/useNavigation';
+import { isBareShortcut, isEditableTarget } from '@/utils/keyboard';
 import { useWorkspaceAgentTools } from '@/composables/useWorkspaceAgentTools';
 import { useAvatarStore } from '@/stores/avatar';
 import { useBlobXyzSync } from '@/composables/avatar/sync/useBlobXyzSync';
@@ -50,7 +51,14 @@ import { useParticlesFaceSync } from '@/composables/avatar/sync/useParticlesFace
 import { useEyeIrisSync } from '@/composables/avatar/sync/useEyeIrisSync';
 import { randomizeAvatarPanel } from '@/composables/avatar/randomizeAvatarPanel';
 
-const { kwami, init, switchRenderer, rendererType: kwamiRendererType, isConnected } = useKwami();
+const {
+  kwami,
+  init,
+  switchRenderer,
+  rendererType: kwamiRendererType,
+  isConnected,
+  dispose: disposeKwami,
+} = useKwami();
 const { initialize: initSceneBackground } = useSceneBackground();
 import { useVoiceStore } from '@/stores/voice';
 import { useCreditsStore } from '@/stores/credits';
@@ -287,6 +295,62 @@ watch(canvasRef, (canvas) => {
   }
 });
 
+/**
+ * Global avatar/panel shortcuts.
+ *
+ * Alt+1/2/3 size the panel; the rest are bare keys, so they must not fire
+ * while the user is typing or when a browser/OS chord is held.
+ */
+function onGlobalKeydown(e: KeyboardEvent) {
+  if (isEditableTarget(e.target)) return;
+
+  // Panel size shortcuts (Alt+1/2/3)
+  if (e.altKey && e.key === '1') {
+    e.preventDefault();
+    uiStore.setSizePreset('small');
+    return;
+  }
+  if (e.altKey && e.key === '2') {
+    e.preventDefault();
+    uiStore.setSizePreset('medium');
+    return;
+  }
+  if (e.altKey && e.key === '3') {
+    e.preventDefault();
+    uiStore.setSizePreset('large');
+    return;
+  }
+
+  if (!isBareShortcut(e)) return;
+
+  switch (e.key.toLowerCase()) {
+    case 'p':
+      uiStore.togglePanel();
+      break;
+    case 'b':
+      switchRenderer('blob-xyz');
+      break;
+    case 'h':
+      switchRenderer('black-hole');
+      break;
+    case 'r':
+      onRandomizeAvatarPanel();
+      break;
+    case 'l':
+      kwami.value?.setState('listening');
+      window.dispatchEvent(new CustomEvent('kwami:stateChanged', { detail: 'listening' }));
+      break;
+    case 't':
+      kwami.value?.setState('thinking');
+      window.dispatchEvent(new CustomEvent('kwami:stateChanged', { detail: 'thinking' }));
+      break;
+    case 'i':
+      kwami.value?.setState('idle');
+      window.dispatchEvent(new CustomEvent('kwami:stateChanged', { detail: 'idle' }));
+      break;
+  }
+}
+
 onMounted(() => {
   // Try to initialize if canvas is already available
   initializeKwami();
@@ -295,57 +359,19 @@ onMounted(() => {
   window.addEventListener('resize', handleResize);
 
   // Shortcuts
-  document.addEventListener('keydown', (e) => {
-    const target = e.target as HTMLElement;
-    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
-
-    // Panel size shortcuts (Alt+1/2/3)
-    if (e.altKey && e.key === '1') {
-      e.preventDefault();
-      uiStore.setSizePreset('small');
-    }
-    if (e.altKey && e.key === '2') {
-      e.preventDefault();
-      uiStore.setSizePreset('medium');
-    }
-    if (e.altKey && e.key === '3') {
-      e.preventDefault();
-      uiStore.setSizePreset('large');
-    }
-
-    // Panel toggle
-    if (e.key === 'p' || e.key === 'P') {
-      uiStore.togglePanel();
-    }
-    // Renderer switch shortcuts
-    if (e.key === 'b' || e.key === 'B') switchRenderer('blob-xyz');
-    if (e.key === 'h' || e.key === 'H') switchRenderer('black-hole');
-    // Avatar state shortcuts
-    if (e.key === 'r') {
-      onRandomizeAvatarPanel();
-      console.log('🎲 Randomized!');
-    }
-    if (e.key === 'l') {
-      kwami.value?.setState('listening');
-      window.dispatchEvent(new CustomEvent('kwami:stateChanged', { detail: 'listening' }));
-      console.log('🎤 Listening mode');
-    }
-    if (e.key === 't') {
-      kwami.value?.setState('thinking');
-      window.dispatchEvent(new CustomEvent('kwami:stateChanged', { detail: 'thinking' }));
-      console.log('🤔 Thinking mode');
-    }
-    if (e.key === 'i') {
-      kwami.value?.setState('idle');
-      window.dispatchEvent(new CustomEvent('kwami:stateChanged', { detail: 'idle' }));
-      console.log('😴 Idle mode');
-    }
-  });
+  document.addEventListener('keydown', onGlobalKeydown);
 });
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize);
-  if (resizeObserver) resizeObserver.disconnect();
+  document.removeEventListener('keydown', onGlobalKeydown);
+  if (resizeObserver) {
+    resizeObserver.disconnect();
+    resizeObserver = null;
+  }
+  // Releases the WebGL context, the LiveKit room and the audio graph.
+  void disposeKwami();
+  isInitialized.value = false;
 });
 </script>
 

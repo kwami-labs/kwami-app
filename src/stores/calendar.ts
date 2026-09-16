@@ -62,10 +62,14 @@ export const useCalendarStore = defineStore('calendar', () => {
   const workspaceStore = useWorkspaceStore();
   const activeKwamiId = computed(() => workspaceStore.activeWorkspaceId);
 
+  // Guards against a stale response landing after the user switched kwami.
+  let eventsRequestNonce = 0;
+
   async function fetchEvents(rangeStart: string, rangeEnd: string) {
     if (!activeKwamiId.value) return [];
     isLoading.value = true;
     error.value = null;
+    const requestNonce = ++eventsRequestNonce;
     try {
       const params = new URLSearchParams({
         kwami_id: activeKwamiId.value,
@@ -75,13 +79,15 @@ export const useCalendarStore = defineStore('calendar', () => {
       const headers = await authHeaders();
       const res = await fetch(`${API_BASE}/calendar/events?${params.toString()}`, { headers });
       const data = await parseJson<{ events: CalendarEvent[] }>(res);
+      if (requestNonce !== eventsRequestNonce) return events.value;
       events.value = data.events;
       return data.events;
     } catch (err) {
+      if (requestNonce !== eventsRequestNonce) return events.value;
       error.value = err instanceof Error ? err.message : 'Failed to load events';
       throw err;
     } finally {
-      isLoading.value = false;
+      if (requestNonce === eventsRequestNonce) isLoading.value = false;
     }
   }
 

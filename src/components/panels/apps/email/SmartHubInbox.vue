@@ -77,7 +77,11 @@ function handleSelect(address: string) {
 }
 
 onMounted(async () => {
-  await emailStore.refreshInbox();
+  try {
+    await emailStore.refreshInbox();
+  } catch (e) {
+    console.error('Failed to refresh inbox:', e);
+  }
 });
 </script>
 

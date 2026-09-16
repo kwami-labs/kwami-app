@@ -7,25 +7,34 @@ const props = defineProps<{ conversation: EmailConversation }>();
 const emit = defineEmits<{ (e: 'select', address: string): void }>();
 const { t } = useI18n();
 
-const categoryMeta = computed(() => {
-  const map: Record<string, { icon: string; color: string }> = {
-    travel:        { icon: 'ph:airplane-duotone',       color: '#3b82f6' },
-    bills:         { icon: 'ph:receipt-duotone',         color: '#f59e0b' },
-    events:        { icon: 'ph:calendar-check-duotone',  color: '#8b5cf6' },
-    newsletters:   { icon: 'ph:newspaper-duotone',       color: '#6366f1' },
-    personal:      { icon: 'ph:user-circle-duotone',     color: '#22c55e' },
-    notifications: { icon: 'ph:bell-ringing-duotone',    color: '#ef4444' },
-    shopping:      { icon: 'ph:shopping-bag-duotone',    color: '#ec4899' },
-    work:          { icon: 'ph:briefcase-duotone',       color: '#0ea5e9' },
-    uncategorized: { icon: 'ph:envelope-duotone',        color: '#94a3b8' },
-  };
-  return map[props.conversation.category] ?? map.uncategorized;
-});
+interface CategoryMeta {
+  icon: string;
+  color: string;
+}
+
+const UNCATEGORIZED_META: CategoryMeta = { icon: 'ph:envelope-duotone', color: '#94a3b8' };
+
+const CATEGORY_META: Record<string, CategoryMeta> = {
+  travel:        { icon: 'ph:airplane-duotone',       color: '#3b82f6' },
+  bills:         { icon: 'ph:receipt-duotone',         color: '#f59e0b' },
+  events:        { icon: 'ph:calendar-check-duotone',  color: '#8b5cf6' },
+  newsletters:   { icon: 'ph:newspaper-duotone',       color: '#6366f1' },
+  personal:      { icon: 'ph:user-circle-duotone',     color: '#22c55e' },
+  notifications: { icon: 'ph:bell-ringing-duotone',    color: '#ef4444' },
+  shopping:      { icon: 'ph:shopping-bag-duotone',    color: '#ec4899' },
+  work:          { icon: 'ph:briefcase-duotone',       color: '#0ea5e9' },
+  uncategorized: UNCATEGORIZED_META,
+};
+
+const categoryMeta = computed<CategoryMeta>(
+  () => CATEGORY_META[props.conversation.category] ?? UNCATEGORIZED_META,
+);
 
 const initials = computed(() => {
   const name = props.conversation.displayName;
   const parts = name.split(/[\s._-]+/).filter(Boolean);
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  const [first, second] = parts;
+  if (first && second) return (first.charAt(0) + second.charAt(0)).toUpperCase();
   return name.slice(0, 2).toUpperCase();
 });
 

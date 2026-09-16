@@ -190,7 +190,7 @@ defineExpose({ fetchPreview, loading, applying })
     <div v-if="previewCommunities > 0" class="communities-info">
       <iconify-icon icon="ph:circles-three-plus-duotone"></iconify-icon>
       <span>{{
-        t('memoryReorg.communitiesDetected', previewCommunities, { n: previewCommunities })
+        t('memoryReorg.communitiesDetected', { n: previewCommunities }, previewCommunities)
       }}</span>
     </div>
 

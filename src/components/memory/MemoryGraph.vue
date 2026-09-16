@@ -390,10 +390,10 @@ watch(() => props.userId, fetchGraph)
           </template>
         </span>
         <span class="footer-stats">{{
-          t('memoryGraph.nodesCount', filteredGraph.nodes.length, { n: filteredGraph.nodes.length })
+          t('memoryGraph.nodesCount', { n: filteredGraph.nodes.length }, filteredGraph.nodes.length)
         }}</span>
         <span class="footer-stats">{{
-          t('memoryGraph.edgesCount', filteredGraph.edges.length, { n: filteredGraph.edges.length })
+          t('memoryGraph.edgesCount', { n: filteredGraph.edges.length }, filteredGraph.edges.length)
         }}</span>
         <button 
           class="reorg-btn" 

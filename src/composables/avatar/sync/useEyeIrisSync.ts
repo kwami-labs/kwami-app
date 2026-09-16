@@ -1,14 +1,28 @@
-import { watch, type Ref } from 'vue';
+import { watch as vueWatch, type Ref } from 'vue';
 import { useEyeIrisStore } from '@/stores/avatar.eye-iris';
 
 type KwamiInstance = ReturnType<typeof import('@/composables/useKwami').useKwami>['kwami']['value'];
 
 export interface UseEyeIrisSyncOptions {
+  /**
+   * Register the reactive store -> renderer watchers. Defaults to true.
+   *
+   * Pass false when the caller only needs syncFromKwami/applyToKwami; App.vue
+   * already owns the always-on watcher set, and AvatarPanel instantiating them
+   * again doubled every setter call while the panel was open.
+   */
+  registerWatchers?: boolean;
   kwami: Ref<KwamiInstance>;
   getEyeIris: () => any | undefined;
 }
 
 export function useEyeIrisSync(options: UseEyeIrisSyncOptions) {
+  const { registerWatchers = true } = options;
+  // A no-op stand-in keeps the ~25 watch() call sites below unchanged.
+  const watch: typeof vueWatch = registerWatchers
+    ? vueWatch
+    : ((() => () => {}) as unknown as typeof vueWatch);
+
   const { getEyeIris } = options;
   const eyeIrisStore = useEyeIrisStore();
 

@@ -70,6 +70,9 @@ export const useWalletStore = defineStore('wallet', () => {
   const fundingIntents = ref<FundingIntent[]>([]);
   const phantomPubkey = ref<string | null>(null);
 
+  // Guards against a stale response landing after the user switched kwami.
+  let refreshRequestNonce = 0;
+
   function activeKwamiId(): string {
     return useWorkspaceStore().activeWorkspaceId;
   }
@@ -78,6 +81,7 @@ export const useWalletStore = defineStore('wallet', () => {
     const kwamiId = activeKwamiId();
     if (!kwamiId) return;
     loading.value = true;
+    const requestNonce = ++refreshRequestNonce;
     try {
       const headers = await authHeaders();
       const res = await fetch(`${API_BASE}/wallets/kwamis/${kwamiId}`, { headers });
@@ -88,13 +92,14 @@ export const useWalletStore = defineStore('wallet', () => {
         allowlist: WalletToken[];
         funding_intents: FundingIntent[];
       }>(res);
+      if (requestNonce !== refreshRequestNonce) return;
       wallet.value = data.wallet;
       balances.value = data.balances || [];
       transactions.value = data.transactions || [];
       allowlist.value = data.allowlist || [];
       fundingIntents.value = data.funding_intents || [];
     } finally {
-      loading.value = false;
+      if (requestNonce === refreshRequestNonce) loading.value = false;
     }
   }
 

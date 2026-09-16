@@ -62,6 +62,10 @@ export const useContactsStore = defineStore('contacts', () => {
     );
   });
 
+  // Guards against a stale response landing after a kwami switch or a newer
+  // search keystroke.
+  let contactsRequestNonce = 0;
+
   function activeKwamiId(): string {
     const workspaceStore = useWorkspaceStore();
     return workspaceStore.activeWorkspaceId;
@@ -77,16 +81,20 @@ export const useContactsStore = defineStore('contacts', () => {
     if (!search) {
       contacts.value = contactsByKwami.value[kwamiId] ?? [];
     }
+    // One nonce covers both racing callers: the kwami switch and the
+    // search-as-you-type watcher. Both write contacts.value.
+    const requestNonce = ++contactsRequestNonce;
     try {
       const headers = await authHeaders();
       const params = new URLSearchParams({ kwamiId });
       if (search.trim()) params.set('q', search.trim());
       const res = await fetch(`${API_BASE}/contacts?${params.toString()}`, { headers });
       const data = await parseJson<{ contacts: ContactRecord[] }>(res);
+      if (requestNonce !== contactsRequestNonce) return;
       if (!search.trim()) contactsByKwami.value[kwamiId] = data.contacts;
       contacts.value = data.contacts;
     } finally {
-      loading.value = false;
+      if (requestNonce === contactsRequestNonce) loading.value = false;
     }
   }
 

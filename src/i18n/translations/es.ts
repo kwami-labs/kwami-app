@@ -281,6 +281,7 @@ export const es = {
     tool: 'Herramienta',
     execute: 'Ejecutar',
     running: 'Ejecutando...',
+    removeTool: 'Eliminar herramienta',
     removeToolConfirm: 'Eliminar herramienta "{name}"?',
     requiredNameDescription: 'Nombre y descripcion son obligatorios',
     invalidJsonParams: 'JSON invalido en parametros',

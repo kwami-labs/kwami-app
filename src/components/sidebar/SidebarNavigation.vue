@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { watch, ref, nextTick, computed } from 'vue';
 import { useUIStore } from '@/stores/ui';
-import { panelIcons } from '@/constants/panel-icons';
+import { panelIcon, panelIcons } from '@/constants/panel-icons';
 import { usePanelShortcuts } from '@/composables/usePanelShortcuts';
 import SidebarKwamiSection from '@/components/sidebar/SidebarKwamiSection.vue';
 import { useI18n } from 'vue-i18n';
@@ -149,7 +149,7 @@ watch(
             @click="handlePanelClick(p)"
             :title="panelTitle(p)"
           >
-            <iconify-icon :icon="panelIcons[p]"></iconify-icon>
+            <iconify-icon :icon="panelIcon(p)"></iconify-icon>
           </button>
         </div>
 
@@ -165,7 +165,7 @@ watch(
             @click="handlePanelClick(p)"
             :title="panelTitle(p)"
           >
-            <iconify-icon :icon="panelIcons[p]"></iconify-icon>
+            <iconify-icon :icon="panelIcon(p)"></iconify-icon>
           </button>
         </div>
 
@@ -181,7 +181,7 @@ watch(
             @click="handlePanelClick(p)"
             :title="panelTitle(p)"
           >
-            <iconify-icon :icon="panelIcons[p]"></iconify-icon>
+            <iconify-icon :icon="panelIcon(p)"></iconify-icon>
           </button>
         </div>
 
@@ -218,7 +218,7 @@ watch(
             @click="handlePanelClick(p)"
             :title="panelTitle(p)"
           >
-            <iconify-icon :icon="panelIcons[p]"></iconify-icon>
+            <iconify-icon :icon="panelIcon(p)"></iconify-icon>
           </button>
         </div>
       </template>

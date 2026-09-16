@@ -61,18 +61,24 @@ function getEyeIris() {
 // SYNC COMPOSABLES
 // =====================================================
 
+// App.vue owns the always-on watcher set so the renderer stays in sync while
+// this panel is closed (agent tools mutate these stores too). The panel only
+// needs the imperative helpers, so it opts out to avoid double-firing them.
 const { syncFromKwami: syncBlobFromKwami, applyToKwami: applyBlobToKwami } = useBlobXyzSync({
   kwami,
   getBlob,
+  registerWatchers: false,
 });
 
 const { syncFromKwami: syncBlackHoleFromKwami, applyToKwami: applyBlackHoleToKwami } = useBlackHoleSync({
   kwami,
   getBlackHole,
+  registerWatchers: false,
 });
 const { syncFromKwami: syncEyeIrisFromKwami, applyToKwami: applyEyeIrisToKwami } = useEyeIrisSync({
   kwami,
   getEyeIris,
+  registerWatchers: false,
 });
 
 // =====================================================

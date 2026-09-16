@@ -611,7 +611,7 @@ async function deleteUserMemory() {
       edgesHasMore.value = false;
       nodesHasMore.value = false;
       const nThreads = Number(result.deleted_threads) || 0;
-      toast.success(t('memory.toastMemoryDeleted', nThreads, { n: nThreads }));
+      toast.success(t('memory.toastMemoryDeleted', { n: nThreads }, nThreads));
     } else {
       throw new Error(result.errors?.join(', ') || 'Delete operation failed');
     }
@@ -1286,7 +1286,7 @@ onMounted(() => {
               <div class="community-header">
                 <span class="community-id">{{ comm.members.slice(0, 2).map(m => m.name).join(' & ') }}</span>
                 <span class="community-size">{{
-                  t('memoryOps.communityNodes', comm.size, { n: comm.size })
+                  t('memoryOps.communityNodes', { n: comm.size }, comm.size)
                 }}</span>
               </div>
               <div class="community-members">

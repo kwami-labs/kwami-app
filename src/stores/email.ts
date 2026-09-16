@@ -77,9 +77,9 @@ export function normalizeEmail(raw: string): string {
   if (!raw || typeof raw !== 'string') return '';
   const s = raw.trim().replace(/^mailto:/i, '');
   const angle = s.match(/<([^<>]+@[^<>]+)>/);
-  if (angle) return angle[1].trim().toLowerCase();
+  if (angle?.[1]) return angle[1].trim().toLowerCase();
   const at = /\b[^\s<>]+@[^\s<>]+\b/.exec(s);
-  if (at) return at[0].toLowerCase();
+  if (at?.[0]) return at[0].toLowerCase();
   return s.toLowerCase();
 }
 
@@ -156,6 +156,8 @@ export const useEmailStore = defineStore('email', () => {
     for (const [address, msgs] of map) {
       msgs.sort((a, b) => new Date(b.received_at).getTime() - new Date(a.received_at).getTime());
       const last = msgs[0];
+      // A key only exists in the map because a message was pushed under it.
+      if (!last) continue;
       result.push({
         address,
         displayName: peerDisplayName(msgs, address),
@@ -305,15 +307,21 @@ export const useEmailStore = defineStore('email', () => {
     }
     unreadCounts.value = unreadByKwami.value[kwamiId] ?? {};
     const requestNonce = ++unreadRequestNonce;
-    const headers = await authHeaders();
-    const res = await fetch(
-      `${API_BASE}/email/unread-counts?kwami_id=${encodeURIComponent(kwamiId)}`,
-      { headers },
-    );
-    const data = await parseJson<{ counts: Record<string, number> }>(res);
-    if (requestNonce !== unreadRequestNonce) return;
-    unreadByKwami.value[kwamiId] = data.counts;
-    unreadCounts.value = data.counts;
+    try {
+      const headers = await authHeaders();
+      const res = await fetch(
+        `${API_BASE}/email/unread-counts?kwami_id=${encodeURIComponent(kwamiId)}`,
+        { headers },
+      );
+      const data = await parseJson<{ counts: Record<string, number> }>(res);
+      if (requestNonce !== unreadRequestNonce) return;
+      unreadByKwami.value[kwamiId] = data.counts;
+      unreadCounts.value = data.counts;
+    } catch (e) {
+      // Unread badges are decoration: a failure here must not reject out of
+      // refreshInbox() and take the whole inbox load down with it.
+      console.warn('Failed to fetch unread counts:', e);
+    }
   }
 
   async function refreshInbox() {
@@ -406,7 +414,9 @@ export const useEmailStore = defineStore('email', () => {
   function setCategory(cat: EmailCategory) {
     activeCategory.value = cat;
     messages.value = [];
-    fetchInbox(cat);
+    void fetchInbox(cat).catch((e) => {
+      console.error('Failed to load inbox for category:', cat, e);
+    });
   }
 
   return {

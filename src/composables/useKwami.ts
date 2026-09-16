@@ -205,15 +205,13 @@ export function useKwami() {
       },
     });
 
-    // 3. LLM live params (temperature)
-    if ('updateLlmLive' in agent && typeof agent.updateLlmLive === 'function') {
-      agent.updateLlmLive({
-        provider: voiceStore.llm.provider,
-        model: voiceStore.llm.model,
-        temperature: voiceStore.llm.temperature,
-        maxTokens: voiceStore.llm.maxTokens,
-      });
-    }
+    // 3. LLM live params (temperature, maxTokens)
+    agent.syncConfigToBackend('llm', {
+      provider: voiceStore.llm.provider,
+      model: voiceStore.llm.model,
+      temperature: voiceStore.llm.temperature,
+      maxTokens: voiceStore.llm.maxTokens,
+    });
 
     // 4. TTS/Realtime voice + speed
     if (voiceStore.pipelineMode === 'realtime') {
@@ -357,6 +355,29 @@ export function useKwami() {
     console.log(`🔄 Switched to ${newRenderer} renderer`);
   }
 
+  /**
+   * Tear down the singleton instance: releases the WebGL context, the Three.js
+   * renderer, the LiveKit room and the audio graph.
+   *
+   * Without this, every app teardown or HMR reload leaks a WebGL context, and
+   * browsers hard-cap those at ~16 before they start evicting live ones.
+   */
+  async function dispose() {
+    const instance = kwamiInstance.value;
+    if (!instance) return;
+
+    // Null the refs first so nothing re-enters while disposal is in flight.
+    kwamiInstance.value = null;
+    window.kwami = null;
+    isConnected.value = false;
+
+    try {
+      await instance.dispose();
+    } catch (e) {
+      console.error('Failed to dispose kwami:', e);
+    }
+  }
+
   return {
     kwami: kwamiInstance,
     rendererType,
@@ -367,5 +388,6 @@ export function useKwami() {
     switchRenderer,
     connect,
     disconnect,
+    dispose,
   };
 }

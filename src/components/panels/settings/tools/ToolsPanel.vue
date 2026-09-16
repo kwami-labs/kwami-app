@@ -155,16 +155,21 @@ onMounted(refreshTools);
       <PanelSection :title="t('tools.registeredTools')">
         <div class="tools-list">
           <div v-if="!tools.length" class="empty">{{ t('tools.noToolsRegistered') }}</div>
-          <div v-for="t in tools" :key="t.name" class="card">
+          <div v-for="tool in tools" :key="tool.name" class="card">
             <div class="head">
               <iconify-icon icon="ph:function-duotone"></iconify-icon>
-              <span class="name">{{ t.name }}</span>
-              <button class="remove" @click="removeTool(t.name)">×</button>
+              <span class="name">{{ tool.name }}</span>
+              <button
+                class="remove"
+                :title="t('tools.removeTool')"
+                :aria-label="t('tools.removeTool')"
+                @click="removeTool(tool.name)"
+              >×</button>
             </div>
-            <p class="desc">{{ t.description }}</p>
-            <details v-if="t.parameters" class="params">
+            <p class="desc">{{ tool.description }}</p>
+            <details v-if="tool.parameters" class="params">
               <summary>{{ t('tools.params') }}</summary>
-              <pre>{{ JSON.stringify(t.parameters, null, 2) }}</pre>
+              <pre>{{ JSON.stringify(tool.parameters, null, 2) }}</pre>
             </details>
           </div>
         </div>
@@ -227,7 +232,7 @@ onMounted(refreshTools);
           <BaseSelect
             :label="t('tools.tool')"
             v-model="exec.toolName"
-            :options="tools.map((t) => ({ label: t.name, value: t.name }))"
+            :options="tools.map((tool) => ({ label: tool.name, value: tool.name }))"
           />
           <div class="group">
             <label>{{ t('tools.parametersJson') }}</label

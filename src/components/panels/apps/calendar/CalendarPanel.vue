@@ -380,7 +380,7 @@ watch(
           <div class="agenda-card">
             <div class="agenda-header">
               <h4>{{ t('calendar.scheduleFor') }}</h4>
-              <span>{{ selectedDate.toLocaleDateString(locale.value, { month: 'short', day: 'numeric' }) }}</span>
+              <span>{{ selectedDate.toLocaleDateString(locale, { month: 'short', day: 'numeric' }) }}</span>
             </div>
 
             <div v-if="selectedEvents.length === 0" class="agenda-empty">
@@ -409,7 +409,7 @@ watch(
         <div class="week-grid">
           <div class="week-day" v-for="day in weekDays" :key="toDateKey(day)">
             <button class="week-day-header" @click="selectedDate = day">
-              <strong>{{ day.toLocaleDateString(locale.value, { weekday: 'short' }) }}</strong>
+              <strong>{{ day.toLocaleDateString(locale, { weekday: 'short' }) }}</strong>
               <span :class="{ today: isToday(day) }">{{ day.getDate() }}</span>
             </button>
             <ul class="week-events">
@@ -431,7 +431,7 @@ watch(
       <template v-else-if="viewMode === 'day'">
         <div class="day-view">
           <div class="day-view-header">
-            {{ referenceDate.toLocaleDateString(locale.value, { weekday: 'long', month: 'long', day: 'numeric' }) }}
+            {{ referenceDate.toLocaleDateString(locale, { weekday: 'long', month: 'long', day: 'numeric' }) }}
           </div>
           <div class="day-hours">
             <div class="hour-row" v-for="hour in hours" :key="hour">
@@ -466,7 +466,7 @@ watch(
                 <strong>{{ event.title }}</strong>
                 <small>
                   {{
-                    new Date(event.starts_at).toLocaleDateString(locale.value, {
+                    new Date(event.starts_at).toLocaleDateString(locale, {
                       weekday: 'short',
                       month: 'short',
                       day: 'numeric',

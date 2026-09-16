@@ -405,7 +405,7 @@ export function useWorkspaceAgentTools() {
     searchStore.clear();
     actionState.recordAction(
       t('workspaceAgentTools.actionClearedSearch'),
-      t('workspaceAgentTools.searchResultsDetail', clearedCount, { n: clearedCount }),
+      t('workspaceAgentTools.searchResultsDetail', { n: clearedCount }, clearedCount),
       {
         announce: true,
       },
