@@ -13,15 +13,16 @@ Web app for building and interacting with **Kwami** 3D AI companions: voice conv
 
 ## Prerequisites
 
-- **Node.js** 18+
-- **pnpm** 8+
-- **Kwami** — Use the published package (`kwami@^2.0.0`) or link locally (`file:../kwami`)
+- **Node.js** 22 (see `.nvmrc`)
+- **bun** 1.2+
+- **Kwami** — Uses the published package (`kwami@^2.1.1`). To develop against a local
+  checkout instead, run `bun link` inside `../kwami` and `bun link kwami` here.
 
 ## Setup
 
 ```bash
 # Install dependencies
-pnpm install
+bun install
 
 # Configure environment
 cp .env.sample .env
@@ -30,13 +31,16 @@ cp .env.sample .env
 
 ## Scripts
 
-| Command       | Description                |
-|---------------|----------------------------|
-| `pnpm dev`    | Start dev server           |
-| `pnpm build`  | Type-check and production build |
-| `pnpm preview`| Preview production build   |
-| `pnpm lint`   | Lint and fix               |
-| `pnpm format` | Format with Prettier       |
+| Command             | Description                     |
+|---------------------|---------------------------------|
+| `bun run dev`       | Start dev server (port 5173)    |
+| `bun run build`     | Type-check and production build |
+| `bun run preview`   | Preview production build        |
+| `bun run typecheck` | Type-check only                 |
+| `bun run lint`      | Lint and fix                    |
+| `bun run lint:check`| Lint without writing            |
+| `bun run format`    | Format with Prettier            |
+| `bun run tauri dev` | Run the desktop (Tauri) build   |
 
 ## Environment variables
 
@@ -47,11 +51,14 @@ Copy `.env.sample` to `.env` and set:
 | `VITE_API_URL` | Backend API base URL |
 | `VITE_LIVEKIT_URL` | LiveKit WebSocket URL |
 | `VITE_LIVEKIT_TOKEN_ENDPOINT` | Endpoint that issues LiveKit tokens |
-| `VITE_ZEP_API_KEY` | Zep API key (memory) |
+| `VITE_ZEP_API_KEY` | Zep API key (memory) — ⚠️ see note below |
 | `VITE_ZEP_BASE_URL` | Zep API base URL |
-| `VITE_NAV_PROXY_URL` | Navigation proxy URL (optional) |
 | `VITE_SUPABASE_URL` | Supabase project URL |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase anon/key |
+
+> ⚠️ **`VITE_ZEP_API_KEY` is a server credential.** Every `VITE_`-prefixed variable is
+> inlined into the client bundle and is publicly readable. This key is scheduled to move
+> behind the backend (`VITE_API_URL`); until then, treat any deployed build as exposing it.
 
 ## Tech stack
 
@@ -63,6 +70,7 @@ Copy `.env.sample` to `.env` and set:
 - **Three.js** — 3D (peer dependency of Kwami)
 - **Supabase** — auth
 - **PWA** — vite-plugin-pwa
+- **Tauri 2** — optional desktop build (`bun run tauri dev`)
 
 ## Project structure
 
