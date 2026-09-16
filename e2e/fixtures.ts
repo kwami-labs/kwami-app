@@ -1,4 +1,4 @@
-import { test as base, type Page } from '@playwright/test';
+import { test as base, expect, type Page } from '@playwright/test';
 
 /**
  * E2E fixtures.
@@ -228,7 +228,7 @@ export const test = base.extend<{ signedOut: Page; app: Page }>({
   },
 });
 
-export { expect } from '@playwright/test';
+export { expect };
 
 /**
  * Seeds the UI store's persisted state before the app boots, so a spec can land
@@ -245,6 +245,26 @@ export async function seedUi(page: Page, { mode = 'settings', panel }: { mode?: 
     },
     [mode, panel] as const,
   );
+}
+
+/**
+ * Presses a panel shortcut until it takes effect, then returns.
+ *
+ * Under parallel workers the dev server is slow enough that the sidebar can be
+ * visible before usePanelShortcuts' keydown listener is live, and a key pressed
+ * in that window is silently dropped — which made these specs fail roughly one
+ * run in three. Re-pressing is safe because selecting a panel is idempotent.
+ */
+export async function pressPanelKey(page: Page, key: string, expectedPanel: string) {
+  await expect
+    .poll(
+      async () => {
+        await page.keyboard.press(key);
+        return page.evaluate(() => window.localStorage.getItem('kwami-active-panel'));
+      },
+      { timeout: 20_000, intervals: [200, 300, 500, 800] },
+    )
+    .toBe(expectedPanel);
 }
 
 /** AuthGuard holds the welcome rings for MIN_WELCOME_MS (3500ms) before resolving. */

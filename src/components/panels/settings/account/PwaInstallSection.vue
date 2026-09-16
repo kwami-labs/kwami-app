@@ -16,7 +16,7 @@ async function handleDownload() {
   <PanelSection :title="t('account.installApp')" icon="ph:device-mobile-duotone">
     <div class="install-card">
       <div class="install-copy">
-        <img src="/pwa-192.png" alt="" class="install-icon" width="40" height="40" />
+        <img src="/sphere.svg" alt="" class="install-icon" width="40" height="40" />
         <div class="install-text">
           <span class="install-title">{{ t('account.installTitle') }}</span>
           <span class="install-hint">{{ t('account.installHint') }}</span>

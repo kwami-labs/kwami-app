@@ -21,12 +21,10 @@ export function useNavigation() {
         url?: string;
         title?: string;
       };
-      console.log('[Kwami] Received kwami:browser_session event:', detail);
       if (!detail?.action) return;
 
       switch (detail.action) {
         case 'open':
-          console.log('[Kwami] useNavigation handling "open", setting state:', detail);
           store.updateState({
             url: detail.url || '',
             title: detail.title || '',

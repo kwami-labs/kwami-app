@@ -2,6 +2,13 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import BasePanel from '@/components/ui/BasePanel.vue';
+import BaseButton from '@/components/ui/BaseButton.vue';
+import BaseInput from '@/components/ui/BaseInput.vue';
+import BaseSelect from '@/components/ui/BaseSelect.vue';
+import BaseToggle from '@/components/ui/BaseToggle.vue';
+import PanelSection from '@/components/ui/PanelSection.vue';
+import { ApiError } from '@/lib/apiClient';
+import { translateApiUserMessage } from '@/utils/translateApiMessage';
 import { panelIcons } from '@/constants/panel-icons';
 import { useWalletStore } from '@/stores/wallet';
 import { useWorkspaceStore } from '@/stores/workspace';
@@ -19,14 +26,33 @@ const addTokenStablecoin = ref(false);
 const error = ref<string | null>(null);
 const notice = ref<string | null>(null);
 
-const tokenOptions = computed(() =>
-  walletStore.allowlist.length
-    ? walletStore.allowlist
-    : [
-      { symbol: 'SOL', mint_address: 'So11111111111111111111111111111111111111112', decimals: 9, is_stablecoin: false },
-      { symbol: 'USDC', mint_address: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', decimals: 6, is_stablecoin: true },
-    ],
+const tokenOptions = computed(() => walletStore.allowlist);
+
+const tokenSelectOptions = computed(() =>
+  tokenOptions.value.map((token) => ({ label: token.symbol, value: token.symbol })),
 );
+
+/**
+ * settings.wallet_enabled defaults to APP_ENV != 'production', so in prod every
+ * wallet call returns 503. Render that as "unavailable" rather than a raw
+ * FastAPI detail string.
+ */
+const isFeatureDisabled = ref(false);
+
+/**
+ * "Buy with Card" opens intent.provider_redirect_url, which is null unless a
+ * card provider is actually integrated — so the button would silently do
+ * nothing. Off by default until VITE_WALLET_CARD_FUNDING=true says otherwise.
+ */
+const cardFundingEnabled = import.meta.env.VITE_WALLET_CARD_FUNDING === 'true';
+
+function report(e: unknown) {
+  if (ApiError.is(e) && e.status === 503) {
+    isFeatureDisabled.value = true;
+    return;
+  }
+  error.value = translateApiUserMessage((e as Error).message, t);
+}
 
 const selectedToken = computed(
   () => tokenOptions.value.find((token) => token.symbol === fundingToken.value) || tokenOptions.value[0],
@@ -37,7 +63,7 @@ async function loadWalletPanel() {
   try {
     await walletStore.refresh();
   } catch (e) {
-    error.value = (e as Error).message;
+    report(e);
   }
 }
 
@@ -46,9 +72,9 @@ async function createWallet() {
   notice.value = null;
   try {
     await walletStore.createWallet();
-    notice.value = 'Wallet created successfully.';
+    notice.value = t('wallet.toasts.walletCreated');
   } catch (e) {
-    error.value = (e as Error).message;
+    report(e);
   }
 }
 
@@ -56,9 +82,11 @@ async function connectPhantom() {
   error.value = null;
   try {
     const pubkey = await walletStore.connectPhantom();
-    notice.value = pubkey ? `Connected Phantom wallet ${pubkey.slice(0, 8)}...` : 'Phantom connected.';
+    notice.value = pubkey
+      ? t('wallet.toasts.phantomConnected', { pubkey: `${pubkey.slice(0, 8)}...` })
+      : t('wallet.toasts.phantomConnectedNoKey');
   } catch (e) {
-    error.value = (e as Error).message;
+    report(e);
   }
 }
 
@@ -67,16 +95,23 @@ async function fundWithPhantom() {
   notice.value = null;
   try {
     const token = selectedToken.value;
-    if (!token) throw new Error('Select a token first');
+    if (!token) {
+      error.value = t('wallet.errors.selectToken');
+      return;
+    }
     const intent = await walletStore.createFundingIntent({
       provider: 'phantom_transfer',
       assetMint: token.mint_address,
       assetSymbol: token.symbol,
       amount: fundingAmount.value,
     });
-    notice.value = `Transfer intent created (${intent.id.slice(0, 8)}...). Send ${fundingAmount.value} ${token.symbol} from Phantom.`;
+    notice.value = t('wallet.toasts.transferIntentCreated', {
+      id: `${intent.id.slice(0, 8)}...`,
+      amount: fundingAmount.value,
+      symbol: token.symbol,
+    });
   } catch (e) {
-    error.value = (e as Error).message;
+    report(e);
   }
 }
 
@@ -85,7 +120,10 @@ async function buyWithCard() {
   notice.value = null;
   try {
     const token = selectedToken.value;
-    if (!token) throw new Error('Select a token first');
+    if (!token) {
+      error.value = t('wallet.errors.selectToken');
+      return;
+    }
     const intent = await walletStore.createFundingIntent({
       provider: 'card_provider',
       assetMint: token.mint_address,
@@ -96,9 +134,9 @@ async function buyWithCard() {
     if (intent.provider_redirect_url) {
       window.open(intent.provider_redirect_url, '_blank', 'noopener,noreferrer');
     }
-    notice.value = `Card purchase intent created (${intent.id.slice(0, 8)}...).`;
+    notice.value = t('wallet.toasts.cardIntentCreated', { id: `${intent.id.slice(0, 8)}...` });
   } catch (e) {
-    error.value = (e as Error).message;
+    report(e);
   }
 }
 
@@ -107,7 +145,8 @@ async function addCustomToken() {
   notice.value = null;
   try {
     if (!addTokenMint.value.trim() || !addTokenSymbol.value.trim()) {
-      throw new Error('Mint and symbol are required');
+      error.value = t('wallet.errors.mintAndSymbolRequired');
+      return;
     }
     await walletStore.addCustomToken({
       mintAddress: addTokenMint.value.trim(),
@@ -117,9 +156,9 @@ async function addCustomToken() {
     });
     addTokenMint.value = '';
     addTokenSymbol.value = '';
-    notice.value = 'Token added to allowlist.';
+    notice.value = t('wallet.toasts.tokenAdded');
   } catch (e) {
-    error.value = (e as Error).message;
+    report(e);
   }
 }
 
@@ -138,82 +177,133 @@ onMounted(() => {
 
 <template>
   <BasePanel :title="t('sidebar.panels.wallet')" :icon="panelIcons.wallet">
-    <div class="wallet-panel">
-      <div class="wallet-card">
-        <h3>Kwami Wallet</h3>
-        <p v-if="walletStore.wallet" class="muted">
-          {{ walletStore.wallet.public_key }}
-        </p>
-        <p v-else class="muted">
-          Create a dedicated Solana wallet for this kwami.
-        </p>
-        <button v-if="!walletStore.wallet" class="btn primary" :disabled="walletStore.creating" @click="createWallet">
-          {{ walletStore.creating ? 'Creating...' : 'Create Wallet' }}
-        </button>
-      </div>
+    <!-- wallet_enabled is off in production, so every call 503s there. -->
+    <div v-if="isFeatureDisabled" class="center-state" role="status">
+      <iconify-icon icon="ph:lock-simple-duotone" aria-hidden="true" />
+      <p>{{ t('wallet.errors.featureDisabled') }}</p>
+    </div>
 
-      <div v-if="walletStore.wallet" class="wallet-card">
-        <h3>Funding</h3>
-        <div class="row">
-          <select v-model="fundingToken" class="input">
-            <option v-for="token in tokenOptions" :key="token.mint_address" :value="token.symbol">
+    <div v-else-if="walletStore.loading && !walletStore.wallet" class="center-state" role="status">
+      <iconify-icon icon="ph:spinner-gap-bold" class="spin" aria-hidden="true" />
+      <p>{{ t('wallet.loading') }}</p>
+    </div>
+
+    <div v-else class="wallet-panel">
+      <PanelSection :title="t('wallet.title')" icon="ph:wallet-duotone">
+        <p v-if="walletStore.wallet" class="muted mono">{{ walletStore.wallet.public_key }}</p>
+        <template v-else>
+          <p class="muted">{{ t('wallet.createPrompt') }}</p>
+          <BaseButton
+            variant="primary"
+            :loading="walletStore.creating"
+            icon="ph:plus-circle-duotone"
+            @click="createWallet"
+          >
+            {{ t('wallet.createWallet') }}
+          </BaseButton>
+        </template>
+      </PanelSection>
+
+      <template v-if="walletStore.wallet">
+        <PanelSection :title="t('wallet.funding')" icon="ph:arrow-circle-down-duotone">
+          <div class="row">
+            <BaseSelect
+              :label="t('wallet.token')"
+              v-model="fundingToken"
+              :options="tokenSelectOptions"
+              :placeholder="t('wallet.noTokens')"
+            />
+            <BaseInput
+              :label="t('wallet.amount')"
+              v-model="fundingAmount"
+              type="number"
+            />
+          </div>
+          <div class="actions">
+            <BaseButton icon="simple-icons:phantom" @click="connectPhantom">
+              {{ t('wallet.connectPhantom') }}
+            </BaseButton>
+            <BaseButton
+              variant="primary"
+              :loading="walletStore.funding"
+              @click="fundWithPhantom"
+            >
+              {{ t('wallet.transferIn') }}
+            </BaseButton>
+            <BaseButton
+              v-if="cardFundingEnabled"
+              variant="primary"
+              :loading="walletStore.funding"
+              @click="buyWithCard"
+            >
+              {{ t('wallet.buyWithCard') }}
+            </BaseButton>
+          </div>
+          <p v-if="walletStore.phantomPubkey" class="muted mono">
+            {{ t('wallet.connectedAs', { pubkey: walletStore.phantomPubkey }) }}
+          </p>
+        </PanelSection>
+
+        <PanelSection :title="t('wallet.balances')" icon="ph:coins-duotone">
+          <p v-if="walletStore.balances.length === 0" class="muted">
+            {{ t('wallet.noBalances') }}
+          </p>
+          <div
+            v-for="balance in walletStore.balances"
+            :key="balance.mint_address"
+            class="balance-row"
+          >
+            <span>{{ balance.symbol }}</span>
+            <span class="mono">{{ balance.amount }}</span>
+          </div>
+        </PanelSection>
+
+        <PanelSection :title="t('wallet.allowlist')" icon="ph:list-checks-duotone" collapsible>
+          <div class="allowlist">
+            <span
+              v-for="token in walletStore.allowlist"
+              :key="token.id || token.mint_address"
+              class="token-pill"
+            >
               {{ token.symbol }}
-            </option>
-          </select>
-          <input v-model.number="fundingAmount" class="input" type="number" min="0.01" step="0.01" />
-        </div>
-        <div class="actions">
-          <button class="btn" @click="connectPhantom">Connect Phantom</button>
-          <button class="btn primary" :disabled="walletStore.funding" @click="fundWithPhantom">Transfer In</button>
-          <button class="btn primary" :disabled="walletStore.funding" @click="buyWithCard">Buy with Card</button>
-        </div>
-        <p class="muted" v-if="walletStore.phantomPubkey">
-          Connected: {{ walletStore.phantomPubkey }}
-        </p>
-      </div>
+            </span>
+          </div>
+          <div class="row">
+            <BaseInput
+              :label="t('wallet.tokenSymbol')"
+              v-model="addTokenSymbol"
+              :placeholder="t('wallet.tokenSymbolPlaceholder')"
+            />
+            <BaseInput
+              :label="t('wallet.mintAddress')"
+              v-model="addTokenMint"
+              :placeholder="t('wallet.mintAddressPlaceholder')"
+              mono
+            />
+          </div>
+          <div class="row">
+            <BaseInput :label="t('wallet.decimals')" v-model="addTokenDecimals" type="number" />
+            <BaseToggle v-model="addTokenStablecoin" :label="t('wallet.stablecoin')" />
+          </div>
+          <BaseButton icon="ph:plus-duotone" @click="addCustomToken">
+            {{ t('wallet.addToken') }}
+          </BaseButton>
+        </PanelSection>
 
-      <div v-if="walletStore.wallet" class="wallet-card">
-        <h3>Balances</h3>
-        <div v-if="walletStore.balances.length === 0" class="muted">No balances yet.</div>
-        <div v-for="balance in walletStore.balances" :key="balance.mint_address" class="balance-row">
-          <span>{{ balance.symbol }}</span>
-          <span>{{ balance.amount }}</span>
-        </div>
-      </div>
+        <PanelSection :title="t('wallet.recentFunding')" icon="ph:receipt-duotone" collapsible>
+          <p v-if="walletStore.fundingIntents.length === 0" class="muted">
+            {{ t('wallet.noFundingIntents') }}
+          </p>
+          <div v-for="intent in walletStore.fundingIntents" :key="intent.id" class="intent-row">
+            <span>{{ intent.provider }}</span>
+            <span class="mono">{{ intent.asset_symbol }} {{ intent.expected_amount }}</span>
+            <span class="status">{{ intent.status }}</span>
+          </div>
+        </PanelSection>
+      </template>
 
-      <div v-if="walletStore.wallet" class="wallet-card">
-        <h3>Token Allowlist</h3>
-        <div class="allowlist">
-          <span v-for="token in walletStore.allowlist" :key="token.id || token.mint_address" class="token-pill">
-            {{ token.symbol }}
-          </span>
-        </div>
-        <div class="row">
-          <input v-model="addTokenSymbol" class="input" placeholder="Token symbol" />
-          <input v-model="addTokenMint" class="input" placeholder="Mint address" />
-        </div>
-        <div class="row">
-          <input v-model.number="addTokenDecimals" class="input" type="number" min="0" max="18" />
-          <label class="checkbox">
-            <input v-model="addTokenStablecoin" type="checkbox" />
-            Stablecoin
-          </label>
-          <button class="btn" @click="addCustomToken">Add Token</button>
-        </div>
-      </div>
-
-      <div v-if="walletStore.wallet" class="wallet-card">
-        <h3>Recent Funding</h3>
-        <div v-if="walletStore.fundingIntents.length === 0" class="muted">No funding intents yet.</div>
-        <div v-for="intent in walletStore.fundingIntents" :key="intent.id" class="intent-row">
-          <span>{{ intent.provider }}</span>
-          <span>{{ intent.asset_symbol }} {{ intent.expected_amount }}</span>
-          <span class="status">{{ intent.status }}</span>
-        </div>
-      </div>
-
-      <p v-if="notice" class="notice">{{ notice }}</p>
-      <p v-if="error" class="error">{{ error }}</p>
+      <p v-if="notice" class="notice" role="status">{{ notice }}</p>
+      <p v-if="error" class="error" role="alert">{{ error }}</p>
     </div>
   </BasePanel>
 </template>

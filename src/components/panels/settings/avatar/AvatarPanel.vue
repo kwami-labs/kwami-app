@@ -3,6 +3,7 @@ import { onMounted, onUnmounted, watch, computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
 import { useKwami } from '@/composables/useKwami';
+import type { RendererType } from '@/stores/avatar';
 import { useAvatarStore, type AvatarState } from '@/stores/avatar';
 import { useBlobXyzStore } from '@/stores/avatar.blob-xyz';
 import { useBlackHoleStore } from '@/stores/avatar.black-hole';
@@ -13,11 +14,13 @@ import { panelIcons } from '@/constants/panel-icons';
 import BlobXyzSettings from './BlobXyzSettings.vue';
 import BlackHoleSettings from './BlackHoleSettings.vue';
 import EyeIrisSettings from './EyeIrisSettings.vue';
+import ParticlesFaceSettings from './ParticlesFaceSettings.vue';
 
 // Sync composables
 import { useBlobXyzSync } from '@/composables/avatar/sync/useBlobXyzSync';
 import { useBlackHoleSync } from '@/composables/avatar/sync/useBlackHoleSync';
 import { useEyeIrisSync } from '@/composables/avatar/sync/useEyeIrisSync';
+import { useParticlesFaceSync } from '@/composables/avatar/sync/useParticlesFaceSync';
 import { randomizeAvatarPanel } from '@/composables/avatar/randomizeAvatarPanel';
 import { useWorkspaceStore } from '@/stores/workspace';
 import { useKwamiConfigSync } from '@/composables/useKwamiConfigSync';
@@ -54,6 +57,9 @@ function getBlackHole() {
 function getEyeIris() {
   return kwami.value?.avatar.getEyeIris() ?? undefined;
 }
+function getParticlesFace() {
+  return kwami.value?.avatar.getParticlesFace() ?? undefined;
+}
 
 // =====================================================
 // SYNC COMPOSABLES
@@ -78,6 +84,14 @@ const { syncFromKwami: syncEyeIrisFromKwami, applyToKwami: applyEyeIrisToKwami }
   getEyeIris,
   registerWatchers: false,
 });
+const {
+  syncFromKwami: syncParticlesFromKwami,
+  applyToKwami: applyParticlesToKwami,
+} = useParticlesFaceSync({
+  kwami,
+  getParticlesFace,
+  registerWatchers: false,
+});
 
 // =====================================================
 // COMPUTED
@@ -92,7 +106,10 @@ const currentPresets = computed(() => {
     case 'eye-iris':
       return eyeIrisPresets.value;
     default:
-      return blobXyzPresets.value;
+      // No presets for this renderer. Returning blob's would show the wrong
+      // grid, and clicking one sets preset.renderer — silently switching the
+      // user away from the renderer they had selected.
+      return [];
   }
 });
 
@@ -106,6 +123,7 @@ function syncFromKwami() {
   syncBlobFromKwami();
   syncBlackHoleFromKwami();
   syncEyeIrisFromKwami();
+  syncParticlesFromKwami();
 
   avatarStore.setRendererType(
     kwamiRendererType.value as 'blob-xyz' | 'black-hole' | 'particles-face' | 'eye-iris',
@@ -123,6 +141,9 @@ function applyCurrentRendererToKwami(type: string) {
       break;
     case 'eye-iris':
       applyEyeIrisToKwami();
+      break;
+    case 'particles-face':
+      applyParticlesToKwami();
       break;
   }
 }
@@ -188,7 +209,7 @@ watch(rendererType, () => avatarStore.saveSettings());
 // ACTIONS
 // =====================================================
 
-function handleSwitchRenderer(type: 'blob-xyz' | 'black-hole' | 'eye-iris') {
+function handleSwitchRenderer(type: RendererType) {
   avatarStore.setRendererType(type);
   switchRenderer(type);
   applyCurrentRendererToKwami(type);
@@ -198,7 +219,7 @@ function handleRandomize() {
   randomizeAvatarPanel({
     applyBlob: applyBlobToKwami,
     applyBlackHole: applyBlackHoleToKwami,
-    applyParticles: () => {},
+    applyParticles: applyParticlesToKwami,
     applyEyeIris: applyEyeIrisToKwami,
   });
   window.dispatchEvent(new CustomEvent('kwami:randomized'));
@@ -468,6 +489,20 @@ onUnmounted(() => {
             <span class="renderer-desc">{{ t('avatar.rendererEyeIrisDesc') }}</span>
           </div>
         </label>
+        <label class="renderer-option" :class="{ active: rendererType === 'particles-face' }">
+          <input
+            type="radio"
+            name="renderer"
+            value="particles-face"
+            :checked="rendererType === 'particles-face'"
+            @change="handleSwitchRenderer('particles-face')"
+          />
+          <iconify-icon icon="ph:dots-nine-bold" class="renderer-icon"></iconify-icon>
+          <div class="renderer-content">
+            <span class="renderer-label">{{ t('avatar.rendererParticles') }}</span>
+            <span class="renderer-desc">{{ t('avatar.rendererParticlesDesc') }}</span>
+          </div>
+        </label>
       </div>
     </PanelSection>
 
@@ -506,6 +541,7 @@ onUnmounted(() => {
     <BlobXyzSettings v-if="rendererType === 'blob-xyz'" />
     <BlackHoleSettings v-if="rendererType === 'black-hole'" />
     <EyeIrisSettings v-if="rendererType === 'eye-iris'" />
+    <ParticlesFaceSettings v-if="rendererType === 'particles-face'" />
   </BasePanel>
 </template>
 

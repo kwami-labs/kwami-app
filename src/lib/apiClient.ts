@@ -10,12 +10,10 @@
  * Imports `supabase` directly rather than `useAuthStore`: the auth store will
  * itself use this module, and the client has to work before `app.use(pinia)`.
  */
+import { env } from '@/lib/env';
 import { supabase } from '@/lib/supabase';
 
-export const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:8080').replace(
-  /\/+$/,
-  '',
-);
+export const API_BASE = env.apiUrl.replace(/\/+$/, '');
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 

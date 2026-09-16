@@ -4,6 +4,7 @@ import type { AvatarRendererType, KwamiConfig } from 'kwami';
 import { useVoiceStore } from '@/stores/voice';
 import { useAuthStore } from '@/stores/auth';
 import { api, ApiError } from '@/lib/apiClient';
+import { env } from '@/lib/env';
 import { isPersistedKwamiId, useWorkspaceStore } from '@/stores/workspace';
 
 declare global {
@@ -82,7 +83,7 @@ export function useKwami() {
       agent: {
         adapter: 'livekit' as 'livekit' | 'custom',
         livekit: {
-          url: import.meta.env.VITE_LIVEKIT_URL || '',
+          url: env.livekitUrl,
           // No tokenEndpoint: connect() mints the token through apiClient so a
           // 402 arrives as a typed ApiError instead of being flattened into
           // `Failed to fetch token: ${statusText}` (see fetchLiveKitToken).

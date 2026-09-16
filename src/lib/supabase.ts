@@ -1,10 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
+import { env } from '@/lib/env';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabasePublishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-
-if (!supabaseUrl || !supabasePublishableKey) {
-  console.warn('Supabase credentials not configured. Authentication will not work.');
-}
-
-export const supabase = createClient(supabaseUrl || '', supabasePublishableKey || '');
+// env.ts already reports missing credentials at startup; creating the client
+// with empty strings here keeps imports side-effect free and lets AuthGuard
+// render the configuration error rather than crashing at module load.
+export const supabase = createClient(env.supabaseUrl, env.supabasePublishableKey);

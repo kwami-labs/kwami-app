@@ -1,26 +1,56 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, onUnmounted, ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useNavigation } from '@/composables/useNavigation';
 
 const { isActive, liveUrl, currentUrl, currentTitle, requestBrowserClose } = useNavigation();
+const { t } = useI18n();
 
 const isLoaded = ref(false);
 const showPanel = ref(false);
+const hasError = ref(false);
+const hasTimedOut = ref(false);
+/** Bumped to force the iframe to remount on retry. */
+const reloadKey = ref(0);
+
+/**
+ * The iframe's `load` event never fires when the session URL 404s, the session
+ * has expired, or the target sends X-Frame-Options — so the skeleton spun
+ * forever with no way out.
+ */
+const LOAD_TIMEOUT_MS = 20_000;
+let loadTimer: ReturnType<typeof setTimeout> | null = null;
+
+function clearLoadTimer() {
+  if (loadTimer) {
+    clearTimeout(loadTimer);
+    loadTimer = null;
+  }
+}
+
+function startLoadTimer() {
+  clearLoadTimer();
+  loadTimer = setTimeout(() => {
+    if (!isLoaded.value) hasTimedOut.value = true;
+  }, LOAD_TIMEOUT_MS);
+}
 
 // Animate in when active with a liveUrl
 watch(
   () => isActive.value && !!liveUrl.value,
   (shouldShow) => {
-    console.log('[Kwami] BrowserPanel watch triggered:', { isActive: isActive.value, liveUrl: liveUrl.value, shouldShow });
+    isLoaded.value = false;
+    hasError.value = false;
+    hasTimedOut.value = false;
     if (shouldShow) {
-      isLoaded.value = false;
+      startLoadTimer();
       // Trigger enter animation on next frame
       requestAnimationFrame(() => {
         showPanel.value = true;
       });
     } else {
+      clearLoadTimer();
       showPanel.value = false;
-      isLoaded.value = false;
     }
   },
   { immediate: true },
@@ -28,7 +58,27 @@ watch(
 
 function onIframeLoad() {
   isLoaded.value = true;
+  hasError.value = false;
+  hasTimedOut.value = false;
+  clearLoadTimer();
 }
+
+function onIframeError() {
+  hasError.value = true;
+  clearLoadTimer();
+}
+
+function retry() {
+  hasError.value = false;
+  hasTimedOut.value = false;
+  isLoaded.value = false;
+  reloadKey.value += 1;
+  startLoadTimer();
+}
+
+const isFailed = computed(() => hasError.value || hasTimedOut.value);
+
+onUnmounted(clearLoadTimer);
 
 function handleClose() {
   requestBrowserClose();
@@ -59,17 +109,18 @@ const iframeSrc = computed(() => liveUrl.value || '');
           <div class="browser-panel__url-bar">
             <div class="browser-panel__url-dot browser-panel__url-dot--green" />
             <span class="browser-panel__url-text" :title="currentUrl">
-              {{ displayUrl || 'Loading…' }}
+              {{ displayUrl || t('browser.loading') }}
             </span>
           </div>
           <div class="browser-panel__actions">
             <span v-if="currentTitle" class="browser-panel__title">{{ currentTitle }}</span>
             <button
               class="browser-panel__close"
-              title="Close browser"
+              :title="t('browser.close')"
+              :aria-label="t('browser.close')"
               @click="handleClose"
             >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
                 <path d="M1 1L13 13M13 1L1 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
               </svg>
             </button>
@@ -78,20 +129,38 @@ const iframeSrc = computed(() => liveUrl.value || '');
 
         <!-- Browser iframe -->
         <div class="browser-panel__viewport">
+          <!-- Failure state: the iframe's load event never fires for a 404,
+               an expired session or an X-Frame-Options refusal. -->
+          <div v-if="isFailed" class="browser-panel__error" role="alert">
+            <iconify-icon icon="ph:warning-circle-duotone" aria-hidden="true" />
+            <p class="browser-panel__error-title">
+              {{ hasTimedOut ? t('browser.timeout') : t('browser.error') }}
+            </p>
+            <p class="browser-panel__error-hint">{{ t('browser.errorHint') }}</p>
+            <div class="browser-panel__error-actions">
+              <button class="browser-panel__retry" @click="retry">{{ t('browser.retry') }}</button>
+              <button class="browser-panel__retry" @click="handleClose">
+                {{ t('browser.close') }}
+              </button>
+            </div>
+          </div>
+
           <!-- Loading skeleton -->
-          <div v-if="!isLoaded" class="browser-panel__skeleton">
+          <div v-else-if="!isLoaded" class="browser-panel__skeleton">
             <div class="browser-panel__skeleton-pulse" />
-            <span class="browser-panel__skeleton-text">Connecting to browser…</span>
+            <span class="browser-panel__skeleton-text">{{ t('browser.connecting') }}</span>
           </div>
 
           <iframe
-            v-if="iframeSrc"
+            v-if="iframeSrc && !isFailed"
+            :key="reloadKey"
             :src="iframeSrc"
             class="browser-panel__iframe"
             allow="autoplay; clipboard-write"
             sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
             referrerpolicy="no-referrer"
             @load="onIframeLoad"
+            @error="onIframeError"
           />
         </div>
       </div>
@@ -99,6 +168,49 @@ const iframeSrc = computed(() => liveUrl.value || '');
 </template>
 
 <style scoped>
+.browser-panel__error {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px;
+  text-align: center;
+}
+.browser-panel__error iconify-icon {
+  font-size: 32px;
+  color: var(--danger, #ef4444);
+}
+.browser-panel__error-title {
+  margin: 0;
+  font-weight: 600;
+}
+.browser-panel__error-hint {
+  margin: 0;
+  max-width: 36ch;
+  font-size: 12px;
+  opacity: 0.7;
+}
+.browser-panel__error-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+.browser-panel__retry {
+  padding: 6px 14px;
+  font-size: 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.15));
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.browser-panel__retry:hover {
+  background: var(--bg-hover, rgba(255, 255, 255, 0.06));
+}
+
 .browser-panel {
   display: flex;
   flex-direction: column;
