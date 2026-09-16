@@ -325,17 +325,8 @@ export function useKwami() {
       isConnected.value = false;
       window.dispatchEvent(new CustomEvent('kwami:disconnected'));
 
-      // Safety cleanup: Stop any browser MediaStream tracks that might still be active
-      // This ensures the browser mic indicator disappears
-      try {
-        // Check for any active audio contexts or streams that might keep mic active
-        // Note: getUserMedia with audio:false doesn't actually help here, 
-        // but cleaning up orphaned elements does
-      } catch {
-        // Ignore - just a safety check
-      }
-
-      // Also remove any orphaned audio elements
+      // Safety cleanup: remove orphaned audio elements so the browser's mic
+      // indicator disappears.
       const audioElements = document.querySelectorAll('audio[id^="kwami-"]');
       audioElements.forEach(el => {
         const audioEl = el as HTMLAudioElement;

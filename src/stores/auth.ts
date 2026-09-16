@@ -3,7 +3,6 @@ import { ref, computed } from 'vue';
 import { supabase } from '@/lib/supabase';
 import type { User, Session, AuthError } from '@supabase/supabase-js';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null);
@@ -86,63 +85,6 @@ export const useAuthStore = defineStore('auth', () => {
     });
   }
 
-  // Sign in with email and password
-  async function signInWithEmail(email: string, password: string) {
-    loading.value = true;
-    error.value = null;
-
-    try {
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (authError) {
-        error.value = authError.message;
-        return { success: false, error: authError };
-      }
-
-      user.value = data.user;
-      session.value = data.session;
-      return { success: true, data };
-    } catch (e) {
-      const err = e as AuthError;
-      error.value = err.message;
-      return { success: false, error: err };
-    } finally {
-      loading.value = false;
-    }
-  }
-
-  // Sign up with email and password
-  async function signUpWithEmail(email: string, password: string) {
-    loading.value = true;
-    error.value = null;
-
-    try {
-      const { data, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-      });
-
-      if (authError) {
-        error.value = authError.message;
-        return { success: false, error: authError };
-      }
-
-      // Note: User may need to confirm email before being fully authenticated
-      user.value = data.user;
-      session.value = data.session;
-      return { success: true, data };
-    } catch (e) {
-      const err = e as AuthError;
-      error.value = err.message;
-      return { success: false, error: err };
-    } finally {
-      loading.value = false;
-    }
-  }
-
   // Sign in with Google ID token (for popup flow)
   async function signInWithGoogleIdToken(idToken: string) {
     loading.value = true;
@@ -207,30 +149,6 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null;
   }
 
-  // Check if email exists in the system (for smart login/signup flow)
-  async function checkEmailExists(email: string): Promise<{ exists: boolean; error?: string }> {
-    try {
-      const response = await fetch(`${API_BASE}/auth/check-email`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        return { exists: false, error: errorData.message || 'Failed to check email' };
-      }
-
-      const data = await response.json();
-      return { exists: data.exists };
-    } catch (e) {
-      console.error('Error checking email:', e);
-      return { exists: false, error: 'Network error checking email' };
-    }
-  }
-
   return {
     // State
     user,
@@ -243,12 +161,9 @@ export const useAuthStore = defineStore('auth', () => {
     userEmail,
     // Actions
     initAuth,
-    signInWithEmail,
-    signUpWithEmail,
     signInWithGoogleIdToken,
     signOut,
     getAccessToken,
     clearError,
-    checkEmailExists,
   };
 });
