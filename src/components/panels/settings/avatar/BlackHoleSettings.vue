@@ -42,7 +42,7 @@ const linkOrientation = ref(false);
 // COMPOSABLES
 // =====================================================
 function getBlackHole() {
-  return (kwami.value?.avatar as any)?.getBlackHole?.();
+  return kwami.value?.avatar.getBlackHole() ?? undefined;
 }
 
 const { executeAction } = useAvatarInteractions({

@@ -147,7 +147,7 @@ function selectModel(modelId: string, provider: string) {
   });
   
   if (isConnected.value && kwami.value) {
-    (kwami.value.agent as any).updateTtsLive({
+    kwami.value.agent.updateTtsLive({
       provider,
       model: modelId,
     });

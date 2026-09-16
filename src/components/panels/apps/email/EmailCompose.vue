@@ -45,8 +45,9 @@ async function send() {
     });
     toast.success(t('email.compose.sent'));
     emit('back');
-  } catch (e: any) {
-    sendError.value = e.message || t('email.compose.sendError');
+  } catch (e: unknown) {
+    sendError.value =
+      e instanceof Error && e.message ? e.message : t('email.compose.sendError');
   }
 }
 </script>

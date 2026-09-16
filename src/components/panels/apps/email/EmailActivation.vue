@@ -54,8 +54,9 @@ async function activate() {
   try {
     await emailStore.activateEmail(username.value);
     activationSuccess.value = true;
-  } catch (e: any) {
-    activationError.value = e.message || t('email.activation.error');
+  } catch (e: unknown) {
+    activationError.value =
+      e instanceof Error && e.message ? e.message : t('email.activation.error');
   }
 }
 </script>

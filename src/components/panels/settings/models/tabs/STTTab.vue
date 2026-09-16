@@ -143,7 +143,7 @@ function selectModel(modelId: string, provider: string) {
   });
   
   if (isConnected.value && kwami.value) {
-    (kwami.value.agent as any).updateSttLive({
+    kwami.value.agent.updateSttLive({
       provider,
       model: modelId,
     });
