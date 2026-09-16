@@ -1,9 +1,7 @@
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
-import { useAuthStore } from '@/stores/auth';
+import { api, createRequestGuard, isAbortError } from '@/lib/apiClient';
 import { useWorkspaceStore } from '@/stores/workspace';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 export type CalendarEventType = 'meeting' | 'task' | 'personal' | 'reminder' | 'focus' | 'other';
 
@@ -35,23 +33,6 @@ export interface CalendarEventInput {
   metadata?: Record<string, unknown>;
 }
 
-async function authHeaders(): Promise<HeadersInit> {
-  const authStore = useAuthStore();
-  const token = await authStore.getAccessToken();
-  return {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-}
-
-async function parseJson<T>(res: Response): Promise<T> {
-  if (!res.ok) {
-    const err = (await res.json().catch(() => ({}))) as Record<string, unknown>;
-    const detail = err.detail ?? err.message;
-    throw new Error(typeof detail === 'string' ? detail : `Request failed: ${res.status}`);
-  }
-  return res.json() as Promise<T>;
-}
 
 export const useCalendarStore = defineStore('calendar', () => {
   const events = ref<CalendarEvent[]>([]);
@@ -62,32 +43,32 @@ export const useCalendarStore = defineStore('calendar', () => {
   const workspaceStore = useWorkspaceStore();
   const activeKwamiId = computed(() => workspaceStore.activeWorkspaceId);
 
-  // Guards against a stale response landing after the user switched kwami.
-  let eventsRequestNonce = 0;
+  // Aborts the previous in-flight load when the user switches kwami.
+  const guard = createRequestGuard();
 
   async function fetchEvents(rangeStart: string, rangeEnd: string) {
     if (!activeKwamiId.value) return [];
     isLoading.value = true;
     error.value = null;
-    const requestNonce = ++eventsRequestNonce;
+    const { signal, isCurrent } = guard.begin();
     try {
-      const params = new URLSearchParams({
-        kwami_id: activeKwamiId.value,
-        range_start: rangeStart,
-        range_end: rangeEnd,
+      const data = await api.get<{ events: CalendarEvent[] }>('/calendar/events', {
+        query: {
+          kwami_id: activeKwamiId.value,
+          range_start: rangeStart,
+          range_end: rangeEnd,
+        },
+        signal,
       });
-      const headers = await authHeaders();
-      const res = await fetch(`${API_BASE}/calendar/events?${params.toString()}`, { headers });
-      const data = await parseJson<{ events: CalendarEvent[] }>(res);
-      if (requestNonce !== eventsRequestNonce) return events.value;
+      if (!isCurrent()) return events.value;
       events.value = data.events;
       return data.events;
     } catch (err) {
-      if (requestNonce !== eventsRequestNonce) return events.value;
+      if (isAbortError(err) || !isCurrent()) return events.value;
       error.value = err instanceof Error ? err.message : 'Failed to load events';
       throw err;
     } finally {
-      if (requestNonce === eventsRequestNonce) isLoading.value = false;
+      if (isCurrent()) isLoading.value = false;
     }
   }
 
@@ -96,16 +77,10 @@ export const useCalendarStore = defineStore('calendar', () => {
     isMutating.value = true;
     error.value = null;
     try {
-      const headers = await authHeaders();
-      const res = await fetch(`${API_BASE}/calendar/events`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          kwami_id: activeKwamiId.value,
-          ...input,
-        }),
+      const data = await api.post<{ event: CalendarEvent }>('/calendar/events', {
+        kwami_id: activeKwamiId.value,
+        ...input,
       });
-      const data = await parseJson<{ event: CalendarEvent }>(res);
       events.value = [...events.value, data.event].sort((a, b) =>
         new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime(),
       );
@@ -122,13 +97,10 @@ export const useCalendarStore = defineStore('calendar', () => {
     isMutating.value = true;
     error.value = null;
     try {
-      const headers = await authHeaders();
-      const res = await fetch(`${API_BASE}/calendar/events/${eventId}`, {
-        method: 'PATCH',
-        headers,
-        body: JSON.stringify(patch),
-      });
-      const data = await parseJson<{ event: CalendarEvent }>(res);
+      const data = await api.patch<{ event: CalendarEvent }>(
+        `/calendar/events/${eventId}`,
+        patch,
+      );
       events.value = events.value.map((event) => (event.id === eventId ? data.event : event));
       return data.event;
     } catch (err) {
@@ -143,12 +115,7 @@ export const useCalendarStore = defineStore('calendar', () => {
     isMutating.value = true;
     error.value = null;
     try {
-      const headers = await authHeaders();
-      const res = await fetch(`${API_BASE}/calendar/events/${eventId}`, {
-        method: 'DELETE',
-        headers,
-      });
-      await parseJson<{ ok: boolean }>(res);
+      await api.del<{ ok: boolean }>(`/calendar/events/${eventId}`);
       events.value = events.value.filter((event) => event.id !== eventId);
       return true;
     } catch (err) {
@@ -160,6 +127,7 @@ export const useCalendarStore = defineStore('calendar', () => {
   }
 
   function clear() {
+    guard.cancelAll();
     events.value = [];
     error.value = null;
   }
