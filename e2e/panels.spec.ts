@@ -13,6 +13,12 @@ const READY = { timeout: WELCOME_MS + 10_000 };
 const SETTINGS_PANELS = [
   'avatar', 'scene', 'audio', 'voice', 'enhancements',
   'soul', 'tools', 'info', 'account', 'theme', 'models', 'credits',
+  // memory, metrics and communications were missing from this list. memory in
+  // particular used to resolve its API base from VITE_LIVEKIT_TOKEN_ENDPOINT
+  // rather than VITE_API_URL, so it talked to a different host than every other
+  // panel — exactly the kind of thing a mount smoke plus the un-stubbed-host
+  // guard in fixtures.ts is meant to surface.
+  'memory', 'metrics', 'communications',
 ] as const;
 
 const APP_PANELS = ['contacts', 'email', 'wallet', 'calendar', 'phone', 'whatsapp', 'sms', 'history'] as const;

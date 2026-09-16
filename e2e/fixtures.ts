@@ -131,13 +131,52 @@ export async function reloadApp(page: Page) {
   await page.reload({ waitUntil: 'domcontentloaded' });
 }
 
+/**
+ * Fails the test on any request to a host we did not explicitly stub.
+ *
+ * This exists because of a near miss: MemoryPanel used to derive its API base by
+ * stripping '/token' off VITE_LIVEKIT_TOKEN_ENDPOINT, which in the real .env is
+ * api.kwami.io while everything else points at localhost. A spec touching that
+ * panel would have issued live GETs — and DELETEs — against production. Only the
+ * value in .env.test kept that from happening, which is luck, not a safeguard.
+ *
+ * Register LAST: Playwright matches routes most-recently-registered first, so the
+ * specific stubs above win and this only catches what they missed.
+ */
+export async function failOnUnstubbedRequests(page: Page) {
+  const ALLOWED = ['localhost', '127.0.0.1', 'test.supabase.co'];
+  const escapes: string[] = [];
+
+  await page.route('**/*', (route) => {
+    const url = new URL(route.request().url());
+    if (url.protocol === 'data:' || url.protocol === 'blob:') return route.continue();
+    if (ALLOWED.includes(url.hostname)) return route.continue();
+
+    escapes.push(`${route.request().method()} ${url.origin}${url.pathname}`);
+    return route.abort('blockedbyclient');
+  });
+
+  return {
+    assertNoEscapes() {
+      if (escapes.length) {
+        throw new Error(
+          `Test made ${escapes.length} request(s) to un-stubbed external host(s):\n  ${escapes.join('\n  ')}\n` +
+            `Add a stub in e2e/fixtures.ts, or fix the code that is pointing at the wrong host.`,
+        );
+      }
+    },
+  };
+}
+
 export const test = base.extend<{ signedOut: Page; app: Page }>({
   /** App with all network stubbed but no session. */
   signedOut: async ({ page }, use) => {
     await stubSupabase(page, { authenticated: false });
     await stubApi(page);
     await stubKwamiRuntime(page);
+    const guard = await failOnUnstubbedRequests(page);
     await use(page);
+    guard.assertNoEscapes();
   },
 
   /** App with a seeded session, ready at the workspace. */
@@ -145,7 +184,9 @@ export const test = base.extend<{ signedOut: Page; app: Page }>({
     await stubSupabase(page, { authenticated: true });
     await stubApi(page);
     await stubKwamiRuntime(page);
+    const guard = await failOnUnstubbedRequests(page);
     await use(page);
+    guard.assertNoEscapes();
   },
 });
 
