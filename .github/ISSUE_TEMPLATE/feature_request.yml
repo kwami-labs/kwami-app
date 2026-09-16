@@ -1,0 +1,35 @@
+name: Feature request
+description: Propose a change to the Vue client
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      placeholder: What is painful today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      placeholder: What should the client do? This repo does not own the Python agent or Zep.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Avatar / scene / theme
+        - Voice / soul / tools
+        - Memory
+        - Apps (mail, calendar, wallet, comms)
+        - Auth / PWA / desktop
+        - Docs / DX
+        - Other
+  - type: textarea
+    id: extras
+    attributes:
+      label: Notes
+      placeholder: Related issues, mockups, API routes you would need.

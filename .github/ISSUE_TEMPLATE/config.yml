@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security report
+    url: https://github.com/kwami-labs/kwami-app/blob/main/SECURITY.md
+    about: Do not file vulnerabilities here. Email security@kwami.io.
+  - name: Documentation
+    url: https://github.com/kwami-labs/kwami-app/blob/main/docs/README.md
+    about: Architecture, guides, and reference.
