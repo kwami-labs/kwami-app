@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, watch } from 'vue';
+import { defineAsyncComponent, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useToast } from 'vue-toastification';
 import { useKwami } from '@/composables/useKwami';
@@ -10,29 +10,6 @@ import { useThemeStore } from '@/stores/theme';
 import AuthGuard from '@/components/auth/AuthGuard.vue';
 import TheSidebar from '@/components/sidebar/TheSidebar.vue';
 import ControlBar from '@/components/controls/ControlBar.vue';
-import AvatarPanel from '@/components/panels/settings/avatar/AvatarPanel.vue';
-import AudioPanel from '@/components/panels/settings/audio/AudioPanel.vue';
-import ScenePanel from '@/components/panels/settings/scene/ScenePanel.vue';
-import VoicePanel from '@/components/panels/settings/voice/VoicePanel.vue';
-import EnhancementsPanel from '@/components/panels/settings/enhancements/EnhancementsPanel.vue';
-import HistoryPanel from '@/components/panels/settings/transcription/TranscriptionPanel.vue';
-import PhonePanelSettings from '@/components/panels/settings/communications/PhonePanel.vue';
-import SoulPanel from '@/components/panels/settings/soul/SoulPanel.vue';
-import MemoryPanel from '@/components/panels/settings/memory/MemoryPanel.vue';
-import ToolsPanel from '@/components/panels/settings/tools/ToolsPanel.vue';
-import InfoPanel from '@/components/panels/settings/info/InfoPanel.vue';
-import MetricsPanel from '@/components/panels/settings/metrics/MetricsPanel.vue';
-import AccountPanel from '@/components/panels/settings/account/AccountPanel.vue';
-import ThemePanel from '@/components/panels/settings/theme/ThemePanel.vue';
-import ModelsPanel from '@/components/panels/settings/models/ModelsPanel.vue';
-import EnergyPanel from '@/components/panels/settings/energy/EnergyPanel.vue';
-import ContactsPanel from '@/components/panels/apps/contacts/ContactsPanel.vue';
-import EmailPanel from '@/components/panels/apps/email/EmailPanel.vue';
-import WalletPanel from '@/components/panels/apps/wallet/WalletPanel.vue';
-import CalendarPanel from '@/components/panels/apps/calendar/CalendarPanel.vue';
-import PhonePanel from '@/components/panels/apps/phone/PhonePanel.vue';
-import WhatsappPanel from '@/components/panels/apps/whatsapp/WhatsappPanel.vue';
-import SmsPanel from '@/components/panels/apps/sms/SmsPanel.vue';
 import EnergyBadge from '@/components/energy/EnergyBadge.vue';
 import SearchOrbitCards from '@/components/search/SearchOrbitCards.vue';
 import SidebarModeSwitch from '@/components/sidebar/SidebarModeSwitch.vue';
@@ -63,6 +40,34 @@ const { initialize: initSceneBackground } = useSceneBackground();
 import { useVoiceStore } from '@/stores/voice';
 import { useCreditsStore } from '@/stores/credits';
 import { loadUserLocaleFromDb } from '@/lib/userAppSettings';
+
+// Panels are lazy: none of them is needed at first paint, and eagerly
+// importing all 23 put MemoryPanel (2.2k lines), SceneBackground (1.8k) and
+// ThemePanel (1.3k) into the entry chunk. defineAsyncComponent splits each
+// into its own chunk, fetched the first time the panel is opened.
+const AvatarPanel = defineAsyncComponent(() => import('@/components/panels/settings/avatar/AvatarPanel.vue'));
+const AudioPanel = defineAsyncComponent(() => import('@/components/panels/settings/audio/AudioPanel.vue'));
+const ScenePanel = defineAsyncComponent(() => import('@/components/panels/settings/scene/ScenePanel.vue'));
+const VoicePanel = defineAsyncComponent(() => import('@/components/panels/settings/voice/VoicePanel.vue'));
+const EnhancementsPanel = defineAsyncComponent(() => import('@/components/panels/settings/enhancements/EnhancementsPanel.vue'));
+const HistoryPanel = defineAsyncComponent(() => import('@/components/panels/settings/transcription/TranscriptionPanel.vue'));
+const PhonePanelSettings = defineAsyncComponent(() => import('@/components/panels/settings/communications/PhonePanel.vue'));
+const SoulPanel = defineAsyncComponent(() => import('@/components/panels/settings/soul/SoulPanel.vue'));
+const MemoryPanel = defineAsyncComponent(() => import('@/components/panels/settings/memory/MemoryPanel.vue'));
+const ToolsPanel = defineAsyncComponent(() => import('@/components/panels/settings/tools/ToolsPanel.vue'));
+const InfoPanel = defineAsyncComponent(() => import('@/components/panels/settings/info/InfoPanel.vue'));
+const MetricsPanel = defineAsyncComponent(() => import('@/components/panels/settings/metrics/MetricsPanel.vue'));
+const AccountPanel = defineAsyncComponent(() => import('@/components/panels/settings/account/AccountPanel.vue'));
+const ThemePanel = defineAsyncComponent(() => import('@/components/panels/settings/theme/ThemePanel.vue'));
+const ModelsPanel = defineAsyncComponent(() => import('@/components/panels/settings/models/ModelsPanel.vue'));
+const EnergyPanel = defineAsyncComponent(() => import('@/components/panels/settings/energy/EnergyPanel.vue'));
+const ContactsPanel = defineAsyncComponent(() => import('@/components/panels/apps/contacts/ContactsPanel.vue'));
+const EmailPanel = defineAsyncComponent(() => import('@/components/panels/apps/email/EmailPanel.vue'));
+const WalletPanel = defineAsyncComponent(() => import('@/components/panels/apps/wallet/WalletPanel.vue'));
+const CalendarPanel = defineAsyncComponent(() => import('@/components/panels/apps/calendar/CalendarPanel.vue'));
+const PhonePanel = defineAsyncComponent(() => import('@/components/panels/apps/phone/PhonePanel.vue'));
+const WhatsappPanel = defineAsyncComponent(() => import('@/components/panels/apps/whatsapp/WhatsappPanel.vue'));
+const SmsPanel = defineAsyncComponent(() => import('@/components/panels/apps/sms/SmsPanel.vue'));
 
 const uiStore = useUIStore();
 const authStore = useAuthStore();
