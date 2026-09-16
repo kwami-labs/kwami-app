@@ -10,7 +10,15 @@ export default [
 
     {
         name: 'app/files-to-ignore',
-        ignores: ['**/dist/**', '**/dist-ssr/**', '**/coverage/**', '**/playwright-report/**'],
+        ignores: [
+            '**/dist/**',
+            '**/dist-ssr/**',
+            '**/coverage/**',
+            '**/playwright-report/**',
+            '**/test-results/**',
+            // Cargo emits generated .js into the Tauri build tree.
+            'src-tauri/target/**',
+        ],
     },
 
     ...pluginVue.configs['flat/recommended'],
