@@ -13,6 +13,17 @@ export interface KwamiWorkspace {
   hasUnsavedConfig?: boolean;
 }
 
+/**
+ * DB-backed kwamis have a UUID id; locally-created ones do not exist in
+ * `user_kwamis` yet, so they must not be sent to endpoints that validate
+ * ownership against that table.
+ */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export function isPersistedKwamiId(id: string): boolean {
+  return UUID_RE.test(id);
+}
+
 export const useWorkspaceStore = defineStore('workspace', () => {
   const workspaces = ref<KwamiWorkspace[]>([]);
   const activeWorkspaceId = ref<string>('');
@@ -215,7 +226,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     const idx = workspaces.value.findIndex((w) => w.id === id);
     if (idx === -1) return false;
     const wasActive = activeWorkspaceId.value === id;
-    const isDbId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    const isDbId = isPersistedKwamiId(id);
     if (isDbId && userId) {
       const { error } = await supabase.from('user_kwamis').delete().eq('id', id).eq('user_id', userId);
       if (error) {
@@ -243,7 +254,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     if (payload.name !== undefined) ws.name = payload.name.trim().slice(0, 64);
     if (payload.emoji !== undefined) ws.emoji = payload.emoji;
     if (payload.colors !== undefined) ws.colors = { ...ws.colors, ...payload.colors };
-    const isDbId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    const isDbId = isPersistedKwamiId(id);
     if (!isDbId || !userId) return;
     try {
       const body: Record<string, unknown> = {};
@@ -324,7 +335,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     }
     // Only persist to DB when the active kwami has a DB id (UUID). Local-only kwamis have ids like kwami_*
     const id = activeWorkspaceId.value;
-    const isDbId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    const isDbId = isPersistedKwamiId(id);
     if (!isDbId) {
       setWorkspaceConfig(ws, config, true);
       return true;

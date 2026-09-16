@@ -3,7 +3,8 @@ import { Kwami } from 'kwami';
 import type { AvatarRendererType, KwamiConfig } from 'kwami';
 import { useVoiceStore } from '@/stores/voice';
 import { useAuthStore } from '@/stores/auth';
-import { useWorkspaceStore } from '@/stores/workspace';
+import { api, ApiError } from '@/lib/apiClient';
+import { isPersistedKwamiId, useWorkspaceStore } from '@/stores/workspace';
 
 declare global {
   interface Window {
@@ -82,7 +83,9 @@ export function useKwami() {
         adapter: 'livekit' as 'livekit' | 'custom',
         livekit: {
           url: import.meta.env.VITE_LIVEKIT_URL || '',
-          tokenEndpoint: import.meta.env.VITE_LIVEKIT_TOKEN_ENDPOINT || '',
+          // No tokenEndpoint: connect() mints the token through apiClient so a
+          // 402 arrives as a typed ApiError instead of being flattened into
+          // `Failed to fetch token: ${statusText}` (see fetchLiveKitToken).
           userId: memoryUserId.value, // Per-kwami memory id so each kwami has its own memory
           voice: voiceStore.voiceConfig,
           ...(options?.onSearchResults && { onSearchResults: options.onSearchResults }),
@@ -151,6 +154,41 @@ export function useKwami() {
 
     // Expose for debugging
     window.kwami = kwamiInstance.value;
+  }
+
+
+  interface LiveKitTokenResponse {
+    token: string;
+    room_name: string;
+    participant_identity: string;
+    livekit_url: string;
+  }
+
+  /**
+   * Mint a LiveKit access token.
+   *
+   * The SDK can do this itself, but its fetchToken() throws
+   * `Failed to fetch token: ${response.statusText}` and discards both the
+   * status and the body. statusText for a 402 is "Payment Required" — and
+   * empty over HTTP/2 — so the insufficient-credits check downstream could
+   * never match and that toast had never once fired. Doing it here means the
+   * failure arrives as a typed ApiError, and the request gains a timeout it
+   * did not have.
+   *
+   * roomName is deliberately omitted: the server derives an unguessable name.
+   * kwamiId is sent only for persisted kwamis, since the backend validates it
+   * against user_kwamis and 404s on anything it cannot find.
+   */
+  async function fetchLiveKitToken(): Promise<LiveKitTokenResponse> {
+    const kwamiId = workspaceStore.activeWorkspaceId;
+    return api.post<LiveKitTokenResponse>(
+      '/token',
+      {
+        participantName: authStore.userEmail || undefined,
+        ...(kwamiId && isPersistedKwamiId(kwamiId) ? { kwamiId } : {}),
+      },
+      { retry: false, timeoutMs: 20_000 },
+    );
   }
 
   /**
@@ -264,12 +302,19 @@ export function useKwami() {
       const voiceStore = useVoiceStore();
       const authToken = await authStore.getAccessToken();
 
+      // Mint the token here rather than letting the adapter do it, so a 402
+      // surfaces as a typed error (see fetchLiveKitToken).
+      const session = await fetchLiveKitToken();
+
       // Update config with per-kwami memory id, auth token, and voice settings
       kwamiInstance.value.agent.updateConfig({
         livekit: {
           ...kwamiInstance.value.agent.getConfig().livekit,
           userId: memoryUserId.value, // Per-kwami so each kwami has its own memory
           authToken: authToken || undefined,
+          token: session.token,
+          roomName: session.room_name,
+          ...(session.livekit_url ? { url: session.livekit_url } : {}),
           voice: voiceStore.voiceConfig,
         },
       });
@@ -300,9 +345,8 @@ export function useKwami() {
       isConnected.value = false;
       window.dispatchEvent(new CustomEvent('kwami:connectFailed'));
 
-      // Handle insufficient credits (402 from /token endpoint)
-      const msg = error instanceof Error ? error.message : String(error);
-      if (msg.includes('402') || msg.includes('Insufficient credits')) {
+      // Handle insufficient credits (402 from /token)
+      if (ApiError.is(error) && error.isInsufficientCredits) {
         window.dispatchEvent(new CustomEvent('kwami:insufficient-credits'));
       }
     }
