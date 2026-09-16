@@ -8,7 +8,9 @@ Vue SFCs under [`src/components/`](../../src/components/). There is no router; `
 | --- | --- |
 | `auth/AuthGuard.vue` | Welcome rings, session restore, `AuthPage` vs app slot |
 | `auth/AuthPage.vue` | Sign-in surface |
-| `auth/GoogleButton.vue` | Google OAuth |
+| `auth/GoogleButton.vue` | Google OAuth (still used when Google is enabled) |
+| `auth/ProviderButton.vue` | Other OAuth / wallet buttons from `VITE_AUTH_PROVIDERS` |
+| `auth/LoginButton.vue` | Shared sign-in control |
 | `auth/WelcomeBlob.vue` | Decorative blob on auth |
 | `welcome/WelcomeRings.vue` | Animated wordmark / rings |
 | `sidebar/TheSidebar.vue` | Chrome around the active panel |
