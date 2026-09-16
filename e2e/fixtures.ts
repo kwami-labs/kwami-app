@@ -132,6 +132,32 @@ export async function reloadApp(page: Page) {
 }
 
 /**
+ * Stubs the static-asset CDNs the app pulls at runtime: Google Fonts and
+ * Iconify (which tries api.iconify.design, then api.simplesvg.com, then
+ * api.unisvg.com). Serving them locally keeps runs hermetic, offline and fast,
+ * and stops CDN latency from showing up as flake.
+ */
+export async function stubAssetCdns(page: Page) {
+  await page.route('https://fonts.googleapis.com/**', (route) =>
+    route.fulfill({ status: 200, contentType: 'text/css', body: '' }),
+  );
+  await page.route('https://fonts.gstatic.com/**', (route) => route.fulfill({ status: 200, body: '' }));
+
+  // A well-formed but empty icon set. A malformed body makes iconify-icon throw,
+  // which would trip the "no uncaught page errors" assertions.
+  for (const host of ['api.iconify.design', 'api.simplesvg.com', 'api.unisvg.com']) {
+    await page.route(`https://${host}/**`, (route) => {
+      const prefix = new URL(route.request().url()).pathname.replace(/^\//, '').replace(/\.json$/, '');
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ prefix, icons: {}, not_found: [] }),
+      });
+    });
+  }
+}
+
+/**
  * Fails the test on any request to a host we did not explicitly stub.
  *
  * This exists because of a near miss: MemoryPanel used to derive its API base by
@@ -144,7 +170,17 @@ export async function reloadApp(page: Page) {
  * specific stubs above win and this only catches what they missed.
  */
 export async function failOnUnstubbedRequests(page: Page) {
-  const ALLOWED = ['localhost', '127.0.0.1', 'test.supabase.co'];
+  const ALLOWED = [
+    'localhost',
+    '127.0.0.1',
+    'test.supabase.co',
+    // asset CDNs, stubbed by stubAssetCdns
+    'fonts.googleapis.com',
+    'fonts.gstatic.com',
+    'api.iconify.design',
+    'api.simplesvg.com',
+    'api.unisvg.com',
+  ];
   const escapes: string[] = [];
 
   await page.route('**/*', (route) => {
@@ -174,6 +210,7 @@ export const test = base.extend<{ signedOut: Page; app: Page }>({
     await stubSupabase(page, { authenticated: false });
     await stubApi(page);
     await stubKwamiRuntime(page);
+    await stubAssetCdns(page);
     const guard = await failOnUnstubbedRequests(page);
     await use(page);
     guard.assertNoEscapes();
@@ -184,6 +221,7 @@ export const test = base.extend<{ signedOut: Page; app: Page }>({
     await stubSupabase(page, { authenticated: true });
     await stubApi(page);
     await stubKwamiRuntime(page);
+    await stubAssetCdns(page);
     const guard = await failOnUnstubbedRequests(page);
     await use(page);
     guard.assertNoEscapes();
