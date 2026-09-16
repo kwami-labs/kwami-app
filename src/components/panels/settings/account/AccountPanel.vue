@@ -9,6 +9,7 @@ import PanelSection from '@/components/ui/PanelSection.vue';
 import BaseButton from '@/components/ui/BaseButton.vue';
 import BaseSelect from '@/components/ui/BaseSelect.vue';
 import PanelHeaderControls from '@/components/ui/PanelHeaderControls.vue';
+import PwaInstallSection from '@/components/panels/settings/account/PwaInstallSection.vue';
 
 const authStore = useAuthStore();
 const { t } = useI18n();
@@ -80,6 +81,8 @@ async function handleLogout() {
           />
         </div>
       </PanelSection>
+
+      <PwaInstallSection />
 
       <!-- Sign Out -->
       <PanelSection :title="t('account.actions')">

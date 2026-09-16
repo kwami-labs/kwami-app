@@ -29,26 +29,33 @@ export default defineConfig({
     },
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['sphere.svg', 'welcome.mp3'],
+      includeAssets: [
+        'sphere.svg',
+        'welcome.mp3',
+        'pwa-192.png',
+        'pwa-512.png',
+        'pwa-512-maskable.png',
+        'apple-touch-icon.png'
+      ],
       manifest: {
+        id: '/',
         name: 'Kwami App',
         short_name: 'Kwami',
         description: 'Kwami AI voice agent app',
         theme_color: '#050608',
         background_color: '#050608',
         display: 'standalone',
-        orientation: 'portrait-primary',
+        orientation: 'any',
+        lang: 'en',
         scope: '/',
         start_url: '/',
+        categories: ['utilities', 'productivity'],
         icons: [
-          {
-            src: '/sphere.svg',
-            sizes: 'any',
-            type: 'image/svg+xml',
-            purpose: 'any'
-          },
-          { src: '/sphere.svg', sizes: '192x192', type: 'image/svg+xml', purpose: 'any maskable' },
-          { src: '/sphere.svg', sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' }
+          { src: '/pwa-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: '/pwa-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: '/pwa-512-maskable.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          { src: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png', purpose: 'any' },
+          { src: '/sphere.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' }
         ]
       },
       workbox: {
