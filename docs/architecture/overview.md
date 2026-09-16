@@ -110,7 +110,7 @@ kwami-app/
 3. **Per-kwami isolation.** Memory, channels, contacts, email, wallet, and calendar are keyed by the active workspace id.
 4. **Explicit persistence.** Draft companion config lives in Pinia and is marked dirty; saving to Supabase is a user action.
 5. **Window events as a bus.** Transcription, credits, browser sessions, and avatar sync listen on `window` custom events so panels can stay lazy-loaded. See [Events](../reference/events.md).
-6. **No secrets in the bundle.** Only `VITE_*` public values ship to the client. Provider API keys stay on the backend.
+6. **No secrets in the bundle.** Only `VITE_*` public values ship to the client. Provider API keys stay on the backend. Recorded as [ADRs](../adr/README.md).
 
 ## Related pages
 

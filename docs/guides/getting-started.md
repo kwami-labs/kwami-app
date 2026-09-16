@@ -41,7 +41,7 @@ Full variable list: [Environment](environment.md).
 bun run dev
 ```
 
-The Vite server listens on [http://localhost:5173](http://localhost:5173) (`strictPort: true`). Open it, sign in with Google, and a default companion is created if the account has none.
+The Vite server listens on [http://localhost:5173](http://localhost:5173) (`strictPort: true`). Open it, sign in with a provider listed in `VITE_AUTH_PROVIDERS` (default Google), and a default companion is created if the account has none.
 
 You cannot have a useful voice session without a reachable API (`POST /token`) and LiveKit URL. The 3D avatar still renders without them.
 

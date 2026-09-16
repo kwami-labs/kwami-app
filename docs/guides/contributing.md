@@ -5,7 +5,7 @@ Thanks for helping improve Kwami App. This document is the process; [Development
 ## Before you start
 
 1. Read the [Code of Conduct](../../CODE_OF_CONDUCT.md)
-2. Open an issue for large changes so scope is agreed
+2. Open an issue for large changes so scope is agreed ([templates](../../.github/ISSUE_TEMPLATE/))
 3. Fork (or branch from `main` if you have write access)
 
 ## Workflow
