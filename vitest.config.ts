@@ -14,9 +14,16 @@ export default mergeConfig(
       include: ['tests/**/*.{test,spec}.ts', 'src/**/*.{test,spec}.ts'],
       exclude: [...configDefaults.exclude, 'e2e/**'],
       root: fileURLToPath(new URL('./', import.meta.url)),
+      // Set here rather than via vi.stubEnv in setup.ts: stubs are per-test and
+      // would be torn down before the suite finishes.
+      env: {
+        VITE_API_URL: 'http://localhost:8080',
+        VITE_SUPABASE_URL: 'http://localhost:54321',
+        VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_test',
+        VITE_LIVEKIT_URL: 'wss://livekit.test',
+        VITE_LIVEKIT_TOKEN_ENDPOINT: 'http://localhost:8080/token',
+      },
       restoreMocks: true,
-      unstubEnvs: true,
-      unstubGlobals: true,
       coverage: {
         provider: 'v8',
         reporter: ['text', 'html', 'lcov'],

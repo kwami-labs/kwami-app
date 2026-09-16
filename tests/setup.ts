@@ -10,12 +10,7 @@ import { workspaceAgentToolsEn, workspaceAgentToolsEs } from '../src/i18n/worksp
 // --- the kwami runtime is WebGL + LiveKit; never construct the real one ---
 vi.mock('kwami', () => ({ Kwami }));
 
-// --- env vars the app reads at module scope ---
-vi.stubEnv('VITE_API_URL', 'http://localhost:8080');
-vi.stubEnv('VITE_SUPABASE_URL', 'http://localhost:54321');
-vi.stubEnv('VITE_SUPABASE_PUBLISHABLE_KEY', 'sb_publishable_test');
-vi.stubEnv('VITE_LIVEKIT_URL', 'wss://livekit.test');
-vi.stubEnv('VITE_LIVEKIT_TOKEN_ENDPOINT', 'http://localhost:8080/token');
+// VITE_* env vars are supplied by `test.env` in vitest.config.ts.
 
 // --- jsdom gaps ---
 // jsdom implements none of these; without stubs, component mounts throw before
@@ -39,8 +34,8 @@ class ObserverStub {
   disconnect = vi.fn();
   takeRecords = vi.fn(() => []);
 }
-vi.stubGlobal('ResizeObserver', ObserverStub);
-vi.stubGlobal('IntersectionObserver', ObserverStub);
+globalThis.ResizeObserver = ObserverStub as unknown as typeof ResizeObserver;
+globalThis.IntersectionObserver = ObserverStub as unknown as typeof IntersectionObserver;
 
 // Canvas: return a usable 2D context stub and a null WebGL context, so code that
 // feature-detects WebGL takes its no-renderer branch instead of crashing.
@@ -80,16 +75,19 @@ class AudioContextStub {
   close = vi.fn(async () => undefined);
   resume = vi.fn(async () => undefined);
 }
-vi.stubGlobal('AudioContext', AudioContextStub);
-vi.stubGlobal('webkitAudioContext', AudioContextStub);
+globalThis.AudioContext = AudioContextStub as unknown as typeof AudioContext;
+(globalThis as Record<string, unknown>).webkitAudioContext = AudioContextStub;
 
 // rAF: jsdom has it, but back it with a timer so loops are drainable via fake timers.
 if (!window.requestAnimationFrame) {
-  vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => setTimeout(() => cb(performance.now()), 16) as unknown as number);
-  vi.stubGlobal('cancelAnimationFrame', (id: number) => clearTimeout(id));
+  globalThis.requestAnimationFrame = ((cb: FrameRequestCallback) =>
+    setTimeout(() => cb(performance.now()), 16) as unknown as number) as typeof requestAnimationFrame;
+  globalThis.cancelAnimationFrame = ((id: number) => clearTimeout(id)) as typeof cancelAnimationFrame;
 }
 
-vi.stubGlobal('URL', Object.assign(URL, { createObjectURL: vi.fn(() => 'blob:test'), revokeObjectURL: vi.fn() }));
+// jsdom has no object-URL support; components that build blob downloads need these.
+URL.createObjectURL = vi.fn(() => 'blob:test');
+URL.revokeObjectURL = vi.fn();
 
 // --- global component config ---
 // Real messages (not a stub t()) so tests catch missing keys and the shadowed-`t`
