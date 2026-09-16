@@ -5,6 +5,11 @@ const READY = { timeout: WELCOME_MS + 10_000 };
 test.beforeEach(async ({ app: page }) => {
   await gotoApp(page);
   await expect(page.locator('.control-bar-container')).toBeVisible(READY);
+  // Panels are lazy-loaded, so the control bar can paint before the sidebar —
+  // and usePanelShortcuts' keydown listener — is mounted. Pressing a key before
+  // then silently does nothing, which is what made these specs flaky.
+  await expect(page.locator('.sidebar')).toBeVisible(READY);
+  await expect(page.locator('.sidebar')).not.toBeEmpty();
 });
 
 test.describe('panel navigation', () => {
@@ -58,7 +63,9 @@ test.describe('panel navigation', () => {
 test.describe('persistence', () => {
   test('restores the active panel across a reload', async ({ app: page }) => {
     await page.keyboard.press('3');
-    await expect.poll(() => page.evaluate(() => localStorage.getItem('kwami-active-panel'))).toBe('audio');
+    await expect
+      .poll(() => page.evaluate(() => localStorage.getItem('kwami-active-panel')), { timeout: 10_000 })
+      .toBe('audio');
 
     await reloadApp(page);
     await expect(page.locator('.control-bar-container')).toBeVisible(READY);
