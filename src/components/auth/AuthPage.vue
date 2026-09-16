@@ -1,234 +1,126 @@
 <script setup lang="ts">
+import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import AuthForm from './AuthForm.vue';
-import GoogleButton from './GoogleButton.vue';
-import KwamiLogo from '@/components/ui/KwamiLogo.vue';
-import BackgroundRings from '@/components/ui/BackgroundRings.vue';
+import WelcomeBlob from './WelcomeBlob.vue';
+import LoginButton from './LoginButton.vue';
 
 const { t } = useI18n();
+const loginOpen = ref(false);
 </script>
 
 <template>
-  <div class="auth-overlay">
-    <!-- Subtle background rings from corner -->
-    <BackgroundRings
-      :ring-count="80"
-      :stroke-width="1.5"
-      :max-ring-opacity="0.2"
-      :expansion-factor="0.012"
-      :center-offset="{ x: 0.15, y: -0.15 }"
-      z-index="0"
-    />
-    
-    <div class="auth-container">
-      <div class="auth-header">
-        <div class="logo">
-          <KwamiLogo width="160" :stroke-width="3" />
-        </div>
-        <h1 class="title">{{ t('auth.welcome') }}</h1>
-        <p class="subtitle">{{ t('auth.signInContinue') }}</p>
-      </div>
+  <div class="page">
+    <div class="ambient" aria-hidden="true" />
 
-      <div class="auth-content">
-        <GoogleButton />
+    <h1 class="hero-title" :class="{ 'hero-title--compact': loginOpen }" aria-label="kwami">
+      <span class="title-main">KWAMI</span>
+    </h1>
 
-        <div class="divider">
-          <span>{{ t('auth.orContinueWithEmail') }}</span>
-        </div>
+    <p class="title-sub" :class="{ 'title-sub--hidden': loginOpen }">THE AI THAT FEELS ALIVE</p>
 
-        <AuthForm />
-      </div>
+    <LoginButton v-model:open="loginOpen" />
+
+    <div class="blob-zone">
+      <WelcomeBlob />
     </div>
 
     <div class="auth-footer">
-      <p>{{ t('auth.poweredBySupabase') }}</p>
+      <p>{{ t('auth.footer') }}</p>
     </div>
   </div>
 </template>
 
 <style scoped>
-.auth-overlay {
+.page {
   position: absolute;
   inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  z-index: 1000;
-  
-  /* Lighter overlay to show more of the canvas */
-  background: rgba(5, 5, 16, 0.4);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-}
-
-.auth-container {
-  position: relative;
-  width: 100%;
-  max-width: 400px;
-  
-  /* Glassmorphism effect */
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.1) 0%,
-    rgba(255, 255, 255, 0.05) 50%,
-    rgba(255, 255, 255, 0.02) 100%
-  );
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  
-  /* Glass border with gradient */
-  border: 1px solid transparent;
-  border-radius: var(--radius-xl);
-  background-clip: padding-box;
-  
-  /* Multi-layer shadow for depth */
-  box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.3),
-    0 2px 8px rgba(0, 0, 0, 0.2),
-    inset 0 1px 1px rgba(255, 255, 255, 0.1),
-    inset 0 -1px 1px rgba(0, 0, 0, 0.1),
-    0 0 60px rgba(124, 77, 255, 0.15),
-    0 0 100px rgba(0, 229, 255, 0.1);
-  
-  padding: 32px;
   overflow: hidden;
-  
-  /* Subtle animation */
-  animation: containerFadeIn 0.5s ease-out;
+  z-index: 1000;
+  background:
+    radial-gradient(ellipse 120% 82% at 50% -20%, rgba(53, 158, 238, 0.1), transparent 55%),
+    radial-gradient(ellipse 76% 55% at 82% 32%, rgba(239, 71, 111, 0.08), transparent 52%),
+    radial-gradient(ellipse 76% 55% at 10% 70%, rgba(3, 206, 164, 0.08), transparent 50%),
+    #06070a;
 }
 
-/* Gradient border overlay */
-.auth-container::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: var(--radius-xl);
-  padding: 1px;
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.2) 0%,
-    rgba(126, 243, 17, 0.267) 50%,
-    rgba(124, 77, 255, 0.2) 100%
-  );
-  -webkit-mask: 
-    linear-gradient(#fff 0 0) content-box, 
-    linear-gradient(#fff 0 0);
-  mask: 
-    linear-gradient(#fff 0 0) content-box, 
-    linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
+.ambient {
+  position: fixed;
+  top: -20%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 1000px;
+  height: 52%;
+  background: radial-gradient(ellipse at center, rgba(53, 158, 238, 0.1) 0%, transparent 72%);
   pointer-events: none;
+  z-index: 0;
 }
 
-/* Subtle light reflection at top */
-.auth-container::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 20%;
-  right: 20%;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.4),
-    transparent
-  );
-  pointer-events: none;
-}
-
-@keyframes containerFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px) scale(0.96);
-    backdrop-filter: blur(0px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    backdrop-filter: blur(24px);
-  }
-}
-
-.auth-header {
-  position: relative;
-  text-align: center;
-  margin-bottom: 32px;
-}
-
-.logo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 28px;
-  filter: drop-shadow(0 0 20px rgba(239, 71, 111, 0.4)) 
-          drop-shadow(0 0 40px rgba(53, 158, 238, 0.3));
-  animation: logoGlow 4s ease-in-out infinite alternate;
-}
-
-@keyframes logoGlow {
-  from {
-    filter: drop-shadow(0 0 20px rgba(239, 71, 111, 0.4)) 
-            drop-shadow(0 0 40px rgba(53, 158, 238, 0.3));
-  }
-  to {
-    filter: drop-shadow(0 0 30px rgba(3, 206, 164, 0.5)) 
-            drop-shadow(0 0 50px rgba(255, 196, 61, 0.4));
-  }
-}
-
-.title {
-  font-size: 26px;
-  font-weight: 600;
-  background: linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.9) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin: 0 0 8px 0;
-}
-
-.subtitle {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
+.hero-title {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 31;
   margin: 0;
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+  transition: top 300ms ease, transform 300ms ease, z-index 300ms ease;
 }
 
-.auth-content {
-  display: flex;
-  flex-direction: column;
+.hero-title--compact {
+  top: 32%;
+  transform: translate(-50%, -50%) scale(0.31);
+  z-index: 46;
 }
 
-.divider {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin: 24px 0;
-  color: rgba(255, 255, 255, 0.4);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  font-weight: 500;
+.title-main {
+  display: block;
+  font-size: clamp(3.2rem, 17vw, 10.2rem);
+  font-weight: 900;
+  line-height: 0.84;
+  letter-spacing: 0.03em;
+  color: #f6f8ff;
+  text-shadow: 0 0 34px rgba(53, 158, 238, 0.22);
 }
 
-.divider::before,
-.divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.15),
-    transparent
-  );
+.title-sub {
+  position: fixed;
+  left: 50%;
+  top: 60%;
+  transform: translateX(-50%);
+  z-index: 31;
+  margin: 0;
+  font-size: clamp(0.75rem, 1.9vw, 1.1rem);
+  letter-spacing: 0.42em;
+  font-weight: 700;
+  color: rgba(180, 188, 210, 0.9);
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+  transition: opacity 220ms ease;
+}
+
+.title-sub--hidden {
+  opacity: 0;
+}
+
+.blob-zone {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
 }
 
 .auth-footer {
-  margin-top: 24px;
+  position: fixed;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%);
   text-align: center;
+  z-index: 6;
+  pointer-events: none;
 }
 
 .auth-footer p {
@@ -238,26 +130,15 @@ const { t } = useI18n();
   letter-spacing: 0.5px;
 }
 
-/* Responsive adjustments */
-@media (max-width: 480px) {
-  .auth-overlay {
-    padding: 16px;
+@media (max-width: 900px) {
+  .hero-title--compact {
+    top: 31%;
+    transform: translate(-50%, -50%) scale(0.28);
   }
-  
-  .auth-container {
-    padding: 24px;
+
+  .title-sub {
+    top: 60%;
   }
-  
-  .logo-icon {
-    font-size: 28px;
-  }
-  
-  .logo-text {
-    font-size: 20px;
-  }
-  
-  .title {
-    font-size: 20px;
-  }
+
 }
 </style>

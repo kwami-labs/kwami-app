@@ -210,9 +210,11 @@ function handleClick() {
               <div class="popover-header">
                 <iconify-icon icon="ph:globe-duotone"></iconify-icon>
                 <span>{{
-                  t('sttModelCard.languagesHeading', formattedLanguages.length, {
-                    n: formattedLanguages.length,
-                  })
+                  t(
+                    'sttModelCard.languagesHeading',
+                    { n: formattedLanguages.length },
+                    formattedLanguages.length,
+                  )
                 }}</span>
               </div>
               <div class="languages-grid">

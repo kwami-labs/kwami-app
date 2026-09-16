@@ -5,12 +5,53 @@ let navigationListenerAttached = false;
 
 export function useNavigation() {
   const store = useNavigationStore();
-  const { isActive, currentUrl, currentTitle, isLoading, hasNavigation } =
+  const { isActive, currentUrl, currentTitle, isLoading, liveUrl, hasNavigation } =
     storeToRefs(store);
 
   if (!navigationListenerAttached) {
     navigationListenerAttached = true;
 
+    // -----------------------------------------------------------------------
+    // Browser Use Cloud: browser_session events (new flow)
+    // -----------------------------------------------------------------------
+    window.addEventListener('kwami:browser_session', (e: Event) => {
+      const detail = (e as CustomEvent).detail as {
+        action?: string;
+        liveUrl?: string;
+        url?: string;
+        title?: string;
+      };
+      console.log('[Kwami] Received kwami:browser_session event:', detail);
+      if (!detail?.action) return;
+
+      switch (detail.action) {
+        case 'open':
+          console.log('[Kwami] useNavigation handling "open", setting state:', detail);
+          store.updateState({
+            url: detail.url || '',
+            title: detail.title || '',
+            liveUrl: detail.liveUrl || '',
+            isLoading: false,
+          });
+          // Force isActive to true even if url is empty
+          store.isActive = true;
+          break;
+        case 'update':
+          store.updateState({
+            url: detail.url,
+            title: detail.title,
+            isLoading: false,
+          });
+          break;
+        case 'close':
+          store.end();
+          break;
+      }
+    });
+
+    // -----------------------------------------------------------------------
+    // Legacy: extension-based nav_command events (kept for backward compat)
+    // -----------------------------------------------------------------------
     window.addEventListener('kwami:nav_command', (e: Event) => {
       const detail = (e as CustomEvent).detail as {
         action?: string;
@@ -74,12 +115,25 @@ export function useNavigation() {
     });
   }
 
+  /**
+   * Request the agent to close the cloud browser session.
+   * Sends a message via the LiveKit data channel.
+   */
+  function requestBrowserClose() {
+    const msg = { type: 'browser_close_request' };
+    const payload = new TextEncoder().encode(JSON.stringify(msg));
+    window.dispatchEvent(new CustomEvent('kwami:send_data', { detail: payload }));
+    store.end();
+  }
+
   return {
     isActive,
     currentUrl,
     currentTitle,
     isLoading,
+    liveUrl,
     hasNavigation,
     end: store.end,
+    requestBrowserClose,
   };
 }

@@ -111,7 +111,7 @@ const featuresPercent = computed(() => {
 const featuresDisplay = computed(() => {
   const count = advancedFeatures.value.length;
   if (count === 0) return t('ttsModelCard.featuresBasic');
-  return t('ttsModelCard.featuresCount', count, { n: count });
+  return t('ttsModelCard.featuresCount', { n: count }, count);
 });
 
 // Is multilingual
@@ -201,7 +201,7 @@ function handleClick() {
         v-if="model.languages.length > 0" 
         class="feature-badge multilingual lang-trigger"
         :title="
-          t('sttModelCard.languagesHeading', model.languages.length, { n: model.languages.length })
+          t('sttModelCard.languagesHeading', { n: model.languages.length }, model.languages.length)
         "
         @mouseenter="showLanguages = true"
         @mouseleave="showLanguages = false"
@@ -217,7 +217,7 @@ function handleClick() {
             <div class="popover-header">
               <iconify-icon icon="ph:globe-duotone"></iconify-icon>
               <span>{{
-                t('sttModelCard.languagesHeading', model.languages.length, { n: model.languages.length })
+                t('sttModelCard.languagesHeading', { n: model.languages.length }, model.languages.length)
               }}</span>
             </div>
             <div class="languages-grid">

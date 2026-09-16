@@ -129,6 +129,10 @@ export interface BlobXyzCursorTouch {
     duration: number;
     maxPoints: number;
   };
+  cursorFollow: {
+    enabled: boolean;
+    sensitivity: number;
+  };
 }
 
 /** AUDIO: Audio reactivity settings */
@@ -251,6 +255,10 @@ export function getDefaultCursorTouch(): BlobXyzCursorTouch {
       strength: 1.0,
       duration: 1100,
       maxPoints: 5,
+    },
+    cursorFollow: {
+      enabled: false,
+      sensitivity: 1.0,
     },
   };
 }
@@ -417,6 +425,8 @@ export const useBlobXyzStore = defineStore('blob-xyz', () => {
     lightIntensity: number;
     getWireframe: () => boolean;
     getCurrentSkinType: () => string;
+    getCursorFollowEnabled: () => boolean;
+    getCursorFollowSensitivity: () => number;
     audioEffects?: {
       enabled?: boolean;
       reactivity?: number;
@@ -441,6 +451,8 @@ export const useBlobXyzStore = defineStore('blob-xyz', () => {
     skin.shininess = blob.getShininess();
     skin.lightIntensity = blob.lightIntensity;
     skin.wireframe = blob.getWireframe();
+    cursorTouch.cursorFollow.enabled = blob.getCursorFollowEnabled();
+    cursorTouch.cursorFollow.sensitivity = blob.getCursorFollowSensitivity();
 
     // Sync shape
     shape.scale = blob.getScale();

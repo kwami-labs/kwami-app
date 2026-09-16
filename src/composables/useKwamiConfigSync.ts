@@ -99,14 +99,25 @@ export function useKwamiConfigWatchers() {
   const themeStore = useThemeStore();
   const sceneStore = useSceneStore();
 
-  // When active workspace changes, apply that kwami's config
+  // When active workspace changes, apply that kwami's config then rebase
+  // savedConfig to what the stores actually emit. This ensures fields that were
+  // added to the schema after a config was saved (and therefore absent from
+  // savedConfig) don't permanently flag the config as unsaved.
   watch(
     () => workspaceStore.activeWorkspaceId,
-    () => {
+    async (kwamiId) => {
+      // Skip the immediate pass before a workspace is resolved: there is
+      // nothing to apply, and rebasing against nothing is pure churn.
+      if (!kwamiId) return;
       const config = workspaceStore.getActiveWorkspace()?.config;
       if (config && typeof config === 'object' && Object.keys(config as object).length > 0) {
         applyConfig(config as KwamiConfig);
       }
+      // Wait for the post-flush syncDraftConfig watcher to run first,
+      // then rebase so the normalized store output becomes the clean baseline.
+      await nextTick();
+      const normalized = safeConfigClone(getConfig());
+      workspaceStore.rebaseActiveSavedConfig(normalized);
     },
     { immediate: true },
   );

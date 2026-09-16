@@ -1,11 +1,10 @@
-import { useAuthStore } from '@/stores/auth';
+import { api } from '@/lib/apiClient';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 export interface ChannelRecord {
   id: string;
   kwami_id: string;
-  kind: 'voice_phone' | 'whatsapp';
+  kind: 'voice_phone' | 'whatsapp' | 'sms';
   provider: string;
   status: string;
   phone_number: string;
@@ -58,45 +57,9 @@ export interface NumberSearchResult {
   capabilities?: Record<string, boolean>;
 }
 
-async function authHeaders(): Promise<HeadersInit> {
-  const authStore = useAuthStore();
-  const token = await authStore.getAccessToken();
-  return {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-}
-
-function formatApiErrorBody(errorData: Record<string, unknown>): string {
-  const detail = errorData.detail ?? errorData.message;
-  if (typeof detail === 'string') return detail;
-  if (Array.isArray(detail)) {
-    return detail
-      .map((item) =>
-        typeof item === 'object' && item !== null && 'msg' in item
-          ? String((item as { msg: string }).msg)
-          : String(item),
-      )
-      .join('; ');
-  }
-  if (detail != null && typeof detail === 'object') return JSON.stringify(detail);
-  return '';
-}
-
-async function parseJson<T>(res: Response): Promise<T> {
-  if (!res.ok) {
-    const errorData = (await res.json().catch(() => ({}))) as Record<string, unknown>;
-    throw new Error(
-      formatApiErrorBody(errorData) || `Request failed: ${res.status}`,
-    );
-  }
-  return res.json() as Promise<T>;
-}
 
 export async function fetchKwamiCommunications(kwamiId: string): Promise<KwamiCommunicationsSnapshot> {
-  const headers = await authHeaders();
-  const res = await fetch(`${API_BASE}/channels/kwamis/${kwamiId}`, { headers });
-  return parseJson<KwamiCommunicationsSnapshot>(res);
+  return api.get<KwamiCommunicationsSnapshot>(`/channels/kwamis/${kwamiId}`);
 }
 
 export async function searchKwamiNumbers(
@@ -108,16 +71,15 @@ export async function searchKwamiNumbers(
     limit?: number;
   },
 ): Promise<NumberSearchResult[]> {
-  const headers = await authHeaders();
-  const query = new URLSearchParams({
-    kwamiId,
-    countryCode: params.countryCode,
-    ...(params.areaCode ? { areaCode: params.areaCode } : {}),
-    ...(params.contains ? { contains: params.contains } : {}),
-    ...(params.limit ? { limit: String(params.limit) } : {}),
+  const data = await api.get<{ results: NumberSearchResult[] }>('/channels/phone/search', {
+    query: {
+      kwamiId,
+      countryCode: params.countryCode,
+      areaCode: params.areaCode,
+      contains: params.contains,
+      limit: params.limit,
+    },
   });
-  const res = await fetch(`${API_BASE}/channels/phone/search?${query}`, { headers });
-  const data = await parseJson<{ results: NumberSearchResult[] }>(res);
   return data.results;
 }
 
@@ -127,13 +89,8 @@ export async function purchaseKwamiNumber(payload: {
   displayName?: string;
   countryCode: string;
 }) {
-  const headers = await authHeaders();
-  const res = await fetch(`${API_BASE}/channels/phone/purchase`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(payload),
-  });
-  return parseJson(res);
+  // Provisioning spends money and is not idempotent.
+  return api.post('/channels/phone/purchase', payload, { retry: false, timeoutMs: 30_000 });
 }
 
 export async function releaseKwamiPhone(payload: {
@@ -141,20 +98,15 @@ export async function releaseKwamiPhone(payload: {
   channelId: string;
   releaseProviderResources?: boolean;
 }) {
-  const headers = await authHeaders();
-  const res = await fetch(`${API_BASE}/channels/phone/release`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({
-      ...payload,
-      releaseProviderResources: payload.releaseProviderResources ?? true,
-    }),
-  });
-  return parseJson<{
+  return api.post<{
     ok: boolean;
     removedChannelIds: string[];
     provider: Record<string, unknown>;
-  }>(res);
+  }>(
+    '/channels/phone/release',
+    { ...payload, releaseProviderResources: payload.releaseProviderResources ?? true },
+    { retry: false, timeoutMs: 30_000 },
+  );
 }
 
 export async function configureWhatsappChannel(payload: {
@@ -163,13 +115,7 @@ export async function configureWhatsappChannel(payload: {
   providerSender?: string;
   metadata?: Record<string, unknown>;
 }) {
-  const headers = await authHeaders();
-  const res = await fetch(`${API_BASE}/channels/whatsapp/configure`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(payload),
-  });
-  return parseJson(res);
+  return api.post('/channels/whatsapp/configure', payload);
 }
 
 export async function startOutboundCall(payload: {
@@ -178,13 +124,8 @@ export async function startOutboundCall(payload: {
   channelId?: string;
   waitUntilAnswered?: boolean;
 }) {
-  const headers = await authHeaders();
-  const res = await fetch(`${API_BASE}/channels/calls/outbound`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(payload),
-  });
-  return parseJson(res);
+  // Placing a call is a side effect; waitUntilAnswered can also run long.
+  return api.post('/channels/calls/outbound', payload, { retry: false, timeoutMs: 60_000 });
 }
 
 /** Twilio REST only — no LiveKit room or agent (for debugging PSTN). */
@@ -193,13 +134,7 @@ export async function startTwilioDirectTestCall(payload: {
   toNumber: string;
   channelId?: string;
 }) {
-  const headers = await authHeaders();
-  const res = await fetch(`${API_BASE}/channels/calls/twilio-direct`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(payload),
-  });
-  return parseJson(res);
+  return api.post('/channels/calls/twilio-direct', payload, { retry: false, timeoutMs: 60_000 });
 }
 
 export async function sendWhatsappMessage(payload: {
@@ -208,11 +143,22 @@ export async function sendWhatsappMessage(payload: {
   body: string;
   channelId?: string;
 }) {
-  const headers = await authHeaders();
-  const res = await fetch(`${API_BASE}/channels/messages/outbound`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(payload),
-  });
-  return parseJson(res);
+  return api.post(
+    '/channels/messages/outbound',
+    { ...payload, channelKind: 'whatsapp' },
+    { retry: false },
+  );
+}
+
+export async function sendSmsMessage(payload: {
+  kwamiId: string;
+  toNumber: string;
+  body: string;
+  channelId?: string;
+}) {
+  return api.post(
+    '/channels/messages/outbound',
+    { ...payload, channelKind: 'sms' },
+    { retry: false },
+  );
 }

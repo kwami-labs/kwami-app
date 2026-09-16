@@ -1,9 +1,10 @@
 import { shallowRef, ref, computed } from 'vue';
 import { Kwami } from 'kwami';
-import type { KwamiConfig } from 'kwami';
+import type { AvatarRendererType, KwamiConfig } from 'kwami';
 import { useVoiceStore } from '@/stores/voice';
 import { useAuthStore } from '@/stores/auth';
-import { useWorkspaceStore } from '@/stores/workspace';
+import { api, ApiError } from '@/lib/apiClient';
+import { isPersistedKwamiId, useWorkspaceStore } from '@/stores/workspace';
 
 declare global {
   interface Window {
@@ -13,7 +14,7 @@ declare global {
 
 // Singleton state
 const kwamiInstance = shallowRef<Kwami | null>(null);
-const rendererType = ref<'blob-xyz' | 'black-hole' | 'particles-face'>('blob-xyz');
+const rendererType = ref<AvatarRendererType>('blob-xyz');
 const isConnected = ref(false);
 
 export function useKwami() {
@@ -30,9 +31,33 @@ export function useKwami() {
   /** @deprecated Use memoryUserId for memory/agent. Kept for compatibility. */
   const userId = computed(() => authStore.userId || 'anonymous');
 
+  function getMemoryRuntimeConfig(memoryUI: { contextSize?: 'lean' | 'balanced' | 'rich'; includeFacts?: boolean }) {
+    const preset = memoryUI.contextSize ?? 'balanced';
+    const includeFacts = memoryUI.includeFacts ?? true;
+    if (preset === 'lean') {
+      return {
+        maxContextMessages: 4,
+        includeFacts,
+        minFactRelevance: 0.7,
+      };
+    }
+    if (preset === 'rich') {
+      return {
+        maxContextMessages: 16,
+        includeFacts,
+        minFactRelevance: 0.35,
+      };
+    }
+    return {
+      maxContextMessages: 10,
+      includeFacts,
+      minFactRelevance: 0.5,
+    };
+  }
+
   function init(
     canvas: HTMLCanvasElement,
-    renderer: 'blob-xyz' | 'black-hole' | 'particles-face' = 'blob-xyz',
+    renderer: 'blob-xyz' | 'black-hole' | 'particles-face' | 'eye-iris' = 'blob-xyz',
     options?: {
       onSearchResults?: (data: { query: string; results: Array<{ title: string; url: string; content: string }>; answer: string | null }) => void;
     },
@@ -58,7 +83,9 @@ export function useKwami() {
         adapter: 'livekit' as 'livekit' | 'custom',
         livekit: {
           url: import.meta.env.VITE_LIVEKIT_URL || '',
-          tokenEndpoint: import.meta.env.VITE_LIVEKIT_TOKEN_ENDPOINT || '',
+          // No tokenEndpoint: connect() mints the token through apiClient so a
+          // 402 arrives as a typed ApiError instead of being flattened into
+          // `Failed to fetch token: ${statusText}` (see fetchLiveKitToken).
           userId: memoryUserId.value, // Per-kwami memory id so each kwami has its own memory
           voice: voiceStore.voiceConfig,
           ...(options?.onSearchResults && { onSearchResults: options.onSearchResults }),
@@ -72,13 +99,12 @@ export function useKwami() {
         responseLength: 'medium' as 'medium' | 'short' | 'long',
         emotionalTone: 'warm' as 'warm' | 'neutral' | 'enthusiastic' | 'calm',
       },
-      memory: {
-        adapter: 'zep' as 'zep' | 'local',
-        zep: {
-          apiKey: import.meta.env.VITE_ZEP_API_KEY || '',
-          baseUrl: import.meta.env.VITE_ZEP_BASE_URL || '',
-        },
-      },
+      // NOTE: no `memory` block. The SDK's Memory class is an explicit
+      // frontend stub — addMessage() does nothing, getContext() returns {} and
+      // search() returns []. Passing Zep credentials here configured an
+      // adapter that cannot use them, while inlining a server-side API key
+      // into every browser bundle (any VITE_-prefixed var is public).
+      // Real recall already goes through the backend's /memory/* routes.
     };
 
     kwamiInstance.value = new Kwami(canvas, config);
@@ -128,6 +154,41 @@ export function useKwami() {
 
     // Expose for debugging
     window.kwami = kwamiInstance.value;
+  }
+
+
+  interface LiveKitTokenResponse {
+    token: string;
+    room_name: string;
+    participant_identity: string;
+    livekit_url: string;
+  }
+
+  /**
+   * Mint a LiveKit access token.
+   *
+   * The SDK can do this itself, but its fetchToken() throws
+   * `Failed to fetch token: ${response.statusText}` and discards both the
+   * status and the body. statusText for a 402 is "Payment Required" — and
+   * empty over HTTP/2 — so the insufficient-credits check downstream could
+   * never match and that toast had never once fired. Doing it here means the
+   * failure arrives as a typed ApiError, and the request gains a timeout it
+   * did not have.
+   *
+   * roomName is deliberately omitted: the server derives an unguessable name.
+   * kwamiId is sent only for persisted kwamis, since the backend validates it
+   * against user_kwamis and 404s on anything it cannot find.
+   */
+  async function fetchLiveKitToken(): Promise<LiveKitTokenResponse> {
+    const kwamiId = workspaceStore.activeWorkspaceId;
+    return api.post<LiveKitTokenResponse>(
+      '/token',
+      {
+        participantName: authStore.userEmail || undefined,
+        ...(kwamiId && isPersistedKwamiId(kwamiId) ? { kwamiId } : {}),
+      },
+      { retry: false, timeoutMs: 20_000 },
+    );
   }
 
   /**
@@ -181,15 +242,13 @@ export function useKwami() {
       },
     });
 
-    // 3. LLM live params (temperature)
-    if ('updateLlmLive' in agent && typeof agent.updateLlmLive === 'function') {
-      agent.updateLlmLive({
-        provider: voiceStore.llm.provider,
-        model: voiceStore.llm.model,
-        temperature: voiceStore.llm.temperature,
-        maxTokens: voiceStore.llm.maxTokens,
-      });
-    }
+    // 3. LLM live params (temperature, maxTokens)
+    agent.syncConfigToBackend('llm', {
+      provider: voiceStore.llm.provider,
+      model: voiceStore.llm.model,
+      temperature: voiceStore.llm.temperature,
+      maxTokens: voiceStore.llm.maxTokens,
+    });
 
     // 4. TTS/Realtime voice + speed
     if (voiceStore.pipelineMode === 'realtime') {
@@ -223,6 +282,9 @@ export function useKwami() {
       agent.syncConfigToBackend('tools', toolDefs);
     }
 
+    // 7. Memory runtime retrieval settings
+    agent.syncConfigToBackend('memory', getMemoryRuntimeConfig(voiceStore.memoryUI));
+
     console.log('📤 Synced all configs to backend on connect (including', toolDefs.length, 'tools)');
   }
 
@@ -240,12 +302,19 @@ export function useKwami() {
       const voiceStore = useVoiceStore();
       const authToken = await authStore.getAccessToken();
 
+      // Mint the token here rather than letting the adapter do it, so a 402
+      // surfaces as a typed error (see fetchLiveKitToken).
+      const session = await fetchLiveKitToken();
+
       // Update config with per-kwami memory id, auth token, and voice settings
       kwamiInstance.value.agent.updateConfig({
         livekit: {
           ...kwamiInstance.value.agent.getConfig().livekit,
           userId: memoryUserId.value, // Per-kwami so each kwami has its own memory
           authToken: authToken || undefined,
+          token: session.token,
+          roomName: session.room_name,
+          ...(session.livekit_url ? { url: session.livekit_url } : {}),
           voice: voiceStore.voiceConfig,
         },
       });
@@ -276,9 +345,8 @@ export function useKwami() {
       isConnected.value = false;
       window.dispatchEvent(new CustomEvent('kwami:connectFailed'));
 
-      // Handle insufficient credits (402 from /token endpoint)
-      const msg = error instanceof Error ? error.message : String(error);
-      if (msg.includes('402') || msg.includes('Insufficient credits')) {
+      // Handle insufficient credits (402 from /token)
+      if (ApiError.is(error) && error.isInsufficientCredits) {
         window.dispatchEvent(new CustomEvent('kwami:insufficient-credits'));
       }
     }
@@ -298,17 +366,8 @@ export function useKwami() {
       isConnected.value = false;
       window.dispatchEvent(new CustomEvent('kwami:disconnected'));
 
-      // Safety cleanup: Stop any browser MediaStream tracks that might still be active
-      // This ensures the browser mic indicator disappears
-      try {
-        // Check for any active audio contexts or streams that might keep mic active
-        // Note: getUserMedia with audio:false doesn't actually help here, 
-        // but cleaning up orphaned elements does
-      } catch {
-        // Ignore - just a safety check
-      }
-
-      // Also remove any orphaned audio elements
+      // Safety cleanup: remove orphaned audio elements so the browser's mic
+      // indicator disappears.
       const audioElements = document.querySelectorAll('audio[id^="kwami-"]');
       audioElements.forEach(el => {
         const audioEl = el as HTMLAudioElement;
@@ -324,7 +383,7 @@ export function useKwami() {
     }
   }
 
-  function switchRenderer(newRenderer: 'blob-xyz' | 'black-hole' | 'particles-face') {
+  function switchRenderer(newRenderer: AvatarRendererType) {
     if (!kwamiInstance.value) {
       console.warn('Cannot switch renderer: Kwami not initialized');
       return;
@@ -339,6 +398,29 @@ export function useKwami() {
     console.log(`🔄 Switched to ${newRenderer} renderer`);
   }
 
+  /**
+   * Tear down the singleton instance: releases the WebGL context, the Three.js
+   * renderer, the LiveKit room and the audio graph.
+   *
+   * Without this, every app teardown or HMR reload leaks a WebGL context, and
+   * browsers hard-cap those at ~16 before they start evicting live ones.
+   */
+  async function dispose() {
+    const instance = kwamiInstance.value;
+    if (!instance) return;
+
+    // Null the refs first so nothing re-enters while disposal is in flight.
+    kwamiInstance.value = null;
+    window.kwami = null;
+    isConnected.value = false;
+
+    try {
+      await instance.dispose();
+    } catch (e) {
+      console.error('Failed to dispose kwami:', e);
+    }
+  }
+
   return {
     kwami: kwamiInstance,
     rendererType,
@@ -349,5 +431,6 @@ export function useKwami() {
     switchRenderer,
     connect,
     disconnect,
+    dispose,
   };
 }

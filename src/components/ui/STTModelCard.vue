@@ -173,7 +173,7 @@ function handleClick() {
             <div class="popover-header">
               <iconify-icon icon="ph:globe-duotone"></iconify-icon>
               <span>{{
-                t('sttModelCard.languagesHeading', model.languages.length, { n: model.languages.length })
+                t('sttModelCard.languagesHeading', { n: model.languages.length }, model.languages.length)
               }}</span>
             </div>
             <div class="languages-grid">

@@ -4,7 +4,7 @@ import type { ViewMode } from './types'
 
 const { t } = useI18n()
 
-const props = defineProps<{
+defineProps<{
   searchQuery: string
   filterType: string
   entityTypes: string[]

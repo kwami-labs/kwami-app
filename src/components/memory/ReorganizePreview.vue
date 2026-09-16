@@ -1,23 +1,24 @@
 <script setup lang="ts">
+import { api } from '@/lib/apiClient'
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
-import { useAuthStore } from '@/stores/auth'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import { translateApiUserMessage } from '@/utils/translateApiMessage'
 
 const { t } = useI18n()
 
+// apiBaseUrl is gone: the memory store owns the base URL now, so this
+// component can no longer be pointed at a different host than the rest of
+// the app by accident.
 const props = defineProps<{
   userId: string
-  apiBaseUrl: string
 }>()
 
 const emit = defineEmits<{
   (e: 'done'): void
 }>()
 
-const authStore = useAuthStore()
 const toast = useToast()
 
 // State
@@ -31,26 +32,14 @@ const previewOrphans = ref<OrphanPreview[]>([])
 const previewMerges = ref<MergePreview[]>([])
 const previewCommunities = ref(0)
 
-async function getHeaders(): Promise<HeadersInit> {
-  const token = await authStore.getAccessToken()
-  const h: HeadersInit = { 'Content-Type': 'application/json' }
-  if (token) (h as Record<string, string>)['Authorization'] = `Bearer ${token}`
-  return h
-}
-
 async function fetchPreview() {
   loading.value = true
   try {
-    const headers = await getHeaders()
-    const response = await fetch(`${props.apiBaseUrl}/memory/${props.userId}/reorganize/preview`, {
-      method: 'POST',
-      headers,
-    })
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}))
-      throw new Error(err.detail || 'Failed to preview')
-    }
-    const data = await response.json()
+    const data = await api.post<{
+      orphans?: OrphanPreview[]
+      duplicates?: MergePreview[]
+      communities_estimate?: number
+    }>(`/memory/${props.userId}/reorganize/preview`, undefined, { timeoutMs: 60_000 })
     previewOrphans.value = (data.orphans || []).map((o: OrphanPreview) => ({ ...o, selected: true }))
     previewMerges.value = (data.duplicates || []).map((d: MergePreview) => ({ ...d, selected: true }))
     previewCommunities.value = data.communities_estimate || 0
@@ -79,17 +68,14 @@ async function apply() {
 
   applying.value = true
   try {
-    const headers = await getHeaders()
-    const response = await fetch(`${props.apiBaseUrl}/memory/${props.userId}/reorganize/apply`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ orphan_uuids: selectedOrphans, merge_pairs: selectedMerges }),
-    })
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}))
-      throw new Error(err.detail || 'Failed to apply')
-    }
-    const result = await response.json()
+    const result = await api.post<{
+      report: { orphans_removed: number; merges_performed: number }
+    }>(
+      `/memory/${props.userId}/reorganize/apply`,
+      { orphan_uuids: selectedOrphans, merge_pairs: selectedMerges },
+      // Destructive graph surgery: never retried, and it can run long.
+      { retry: false, timeoutMs: 120_000 },
+    )
     const r = result.report
     toast.success(
       t('memoryReorg.doneReport', { orphans: r.orphans_removed, merges: r.merges_performed }),
@@ -190,7 +176,7 @@ defineExpose({ fetchPreview, loading, applying })
     <div v-if="previewCommunities > 0" class="communities-info">
       <iconify-icon icon="ph:circles-three-plus-duotone"></iconify-icon>
       <span>{{
-        t('memoryReorg.communitiesDetected', previewCommunities, { n: previewCommunities })
+        t('memoryReorg.communitiesDetected', { n: previewCommunities }, previewCommunities)
       }}</span>
     </div>
 

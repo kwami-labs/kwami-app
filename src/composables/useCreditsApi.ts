@@ -1,6 +1,4 @@
-import { useAuthStore } from '@/stores/auth';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+import { api } from '@/lib/apiClient';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -44,33 +42,16 @@ export interface CreditUsageLog {
 }
 
 // ---------------------------------------------------------------------------
-// Helper
-// ---------------------------------------------------------------------------
-
-async function authHeaders(): Promise<HeadersInit> {
-  const authStore = useAuthStore();
-  const token = await authStore.getAccessToken();
-  return {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-}
-
-// ---------------------------------------------------------------------------
 // API functions
 // ---------------------------------------------------------------------------
 
 export async function fetchBalance(): Promise<CreditBalance> {
-  const headers = await authHeaders();
-  const res = await fetch(`${API_BASE}/credits/balance`, { headers });
-  if (!res.ok) throw new Error(`Failed to fetch balance: ${res.status}`);
-  return res.json();
+  return api.get<CreditBalance>('/credits/balance');
 }
 
 export async function fetchPacks(): Promise<CreditPack[]> {
-  const res = await fetch(`${API_BASE}/credits/packs`);
-  if (!res.ok) throw new Error(`Failed to fetch packs: ${res.status}`);
-  const data = await res.json();
+  // Public catalogue: no bearer token needed.
+  const data = await api.get<{ packs: CreditPack[] }>('/credits/packs', { auth: false });
   return data.packs;
 }
 
@@ -79,21 +60,12 @@ export async function createCheckoutSession(
   successUrl: string,
   cancelUrl: string,
 ): Promise<string> {
-  const headers = await authHeaders();
-  const res = await fetch(`${API_BASE}/credits/purchase`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({
-      pack_id: packId,
-      success_url: successUrl,
-      cancel_url: cancelUrl,
-    }),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || `Purchase failed: ${res.status}`);
-  }
-  const data = await res.json();
+  const data = await api.post<{ checkout_url: string }>(
+    '/credits/purchase',
+    { pack_id: packId, success_url: successUrl, cancel_url: cancelUrl },
+    // Money movement: never retried, and a payment provider can be slow.
+    { retry: false, timeoutMs: 30_000 },
+  );
   return data.checkout_url;
 }
 
@@ -101,11 +73,9 @@ export async function fetchTransactions(
   limit = 50,
   offset = 0,
 ): Promise<{ transactions: CreditTransaction[]; count: number }> {
-  const headers = await authHeaders();
-  const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
-  const res = await fetch(`${API_BASE}/credits/transactions?${params}`, { headers });
-  if (!res.ok) throw new Error(`Failed to fetch transactions: ${res.status}`);
-  return res.json();
+  return api.get<{ transactions: CreditTransaction[]; count: number }>('/credits/transactions', {
+    query: { limit, offset },
+  });
 }
 
 export async function fetchUsageLogs(
@@ -113,10 +83,7 @@ export async function fetchUsageLogs(
   offset = 0,
   sessionId?: string,
 ): Promise<{ logs: CreditUsageLog[]; count: number }> {
-  const headers = await authHeaders();
-  const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
-  if (sessionId) params.set('session_id', sessionId);
-  const res = await fetch(`${API_BASE}/credits/usage?${params}`, { headers });
-  if (!res.ok) throw new Error(`Failed to fetch usage logs: ${res.status}`);
-  return res.json();
+  return api.get<{ logs: CreditUsageLog[]; count: number }>('/credits/usage', {
+    query: { limit, offset, session_id: sessionId },
+  });
 }

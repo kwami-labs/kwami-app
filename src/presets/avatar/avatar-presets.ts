@@ -8,16 +8,20 @@ import { shallowRef, type ShallowRef } from 'vue';
 import type { RendererType } from '../../stores/avatar';
 import type { BlobXyzState } from '../../stores/avatar.blob-xyz';
 import type { BlackHoleState } from '../../stores/avatar.black-hole';
+import type { EyeIrisState } from '../../stores/avatar.eye-iris';
 import { blobPresetsData, type BlobXyzPreset } from './blob-xyz-presets';
 import { blackHolePresetsData, type BlackHolePreset } from './black-hole-presets';
+import { eyeIrisPresetsData, type EyeIrisPreset } from './eye-iris-presets';
 
 // Re-export preset types
 export type { BlobXyzPreset } from './blob-xyz-presets';
 export type { BlackHolePreset } from './black-hole-presets';
+export type { EyeIrisPreset } from './eye-iris-presets';
 
 // Direct access to typed preset data
 export { blobPresetsData } from './blob-xyz-presets';
 export { blackHolePresetsData } from './black-hole-presets';
+export { eyeIrisPresetsData } from './eye-iris-presets';
 
 // Unified preset interface for backwards compatibility
 export interface AvatarPreset {
@@ -27,6 +31,7 @@ export interface AvatarPreset {
   renderer: RendererType;
   blobXyz?: Partial<BlobXyzState>;
   blackHole?: Partial<BlackHoleState>;
+  eyeIris?: Partial<EyeIrisState>;
 }
 
 // Convert specific presets to unified format
@@ -36,7 +41,7 @@ function toBlobAvatarPreset(preset: BlobXyzPreset): AvatarPreset {
     name: preset.name,
     icon: preset.icon,
     renderer: 'blob-xyz',
-    blobXyz: preset.blob,
+    blobXyz: preset.blob as unknown as Partial<BlobXyzState>,
   };
 }
 
@@ -50,10 +55,21 @@ function toBlackHoleAvatarPreset(preset: BlackHolePreset): AvatarPreset {
   };
 }
 
+function toEyeIrisAvatarPreset(preset: EyeIrisPreset): AvatarPreset {
+  return {
+    id: preset.id,
+    name: preset.name,
+    icon: preset.icon,
+    renderer: 'eye-iris',
+    eyeIris: preset.eyeIris,
+  };
+}
+
 // Combine all presets into a unified array
 const _avatarPresetsData: AvatarPreset[] = [
   ...blobPresetsData.map(toBlobAvatarPreset),
   ...blackHolePresetsData.map(toBlackHoleAvatarPreset),
+  ...eyeIrisPresetsData.map(toEyeIrisAvatarPreset),
 ];
 
 // Persist reactive ref across HMR updates using import.meta.hot.data
@@ -92,4 +108,8 @@ export function getBlobXyzPresets(): AvatarPreset[] {
 
 export function getBlackHolePresets(): AvatarPreset[] {
   return avatarPresetsRef.value.filter((p) => p.renderer === 'black-hole');
+}
+
+export function getEyeIrisPresets(): AvatarPreset[] {
+  return avatarPresetsRef.value.filter((p) => p.renderer === 'eye-iris');
 }
