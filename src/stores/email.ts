@@ -1,9 +1,8 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import { useAuthStore } from '@/stores/auth';
+import { api, createRequestGuard, isAbortError } from '@/lib/apiClient';
 import { useWorkspaceStore } from '@/stores/workspace';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 export type EmailCategory =
   | 'all'
@@ -52,25 +51,6 @@ export interface EmailConversation {
   category: EmailCategory;
 }
 
-async function authHeaders(): Promise<HeadersInit> {
-  const authStore = useAuthStore();
-  const token = await authStore.getAccessToken();
-  return {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-}
-
-async function parseJson<T>(res: Response): Promise<T> {
-  if (!res.ok) {
-    const err = (await res.json().catch(() => ({}))) as Record<string, unknown>;
-    const detail = err.detail ?? err.message;
-    throw new Error(
-      typeof detail === 'string' ? detail : `Request failed: ${res.status}`,
-    );
-  }
-  return res.json() as Promise<T>;
-}
 
 /** Bare email for grouping and sending; handles `Name <a@b.com>`, mailto:, etc. */
 export function normalizeEmail(raw: string): string {
@@ -116,9 +96,9 @@ export const useEmailStore = defineStore('email', () => {
   const messagesByKwami = ref<Record<string, EmailMessage[]>>({});
   const unreadByKwami = ref<Record<string, Record<string, number>>>({});
 
-  let accountRequestNonce = 0;
-  let inboxRequestNonce = 0;
-  let unreadRequestNonce = 0;
+  // Keyed guards: account, inbox and unread counts race independently when
+  // the user switches kwami mid-load.
+  const guard = createRequestGuard();
 
   const selectedConversationAddress = ref<string | null>(null);
 
@@ -196,20 +176,20 @@ export const useEmailStore = defineStore('email', () => {
       return;
     }
     account.value = accountByKwami.value[kwamiId] ?? null;
-    const requestNonce = ++accountRequestNonce;
+    const { signal, isCurrent } = guard.begin('account');
     try {
-      const headers = await authHeaders();
-      const res = await fetch(
-        `${API_BASE}/email/account?kwami_id=${encodeURIComponent(kwamiId)}`,
-        { headers },
-      );
-      const data = await parseJson<{ account: EmailAccount | null }>(res);
-      if (requestNonce !== accountRequestNonce) return;
+      const data = await api.get<{ account: EmailAccount | null }>('/email/account', {
+        query: { kwami_id: kwamiId },
+        signal,
+      });
+      if (!isCurrent()) return;
       accountByKwami.value[kwamiId] = data.account;
       account.value = data.account;
     } catch (e) {
+      if (isAbortError(e) || !isCurrent()) return;
+      // Swallowed on purpose: this is an existence probe, and "this kwami has
+      // no email account" is the normal answer, not a failure to report.
       console.warn('Failed to fetch email account:', e);
-      if (requestNonce !== accountRequestNonce) return;
       account.value = null;
     }
   }
@@ -217,13 +197,10 @@ export const useEmailStore = defineStore('email', () => {
   async function checkUsername(username: string): Promise<{ available: boolean; error?: string }> {
     isCheckingUsername.value = true;
     try {
-      const headers = await authHeaders();
-      const res = await fetch(`${API_BASE}/email/check-username`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ username }),
-      });
-      return await parseJson<{ available: boolean; error?: string }>(res);
+      return await api.post<{ available: boolean; error?: string }>(
+        '/email/check-username',
+        { username },
+      );
     } finally {
       isCheckingUsername.value = false;
     }
@@ -234,13 +211,10 @@ export const useEmailStore = defineStore('email', () => {
     if (!kwamiId) throw new Error('No active kwami selected');
     isActivating.value = true;
     try {
-      const headers = await authHeaders();
-      const res = await fetch(`${API_BASE}/email/activate`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ kwami_id: kwamiId, username }),
+      const data = await api.post<EmailAccount>('/email/activate', {
+        kwami_id: kwamiId,
+        username,
       });
-      const data = await parseJson<EmailAccount>(res);
       accountByKwami.value[kwamiId] = data;
       account.value = data;
       return data;
@@ -252,12 +226,7 @@ export const useEmailStore = defineStore('email', () => {
   async function deactivateEmail() {
     const kwamiId = _kwamiId();
     if (!kwamiId) return;
-    const headers = await authHeaders();
-    const res = await fetch(
-      `${API_BASE}/email/account?kwami_id=${encodeURIComponent(kwamiId)}`,
-      { method: 'DELETE', headers },
-    );
-    await parseJson<{ ok: boolean }>(res);
+    await api.del<{ ok: boolean }>('/email/account', { query: { kwami_id: kwamiId } });
     accountByKwami.value[kwamiId] = null;
     messagesByKwami.value[kwamiId] = [];
     unreadByKwami.value[kwamiId] = {};
@@ -281,19 +250,25 @@ export const useEmailStore = defineStore('email', () => {
       if (page === 1) {
         messages.value = messagesByKwami.value[kwamiId] ?? [];
       }
-      const requestNonce = ++inboxRequestNonce;
-      const params = new URLSearchParams({ kwami_id: kwamiId, page: String(page) });
-      if (category && category !== 'all') params.set('category', category);
-      const headers = await authHeaders();
-      const res = await fetch(`${API_BASE}/email/inbox?${params}`, { headers });
-      const data = await parseJson<{ messages: EmailMessage[] }>(res);
-      if (requestNonce !== inboxRequestNonce) return;
+      const { signal, isCurrent } = guard.begin('inbox');
+      const data = await api.get<{ messages: EmailMessage[] }>('/email/inbox', {
+        query: {
+          kwami_id: kwamiId,
+          page,
+          category: category && category !== 'all' ? category : undefined,
+        },
+        signal,
+      });
+      if (!isCurrent()) return;
       if (page === 1) {
         messages.value = data.messages;
       } else {
         messages.value = [...messages.value, ...data.messages];
       }
       messagesByKwami.value[kwamiId] = messages.value;
+    } catch (e) {
+      if (isAbortError(e)) return;
+      throw e;
     } finally {
       isLoading.value = false;
     }
@@ -306,18 +281,17 @@ export const useEmailStore = defineStore('email', () => {
       return;
     }
     unreadCounts.value = unreadByKwami.value[kwamiId] ?? {};
-    const requestNonce = ++unreadRequestNonce;
+    const { signal, isCurrent } = guard.begin('unread');
     try {
-      const headers = await authHeaders();
-      const res = await fetch(
-        `${API_BASE}/email/unread-counts?kwami_id=${encodeURIComponent(kwamiId)}`,
-        { headers },
-      );
-      const data = await parseJson<{ counts: Record<string, number> }>(res);
-      if (requestNonce !== unreadRequestNonce) return;
+      const data = await api.get<{ counts: Record<string, number> }>('/email/unread-counts', {
+        query: { kwami_id: kwamiId },
+        signal,
+      });
+      if (!isCurrent()) return;
       unreadByKwami.value[kwamiId] = data.counts;
       unreadCounts.value = data.counts;
     } catch (e) {
+      if (isAbortError(e)) return;
       // Unread badges are decoration: a failure here must not reject out of
       // refreshInbox() and take the whole inbox load down with it.
       console.warn('Failed to fetch unread counts:', e);
@@ -331,9 +305,7 @@ export const useEmailStore = defineStore('email', () => {
   // ----- Single message -----
 
   async function fetchMessage(messageId: string) {
-    const headers = await authHeaders();
-    const res = await fetch(`${API_BASE}/email/messages/${messageId}`, { headers });
-    const data = await parseJson<{ message: EmailMessage }>(res);
+    const data = await api.get<{ message: EmailMessage }>(`/email/messages/${messageId}`);
     const idx = messages.value.findIndex((m) => m.id === messageId);
     if (idx !== -1) messages.value[idx] = data.message;
     return data.message;
@@ -354,13 +326,10 @@ export const useEmailStore = defineStore('email', () => {
   }
 
   async function _patchMessage(messageId: string, fields: Record<string, boolean>) {
-    const headers = await authHeaders();
-    const res = await fetch(`${API_BASE}/email/messages/${messageId}`, {
-      method: 'PATCH',
-      headers,
-      body: JSON.stringify(fields),
-    });
-    const data = await parseJson<{ message: EmailMessage }>(res);
+    const data = await api.patch<{ message: EmailMessage }>(
+      `/email/messages/${messageId}`,
+      fields,
+    );
     const idx = messages.value.findIndex((m) => m.id === messageId);
     if (idx !== -1) messages.value[idx] = data.message;
     if (fields.is_archived) {
@@ -381,20 +350,19 @@ export const useEmailStore = defineStore('email', () => {
   }) {
     isSending.value = true;
     try {
-      const headers = await authHeaders();
-      const res = await fetch(`${API_BASE}/email/send`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
+      const data = await api.post<{ ok: boolean; message: EmailMessage }>(
+        '/email/send',
+        {
           kwami_id: _kwamiId(),
           to_addresses: params.to,
           cc_addresses: params.cc ?? [],
           subject: params.subject,
           body_text: params.bodyText,
           body_html: params.bodyHtml ?? '',
-        }),
-      });
-      const data = await parseJson<{ ok: boolean; message: EmailMessage }>(res);
+        },
+        // Sending is not idempotent: never retry it.
+        { retry: false, timeoutMs: 30_000 },
+      );
       return data.message;
     } finally {
       isSending.value = false;
