@@ -10,7 +10,7 @@ Run a local Kwami App against a backend API, LiveKit, and Supabase.
 | [bun](https://bun.sh) | 1.2.21+ | Package manager and script runner (CI uses 1.2.21) |
 | Kwami API | running | Token issuer, catalogues, memory, credits |
 | LiveKit | Cloud or self-hosted | Real-time voice |
-| Supabase project | Auth + tables | Google provider, `user_kwamis`, `user_app_settings` |
+| Supabase project | Auth + tables | Providers listed in `VITE_AUTH_PROVIDERS`, `user_kwamis`, `user_app_settings` |
 
 Optional: [Rust](https://www.rust-lang.org/tools/install) 1.77.2+ and the Tauri prerequisites if you want the desktop shell.
 
@@ -28,9 +28,9 @@ Edit `.env`. Minimum viable set:
 ```bash
 VITE_API_URL=http://localhost:8080
 VITE_LIVEKIT_URL=wss://your-project.livekit.cloud
-VITE_LIVEKIT_TOKEN_ENDPOINT=http://localhost:8080/token
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+# VITE_AUTH_PROVIDERS=google
 ```
 
 Full variable list: [Environment](environment.md).
@@ -41,9 +41,9 @@ Full variable list: [Environment](environment.md).
 bun run dev
 ```
 
-The Vite server listens on [http://localhost:5173](http://localhost:5173) (`strictPort: true`). Open it, sign in with Google, and a default companion is created if the account has none.
+The Vite server listens on [http://localhost:5173](http://localhost:5173) (`strictPort: true`). Open it, sign in with a provider listed in `VITE_AUTH_PROVIDERS` (default Google), and a default companion is created if the account has none.
 
-You cannot have a useful voice session without a reachable token endpoint and LiveKit URL. The 3D avatar still renders without them.
+You cannot have a useful voice session without a reachable API (`POST /token`) and LiveKit URL. The 3D avatar still renders without them.
 
 ## Local Kwami SDK
 

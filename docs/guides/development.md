@@ -57,12 +57,11 @@ Full list: [Keyboard shortcuts](../reference/keyboard-shortcuts.md).
 
 1. Create `src/components/panels/settings/<name>/<Name>Panel.vue`
 2. Lazy-import it in `App.vue` and add a `v-if="uiStore.activePanel === '…'"`
-3. Register the id in [`panel-icons.ts`](../../src/constants/panel-icons.ts)
-4. Add the nav button in `SidebarNavigation.vue`
-5. Add the id to `SETTINGS_PANEL_KEYS` or `APPS_PANEL_KEYS` in `usePanelShortcuts.ts` if it should have a digit shortcut
-6. Add i18n strings in `src/i18n/translations/en.ts` and `es.ts`
+3. Add the id to the right group in [`src/constants/panels.ts`](../../src/constants/panels.ts) (sidebar, digit shortcuts, and agent tools all read this)
+4. Register the id in [`panel-icons.ts`](../../src/constants/panel-icons.ts)
+5. Add i18n strings in `src/i18n/translations/en.ts` and `es.ts`
 
-If the panel is something the voice agent should open, add an alias in `useWorkspaceAgentTools.ts` (`PANEL_ALIASES` / `WORKSPACE_PANELS`).
+If the panel is something the voice agent should open, add an alias in `useWorkspaceAgentTools.ts` (`PANEL_ALIASES`). Do not hand-edit shortcut arrays.
 
 ## Adding an API resource
 

@@ -23,7 +23,7 @@ flowchart LR
 
 | Method | Path | Notes |
 | --- | --- | --- |
-| POST | `VITE_LIVEKIT_TOKEN_ENDPOINT` | Usually `{API}/token`. Body/query come from the Kwami SDK. 402 → insufficient credits |
+| POST | `/token` | Body `{ participantName?, kwamiId? }`. No `roomName` (server generates it). `kwamiId` only for persisted workspaces. `retry: false`, 20s. 402 → insufficient credits |
 
 ## Catalogues
 

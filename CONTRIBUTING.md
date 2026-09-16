@@ -12,6 +12,7 @@ Also read:
 - [Development](docs/guides/development.md)
 - [Testing](docs/guides/testing.md)
 - [Security](SECURITY.md)
+- [Changelog](CHANGELOG.md) — user-visible changes go under `[Unreleased]`
 
 ## Fast path
 

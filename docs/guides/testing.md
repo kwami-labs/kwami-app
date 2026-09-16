@@ -43,7 +43,6 @@ VITE_API_URL=http://localhost:8080
 VITE_SUPABASE_URL=http://localhost:54321
 VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_test
 VITE_LIVEKIT_URL=wss://livekit.test
-VITE_LIVEKIT_TOKEN_ENDPOINT=http://localhost:8080/token
 ```
 
 Coverage (v8): text, HTML, lcov. Thresholds are a ratchet — raise, do not lower:

@@ -68,7 +68,7 @@ sequenceDiagram
   participant Agent as Voice agent
 
   UI->>K: connect()
-  K->>API: token endpoint + Bearer
+  K->>API: POST /token + Bearer
   alt 402 insufficient credits
     API-->>K: 402
     K-->>UI: kwami:insufficient-credits
@@ -114,7 +114,7 @@ Usage is billed on the backend when a voice session ends. The client:
 
 1. Loads `/credits/balance` on sign-in
 2. Reloads balance and usage logs on `kwami:disconnected`
-3. Surfaces `kwami:insufficient-credits` as a toast if the token endpoint returns 402
+3. Surfaces `kwami:insufficient-credits` as a toast if `POST /token` returns 402
 
 See [Credits](../concepts/credits.md).
 

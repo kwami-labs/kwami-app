@@ -39,4 +39,4 @@ On `kwami:disconnected`, `App.vue` reloads balance and usage — the backend rep
 | GET | `/credits/transactions` | yes | Ledger |
 | GET | `/credits/usage` | yes | Per-model line items (`stt` \| `llm` \| `tts` \| `realtime`) |
 
-A 402 from the LiveKit token endpoint is not a credits route; `useKwami` still maps it to `kwami:insufficient-credits` and a toast (`apiErrors.insufficientCredits`).
+A 402 from `POST /token` is not a credits route; `useKwami` still maps it to `kwami:insufficient-credits` and a toast (`apiErrors.insufficientCredits`).

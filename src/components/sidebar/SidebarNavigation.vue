@@ -6,6 +6,12 @@ import { usePanelShortcuts } from '@/composables/usePanelShortcuts';
 import SidebarKwamiSection from '@/components/sidebar/SidebarKwamiSection.vue';
 import { useI18n } from 'vue-i18n';
 import { useWorkspaceStore } from '@/stores/workspace';
+import {
+  appsPanelOrder,
+  SETTINGS_AGENT_PANELS,
+  SETTINGS_INFO_PANELS,
+  SETTINGS_VISUAL_PANELS,
+} from '@/constants/panels';
 import { useCommunicationsStore } from '@/stores/communications';
 import { fetchKwamiCommunications } from '@/composables/useCommunicationsApi';
 
@@ -107,14 +113,11 @@ async function refreshPhoneActivationStatus() {
   }
 }
 
-const appPanels = computed(() => {
-  const kwamiId = workspaceStore.activeWorkspaceId;
-  const phoneActivated = communicationsStore.isKwamiPhoneActivated(kwamiId);
-  const base = ['contacts', 'email', 'phone'] as string[];
-  if (phoneActivated) base.push('whatsapp', 'sms');
-  base.push('history', 'wallet', 'calendar');
-  return base;
-});
+// Shared with usePanelShortcuts so the keyboard and the sidebar can never
+// disagree about which panels exist or which are gated.
+const appPanels = computed(() =>
+  appsPanelOrder(communicationsStore.isKwamiPhoneActivated(workspaceStore.activeWorkspaceId)),
+);
 
 watch(
   () => workspaceStore.activeWorkspaceId,
@@ -142,7 +145,7 @@ watch(
         <div class="nav-group">
           <span class="switcher-label">{{ t('sidebar.visual') }}</span>
           <button
-            v-for="p in ['avatar', 'audio', 'scene', 'theme']"
+            v-for="p in SETTINGS_VISUAL_PANELS"
             :key="p"
             class="nav-btn"
             :class="{ active: uiStore.activePanel === p && uiStore.isPanelOpen }"
@@ -158,7 +161,7 @@ watch(
         <div class="nav-group">
           <span class="switcher-label">{{ t('sidebar.agent') }}</span>
           <button
-            v-for="p in ['models', 'voice', 'soul', 'memory', 'enhancements', 'tools']"
+            v-for="p in SETTINGS_AGENT_PANELS"
             :key="p"
             class="nav-btn"
             :class="{ active: uiStore.activePanel === p && uiStore.isPanelOpen }"
@@ -174,7 +177,7 @@ watch(
         <div class="nav-group">
           <span class="switcher-label">{{ t('sidebar.info') }}</span>
           <button
-            v-for="p in ['metrics', 'info']"
+            v-for="p in SETTINGS_INFO_PANELS"
             :key="p"
             class="nav-btn"
             :class="{ active: uiStore.activePanel === p && uiStore.isPanelOpen }"

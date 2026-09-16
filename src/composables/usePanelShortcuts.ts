@@ -1,51 +1,41 @@
 import { onMounted, onUnmounted } from 'vue';
+import { appsPanelOrder, SETTINGS_PANEL_ORDER } from '@/constants/panels';
+import { useCommunicationsStore } from '@/stores/communications';
 import { useUIStore } from '@/stores/ui';
+import { useWorkspaceStore } from '@/stores/workspace';
 import { isBareShortcut } from '@/utils/keyboard';
-
-const SETTINGS_PANEL_KEYS: (string | null)[] = [
-  'avatar',
-  'scene',
-  'audio',
-  'voice',
-  'enhancements',
-  'metrics',
-  'soul',
-  'memory',
-  'tools',
-  'info',
-  'account',
-];
-
-const APPS_PANEL_KEYS: (string | null)[] = [
-  'contacts',
-  'email',
-  'phone',
-  'whatsapp',
-  'sms',
-  'history',
-  'wallet',
-  'calendar',
-];
 
 export function usePanelShortcuts() {
   const uiStore = useUIStore();
+  const communicationsStore = useCommunicationsStore();
+  const workspaceStore = useWorkspaceStore();
+
+  /**
+   * Same list the sidebar renders, including the phone-activation gate — a
+   * digit key must never open a panel the sidebar is hiding.
+   */
+  function panelOrder(): readonly string[] {
+    if (uiStore.sidebarMode !== 'apps') return SETTINGS_PANEL_ORDER;
+    const phoneActivated = communicationsStore.isKwamiPhoneActivated(
+      workspaceStore.activeWorkspaceId,
+    );
+    return appsPanelOrder(phoneActivated);
+  }
 
   function handleKeydown(e: KeyboardEvent) {
     if (!isBareShortcut(e)) return;
-    const panelKeys = uiStore.sidebarMode === 'apps' ? APPS_PANEL_KEYS : SETTINGS_PANEL_KEYS;
-    if (e.key >= '1' && e.key <= '9') {
-      const idx = parseInt(e.key) - 1;
-      const panel = panelKeys[idx];
-      if (panel) uiStore.setPanel(panel);
-    } else if (e.key === '0') {
-      if (uiStore.sidebarMode === 'settings') uiStore.setPanel('memory');
-    } else if (e.key === '-') {
-      if (uiStore.sidebarMode === 'settings') uiStore.setPanel('tools');
-    } else if (e.key === '=') {
-      if (uiStore.sidebarMode === 'settings') uiStore.setPanel('info');
-    } else if (e.key.toLowerCase() === 'p') {
+    if (e.key.toLowerCase() === 'p') {
       uiStore.togglePanel();
+      return;
     }
+
+    // 1-9 then 0, -, = so the whole list stays reachable as it grows.
+    const KEY_SEQUENCE = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '='];
+    const index = KEY_SEQUENCE.indexOf(e.key);
+    if (index === -1) return;
+
+    const panel = panelOrder()[index];
+    if (panel) uiStore.setPanel(panel);
   }
 
   function handlePanelClick(panel: string) {

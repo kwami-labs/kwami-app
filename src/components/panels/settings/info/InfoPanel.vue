@@ -168,7 +168,10 @@ onUnmounted(() => {
           <div class="shortcut-group">
             <span class="shortcut-group-title">{{ t('infoPanel.panelNavigation') }}</span>
             <div class="shortcut-item"><kbd>P</kbd> <span>{{ t('infoPanel.togglePanel') }}</span></div>
-            <div class="shortcut-item"><kbd>1</kbd>-<kbd>8</kbd> <span>{{ t('infoPanel.switchPanels') }}</span></div>
+            <div class="shortcut-item">
+              <kbd>1</kbd>-<kbd>9</kbd> <kbd>0</kbd> <kbd>-</kbd> <kbd>=</kbd>
+              <span>{{ t('infoPanel.switchPanels') }}</span>
+            </div>
           </div>
         </div>
       </section>
@@ -191,7 +194,7 @@ onUnmounted(() => {
           </div>
           <div class="guide-item">
             <iconify-icon icon="ph:robot-duotone"></iconify-icon>
-            <div><strong>{{ t('sidebar.panels.agent') }}</strong> <span>{{ t('infoPanel.connection') }}</span></div>
+            <div><strong>{{ t('sidebar.agent') }}</strong> <span>{{ t('infoPanel.connection') }}</span></div>
           </div>
           <div class="guide-item">
             <iconify-icon icon="ph:microphone-duotone"></iconify-icon>

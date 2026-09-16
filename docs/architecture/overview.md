@@ -45,7 +45,7 @@ flowchart LR
 | `kwami` SDK | Same process | Three.js scene, LiveKit room, soul, client tools |
 | Kwami API | `VITE_API_URL` | Tokens, catalogues, memory CRUD, credits, channels, apps |
 | LiveKit agent | LiveKit Cloud / self-hosted | Real-time voice pipeline and server tools |
-| Supabase | Cloud project | Google/email auth, `user_kwamis`, `user_app_settings` |
+| Supabase | Cloud project | OAuth / wallet sign-in, `user_kwamis`, `user_app_settings` |
 | Zep | Behind the API | Long-term graph memory (never called from the browser) |
 
 The frontend **does not** ship Zep credentials. The SDK's in-browser `memory` class is a stub. Recall and graph mutations go through `/memory/*` on the API. See [Memory](../concepts/memory.md).
@@ -110,10 +110,13 @@ kwami-app/
 3. **Per-kwami isolation.** Memory, channels, contacts, email, wallet, and calendar are keyed by the active workspace id.
 4. **Explicit persistence.** Draft companion config lives in Pinia and is marked dirty; saving to Supabase is a user action.
 5. **Window events as a bus.** Transcription, credits, browser sessions, and avatar sync listen on `window` custom events so panels can stay lazy-loaded. See [Events](../reference/events.md).
-6. **No secrets in the bundle.** Only `VITE_*` public values ship to the client. Provider API keys stay on the backend.
+6. **No secrets in the bundle.** Only `VITE_*` public values ship to the client. Provider API keys stay on the backend. Recorded as [ADRs](../adr/README.md).
 
 ## Related pages
 
 - [Frontend architecture](frontend.md)
 - [Data flow](data-flow.md)
 - [Backend integration](backend-integration.md)
+- [Deployment](deployment.md)
+- [Security](../security.md)
+- [ADRs](../adr/README.md)

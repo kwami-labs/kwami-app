@@ -13,9 +13,10 @@ This client is tightly coupled to the Kwami API. Security fixes land on `main` f
 
 The browser bundle only contains `VITE_*` values. Those are **public**:
 
-- API origin
-- LiveKit WebSocket URL and token endpoint URL
+- API origin (`POST /token` is on this origin)
+- LiveKit WebSocket URL
 - Supabase URL and publishable (anon) key
+- Optional `VITE_AUTH_PROVIDERS` list
 
 The following must **never** appear in this repository, in `VITE_*`, or in client code:
 
@@ -26,7 +27,7 @@ The following must **never** appear in this repository, in `VITE_*`, or in clien
 - Supabase `service_role` keys
 - Any user's access token in logs, issues, or fixtures
 
-Memory and billing always go through the backend. See [Backend integration](docs/architecture/backend-integration.md).
+Memory and billing always go through the backend. Threat model and review list: [docs/security.md](docs/security.md). HTTP contract: [Backend integration](docs/architecture/backend-integration.md).
 
 ## Reporting a vulnerability
 
