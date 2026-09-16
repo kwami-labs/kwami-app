@@ -64,6 +64,4 @@ Kwami App is the **client**. The voice agent, token issuer, memory service, and 
 | --- | --- |
 | [kwami](https://github.com/kwami-labs/kwami) | 3D companion SDK (avatar, LiveKit agent, soul, tools) |
 | [kwami-app](https://github.com/kwami-labs/kwami-app) | This repository — Vue web / PWA / Tauri client |
-| [kwami-api](https://github.com/kwami-labs/kwami-api) | Backend API (tokens, memory, credits, catalogues) |
-
-If a sibling repo is not public yet, treat the API contract in [reference/api.md](reference/api.md) as the source of truth for this client.
+| Kwami API | Backend at `VITE_API_URL` (tokens, memory, credits, catalogues). Client contract: [reference/api.md](reference/api.md) |
