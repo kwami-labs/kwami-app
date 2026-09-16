@@ -1,29 +1,53 @@
+# Dependencies
+node_modules/
+
+# Build
+dist/
+dist-ssr/
+# vite-plugin-pwa writes a service worker here during `vite dev`
+dev-dist/
+*.local
+
+# Tests — Vitest coverage and Playwright artifacts
+coverage/
+playwright-report/
+blob-report/
+playwright/.cache/
+test-results/
+
+# TypeScript incremental builds
+*.tsbuildinfo
+
+# Environment — keep committed samples and the fake e2e file
+.env
+.env.local
+.env.*.local
+!.env.sample
+!.env.test
+
 # Logs
-logs
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+bun-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# Tauri / Cargo (also listed in src-tauri/.gitignore)
+src-tauri/target/
+src-tauri/gen/schemas
 
-# Environment variables
-.env
-.env.local
-.env.*.local
-
-# Editor directories and files
+# Editor and OS
 .vscode/*
 !.vscode/extensions.json
-.idea
+.idea/
 .DS_Store
+Thumbs.db
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+*~
