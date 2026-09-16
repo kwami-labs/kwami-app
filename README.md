@@ -116,7 +116,6 @@ Full walkthrough: [Getting started](docs/guides/getting-started.md)
 | --- | --- |
 | `VITE_API_URL` | Kwami API base URL |
 | `VITE_LIVEKIT_URL` | LiveKit WebSocket URL |
-| `VITE_LIVEKIT_TOKEN_ENDPOINT` | Room-token issuer |
 | `VITE_SUPABASE_URL` | Supabase project URL |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase anon / publishable key |
 
