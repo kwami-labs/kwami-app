@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import GoogleButton from './GoogleButton.vue';
+import ProviderButton from './ProviderButton.vue';
+import {
+  enabledWeb2Providers,
+  enabledWeb3Providers,
+  hasWeb3Providers,
+} from './providers';
 
 const props = withDefaults(defineProps<{ open?: boolean }>(), {
   open: false,
@@ -9,6 +16,12 @@ const emit = defineEmits<{ (e: 'update:open', value: boolean): void }>();
 const isOpen = computed(() => props.open);
 const panelRef = ref<HTMLElement | null>(null);
 const activeTab = ref<'web2' | 'web3'>('web2');
+const { t } = useI18n();
+
+// Google keeps its own component: it carries an inline multi-colour SVG that
+// Iconify cannot reproduce faithfully.
+const web2Others = computed(() => enabledWeb2Providers.filter((p) => p.id !== 'google'));
+const showGoogle = computed(() => enabledWeb2Providers.some((p) => p.id === 'google'));
 
 function openPanel() {
   activeTab.value = 'web2';
@@ -42,7 +55,7 @@ onUnmounted(() => {
     class="login-entry"
     :class="{ 'login-entry--open': isOpen }"
     role="dialog"
-    aria-label="Login options"
+    :aria-label="t('auth.loginOptions')"
   >
     <button
       class="login-cta"
@@ -50,11 +63,11 @@ onUnmounted(() => {
       type="button"
       @click="!isOpen && openPanel()"
     >
-      Login
+      {{ t('auth.loginCta') }}
     </button>
 
     <div class="login-panel" :class="{ 'login-panel--open': isOpen }">
-      <div class="tab-shell" role="tablist" aria-label="Login type tabs">
+      <div v-if="hasWeb3Providers" class="tab-shell" role="tablist" :aria-label="t('auth.loginTypeTabs')">
         <div class="tab-indicator" :class="{ 'tab-indicator--web3': activeTab === 'web3' }" />
         <button
           class="tab-btn"
@@ -64,7 +77,7 @@ onUnmounted(() => {
           :aria-selected="activeTab === 'web2'"
           @click="activeTab = 'web2'"
         >
-          Web2
+          {{ t('auth.tabWeb2') }}
         </button>
         <button
           class="tab-btn"
@@ -74,39 +87,25 @@ onUnmounted(() => {
           :aria-selected="activeTab === 'web3'"
           @click="activeTab = 'web3'"
         >
-          Web3
+          {{ t('auth.tabWeb3') }}
         </button>
       </div>
 
       <Transition name="tab-swap" mode="out-in">
         <div v-if="isOpen && activeTab === 'web2'" key="web2" class="provider-group">
-          <GoogleButton />
-          <button class="provider-btn" type="button" aria-label="Continue with Apple">
-            <iconify-icon icon="logos:apple" />
-            <span>Continue with Apple</span>
-          </button>
-          <button class="provider-btn" type="button" aria-label="Continue with Microsoft">
-            <iconify-icon icon="logos:microsoft-icon" />
-            <span>Continue with Microsoft</span>
-          </button>
-          <button class="provider-btn" type="button" aria-label="Continue with GitHub">
-            <iconify-icon icon="mdi:github" />
-            <span>Continue with GitHub</span>
-          </button>
+          <GoogleButton v-if="showGoogle" />
+          <ProviderButton
+            v-for="provider in web2Others"
+            :key="provider.id"
+            :provider="provider"
+          />
         </div>
         <div v-else-if="isOpen" key="web3" class="provider-group">
-          <button class="provider-btn" type="button" aria-label="Continue with MetaMask">
-            <iconify-icon icon="simple-icons:metamask" />
-            <span>Continue with MetaMask</span>
-          </button>
-          <button class="provider-btn" type="button" aria-label="Continue with Phantom">
-            <iconify-icon icon="simple-icons:phantom" />
-            <span>Continue with Phantom</span>
-          </button>
-          <button class="provider-btn" type="button" aria-label="Continue with WalletConnect">
-            <iconify-icon icon="simple-icons:walletconnect" />
-            <span>Continue with WalletConnect</span>
-          </button>
+          <ProviderButton
+            v-for="provider in enabledWeb3Providers"
+            :key="provider.id"
+            :provider="provider"
+          />
         </div>
       </Transition>
     </div>
