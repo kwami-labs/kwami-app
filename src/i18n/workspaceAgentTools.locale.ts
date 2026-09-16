@@ -1,4 +1,15 @@
+/**
+ * Agent tool descriptions and responses.
+ *
+ * These are nested under a `workspaceAgentTools` key because every one of the
+ * 219 call sites in useWorkspaceAgentTools.ts asks for
+ * `t('workspaceAgentTools.<key>')`. They were previously exported flat and
+ * spread at the top level of the message bundle, so none of them resolved:
+ * vue-i18n returned the key path itself, and those strings are what gets sent
+ * to the model as tool descriptions.
+ */
 export const workspaceAgentToolsEn = {
+  workspaceAgentTools: {
   "panels": {
     "avatar": "Avatar",
     "scene": "Scene",
@@ -234,9 +245,11 @@ export const workspaceAgentToolsEn = {
   "calendarDeleted": "Deleted event {id}.",
   "calendarDeleteFailed": "Failed to delete calendar event",
   "confirmRequired": "Confirmation required. Set confirm=true to proceed."
+  },
 } as const;
 
 export const workspaceAgentToolsEs = {
+  workspaceAgentTools: {
   "panels": {
     "avatar": "Avatar",
     "scene": "Escena",
@@ -472,4 +485,5 @@ export const workspaceAgentToolsEs = {
   "calendarDeleted": "Evento {id} eliminado.",
   "calendarDeleteFailed": "No se pudo eliminar el evento de calendario",
   "confirmRequired": "Se requiere confirmacion. Establece confirm=true para continuar."
+  },
 } as const;
