@@ -26,11 +26,11 @@ let camera: THREE.PerspectiveCamera
 let renderer: THREE.WebGLRenderer
 let controls: OrbitControls
 let animationId: number
-let nodeObjects: Map<string, THREE.Mesh> = new Map()
+const nodeObjects: Map<string, THREE.Mesh> = new Map()
 let edgeObjects: THREE.Line[] = []
-let labelSprites: Map<string, THREE.Sprite> = new Map()
+const labelSprites: Map<string, THREE.Sprite> = new Map()
 let edgeLabelSprites: THREE.Sprite[] = []
-let positions3D: Map<string, THREE.Vector3> = new Map()
+const positions3D: Map<string, THREE.Vector3> = new Map()
 let nodeDegrees: Map<string, number> = new Map()
 let raycaster: THREE.Raycaster
 let mouse: THREE.Vector2
@@ -304,7 +304,7 @@ function buildGraphObjects() {
       
       const labelPos = curve.getPoint(0.5).clone()
       
-      let offset = new THREE.Vector3(0, 0, 0)
+      const offset = new THREE.Vector3(0, 0, 0)
       const labelSpacing = 15
       for (const existingPos of edgeLabelPositions) {
         const dist = labelPos.distanceTo(existingPos)

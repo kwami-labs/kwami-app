@@ -49,12 +49,10 @@ function getBlob() {
   return kwami.value?.avatar.getBlob();
 }
 function getBlackHole() {
-  const avatar = kwami.value?.avatar as { getBlackHole?: () => unknown } | undefined;
-  return avatar?.getBlackHole?.();
+  return kwami.value?.avatar.getBlackHole() ?? undefined;
 }
 function getEyeIris() {
-  const avatar = kwami.value?.avatar as { getEyeIris?: () => unknown } | undefined;
-  return avatar?.getEyeIris?.();
+  return kwami.value?.avatar.getEyeIris() ?? undefined;
 }
 
 // =====================================================

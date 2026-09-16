@@ -12,6 +12,7 @@ import { useBlobXyzStore } from './avatar.blob-xyz';
 import { useBlackHoleStore } from './avatar.black-hole';
 import { useParticlesFaceStore } from './avatar.particles-face';
 import { useEyeIrisStore } from './avatar.eye-iris';
+import type { AvatarRendererType } from 'kwami';
 
 // Re-export AvatarPreset for backwards compatibility
 export type { AvatarPreset };
@@ -23,7 +24,7 @@ export type SkinType =
   | 'chrome' | 'clay' | 'jade' | 'toon-matcap' | 'hologram'
   | 'flat' | 'stepped' | 'halftone' | 'outlined';
 export type AvatarState = 'idle' | 'listening' | 'thinking' | 'speaking';
-export type RendererType = 'blob-xyz' | 'black-hole' | 'particles-face' | 'eye-iris';
+export type RendererType = AvatarRendererType;
 
 // Interaction Types
 export type InteractionAction =

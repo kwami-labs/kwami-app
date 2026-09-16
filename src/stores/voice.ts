@@ -163,7 +163,7 @@ export const useVoiceStore = defineStore('voice', () => {
     },
     interruptions: { enabled: true, minDuration: 0.5, minWords: 0 },
     noiseCancellation: { enabled: true, mode: 'bvc' as 'bvc' | 'krisp' | 'default' },
-    vad: { provider: 'silero', threshold: 0.5, minSpeech: 0.1, minSilence: 0.5 },
+    vad: { provider: 'silero' as const, threshold: 0.5, minSpeech: 0.1, minSilence: 0.5 },
     audioProcessing: { echoCancellation: true, autoGainControl: true },
     performance: { preemptiveGeneration: false },
   });

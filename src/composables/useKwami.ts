@@ -1,6 +1,6 @@
 import { shallowRef, ref, computed } from 'vue';
 import { Kwami } from 'kwami';
-import type { KwamiConfig } from 'kwami';
+import type { AvatarRendererType, KwamiConfig } from 'kwami';
 import { useVoiceStore } from '@/stores/voice';
 import { useAuthStore } from '@/stores/auth';
 import { useWorkspaceStore } from '@/stores/workspace';
@@ -13,7 +13,7 @@ declare global {
 
 // Singleton state
 const kwamiInstance = shallowRef<Kwami | null>(null);
-const rendererType = ref<'blob-xyz' | 'black-hole' | 'particles-face' | 'eye-iris'>('blob-xyz');
+const rendererType = ref<AvatarRendererType>('blob-xyz');
 const isConnected = ref(false);
 
 export function useKwami() {
@@ -340,7 +340,7 @@ export function useKwami() {
     }
   }
 
-  function switchRenderer(newRenderer: 'blob-xyz' | 'black-hole' | 'particles-face' | 'eye-iris') {
+  function switchRenderer(newRenderer: AvatarRendererType) {
     if (!kwamiInstance.value) {
       console.warn('Cannot switch renderer: Kwami not initialized');
       return;

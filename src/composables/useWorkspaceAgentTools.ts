@@ -22,7 +22,7 @@ import { useParticlesFaceStore } from '@/stores/avatar.particles-face';
 import { useTranscriptionState } from '@/composables/useTranscriptionState';
 import { useAgentActionState } from '@/composables/useAgentActionState';
 import { avatarPresets } from '@/presets/avatar/avatar-presets';
-import { useEmailStore } from '@/stores/email';
+import { useEmailStore, type EmailCategory } from '@/stores/email';
 import { useCalendarStore, type CalendarEventType } from '@/stores/calendar';
 
 const WORKSPACE_PANELS = [
@@ -138,6 +138,16 @@ function normalizeDomain(domain: unknown): UiControlDomain | null {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Tool handlers receive `Record<string, unknown>` from the agent, so every
+ * parameter has to be narrowed before use rather than assumed to be a string.
+ */
+function asString(value: unknown, fallback = ''): string {
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  return fallback;
 }
 
 function getErrorMessage(error: unknown): string {
@@ -278,7 +288,7 @@ export function useWorkspaceAgentTools() {
           ...agent.getConfig().livekit?.voice,
           ...voiceConfig,
         },
-      } as unknown,
+      },
     });
 
     if (isConnected.value) {
@@ -1530,10 +1540,12 @@ export function useWorkspaceAgentTools() {
     const calendarStore = useCalendarStore();
     let _lastEmailListing: { id: string; from_address: string; subject: string }[] = [];
 
-    function _resolveRef(ref: string): { id: string; from_address: string; subject: string } | null {
+    function _resolveRef(rawRef: unknown): { id: string; from_address: string; subject: string } | null {
+      const ref = asString(rawRef).trim();
+      if (!ref) return null;
       const num = parseInt(ref, 10);
       if (!isNaN(num) && num >= 1 && num <= _lastEmailListing.length) {
-        return _lastEmailListing[num - 1];
+        return _lastEmailListing[num - 1] ?? null;
       }
       if (ref.includes('-')) {
         return _lastEmailListing.find((m) => m.id === ref) ?? { id: ref, from_address: '', subject: '' };
@@ -1552,9 +1564,12 @@ export function useWorkspaceAgentTools() {
       },
       handler: async ({ category }) => {
         if (!emailStore.isActivated) return 'Email is not activated for this kwami.';
-        const msgs = (await emailStore.queryInbox(category ?? 'all')).slice(0, 10);
+        // The store has no queryInbox(); fetchInbox() populates `messages`.
+        const cat = asString(category, 'all') as EmailCategory;
+        await emailStore.fetchInbox(cat);
+        const msgs = emailStore.messages.slice(0, 10);
         _lastEmailListing = msgs.map((m) => ({ id: m.id, from_address: m.from_address, subject: m.subject }));
-        if (msgs.length === 0) return `No ${category && category !== 'all' ? category + ' ' : ''}emails found.`;
+        if (msgs.length === 0) return `No ${cat !== 'all' ? cat + ' ' : ''}emails found.`;
         return msgs
           .map((m, i) => `${i + 1}. [${m.is_read ? 'read' : 'UNREAD'}] From: ${m.from_address} | Subject: ${m.subject || '(no subject)'} | Category: ${m.category}`)
           .join('\n') + '\n\nUse the number (1, 2, 3...) to reference an email in other tools.';
@@ -1599,9 +1614,9 @@ export function useWorkspaceAgentTools() {
           await emailStore.sendEmail({
             to: [replyTo],
             subject: replySubject.startsWith('Re:') ? replySubject : `Re: ${replySubject}`,
-            bodyText: body,
+            bodyText: asString(body),
           });
-          emailStore.refreshInbox();
+          void emailStore.refreshInbox();
           return `Reply sent to ${replyTo}.`;
         } catch (e: unknown) {
           return `Failed to send reply: ${getErrorMessage(e)}`;
@@ -1621,11 +1636,18 @@ export function useWorkspaceAgentTools() {
       handler: async ({ to, subject, body, confirm }) => {
         if (!emailStore.isActivated) return 'Email is not activated for this kwami.';
         if (!confirm) return t('workspaceAgentTools.confirmRequired');
-        const toList = to.split(/[,;]\s*/).map((a: string) => a.trim()).filter(Boolean);
+        const toList = asString(to)
+          .split(/[,;]\s*/)
+          .map((a) => a.trim())
+          .filter(Boolean);
         if (toList.length === 0) return 'No recipient provided.';
         try {
-          await emailStore.sendEmail({ to: toList, subject: subject || '', bodyText: body });
-          emailStore.refreshInbox();
+          await emailStore.sendEmail({
+            to: toList,
+            subject: asString(subject),
+            bodyText: asString(body),
+          });
+          void emailStore.refreshInbox();
           return `Email sent to ${toList.join(', ')}.`;
         } catch (e: unknown) {
           return `Failed to send email: ${getErrorMessage(e)}`;

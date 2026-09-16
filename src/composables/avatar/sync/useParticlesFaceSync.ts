@@ -1,4 +1,5 @@
 import { watch as vueWatch, type Ref } from 'vue';
+import type { ParticlesFaceHandle } from './rendererTypes';
 import { useParticlesFaceStore } from '@/stores/avatar.particles-face';
 
 type KwamiInstance = ReturnType<typeof import('@/composables/useKwami').useKwami>['kwami']['value'];
@@ -13,7 +14,7 @@ export interface UseParticlesFaceSyncOptions {
    */
   registerWatchers?: boolean;
   kwami: Ref<KwamiInstance>;
-  getParticlesFace: () => any | undefined;
+  getParticlesFace: () => ParticlesFaceHandle | undefined;
 }
 
 export function useParticlesFaceSync(options: UseParticlesFaceSyncOptions) {

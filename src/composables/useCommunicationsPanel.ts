@@ -160,7 +160,8 @@ export function useCommunicationsPanel(mode: Ref<CommunicationsPanelMode>) {
       }
 
       const index = Math.floor(Math.random() * results.length);
-      suggestedNumber.value = results[index] || results[0];
+      // results is non-empty here (guarded above), so this always resolves.
+      suggestedNumber.value = results[index] ?? results[0] ?? null;
       statusMessage.value = `Found a number for ${communicationsStore.numberSearch.countryCode || 'US'}.`;
     } catch (err) {
       error.value = err instanceof Error ? err.message : String(err);

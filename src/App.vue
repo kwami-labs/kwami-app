@@ -121,15 +121,15 @@ const { applyToKwami: applyBlobToKwami } = useBlobXyzSync({
 });
 const { applyToKwami: applyBlackHoleToKwami } = useBlackHoleSync({
   kwami,
-  getBlackHole: () => (kwami.value?.avatar as any)?.getBlackHole?.(),
+  getBlackHole: () => kwami.value?.avatar.getBlackHole() ?? undefined,
 });
 const { applyToKwami: applyParticlesFaceToKwami } = useParticlesFaceSync({
   kwami,
-  getParticlesFace: () => (kwami.value?.avatar as any)?.getParticlesFace?.(),
+  getParticlesFace: () => kwami.value?.avatar.getParticlesFace() ?? undefined,
 });
 const { applyToKwami: applyEyeIrisToKwami } = useEyeIrisSync({
   kwami,
-  getEyeIris: () => (kwami.value?.avatar as any)?.getEyeIris?.(),
+  getEyeIris: () => kwami.value?.avatar.getEyeIris() ?? undefined,
 });
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
@@ -194,7 +194,7 @@ function applySavedAvatarState() {
 
   // Switch to saved renderer if different from default
   if (kwamiRendererType.value !== savedRenderer) {
-    switchRenderer(savedRenderer as any);
+    switchRenderer(savedRenderer);
   }
 
   // Apply the saved state for the active renderer

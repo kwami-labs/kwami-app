@@ -234,7 +234,7 @@ export const es = {
     welcome: 'Bienvenido',
     signInContinue: 'Inicia sesion para continuar en Kwami App',
     orContinueWithEmail: 'o continua con email',
-    poweredBySupabase: 'Funciona con Supabase Auth',
+    footer: '© Kwami 2026. Todos los derechos reservados.',
     email: 'Email',
     changeEmail: 'Cambiar email',
     password: 'Contrasena',

@@ -4,7 +4,7 @@ import type { STTConfig, LLMConfig, TTSConfig, RealtimeConfig } from '@/stores/v
 export function useVoiceLiveUpdates(
     kwami: Ref<any>,
     isConnected: Ref<boolean>,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     _voiceStore: any,
     state: {
         stt: Ref<STTConfig>;
@@ -42,7 +42,7 @@ export function useVoiceLiveUpdates(
             });
         } else {
             // Realtime config
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+             
             const config = {
                 type: 'realtime' as const,
                 realtime: {

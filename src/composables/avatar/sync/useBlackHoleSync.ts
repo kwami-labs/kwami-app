@@ -5,6 +5,7 @@
  */
 
 import { watch as vueWatch, type Ref } from 'vue';
+import type { BlackHoleHandle } from './rendererTypes';
 import { useBlackHoleStore } from '@/stores/avatar.black-hole';
 
 // Local type for Kwami instance (avoid external dependency)
@@ -24,7 +25,7 @@ export interface UseBlackHoleSyncOptions {
    */
   registerWatchers?: boolean;
     kwami: Ref<KwamiInstance>;
-    getBlackHole: () => any | undefined;
+    getBlackHole: () => BlackHoleHandle | undefined;
 }
 
 // =====================================================

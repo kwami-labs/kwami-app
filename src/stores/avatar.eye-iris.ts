@@ -215,8 +215,10 @@ export const useEyeIrisStore = defineStore('eyeIris', () => {
     if (Math.random() > 0.8) state.color.collarette = randomHex();
   }
 
+  // importState merges a partial, so accept the renderer's config as one:
+  // the SDK's EyeIrisConfig is structurally compatible but not identical.
   function syncFromKwami(renderer: {
-    getConfig: () => EyeIrisState;
+    getConfig: () => Partial<EyeIrisState>;
     getScale: () => number;
   }) {
     const config = renderer.getConfig();

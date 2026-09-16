@@ -1,4 +1,5 @@
 import { watch as vueWatch, type Ref } from 'vue';
+import type { EyeIrisHandle } from './rendererTypes';
 import { useEyeIrisStore } from '@/stores/avatar.eye-iris';
 
 type KwamiInstance = ReturnType<typeof import('@/composables/useKwami').useKwami>['kwami']['value'];
@@ -13,7 +14,7 @@ export interface UseEyeIrisSyncOptions {
    */
   registerWatchers?: boolean;
   kwami: Ref<KwamiInstance>;
-  getEyeIris: () => any | undefined;
+  getEyeIris: () => EyeIrisHandle | undefined;
 }
 
 export function useEyeIrisSync(options: UseEyeIrisSyncOptions) {

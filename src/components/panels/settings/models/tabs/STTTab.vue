@@ -100,7 +100,7 @@ const sortedModelsFlat = computed(() => {
   const models = sttInferenceModels.value?.models || [];
   if (!models.length) return [];
   
-  let sorted = [...models];
+  const sorted = [...models];
   
   if (sortBy.value === 'price') {
     // Highest price first

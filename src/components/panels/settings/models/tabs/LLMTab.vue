@@ -104,7 +104,7 @@ const modelsByProvider = computed(() => {
 const sortedModelsFlat = computed(() => {
   if (!allModels.value.length) return [];
   
-  let models = [...allModels.value];
+  const models = [...allModels.value];
   
   if (sortBy.value === 'price') {
     // Highest price first (most expensive at top)
