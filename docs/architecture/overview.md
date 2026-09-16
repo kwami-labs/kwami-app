@@ -117,3 +117,6 @@ kwami-app/
 - [Frontend architecture](frontend.md)
 - [Data flow](data-flow.md)
 - [Backend integration](backend-integration.md)
+- [Deployment](deployment.md)
+- [Security](../security.md)
+- [ADRs](../adr/README.md)

@@ -50,16 +50,17 @@ Route inventory: [API reference](../reference/api.md).
 | Variable | Role |
 | --- | --- |
 | `VITE_LIVEKIT_URL` | WebSocket URL (`wss://…`) |
-| `VITE_LIVEKIT_TOKEN_ENDPOINT` | HTTP endpoint that returns a room JWT |
 
-`useKwami` passes those into `KwamiConfig.agent.livekit` together with:
+`useKwami` does **not** pass a `tokenEndpoint` into the SDK. `connect()` calls `api.post('/token', { participantName, kwamiId? })` so a `402` is a typed `ApiError`. See [ADR 0005](../adr/0005-token-minting-via-api-client.md).
 
+`KwamiConfig.agent.livekit` still receives:
+
+- `url` — `VITE_LIVEKIT_URL`
 - `userId` — the per-kwami `memoryUserId`
-- `authToken` — Supabase access token, so the token endpoint can authorize and debit credits
 - `voice` — current pipeline config from the voice store
 - `onSearchResults` — web-search hits shown as orbit cards
 
-The token endpoint is a backend concern. The client treats a 402 as out-of-energy.
+The client treats a 402 from `/token` as out-of-energy.
 
 Web search runs **on the agent**. Results arrive on the LiveKit data channel and become `kwami:search_results` / the `useSearchResults` store.
 
