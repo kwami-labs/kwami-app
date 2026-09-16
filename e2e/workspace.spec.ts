@@ -34,9 +34,12 @@ test.describe('panel navigation', () => {
     const sidebar = page.locator('.sidebar');
 
     // `p` toggles, so it can't be retried idempotently. Prove the keydown
-    // listener is live with a press that CAN be retried, then the toggles below
-    // are guaranteed to land.
-    await pressPanelKey(page, '1', 'avatar');
+    // listener is live with a press that CAN be retried first.
+    //
+    // Probe with '2' (scene), not '1' (avatar): avatar is already the default,
+    // so setPanel('avatar') changes nothing, the save watcher never fires and
+    // localStorage stays null — the probe would spin until it timed out.
+    await pressPanelKey(page, '2', 'scene');
 
     await expect(sidebar).not.toHaveClass(/collapsed/);
 
