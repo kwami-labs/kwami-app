@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { isEnvValid, missingEnvVars } from '@/lib/env';
 import { useAuthStore } from '@/stores/auth';
 import AuthPage from './AuthPage.vue';
 import WelcomeRings from '@/components/welcome/WelcomeRings.vue';
@@ -7,6 +9,7 @@ import WelcomeRings from '@/components/welcome/WelcomeRings.vue';
 const WELCOME_SOUND = '/welcome.mp3';
 const MIN_WELCOME_MS = 3500;
 
+const { t } = useI18n();
 const authStore = useAuthStore();
 const showWelcomeLayer = ref(false);
 const welcomeStartedAt = ref<number>(0);
@@ -57,6 +60,14 @@ onUnmounted(() => {
 
 <template>
   <div class="auth-guard">
+    <!-- A build with missing credentials cannot authenticate; say so plainly
+         instead of hanging on the welcome rings forever. -->
+    <div v-if="!isEnvValid" class="env-error" role="alert">
+      <iconify-icon icon="ph:warning-circle-duotone" aria-hidden="true" />
+      <h2>{{ t('auth.configError') }}</h2>
+      <p>{{ t('auth.configErrorHint', { vars: missingEnvVars.join(', ') }) }}</p>
+    </div>
+
     <!-- Welcome layer: rings + wordmark (Vue component so it always renders) -->
     <Transition name="fade">
       <div v-if="showWelcomeLayer" class="loading-container welcome-layer">
@@ -89,6 +100,35 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+.env-error {
+  position: absolute;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+  text-align: center;
+  background: var(--bg-primary, #050608);
+  color: var(--text-primary, #e8eaed);
+}
+.env-error iconify-icon {
+  font-size: 48px;
+  color: var(--danger, #ef4444);
+}
+.env-error h2 {
+  margin: 0;
+  font-size: 18px;
+}
+.env-error p {
+  margin: 0;
+  max-width: 40ch;
+  font-size: 14px;
+  opacity: 0.75;
+}
+
 .auth-guard {
   position: fixed;
   top: 0;
