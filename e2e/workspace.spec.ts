@@ -1,4 +1,4 @@
-import { test, expect, gotoApp, WELCOME_MS } from './fixtures';
+import { test, expect, gotoApp, reloadApp, WELCOME_MS } from './fixtures';
 
 const READY = { timeout: WELCOME_MS + 10_000 };
 
@@ -60,7 +60,7 @@ test.describe('persistence', () => {
     await page.keyboard.press('3');
     await expect.poll(() => page.evaluate(() => localStorage.getItem('kwami-active-panel'))).toBe('audio');
 
-    await page.reload();
+    await reloadApp(page);
     await expect(page.locator('.control-bar-container')).toBeVisible(READY);
 
     await expect.poll(() => page.evaluate(() => localStorage.getItem('kwami-active-panel'))).toBe('audio');
@@ -70,7 +70,7 @@ test.describe('persistence', () => {
     const before = await page.evaluate(() => localStorage.getItem('kwami-theme'));
     expect(before).not.toBeNull();
 
-    await page.reload();
+    await reloadApp(page);
     await expect(page.locator('.control-bar-container')).toBeVisible(READY);
 
     const after = await page.evaluate(() => localStorage.getItem('kwami-theme'));

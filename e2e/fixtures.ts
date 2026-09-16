@@ -125,6 +125,12 @@ export async function gotoApp(page: Page, path = '/') {
   await page.goto(path, { waitUntil: 'domcontentloaded' });
 }
 
+/** Reload with the same `domcontentloaded` rule as gotoApp — the default
+ * `load` can outlast the test timeout while the canvas is still fetching. */
+export async function reloadApp(page: Page) {
+  await page.reload({ waitUntil: 'domcontentloaded' });
+}
+
 export const test = base.extend<{ signedOut: Page; app: Page }>({
   /** App with all network stubbed but no session. */
   signedOut: async ({ page }, use) => {
