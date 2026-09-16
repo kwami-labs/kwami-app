@@ -1,9 +1,9 @@
 <script setup lang="ts">
+import { api, API_BASE, getAuthToken } from '@/lib/apiClient'
 import { ref, computed, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { getMemoryGraph, updateMemoryNode } from 'kwami'
 import type { UpdateNodePayload, UpdateEdgePayload } from 'kwami'
-import { useAuthStore } from '@/stores/auth'
 import { useToast } from 'vue-toastification'
 import type { MemoryGraph as GraphData, MemoryNode, MemoryEdge, ViewMode } from './types'
 import MemoryGraphHeader from './MemoryGraphHeader.vue'
@@ -17,10 +17,8 @@ import { translateApiUserMessage } from '@/utils/translateApiMessage'
 
 const props = defineProps<{
   userId: string
-  apiBaseUrl?: string
 }>()
 
-const authStore = useAuthStore()
 const toast = useToast()
 const { t } = useI18n()
 
@@ -69,11 +67,12 @@ const selectedNodeEdges = computed((): MemoryEdge[] => {
   )
 })
 
-const baseUrl = computed(() => props.apiBaseUrl || 'http://localhost:8080')
 
 // Helper: get auth options
+const apiBase = API_BASE
+
 async function getApiOptions() {
-  const authToken = await authStore.getAccessToken()
+  const authToken = await getAuthToken()
   return { authToken: authToken || undefined }
 }
 
@@ -86,10 +85,10 @@ async function fetchGraph() {
   selectedNode.value = null
   
   try {
-    console.log(`Fetching memory graph from: ${baseUrl.value}/memory/${props.userId}/graph`)
+    console.log(`Fetching memory graph from: ${API_BASE}/memory/${props.userId}/graph`)
     
     const options = await getApiOptions()
-    graph.value = await getMemoryGraph(baseUrl.value, props.userId, options)
+    graph.value = await getMemoryGraph(API_BASE, props.userId, options)
     
     // Auto-hide edge labels for dense graphs
     if (graph.value.edges.length > 40) {
@@ -122,7 +121,7 @@ function handleCloseDetails() {
 async function handleUpdateNode(nodeUuid: string, data: UpdateNodePayload) {
   try {
     const options = await getApiOptions()
-    await updateMemoryNode(baseUrl.value, props.userId, nodeUuid, data, options)
+    await updateMemoryNode(API_BASE, props.userId, nodeUuid, data, options)
     toast.success(t('memoryGraph.toastNodeUpdated'), { timeout: 2000 })
     
     // Optimistic local update while we refresh
@@ -240,25 +239,13 @@ async function confirmConnect() {
   
   isConnecting.value = true
   try {
-    const options = await getApiOptions()
-    const response = await fetch(`${baseUrl.value}/memory/${props.userId}/connect`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(options.authToken ? { 'Authorization': `Bearer ${options.authToken}` } : {}),
-      },
-      body: JSON.stringify({
-        source_node_uuid: linkSource.value.uuid,
-        target_node_uuid: linkTarget.value.uuid,
-        relation: connectRelation.value.trim().toUpperCase().replace(/\s+/g, '_'),
-        fact: connectFact.value.trim() || undefined,
-      }),
+    await api.post(`/memory/${props.userId}/connect`, {
+      source_node_uuid: linkSource.value.uuid,
+      target_node_uuid: linkTarget.value.uuid,
+      relation: connectRelation.value.trim().toUpperCase().replace(/\s+/g, '_'),
+      fact: connectFact.value.trim() || undefined,
     })
-    
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}))
-      throw new Error(err.detail || 'Failed to connect')
-    }
+
     
     toast.success(
       t('memoryGraph.toastConnected', { source: linkSource.value.label, target: linkTarget.value.label }),
@@ -317,7 +304,7 @@ watch(() => props.userId, fetchGraph)
       <iconify-icon icon="ph:graph"></iconify-icon>
       <span>{{ t('memoryGraph.noData') }}</span>
       <small>{{ t('memoryGraph.userIdLine') }} {{ props.userId }}</small>
-      <small>{{ t('memoryGraph.apiLine') }} {{ props.apiBaseUrl }}/memory/{{ props.userId }}/graph</small>
+      <small>{{ t('memoryGraph.apiLine') }} {{ apiBase }}/memory/{{ props.userId }}/graph</small>
       <small class="hint">{{ t('memoryGraph.emptyHint') }}</small>
     </div>
     
@@ -412,7 +399,6 @@ watch(() => props.userId, fetchGraph)
     <ReorganizePreview
       ref="reorganizeRef"
       :userId="props.userId"
-      :apiBaseUrl="baseUrl"
       @done="fetchGraph"
     />
 

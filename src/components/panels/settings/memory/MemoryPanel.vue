@@ -4,9 +4,9 @@ import { useI18n } from 'vue-i18n';
 import { panelIcons } from '@/constants/panel-icons';
 import { useToast, TYPE } from 'vue-toastification';
 import { useKwami } from '@/composables/useKwami';
-import { useAuthStore } from '@/stores/auth';
 import { useVoiceStore } from '@/stores/voice';
 import { storeToRefs } from 'pinia';
+import { useMemoryStore } from '@/stores/memory';
 import PanelSection from '@/components/ui/PanelSection.vue';
 import BaseButton from '@/components/ui/BaseButton.vue';
 import BaseSelect from '@/components/ui/BaseSelect.vue';
@@ -21,21 +21,34 @@ import { translateApiUserMessage } from '@/utils/translateApiMessage';
 const toast = useToast();
 const { t } = useI18n();
 
-const { memoryUserId, kwami, isConnected } = useKwami();
-const authStore = useAuthStore();
+const { kwami, isConnected } = useKwami();
+const memoryStore = useMemoryStore();
 const { memoryUI } = storeToRefs(useVoiceStore());
 
-// API base URL derived from token endpoint
-const apiBaseUrl = computed(() => {
-  const tokenEndpoint = import.meta.env.VITE_LIVEKIT_TOKEN_ENDPOINT || '';
-  return tokenEndpoint.replace(/\/token\/?$/, '') || 'http://localhost:8080';
-});
-
 // Per-kwami memory user id (each kwami has its own memory)
-const userId = computed(() => memoryUserId.value);
+const userId = computed(() => memoryStore.memoryUserId);
 
 // Loading states
-const isLoading = ref(false);
+// Data state lives in the store; the panel keeps only UI state.
+const {
+  edges,
+  nodes,
+  messages,
+  edgesTotal,
+  nodesTotal,
+  sessionCount,
+  edgesHasMore,
+  nodesHasMore,
+  communities,
+  duplicates,
+  isLoading,
+  isLoadingMoreEdges,
+  isLoadingMoreNodes,
+  isDeleting,
+  communitiesLoading,
+  duplicatesLoading,
+} = storeToRefs(memoryStore);
+
 const loadError = ref('');
 
 // Tab state (persisted via store)
@@ -107,28 +120,9 @@ interface Node {
   created_at: string | null;
 }
 
-interface Message {
-  uuid: string | null;
-  content: string | null;
-  role: string | null;
-  role_type: string | null;
-  created_at: string | null;
-  thread_id: string | null;
-}
 
-const edges = ref<Edge[]>([]);
-const nodes = ref<Node[]>([]);
-const messages = ref<Message[]>([]);
-const sessionCount = ref(0);
 
 // Pagination state
-const PAGE_SIZE = 50;
-const edgesTotal = ref(0);
-const nodesTotal = ref(0);
-const edgesHasMore = ref(false);
-const nodesHasMore = ref(false);
-const isLoadingMoreEdges = ref(false);
-const isLoadingMoreNodes = ref(false);
 
 // Graph modal state (shared so agent tools can open it)
 const showGraphModal = computed({
@@ -138,7 +132,6 @@ const showGraphModal = computed({
 
 // Delete confirmation state
 const showDeleteConfirm = ref(false);
-const isDeleting = ref(false);
 const deleteError = ref('');
 
 // ============================================================================
@@ -184,18 +177,7 @@ async function saveEdge() {
   cancelEditEdge();
 
   try {
-    const headers = await getAuthHeaders();
-    const response = await fetch(`${apiBaseUrl.value}/memory/${userId.value}/edge/${uuid}`, {
-      method: 'PATCH',
-      headers,
-      body: JSON.stringify({ fact: newFact }),
-    });
-
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new Error(err.detail || 'Failed to update fact');
-    }
-
+    await memoryStore.updateEdge(uuid, { fact: newFact });
     toast.success(t('memory.toastFactUpdated'), { timeout: 2000 });
   } catch (e) {
     // Revert
@@ -277,26 +259,11 @@ async function saveNode() {
   cancelEditNode();
 
   try {
-    const headers = await getAuthHeaders();
-    const body: Record<string, unknown> = { name: newName };
-    if (editNodeData.value.summary.trim()) {
-      body.summary = editNodeData.value.summary.trim();
-    }
-    if (editNodeData.value.labels.length > 0) {
-      body.labels = editNodeData.value.labels;
-    }
+    const patch: { name: string; summary?: string; labels?: string[] } = { name: newName };
+    if (editNodeData.value.summary.trim()) patch.summary = editNodeData.value.summary.trim();
+    if (editNodeData.value.labels.length > 0) patch.labels = editNodeData.value.labels;
 
-    const response = await fetch(`${apiBaseUrl.value}/memory/${userId.value}/node/${uuid}`, {
-      method: 'PATCH',
-      headers,
-      body: JSON.stringify(body),
-    });
-
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new Error(err.detail || 'Failed to update entity');
-    }
-
+    await memoryStore.updateNode(uuid, patch);
     toast.success(t('memory.toastEntityUpdated'), { timeout: 2000 });
   } catch (e) {
     // Revert
@@ -314,67 +281,40 @@ async function saveNode() {
 // ============================================================================
 // Graph Operations: Communities, Duplicates, Merge, Reorganize
 // ============================================================================
-interface CommunityMember { uuid: string; name: string; summary: string | null; labels: string[]; }
-interface Community { id: number; label: string; members: CommunityMember[]; size: number; }
-interface DuplicateNodeInfo { uuid: string; name: string; summary: string | null; labels: string[]; edge_count: number; }
-interface DuplicatePair { score: number; keep: DuplicateNodeInfo; remove: DuplicateNodeInfo; }
 
-const communities = ref<Community[]>([]);
-const communitiesLoading = ref(false);
 
-const duplicates = ref<DuplicatePair[]>([]);
-const duplicatesLoading = ref(false);
 
 const reorganizeRef = ref<InstanceType<typeof ReorganizePreview> | null>(null);
 
 const mergingPair = ref<string | null>(null);
 
 async function loadCommunities() {
-  communitiesLoading.value = true;
   try {
-    const headers = await getAuthHeaders();
-    const response = await fetch(`${apiBaseUrl.value}/memory/${userId.value}/communities`, { headers });
-    if (response.ok) {
-      const data = await response.json();
-      communities.value = data.communities || [];
-    }
+    await memoryStore.loadCommunities();
   } catch (e) {
-    console.warn('Failed to load communities:', e);
-  } finally {
-    communitiesLoading.value = false;
+    // Surfaced rather than swallowed: when Zep is unconfigured this endpoint
+    // 503s, and the old console.warn made that indistinguishable from a
+    // genuinely empty graph.
+    toast.error(
+      t('memory.toastLoadFailed', { message: translateApiUserMessage((e as Error).message, t) }),
+    );
   }
 }
 
 async function loadDuplicates() {
-  duplicatesLoading.value = true;
   try {
-    const headers = await getAuthHeaders();
-    const response = await fetch(`${apiBaseUrl.value}/memory/${userId.value}/duplicates?threshold=75`, { headers });
-    if (response.ok) {
-      const data = await response.json();
-      duplicates.value = data.duplicates || [];
-    }
+    await memoryStore.loadDuplicates();
   } catch (e) {
-    console.warn('Failed to load duplicates:', e);
-  } finally {
-    duplicatesLoading.value = false;
+    toast.error(
+      t('memory.toastLoadFailed', { message: translateApiUserMessage((e as Error).message, t) }),
+    );
   }
 }
 
 async function mergePair(keepUuid: string, removeUuid: string) {
   mergingPair.value = `${keepUuid}-${removeUuid}`;
   try {
-    const headers = await getAuthHeaders();
-    const response = await fetch(`${apiBaseUrl.value}/memory/${userId.value}/merge`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ keep_uuid: keepUuid, remove_uuid: removeUuid }),
-    });
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new Error(err.detail || 'Failed to merge');
-    }
-    const result = await response.json();
+    const result = await memoryStore.mergeNodes(keepUuid, removeUuid);
     toast.success(
       t('memory.mergeSuccess', { name: result.keep_name, edges: result.recreated_edges }),
       { timeout: 3000 },
@@ -422,164 +362,26 @@ function formatDateTime(dateStr: string | null): string {
   }
 }
 
-// Get authorization headers for API calls
-async function getAuthHeaders(): Promise<HeadersInit> {
-  const token = await authStore.getAccessToken();
-  if (token) {
-    return {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    };
-  }
-  return { 'Content-Type': 'application/json' };
-}
-
-// Fetch memory data from API with pagination (first page)
+/**
+ * Load this kwami's memory graph.
+ *
+ * All pagination, cancellation and request state now lives in the store; the
+ * panel only surfaces the error. Previously this fired three parallel fetches
+ * and then kicked off a fire-and-forget pagination loop, so switching kwami
+ * mid-load appended the old kwami's pages into the new kwami's arrays.
+ */
 async function loadMemoryData() {
   if (!userId.value) return;
-  
-  console.log('Loading memory for user:', userId.value);
-  isLoading.value = true;
   loadError.value = '';
-  
-  // Reset pagination state
-  edges.value = [];
-  nodes.value = [];
-  messages.value = [];
-  edgesTotal.value = 0;
-  nodesTotal.value = 0;
-  edgesHasMore.value = false;
-  nodesHasMore.value = false;
-  sessionCount.value = 0;
-  
   try {
-    const headers = await getAuthHeaders();
-    
-    // Fetch first page of edges/nodes + all messages in parallel
-    const [edgesRes, nodesRes, messagesRes] = await Promise.all([
-      fetch(`${apiBaseUrl.value}/memory/${userId.value}/edges?limit=${PAGE_SIZE}&offset=0`, { headers }),
-      fetch(`${apiBaseUrl.value}/memory/${userId.value}/nodes?limit=${PAGE_SIZE}&offset=0`, { headers }),
-      fetch(`${apiBaseUrl.value}/memory/${userId.value}/messages`, { headers }),
-    ]);
-    
-    if (!edgesRes.ok || !nodesRes.ok || !messagesRes.ok) {
-      throw new Error('Failed to load memory data');
-    }
-    
-    const [edgesData, nodesData, messagesData] = await Promise.all([
-      edgesRes.json(),
-      nodesRes.json(),
-      messagesRes.json(),
-    ]);
-    
-    edges.value = edgesData.edges || [];
-    edgesTotal.value = edgesData.total ?? edges.value.length;
-    edgesHasMore.value = edgesData.has_more ?? false;
-    
-    nodes.value = nodesData.nodes || [];
-    nodesTotal.value = nodesData.total ?? nodes.value.length;
-    nodesHasMore.value = nodesData.has_more ?? false;
-    
-    messages.value = messagesData.messages || [];
-    sessionCount.value = messagesData.session_count || 0;
-    
-    // Auto-load remaining pages in the background
-    loadRemainingPages();
-    
+    await memoryStore.load();
   } catch (e) {
     loadError.value = (e as Error).message;
-    edges.value = [];
-    nodes.value = [];
-    messages.value = [];
-    edgesTotal.value = 0;
-    nodesTotal.value = 0;
-    edgesHasMore.value = false;
-    nodesHasMore.value = false;
-    sessionCount.value = 0;
-  } finally {
-    isLoading.value = false;
   }
 }
 
-// Auto-load remaining pages in background after initial load
-async function loadRemainingPages() {
-  const promises: Promise<void>[] = [];
-  if (edgesHasMore.value) promises.push(loadAllRemainingEdges());
-  if (nodesHasMore.value) promises.push(loadAllRemainingNodes());
-  await Promise.all(promises);
-}
-
-// Load all remaining edge pages in sequence
-async function loadAllRemainingEdges() {
-  while (edgesHasMore.value) {
-    await loadMoreEdges();
-  }
-}
-
-// Load all remaining node pages in sequence
-async function loadAllRemainingNodes() {
-  while (nodesHasMore.value) {
-    await loadMoreNodes();
-  }
-}
-
-// Load next page of edges
-async function loadMoreEdges() {
-  if (!userId.value || !edgesHasMore.value || isLoadingMoreEdges.value) return;
-  
-  isLoadingMoreEdges.value = true;
-  try {
-    const headers = await getAuthHeaders();
-    const offset = edges.value.length;
-    const res = await fetch(
-      `${apiBaseUrl.value}/memory/${userId.value}/edges?limit=${PAGE_SIZE}&offset=${offset}`,
-      { headers }
-    );
-    
-    if (!res.ok) throw new Error('Failed to load more edges');
-    
-    const data = await res.json();
-    edges.value.push(...(data.edges || []));
-    edgesTotal.value = data.total ?? edges.value.length;
-    edgesHasMore.value = data.has_more ?? false;
-    
-    console.log(`Loaded edges: ${edges.value.length}/${edgesTotal.value}`);
-  } catch (e) {
-    console.error('Failed to load more edges:', e);
-    edgesHasMore.value = false;
-  } finally {
-    isLoadingMoreEdges.value = false;
-  }
-}
-
-// Load next page of nodes
-async function loadMoreNodes() {
-  if (!userId.value || !nodesHasMore.value || isLoadingMoreNodes.value) return;
-  
-  isLoadingMoreNodes.value = true;
-  try {
-    const headers = await getAuthHeaders();
-    const offset = nodes.value.length;
-    const res = await fetch(
-      `${apiBaseUrl.value}/memory/${userId.value}/nodes?limit=${PAGE_SIZE}&offset=${offset}`,
-      { headers }
-    );
-    
-    if (!res.ok) throw new Error('Failed to load more nodes');
-    
-    const data = await res.json();
-    nodes.value.push(...(data.nodes || []));
-    nodesTotal.value = data.total ?? nodes.value.length;
-    nodesHasMore.value = data.has_more ?? false;
-    
-    console.log(`Loaded nodes: ${nodes.value.length}/${nodesTotal.value}`);
-  } catch (e) {
-    console.error('Failed to load more nodes:', e);
-    nodesHasMore.value = false;
-  } finally {
-    isLoadingMoreNodes.value = false;
-  }
-}
+const loadMoreEdges = () => memoryStore.loadMoreEdges();
+const loadMoreNodes = () => memoryStore.loadMoreNodes();
 
 async function deleteUserMemory() {
   if (!userId.value) return;
@@ -588,37 +390,13 @@ async function deleteUserMemory() {
   deleteError.value = '';
   
   try {
-    const headers = await getAuthHeaders();
-    const response = await fetch(`${apiBaseUrl.value}/memory/${userId.value}`, {
-      method: 'DELETE',
-      headers,
-    });
-    
-    const result = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(result.detail || 'Failed to delete memory');
-    }
-    
-    if (result.success) {
-      showDeleteConfirm.value = false;
-      edges.value = [];
-      nodes.value = [];
-      messages.value = [];
-      sessionCount.value = 0;
-      edgesTotal.value = 0;
-      nodesTotal.value = 0;
-      edgesHasMore.value = false;
-      nodesHasMore.value = false;
-      const nThreads = Number(result.deleted_threads) || 0;
-      toast.success(t('memory.toastMemoryDeleted', { n: nThreads }, nThreads));
-    } else {
-      throw new Error(result.errors?.join(', ') || 'Delete operation failed');
-    }
+    // The store clears the graph state itself on success.
+    const result = await memoryStore.deleteAll();
+    showDeleteConfirm.value = false;
+    const nThreads = Number(result.deleted_threads) || 0;
+    toast.success(t('memory.toastMemoryDeleted', { n: nThreads }, nThreads));
   } catch (e) {
     deleteError.value = (e as Error).message;
-  } finally {
-    isDeleting.value = false;
   }
 }
 
@@ -714,16 +492,7 @@ async function performEdgeDeletion(edgeUuid: string) {
   pendingDeletions.value.delete(edgeUuid);
   
   try {
-    const headers = await getAuthHeaders();
-    const response = await fetch(`${apiBaseUrl.value}/memory/${userId.value}/edge/${edgeUuid}`, {
-      method: 'DELETE',
-      headers,
-    });
-    
-    if (!response.ok) {
-      const result = await response.json();
-      throw new Error(result.detail || 'Failed to delete fact');
-    }
+    await memoryStore.deleteEdge(edgeUuid);
   } catch (e) {
     const insertIndex = Math.min(savedPending.index, edges.value.length);
     edges.value.splice(insertIndex, 0, savedPending.item as Edge);
@@ -781,16 +550,7 @@ async function performNodeDeletion(nodeUuid: string) {
   pendingDeletions.value.delete(nodeUuid);
   
   try {
-    const headers = await getAuthHeaders();
-    const response = await fetch(`${apiBaseUrl.value}/memory/${userId.value}/node/${nodeUuid}`, {
-      method: 'DELETE',
-      headers,
-    });
-    
-    if (!response.ok) {
-      const result = await response.json();
-      throw new Error(result.detail || 'Failed to delete entity');
-    }
+    await memoryStore.deleteNode(nodeUuid);
   } catch (e) {
     const insertIndex = Math.min(savedPending.index, nodes.value.length);
     nodes.value.splice(insertIndex, 0, savedPending.item as Node);
@@ -1157,7 +917,6 @@ onMounted(() => {
               <div class="graph-modal-body">
                 <MemoryGraph 
                   :userId="userId" 
-                  :apiBaseUrl="apiBaseUrl"
                 />
               </div>
             </div>
@@ -1321,7 +1080,6 @@ onMounted(() => {
       <ReorganizePreview
         ref="reorganizeRef"
         :userId="userId"
-        :apiBaseUrl="apiBaseUrl"
         @done="onReorgDone"
       />
 
