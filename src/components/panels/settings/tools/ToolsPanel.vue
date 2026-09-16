@@ -19,7 +19,67 @@ const { kwami } = useKwami();
 
 // State
 const tools = ref<ToolDefinition[]>([]);
-const newTool = ref({ name: '', description: '', parameters: '' });
+const newTool = ref({
+  name: '',
+  description: '',
+  parameters: '',
+  url: '',
+  method: 'POST' as 'GET' | 'POST',
+});
+
+const HTTP_METHOD_OPTIONS = [
+  { label: 'POST', value: 'POST' },
+  { label: 'GET', value: 'GET' },
+];
+
+/** A user-defined tool call should not hang the agent turn. */
+const TOOL_TIMEOUT_MS = 15_000;
+
+/**
+ * Build the handler the agent will invoke.
+ *
+ * Calls the user's webhook with the tool arguments. Deliberately a plain fetch
+ * rather than the app's api client: the target is an arbitrary third-party URL,
+ * not the Kwami backend, so it must not receive the user's bearer token.
+ */
+function createWebhookHandler(url: string, method: 'GET' | 'POST') {
+  return async (params: Record<string, unknown>) => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), TOOL_TIMEOUT_MS);
+    try {
+      const target =
+        method === 'GET'
+          ? `${url}${url.includes('?') ? '&' : '?'}${new URLSearchParams(
+              Object.entries(params).map(([k, v]) => [k, String(v)]),
+            )}`
+          : url;
+
+      const res = await fetch(target, {
+        method,
+        headers: method === 'POST' ? { 'Content-Type': 'application/json' } : undefined,
+        body: method === 'POST' ? JSON.stringify(params) : undefined,
+        signal: controller.signal,
+      });
+
+      const text = await res.text();
+      let data: unknown = text;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        // Not JSON; hand the agent the raw body.
+      }
+      return { ok: res.ok, status: res.status, data };
+    } catch (e: unknown) {
+      const aborted = e instanceof DOMException && e.name === 'AbortError';
+      return {
+        ok: false,
+        error: aborted ? `Tool timed out after ${TOOL_TIMEOUT_MS}ms` : String(e),
+      };
+    } finally {
+      clearTimeout(timer);
+    }
+  };
+}
 const mcp = ref({ name: '', url: '', apiKey: '' });
 const mcps = ref<Array<{ name: string; url: string }>>([]);
 interface ToolTemplate {
@@ -57,7 +117,7 @@ function refreshTools() {
 
 function removeTool(name: string) {
   if (confirm(t('tools.removeToolConfirm', { name }))) {
-    kwami.value?.tools.unregister(name);
+    kwami.value?.unregisterTool(name);
     refreshTools();
   }
 }
@@ -66,6 +126,7 @@ function useTemplate(key: string) {
   const tmpl = templates[key];
   if (tmpl) {
     newTool.value = {
+      ...newTool.value,
       name: tmpl.name,
       description: tmpl.description,
       parameters: JSON.stringify(tmpl.parameters, null, 2),
@@ -86,16 +147,24 @@ function addTool() {
     return;
   }
 
-  kwami.value?.tools.register({
+  const url = newTool.value.url.trim();
+  if (!/^https?:\/\//i.test(url)) {
+    toast.error(t('tools.invalidUrl'));
+    return;
+  }
+
+  // kwami.registerTool(), NOT kwami.tools.register(). The latter only writes
+  // the local ToolRegistry; registerTool additionally populates the agent's
+  // clientTools dispatch table and syncs the definition to the backend, which
+  // is what tells the model the tool exists. Tools created here were
+  // previously invisible to the LLM and undispatchable even if it knew.
+  kwami.value?.registerTool({
     name: newTool.value.name,
     description: newTool.value.description,
     parameters: parsedParams,
-    handler: async (p) => {
-      console.log(`Tool ${newTool.value.name}:`, p);
-      return { success: true, message: `Executed ${newTool.value.name} (Mock)` };
-    },
+    handler: createWebhookHandler(url, newTool.value.method),
   });
-  newTool.value = { name: '', description: '', parameters: '' };
+  newTool.value = { name: '', description: '', parameters: '', url: '', method: 'POST' };
   refreshTools();
 }
 
@@ -109,6 +178,12 @@ async function connectMCP() {
     });
     mcps.value.push({ name: mcp.value.name, url: mcp.value.url });
     mcp.value = { name: '', url: '', apiKey: '' };
+    // connectMCP registers into the ToolRegistry but never announces the new
+    // definitions, so a server connected after the initial connect stayed
+    // invisible to the agent until the next reconnect.
+    if (kwami.value?.agent) {
+      kwami.value.agent.syncConfigToBackend('tools', kwami.value.tools.getToolDefinitions());
+    }
     refreshTools();
   } catch (e) {
     toast.error(
@@ -192,6 +267,17 @@ onMounted(refreshTools);
       <PanelSection :title="t('tools.addCustomTool')">
         <div class="form">
           <BaseInput :label="t('tools.name')" v-model="newTool.name" placeholder="my_tool" />
+          <BaseInput
+            :label="t('tools.webhookUrl')"
+            v-model="newTool.url"
+            placeholder="https://example.com/hook"
+          />
+          <BaseSelect
+            :label="t('tools.httpMethod')"
+            v-model="newTool.method"
+            :options="HTTP_METHOD_OPTIONS"
+          />
+          <p class="hint">{{ t('tools.webhookHint') }}</p>
           <div class="group">
             <label>{{ t('tools.description') }}</label><textarea v-model="newTool.description" rows="2"></textarea>
           </div>
