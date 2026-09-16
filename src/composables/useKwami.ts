@@ -96,13 +96,12 @@ export function useKwami() {
         responseLength: 'medium' as 'medium' | 'short' | 'long',
         emotionalTone: 'warm' as 'warm' | 'neutral' | 'enthusiastic' | 'calm',
       },
-      memory: {
-        adapter: 'zep' as 'zep' | 'local',
-        zep: {
-          apiKey: import.meta.env.VITE_ZEP_API_KEY || '',
-          baseUrl: import.meta.env.VITE_ZEP_BASE_URL || '',
-        },
-      },
+      // NOTE: no `memory` block. The SDK's Memory class is an explicit
+      // frontend stub — addMessage() does nothing, getContext() returns {} and
+      // search() returns []. Passing Zep credentials here configured an
+      // adapter that cannot use them, while inlining a server-side API key
+      // into every browser bundle (any VITE_-prefixed var is public).
+      // Real recall already goes through the backend's /memory/* routes.
     };
 
     kwamiInstance.value = new Kwami(canvas, config);

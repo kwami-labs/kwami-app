@@ -51,14 +51,8 @@ Copy `.env.sample` to `.env` and set:
 | `VITE_API_URL` | Backend API base URL |
 | `VITE_LIVEKIT_URL` | LiveKit WebSocket URL |
 | `VITE_LIVEKIT_TOKEN_ENDPOINT` | Endpoint that issues LiveKit tokens |
-| `VITE_ZEP_API_KEY` | Zep API key (memory) — ⚠️ see note below |
-| `VITE_ZEP_BASE_URL` | Zep API base URL |
 | `VITE_SUPABASE_URL` | Supabase project URL |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase anon/key |
-
-> ⚠️ **`VITE_ZEP_API_KEY` is a server credential.** Every `VITE_`-prefixed variable is
-> inlined into the client bundle and is publicly readable. This key is scheduled to move
-> behind the backend (`VITE_API_URL`); until then, treat any deployed build as exposing it.
 
 ## Tech stack
 
