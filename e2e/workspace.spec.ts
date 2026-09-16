@@ -1,9 +1,9 @@
-import { test, expect, WELCOME_MS } from './fixtures';
+import { test, expect, gotoApp, WELCOME_MS } from './fixtures';
 
 const READY = { timeout: WELCOME_MS + 10_000 };
 
 test.beforeEach(async ({ app: page }) => {
-  await page.goto('/');
+  await gotoApp(page);
   await expect(page.locator('.control-bar-container')).toBeVisible(READY);
 });
 

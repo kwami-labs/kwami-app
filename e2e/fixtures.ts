@@ -100,20 +100,29 @@ export async function stubApi(page: Page) {
 }
 
 /**
- * Stops the Kwami runtime from opening a WebGL context and a LiveKit socket.
- * Headless Chromium can do WebGL, but a real renderer makes runs slow and flaky.
+ * Marks the run as e2e and silences the welcome chime.
+ *
+ * Deliberately does NOT replace window.WebSocket: Vite's HMR client uses one,
+ * and stubbing it stalls the page `load` event so every `page.goto` times out.
+ * LiveKit only dials on an explicit connect action, which no spec triggers.
  */
 export async function stubKwamiRuntime(page: Page) {
   await page.addInitScript(() => {
     (window as unknown as Record<string, unknown>).__KWAMI_E2E__ = true;
-    // Block the socket the agent opens; the app treats this as "not connected".
-    class DeadSocket extends EventTarget {
-      readyState = 3;
-      close() {}
-      send() {}
-    }
-    (window as unknown as Record<string, unknown>).WebSocket = DeadSocket;
+    // The welcome sound 404s and autoplay is blocked headless; keep logs clean.
+    window.HTMLMediaElement.prototype.play = () => Promise.resolve();
   });
+}
+
+/**
+ * Navigates to the app.
+ *
+ * Uses `domcontentloaded`, not the default `load`: the avatar canvas keeps
+ * fetching textures and media after first paint, so `load` can outlast the
+ * test timeout even on a healthy page.
+ */
+export async function gotoApp(page: Page, path = '/') {
+  await page.goto(path, { waitUntil: 'domcontentloaded' });
 }
 
 export const test = base.extend<{ signedOut: Page; app: Page }>({
