@@ -22,7 +22,7 @@ flowchart TB
   V --> Cov
   E --> PW
 
-  Dist --> Host[Static HTTPS host]
+  Dist --> Host[Cloudflare Workers static assets]
   Host --> SW[Service worker + manifest]
   Dist --> Tauri[Optional tauri build]
 ```
@@ -42,9 +42,37 @@ CI does not need production secrets. Unit and e2e use injected / `.env.test` val
 
 ## Web / PWA
 
+The host is an **assets-only Cloudflare Worker** ([`infra/wrangler.jsonc`](../../infra/wrangler.jsonc)). There is no `main` script, so requests are served from the CDN and are not billed as Worker invocations. Unmatched paths fall back to `/index.html` (`not_found_handling: single-page-application`).
+
 1. Build with production `VITE_API_URL`, `VITE_LIVEKIT_URL`, `VITE_SUPABASE_*`, and `VITE_AUTH_PROVIDERS`
 2. Serve `dist/` over **HTTPS** (required for service worker, mic, install)
-3. Set CSP / COOP on the host if you can; the app itself does not emit headers
+3. Host headers live in [`public/_headers`](../../public/_headers) (copied into `dist/`): COOP is `same-origin-allow-popups` so OAuth popups can still `postMessage` the opener. CSP is not set yet — WebGL, LiveKit, and Supabase need a measured allowlist.
+
+### Local deploy
+
+```bash
+bun run build
+bun run cf:preview          # wrangler dev against dist/
+bun run cf:deploy:dry       # validate upload, do not publish
+bun run cf:deploy           # production Worker `kwami-app`
+bun run cf:deploy:stg
+bun run cf:deploy:dev
+```
+
+Channel Workers: `kwami-app` (main), `kwami-app-stg`, `kwami-app-dev`. `VITE_*` is baked at build time, so each channel must be built with its own values.
+
+`cf:deploy:dry` and `wrangler deploy --dry-run` **do not publish**. A real deploy needs the Cloudflare account that owns `kwami.io` (not a personal/Nexow login). After the Worker exists, Terraform in [`infra/terraform`](../../infra/terraform) attaches `app.kwami.io` — the apex stays on `kwami-waitlist`.
+
+### GitHub Actions
+
+[`.github/workflows/deploy.yml`](../../.github/workflows/deploy.yml) deploys on push to `main` / `stg` / `dev` (and `workflow_dispatch`). It uses the matching GitHub Environment (`production`, `stg`, `dev`) for:
+
+| Kind | Names |
+| --- | --- |
+| Secrets | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `VITE_SUPABASE_PUBLISHABLE_KEY` |
+| Variables | `VITE_API_URL`, `VITE_LIVEKIT_URL`, `VITE_SUPABASE_URL`, `VITE_AUTH_PROVIDERS` |
+
+Alternatively, connect the repo in Cloudflare Workers Builds with **Build command** `bun run build`, **Deploy command** `npx wrangler deploy --config infra/wrangler.jsonc`, and the same `VITE_*` env.
 
 `vite-plugin-pwa`:
 
@@ -67,7 +95,7 @@ The browser origin (e.g. `https://app.example`) must be allowed by:
 - Supabase Auth redirect URLs
 - LiveKit project (if it restricts origins)
 
-Locally that origin is `http://localhost:5173` (`strictPort: true`).
+Locally that origin is `http://localhost:5173` (`strictPort: true`). Wrangler preview is `http://localhost:8787`.
 
 ## What not to deploy
 

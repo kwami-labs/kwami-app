@@ -100,7 +100,8 @@ kwami-app/
 │   └── main.ts           # App bootstrap
 ├── src-tauri/            # Tauri 2 desktop shell
 ├── tests/                # Vitest unit/integration + MSW
-└── .github/workflows/    # CI
+├── infra/                # Wrangler Worker + Terraform custom domain
+└── .github/workflows/    # CI + Workers deploy
 ```
 
 ## Design principles

@@ -31,7 +31,7 @@ Start here if you are new:
 | [Frontend](architecture/frontend.md) | Vue boot, Pinia, panels, layout |
 | [Data flow](architecture/data-flow.md) | Auth, workspace, voice, memory, credits |
 | [Backend integration](architecture/backend-integration.md) | HTTP client, LiveKit, Supabase |
-| [Deployment](architecture/deployment.md) | CI, static host, PWA, Tauri |
+| [Deployment](architecture/deployment.md) | CI, Cloudflare Workers, PWA, Tauri |
 | [Security](security.md) | Trust boundaries, XSS, tokens |
 | [ADRs](adr/README.md) | Accepted architecture decisions |
 
