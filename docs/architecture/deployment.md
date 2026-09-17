@@ -61,6 +61,8 @@ bun run cf:deploy:dev
 
 Channel Workers: `kwami-app` (main), `kwami-app-stg`, `kwami-app-dev`. `VITE_*` is baked at build time, so each channel must be built with its own values.
 
+`cf:deploy:dry` and `wrangler deploy --dry-run` **do not publish**. A real deploy needs the Cloudflare account that owns `kwami.io` (not a personal/Nexow login). After the Worker exists, Terraform in [`infra/terraform`](../../infra/terraform) attaches `app.kwami.io` — the apex stays on `kwami-waitlist`.
+
 ### GitHub Actions
 
 [`.github/workflows/deploy.yml`](../../.github/workflows/deploy.yml) deploys on push to `main` / `stg` / `dev` (and `workflow_dispatch`). It uses the matching GitHub Environment (`production`, `stg`, `dev`) for:
