@@ -19,6 +19,10 @@
 | `bun run test:e2e:ui` | Playwright UI mode |
 | `bun run tauri` | Tauri CLI passthrough |
 | `bun run tauri dev` | Desktop shell + Vite |
+| `bun run cf:preview` | Serve `dist/` through Wrangler (run `build` first) |
+| `bun run cf:deploy` | Production build + `wrangler deploy` (`kwami-app`) |
+| `bun run cf:deploy:dry` | Same as deploy, without publishing |
+| `bun run cf:deploy:stg` / `cf:deploy:dev` | Channel Workers `kwami-app-stg` / `kwami-app-dev` |
 
 CI runs typecheck, lint, format, unit tests with coverage, production build, then e2e. See [Testing](testing.md).
 

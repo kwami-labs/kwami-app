@@ -137,6 +137,9 @@ These are public (`VITE_*` is inlined into the bundle). Provider secrets stay on
 | `bun run test:unit` | Vitest once |
 | `bun run test:e2e` | Playwright (Chromium, `--mode test`) |
 | `bun run tauri dev` | Desktop shell |
+| `bun run cf:preview` | Preview `dist/` on a local Worker |
+| `bun run cf:deploy` / `cf:deploy:dry` | Publish (or dry-run) production Worker |
+| `bun run cf:deploy:stg` / `cf:deploy:dev` | Publish channel Workers |
 
 Testing details: [docs/guides/testing.md](docs/guides/testing.md)
 
@@ -157,6 +160,7 @@ src/
 docs/               # Architecture, guides, concepts, reference
 e2e/                # Playwright
 tests/              # Vitest + MSW
+infra/              # Cloudflare Workers
 src-tauri/          # Tauri 2
 ```
 
