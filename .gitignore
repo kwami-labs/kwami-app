@@ -38,6 +38,14 @@ lerna-debug.log*
 # Cloudflare / wrangler
 .wrangler/
 
+# Terraform local state and filled-in tfvars
+infra/terraform/.terraform/
+infra/terraform/*.tfstate
+infra/terraform/*.tfstate.*
+infra/terraform/*.tfvars
+!infra/terraform/environments/*.tfvars.example
+infra/terraform/backend.tf
+
 # Tauri / Cargo (also listed in src-tauri/.gitignore)
 src-tauri/target/
 src-tauri/gen/schemas
