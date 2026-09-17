@@ -25,10 +25,14 @@ const DEFAULT_SIZE_PRESETS: Record<PanelSizePreset, SizePresetConfig> = {
   large: { width: 1300, shortcut: 'Alt+3' },
 };
 
+export type SidebarMode = 'settings' | 'apps';
+
 export const useUIStore = defineStore('ui', () => {
   const activePanel = ref<string>('avatar');
   const isPanelOpen = ref(true);
   const panelWidth = ref(DEFAULT_SIZE_PRESETS.small.width);
+  const sidebarMode = ref<SidebarMode>('settings');
+  const isNavAnimating = ref(false);
   
   // Size presets configuration
   const sizePresets = ref<Record<PanelSizePreset, SizePresetConfig>>({ ...DEFAULT_SIZE_PRESETS });
@@ -99,18 +103,48 @@ export const useUIStore = defineStore('ui', () => {
     }
   }
 
+  // Must be >= max(nav clip-path 300ms, panel width 400ms) + buffer
+  const ANIMATION_DURATION = 440;
+
+  async function setSidebarMode(mode: SidebarMode) {
+    if (mode === sidebarMode.value || isNavAnimating.value) return;
+    // Start both leave animations simultaneously:
+    // isNavAnimating → nav buttons collapse (clip-path 300ms)
+    // isPanelOpen = false → panel column collapses (width 400ms) + close current panel
+    isNavAnimating.value = true;
+    if (isPanelOpen.value) isPanelOpen.value = false;
+    // Wait for the slowest leave (panel width at 400ms) + small buffer
+    await new Promise((resolve) => setTimeout(resolve, ANIMATION_DURATION));
+    sidebarMode.value = mode;
+    localStorage.setItem('kwami-sidebar-mode', mode);
+    // Brief pause, then enter animations run
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    isNavAnimating.value = false;
+  }
+
   // Load settings from localStorage
   function loadSettings() {
     // Load active panel and open state
     const savedPanel = localStorage.getItem('kwami-active-panel');
     if (savedPanel) {
       // Migrate legacy panel id
-      activePanel.value = savedPanel === 'persona' ? 'soul' : savedPanel;
+      if (savedPanel === 'persona') {
+        activePanel.value = 'soul';
+      } else if (savedPanel === 'transcription') {
+        activePanel.value = 'history';
+      } else {
+        activePanel.value = savedPanel;
+      }
     }
 
     const savedPanelOpen = localStorage.getItem('kwami-panel-open');
     if (savedPanelOpen !== null) {
       isPanelOpen.value = savedPanelOpen === 'true';
+    }
+
+    const savedMode = localStorage.getItem('kwami-sidebar-mode');
+    if (savedMode === 'settings' || savedMode === 'apps') {
+      sidebarMode.value = savedMode;
     }
 
     // Load panel width
@@ -258,6 +292,9 @@ export const useUIStore = defineStore('ui', () => {
     isMobileViewport,
     defaultPanelWidth,
     maxAllowedWidth,
+    sidebarMode,
+    isNavAnimating,
+    setSidebarMode,
     togglePanel,
     setPanel,
     setPanelWidth,

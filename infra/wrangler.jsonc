@@ -1,0 +1,35 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "kwami-app",
+  // Today's date: navigation requests skip a Worker script (assets-only
+  // anyway) and pick up current static-asset routing defaults.
+  "compatibility_date": "2026-09-17",
+
+  // Assets-only Worker: there is no `main` entrypoint, so every request is
+  // served from the CDN and no Worker code is invoked (no request billing).
+  // The Vue app is a single page — unmatched paths fall back to /index.html.
+  "assets": {
+    "directory": "../dist",
+    "not_found_handling": "single-page-application"
+  },
+
+  "observability": {
+    "enabled": true
+  },
+
+  // Channel Workers match the repo's promotion path (dev → stg → main).
+  // Each environment is a distinct Worker so a bake of VITE_* for one
+  // channel cannot overwrite another. Always pass --env so Wrangler
+  // does not guess the top-level config.
+  "env": {
+    "dev": {
+      "name": "kwami-app-dev"
+    },
+    "stg": {
+      "name": "kwami-app-stg"
+    },
+    "production": {
+      "name": "kwami-app"
+    }
+  }
+}

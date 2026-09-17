@@ -57,7 +57,6 @@ function onRandomize() {
 <template>
   <ConfirmDialog
     :open="open"
-    title="New Kwami"
     :title="t('sidebarModals.newKwamiTitle')"
     icon="ph:sparkle-duotone"
     :confirm-label="t('sidebarModals.create')"

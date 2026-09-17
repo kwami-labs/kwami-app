@@ -22,13 +22,15 @@ import { useParticlesFaceStore } from '@/stores/avatar.particles-face';
 import { useTranscriptionState } from '@/composables/useTranscriptionState';
 import { useAgentActionState } from '@/composables/useAgentActionState';
 import { avatarPresets } from '@/presets/avatar/avatar-presets';
+import { useEmailStore, type EmailCategory } from '@/stores/email';
+import { useCalendarStore, type CalendarEventType } from '@/stores/calendar';
 
 const WORKSPACE_PANELS = [
   'avatar',
   'scene',
   'voice',
   'enhancements',
-  'transcription',
+  'history',
   'communications',
   'soul',
   'memory',
@@ -39,6 +41,8 @@ const WORKSPACE_PANELS = [
   'theme',
   'models',
   'credits',
+  'email',
+  'calendar',
 ] as const;
 
 type WorkspacePanel = (typeof WORKSPACE_PANELS)[number];
@@ -47,7 +51,8 @@ type ResponseLength = 'short' | 'medium' | 'long';
 const PANEL_ALIASES: Record<string, WorkspacePanel> = {
   account: 'account',
   avatar: 'avatar',
-  chat: 'transcription',
+  chat: 'history',
+  history: 'history',
   communications: 'communications',
   credits: 'credits',
   energy: 'credits',
@@ -62,13 +67,18 @@ const PANEL_ALIASES: Record<string, WorkspacePanel> = {
   soul: 'soul',
   theme: 'theme',
   tools: 'tools',
-  transcript: 'transcription',
-  transcription: 'transcription',
+  transcript: 'history',
+  transcription: 'history',
   whatsapp: 'communications',
   messages: 'communications',
   phone: 'communications',
   calls: 'communications',
   voice: 'voice',
+  email: 'email',
+  mail: 'email',
+  inbox: 'email',
+  calendar: 'calendar',
+  schedule: 'calendar',
 };
 
 const ADVANCED_VOICE_CONTROLS = new Set([
@@ -128,6 +138,22 @@ function normalizeDomain(domain: unknown): UiControlDomain | null {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Tool handlers receive `Record<string, unknown>` from the agent, so every
+ * parameter has to be narrowed before use rather than assumed to be a string.
+ */
+function asString(value: unknown, fallback = ''): string {
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  return fallback;
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'string') return error;
+  return 'unknown error';
 }
 
 function buildSoulConfig(voiceStore: ReturnType<typeof useVoiceStore>) {
@@ -262,7 +288,7 @@ export function useWorkspaceAgentTools() {
           ...agent.getConfig().livekit?.voice,
           ...voiceConfig,
         },
-      } as any,
+      },
     });
 
     if (isConnected.value) {
@@ -389,7 +415,7 @@ export function useWorkspaceAgentTools() {
     searchStore.clear();
     actionState.recordAction(
       t('workspaceAgentTools.actionClearedSearch'),
-      t('workspaceAgentTools.searchResultsDetail', clearedCount, { n: clearedCount }),
+      t('workspaceAgentTools.searchResultsDetail', { n: clearedCount }, clearedCount),
       {
         announce: true,
       },
@@ -1293,7 +1319,7 @@ export function useWorkspaceAgentTools() {
     if (normalizedDomain === 'workspace') {
       if (normalizedControl === 'openpanel') return openPanel(value);
       if (normalizedControl === 'closepanel') return closePanel();
-      if (normalizedControl === 'focustranscription') return openPanel('transcription');
+      if (normalizedControl === 'focustranscription') return openPanel('history');
       if (normalizedControl === 'renderer') return setRenderer(value);
       if (normalizedControl === 'responselength') return setResponseLength(value, confirm);
       if (normalizedControl === 'status') return showWorkspaceStatus();
@@ -1388,7 +1414,7 @@ export function useWorkspaceAgentTools() {
     instance.registerTool({
       name: 'focus_transcription_panel',
       description: t('workspaceAgentTools.toolDescFocusTranscription'),
-      handler: async () => openPanel('transcription'),
+      handler: async () => openPanel('history'),
     });
 
     instance.registerTool({
@@ -1507,6 +1533,274 @@ export function useWorkspaceAgentTools() {
       name: 'show_workspace_status',
       description: t('workspaceAgentTools.toolDescShowWorkspaceStatus'),
       handler: async () => showWorkspaceStatus(),
+    });
+
+    // ---- Email Smart Hub tools ----
+    const emailStore = useEmailStore();
+    const calendarStore = useCalendarStore();
+    let _lastEmailListing: { id: string; from_address: string; subject: string }[] = [];
+
+    function _resolveRef(rawRef: unknown): { id: string; from_address: string; subject: string } | null {
+      const ref = asString(rawRef).trim();
+      if (!ref) return null;
+      const num = parseInt(ref, 10);
+      if (!isNaN(num) && num >= 1 && num <= _lastEmailListing.length) {
+        return _lastEmailListing[num - 1] ?? null;
+      }
+      if (ref.includes('-')) {
+        return _lastEmailListing.find((m) => m.id === ref) ?? { id: ref, from_address: '', subject: '' };
+      }
+      return null;
+    }
+
+    instance.registerTool({
+      name: 'read_emails',
+      description: t('workspaceAgentTools.toolDescReadEmails'),
+      parameters: {
+        category: {
+          type: 'string',
+          enum: ['all', 'travel', 'bills', 'events', 'newsletters', 'personal', 'notifications', 'shopping', 'work'],
+        },
+      },
+      handler: async ({ category }) => {
+        if (!emailStore.isActivated) return 'Email is not activated for this kwami.';
+        // The store has no queryInbox(); fetchInbox() populates `messages`.
+        const cat = asString(category, 'all') as EmailCategory;
+        await emailStore.fetchInbox(cat);
+        const msgs = emailStore.messages.slice(0, 10);
+        _lastEmailListing = msgs.map((m) => ({ id: m.id, from_address: m.from_address, subject: m.subject }));
+        if (msgs.length === 0) return `No ${cat !== 'all' ? cat + ' ' : ''}emails found.`;
+        return msgs
+          .map((m, i) => `${i + 1}. [${m.is_read ? 'read' : 'UNREAD'}] From: ${m.from_address} | Subject: ${m.subject || '(no subject)'} | Category: ${m.category}`)
+          .join('\n') + '\n\nUse the number (1, 2, 3...) to reference an email in other tools.';
+      },
+    });
+
+    instance.registerTool({
+      name: 'read_email_detail',
+      description: t('workspaceAgentTools.toolDescReadEmailDetail'),
+      parameters: {
+        email_ref: { type: 'string' },
+      },
+      handler: async ({ email_ref }) => {
+        const ref = _resolveRef(email_ref);
+        if (!ref) return 'Invalid email reference. Use a number from the last listing (e.g. "1") or a message ID.';
+        try {
+          const msg = await emailStore.fetchMessage(ref.id);
+          emailStore.markRead(ref.id);
+          return `ID: ${msg.id}\nFrom: ${msg.from_address}\nTo: ${msg.to_addresses.join(', ')}\nSubject: ${msg.subject}\nDate: ${msg.received_at}\nCategory: ${msg.category}\n\n${msg.body_text.slice(0, 2000)}`;
+        } catch {
+          return 'Message not found.';
+        }
+      },
+    });
+
+    instance.registerTool({
+      name: 'reply_to_email',
+      description: t('workspaceAgentTools.toolDescReplyToEmail'),
+      parameters: {
+        email_ref: { type: 'string' },
+        body: { type: 'string' },
+        confirm: { type: 'boolean' },
+      },
+      handler: async ({ email_ref, body, confirm }) => {
+        if (!confirm) return t('workspaceAgentTools.confirmRequired');
+        const ref = _resolveRef(email_ref);
+        if (!ref) return 'Invalid email reference. Use a number from the last listing (e.g. "1") or a message ID.';
+        const replyTo = ref.from_address || (await emailStore.fetchMessage(ref.id))?.from_address;
+        const replySubject = ref.subject || '';
+        if (!replyTo) return 'Message not found. Try calling read_emails first.';
+        try {
+          await emailStore.sendEmail({
+            to: [replyTo],
+            subject: replySubject.startsWith('Re:') ? replySubject : `Re: ${replySubject}`,
+            bodyText: asString(body),
+          });
+          void emailStore.refreshInbox();
+          return `Reply sent to ${replyTo}.`;
+        } catch (e: unknown) {
+          return `Failed to send reply: ${getErrorMessage(e)}`;
+        }
+      },
+    });
+
+    instance.registerTool({
+      name: 'send_email',
+      description: t('workspaceAgentTools.toolDescSendEmail'),
+      parameters: {
+        to: { type: 'string' },
+        subject: { type: 'string' },
+        body: { type: 'string' },
+        confirm: { type: 'boolean' },
+      },
+      handler: async ({ to, subject, body, confirm }) => {
+        if (!emailStore.isActivated) return 'Email is not activated for this kwami.';
+        if (!confirm) return t('workspaceAgentTools.confirmRequired');
+        const toList = asString(to)
+          .split(/[,;]\s*/)
+          .map((a) => a.trim())
+          .filter(Boolean);
+        if (toList.length === 0) return 'No recipient provided.';
+        try {
+          await emailStore.sendEmail({
+            to: toList,
+            subject: asString(subject),
+            bodyText: asString(body),
+          });
+          void emailStore.refreshInbox();
+          return `Email sent to ${toList.join(', ')}.`;
+        } catch (e: unknown) {
+          return `Failed to send email: ${getErrorMessage(e)}`;
+        }
+      },
+    });
+
+    instance.registerTool({
+      name: 'archive_email',
+      description: t('workspaceAgentTools.toolDescArchiveEmail'),
+      parameters: {
+        email_ref: { type: 'string' },
+      },
+      handler: async ({ email_ref }) => {
+        const ref = _resolveRef(email_ref);
+        if (!ref) return 'Invalid email reference. Use a number from the last listing (e.g. "1") or a message ID.';
+        try {
+          await emailStore.archiveMessage(ref.id);
+          return 'Email archived.';
+        } catch {
+          return 'Failed to archive email.';
+        }
+      },
+    });
+
+    instance.registerTool({
+      name: 'check_email_status',
+      description: t('workspaceAgentTools.toolDescCheckEmailStatus'),
+      handler: async () => {
+        if (!emailStore.isActivated) return 'Email is not activated for this kwami.';
+        await emailStore.fetchUnreadCounts();
+        const counts = emailStore.unreadCounts;
+        const total = emailStore.totalUnread;
+        if (total === 0) return 'No unread emails.';
+        const breakdown = Object.entries(counts)
+          .filter(([, c]) => c > 0)
+          .map(([cat, c]) => `${cat}: ${c}`)
+          .join(', ');
+        return `${total} unread email(s). ${breakdown}`;
+      },
+    });
+
+    // ---- Calendar tools ----
+    instance.registerTool({
+      name: 'list_calendar_events',
+      description: t('workspaceAgentTools.toolDescListCalendarEvents'),
+      parameters: {
+        range_start: { type: 'string' },
+        range_end: { type: 'string' },
+      },
+      handler: async ({ range_start, range_end }) => {
+        try {
+          const start = typeof range_start === 'string' ? range_start : new Date().toISOString();
+          const end = typeof range_end === 'string'
+            ? range_end
+            : new Date(Date.now() + 1000 * 60 * 60 * 24 * 14).toISOString();
+          const events = await calendarStore.fetchEvents(start, end);
+          if (events.length === 0) return t('workspaceAgentTools.calendarNoEvents');
+          return events
+            .map(
+              (event, index) =>
+                `${index + 1}. ${event.title} | ${event.starts_at} -> ${event.ends_at} | ${event.event_type} | ${event.id}`,
+            )
+            .join('\n');
+        } catch (e: unknown) {
+          return `${t('workspaceAgentTools.calendarListFailed')}: ${getErrorMessage(e)}`;
+        }
+      },
+    });
+
+    instance.registerTool({
+      name: 'create_calendar_event',
+      description: t('workspaceAgentTools.toolDescCreateCalendarEvent'),
+      parameters: {
+        title: { type: 'string' },
+        starts_at: { type: 'string' },
+        ends_at: { type: 'string' },
+        event_type: { type: 'string', enum: ['meeting', 'task', 'personal', 'reminder', 'focus', 'other'] },
+        color: { type: 'string' },
+        location: { type: 'string' },
+        description: { type: 'string' },
+        confirm: { type: 'boolean' },
+      },
+      handler: async ({ title, starts_at, ends_at, event_type, color, location, description, confirm }) => {
+        if (!confirm) return t('workspaceAgentTools.confirmRequired');
+        try {
+          const created = await calendarStore.createEvent({
+            title: typeof title === 'string' ? title : '',
+            starts_at: typeof starts_at === 'string' ? starts_at : '',
+            ends_at: typeof ends_at === 'string' ? ends_at : '',
+            event_type: (typeof event_type === 'string' ? event_type : 'other') as CalendarEventType,
+            color: typeof color === 'string' ? color : '#6366f1',
+            location: typeof location === 'string' ? location : '',
+            description: typeof description === 'string' ? description : '',
+          });
+          return t('workspaceAgentTools.calendarCreated', { title: created.title, id: created.id });
+        } catch (e: unknown) {
+          return `${t('workspaceAgentTools.calendarCreateFailed')}: ${getErrorMessage(e)}`;
+        }
+      },
+    });
+
+    instance.registerTool({
+      name: 'update_calendar_event',
+      description: t('workspaceAgentTools.toolDescUpdateCalendarEvent'),
+      parameters: {
+        event_id: { type: 'string' },
+        title: { type: 'string' },
+        starts_at: { type: 'string' },
+        ends_at: { type: 'string' },
+        event_type: { type: 'string', enum: ['meeting', 'task', 'personal', 'reminder', 'focus', 'other'] },
+        color: { type: 'string' },
+        location: { type: 'string' },
+        description: { type: 'string' },
+        confirm: { type: 'boolean' },
+      },
+      handler: async ({ event_id, title, starts_at, ends_at, event_type, color, location, description, confirm }) => {
+        if (!confirm) return t('workspaceAgentTools.confirmRequired');
+        if (typeof event_id !== 'string' || !event_id.trim()) return t('workspaceAgentTools.calendarEventIdRequired');
+        try {
+          const updated = await calendarStore.updateEvent(event_id, {
+            ...(typeof title === 'string' ? { title } : {}),
+            ...(typeof starts_at === 'string' ? { starts_at } : {}),
+            ...(typeof ends_at === 'string' ? { ends_at } : {}),
+            ...(typeof event_type === 'string' ? { event_type: event_type as CalendarEventType } : {}),
+            ...(typeof color === 'string' ? { color } : {}),
+            ...(typeof location === 'string' ? { location } : {}),
+            ...(typeof description === 'string' ? { description } : {}),
+          });
+          return t('workspaceAgentTools.calendarUpdated', { title: updated.title, id: updated.id });
+        } catch (e: unknown) {
+          return `${t('workspaceAgentTools.calendarUpdateFailed')}: ${getErrorMessage(e)}`;
+        }
+      },
+    });
+
+    instance.registerTool({
+      name: 'delete_calendar_event',
+      description: t('workspaceAgentTools.toolDescDeleteCalendarEvent'),
+      parameters: {
+        event_id: { type: 'string' },
+        confirm: { type: 'boolean' },
+      },
+      handler: async ({ event_id, confirm }) => {
+        if (!confirm) return t('workspaceAgentTools.confirmRequired');
+        if (typeof event_id !== 'string' || !event_id.trim()) return t('workspaceAgentTools.calendarEventIdRequired');
+        try {
+          await calendarStore.deleteEvent(event_id);
+          return t('workspaceAgentTools.calendarDeleted', { id: event_id });
+        } catch (e: unknown) {
+          return `${t('workspaceAgentTools.calendarDeleteFailed')}: ${getErrorMessage(e)}`;
+        }
+      },
     });
   }
 

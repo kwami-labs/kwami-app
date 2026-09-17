@@ -1,41 +1,41 @@
 import { onMounted, onUnmounted } from 'vue';
+import { appsPanelOrder, SETTINGS_PANEL_ORDER } from '@/constants/panels';
+import { useCommunicationsStore } from '@/stores/communications';
 import { useUIStore } from '@/stores/ui';
-
-const PANEL_KEYS: (string | null)[] = [
-  'avatar',
-  'scene',
-  'interaction',
-  'audio',
-  'voice',
-  'enhancements',
-  'metrics',
-  'transcription',
-  'communications',
-  'soul',
-  'memory',
-  'tools',
-  'info',
-  'account',
-];
+import { useWorkspaceStore } from '@/stores/workspace';
+import { isBareShortcut } from '@/utils/keyboard';
 
 export function usePanelShortcuts() {
   const uiStore = useUIStore();
+  const communicationsStore = useCommunicationsStore();
+  const workspaceStore = useWorkspaceStore();
+
+  /**
+   * Same list the sidebar renders, including the phone-activation gate — a
+   * digit key must never open a panel the sidebar is hiding.
+   */
+  function panelOrder(): readonly string[] {
+    if (uiStore.sidebarMode !== 'apps') return SETTINGS_PANEL_ORDER;
+    const phoneActivated = communicationsStore.isKwamiPhoneActivated(
+      workspaceStore.activeWorkspaceId,
+    );
+    return appsPanelOrder(phoneActivated);
+  }
 
   function handleKeydown(e: KeyboardEvent) {
-    if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) return;
-    if (e.key >= '1' && e.key <= '9') {
-      const idx = parseInt(e.key) - 1;
-      const panel = PANEL_KEYS[idx];
-      if (panel) uiStore.setPanel(panel);
-    } else if (e.key === '0') {
-      uiStore.setPanel('memory');
-    } else if (e.key === '-') {
-      uiStore.setPanel('tools');
-    } else if (e.key === '=') {
-      uiStore.setPanel('info');
-    } else if (e.key.toLowerCase() === 'p') {
+    if (!isBareShortcut(e)) return;
+    if (e.key.toLowerCase() === 'p') {
       uiStore.togglePanel();
+      return;
     }
+
+    // 1-9 then 0, -, = so the whole list stays reachable as it grows.
+    const KEY_SEQUENCE = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '='];
+    const index = KEY_SEQUENCE.indexOf(e.key);
+    if (index === -1) return;
+
+    const panel = panelOrder()[index];
+    if (panel) uiStore.setPanel(panel);
   }
 
   function handlePanelClick(panel: string) {

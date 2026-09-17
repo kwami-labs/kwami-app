@@ -12,6 +12,7 @@ import { useSceneStore } from './stores/scene';
 import { useAvatarStore } from './stores/avatar';
 import { useVoiceStore } from './stores/voice';
 import { i18n } from './i18n';
+import { initPwaInstall } from './composables/usePwaInstall';
 
 const app = createApp(App);
 const pinia = createPinia();
@@ -33,6 +34,9 @@ const toastOptions: PluginOptions = {
 app.use(pinia);
 app.use(Toast, toastOptions);
 app.use(i18n);
+
+// Capture beforeinstallprompt before Settings is opened.
+initPwaInstall();
 
 // Initialize theme settings
 const themeStore = useThemeStore();

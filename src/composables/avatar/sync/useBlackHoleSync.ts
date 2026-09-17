@@ -4,7 +4,8 @@
  * Handles synchronization between the BlackHole store state and the Kwami instance.
  */
 
-import { watch, type Ref } from 'vue';
+import { watch as vueWatch, type Ref } from 'vue';
+import type { BlackHoleHandle } from './rendererTypes';
 import { useBlackHoleStore } from '@/stores/avatar.black-hole';
 
 // Local type for Kwami instance (avoid external dependency)
@@ -15,8 +16,16 @@ type KwamiInstance = ReturnType<typeof import('@/composables/useKwami').useKwami
 // =====================================================
 
 export interface UseBlackHoleSyncOptions {
+  /**
+   * Register the reactive store -> renderer watchers. Defaults to true.
+   *
+   * Pass false when the caller only needs syncFromKwami/applyToKwami; App.vue
+   * already owns the always-on watcher set, and AvatarPanel instantiating them
+   * again doubled every setter call while the panel was open.
+   */
+  registerWatchers?: boolean;
     kwami: Ref<KwamiInstance>;
-    getBlackHole: () => any | undefined;
+    getBlackHole: () => BlackHoleHandle | undefined;
 }
 
 // =====================================================
@@ -24,6 +33,12 @@ export interface UseBlackHoleSyncOptions {
 // =====================================================
 
 export function useBlackHoleSync(options: UseBlackHoleSyncOptions) {
+    const { registerWatchers = true } = options;
+    // A no-op stand-in keeps the ~25 watch() call sites below unchanged.
+    const watch: typeof vueWatch = registerWatchers
+      ? vueWatch
+      : ((() => () => {}) as unknown as typeof vueWatch);
+
     const { getBlackHole } = options;
     const blackHoleStore = useBlackHoleStore();
 

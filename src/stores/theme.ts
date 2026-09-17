@@ -806,19 +806,41 @@ export const useThemeStore = defineStore('theme', () => {
   // System Listeners
   // ============================================================================
 
+  let darkModeQuery: MediaQueryList | null = null;
+  let autoModeTimer: ReturnType<typeof setInterval> | null = null;
+
+  function onSystemSchemeChange() {
+    if (mode.value === 'system') applyTheme();
+  }
+
   if (typeof window !== 'undefined') {
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-      if (mode.value === 'system') {
-        applyTheme();
-      }
-    });
+    darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    darkModeQuery.addEventListener('change', onSystemSchemeChange);
 
     // Check auto mode every minute
-    setInterval(() => {
+    autoModeTimer = setInterval(() => {
       if (mode.value === 'auto') {
         applyTheme();
       }
     }, 60000);
+  }
+
+  /**
+   * Release the system listeners. The store is an app-lifetime singleton, so
+   * this exists mainly so tests and HMR do not stack a new interval and a new
+   * matchMedia listener on every reload.
+   */
+  function teardownSystemListeners() {
+    darkModeQuery?.removeEventListener('change', onSystemSchemeChange);
+    darkModeQuery = null;
+    if (autoModeTimer !== null) {
+      clearInterval(autoModeTimer);
+      autoModeTimer = null;
+    }
+  }
+
+  if (import.meta.hot) {
+    import.meta.hot.dispose(teardownSystemListeners);
   }
 
   // ============================================================================
@@ -903,6 +925,7 @@ export const useThemeStore = defineStore('theme', () => {
     setFlashlightIntensity,
     setFlashlightColor,
     resetToDefaults,
+    teardownSystemListeners,
     applyTheme,
     applyThemeDebounced,
   };

@@ -26,11 +26,23 @@ let camera: THREE.PerspectiveCamera
 let renderer: THREE.WebGLRenderer
 let controls: OrbitControls
 let animationId: number
-let nodeObjects: Map<string, THREE.Mesh> = new Map()
+/** What we stash on each node mesh via Three's Object3D.userData. */
+interface NodeUserData {
+  nodeData: MemoryNode
+  nodeRadius: number
+}
+
+/** Typed read-back of the userData written when nodes are built. */
+function nodeUserData(object: THREE.Object3D): NodeUserData | null {
+  const data = object.userData as Partial<NodeUserData>
+  return data?.nodeData ? (data as NodeUserData) : null
+}
+
+const nodeObjects: Map<string, THREE.Mesh> = new Map()
 let edgeObjects: THREE.Line[] = []
-let labelSprites: Map<string, THREE.Sprite> = new Map()
+const labelSprites: Map<string, THREE.Sprite> = new Map()
 let edgeLabelSprites: THREE.Sprite[] = []
-let positions3D: Map<string, THREE.Vector3> = new Map()
+const positions3D: Map<string, THREE.Vector3> = new Map()
 let nodeDegrees: Map<string, number> = new Map()
 let raycaster: THREE.Raycaster
 let mouse: THREE.Vector2
@@ -304,7 +316,7 @@ function buildGraphObjects() {
       
       const labelPos = curve.getPoint(0.5).clone()
       
-      let offset = new THREE.Vector3(0, 0, 0)
+      const offset = new THREE.Vector3(0, 0, 0)
       const labelSpacing = 15
       for (const existingPos of edgeLabelPositions) {
         const dist = labelPos.distanceTo(existingPos)
@@ -346,8 +358,7 @@ function buildGraphObjects() {
     })
     const sphere = new THREE.Mesh(geometry, material)
     sphere.position.copy(pos)
-    ;(sphere as any).nodeData = node
-    ;(sphere as any).nodeRadius = radius
+    sphere.userData = { nodeData: node, nodeRadius: radius } satisfies NodeUserData
     scene.add(sphere)
     nodeObjects.set(node.id, sphere)
     
@@ -481,7 +492,7 @@ function hitTestNode(event: MouseEvent): MemoryNode | null {
   const meshes = Array.from(nodeObjects.values())
   const intersects = raycaster.intersectObjects(meshes)
   if (intersects.length > 0) {
-    return (intersects[0]!.object as any).nodeData as MemoryNode || null
+    return nodeUserData(intersects[0]!.object)?.nodeData ?? null
   }
   return null
 }
@@ -578,7 +589,7 @@ function updateLinkPreview() {
   const meshes = Array.from(nodeObjects.values())
   const intersects = raycaster.intersectObjects(meshes)
   if (intersects.length > 0) {
-    const hoveredNode = (intersects[0]!.object as any).nodeData as MemoryNode
+    const hoveredNode = nodeUserData(intersects[0]!.object)?.nodeData
     if (hoveredNode && hoveredNode.id !== props.linkingNodeId) {
       const snapPos = positions3D.get(hoveredNode.id)
       if (snapPos) targetPos.copy(snapPos)

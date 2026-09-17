@@ -41,7 +41,7 @@ export function useVoiceOptions(
                 apiTtsVoices.value[provider] = result.voices;
             }
         } catch (e) {
-            console.warn(`Failed to fetch TTS voices for ${provider}, using fallback`);
+            console.warn(`Failed to fetch TTS voices for ${provider}, using fallback`, e);
         }
     }
 
@@ -53,7 +53,7 @@ export function useVoiceOptions(
                 apiRealtimeVoices.value[provider] = result.voices;
             }
         } catch (e) {
-            console.warn(`Failed to fetch Realtime voices for ${provider}, using fallback`);
+            console.warn(`Failed to fetch Realtime voices for ${provider}, using fallback`, e);
         }
     }
 
@@ -66,7 +66,7 @@ export function useVoiceOptions(
                 apiSttLanguages.value[provider] = result.languages;
             }
         } catch (e) {
-            console.warn(`Failed to fetch STT languages for ${provider}, using fallback`);
+            console.warn(`Failed to fetch STT languages for ${provider}, using fallback`, e);
         }
     }
 

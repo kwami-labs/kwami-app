@@ -1,4 +1,5 @@
 import { ref, computed } from 'vue';
+import { api } from '@/lib/apiClient';
 import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '@/stores/auth';
 import { useVoiceStore } from '@/stores/voice';
@@ -6,7 +7,6 @@ import { useWorkspaceStore } from '@/stores/workspace';
 import { useKwamiConfigSync } from '@/composables/useKwamiConfigSync';
 import { useToast } from 'vue-toastification';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 export interface KwamiForEdit {
   id: string;
@@ -68,16 +68,11 @@ export function useKwamiActions() {
     if (!userId) return;
     const memoryUserId = `kwami_${userId}_${kwamiId}`;
     try {
-      const token = await authStore.getAccessToken();
-      const headers: HeadersInit = { 'Content-Type': 'application/json' };
-      if (token) (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
-      const res = await fetch(`${API_BASE}/memory/${memoryUserId}`, { method: 'DELETE', headers });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        console.warn('Failed to delete kwami Zep memory:', body?.detail ?? res.statusText);
-      }
+      await api.del(`/memory/${memoryUserId}`);
     } catch (e) {
-      console.warn('Failed to delete kwami Zep memory:', e);
+      // Swallowed deliberately: failing to purge remote memory must not block
+      // deleting the kwami itself.
+      console.warn('Failed to delete kwami memory:', e);
     }
   }
 

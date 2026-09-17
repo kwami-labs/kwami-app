@@ -1,66 +1,117 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, watch } from 'vue';
+import { defineAsyncComponent, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useToast } from 'vue-toastification';
 import { useKwami } from '@/composables/useKwami';
 import { useSceneBackground } from '@/composables/useSceneBackground';
 import { useUIStore } from '@/stores/ui';
 import { useAuthStore } from '@/stores/auth';
+import { useThemeStore } from '@/stores/theme';
 import AuthGuard from '@/components/auth/AuthGuard.vue';
 import TheSidebar from '@/components/sidebar/TheSidebar.vue';
 import ControlBar from '@/components/controls/ControlBar.vue';
-import AvatarPanel from '@/components/panels/avatar/AvatarPanel.vue';
-import AudioPanel from '@/components/panels/audio/AudioPanel.vue';
-import ScenePanel from '@/components/panels/scene/ScenePanel.vue';
-import VoicePanel from '@/components/panels/voice/VoicePanel.vue';
-import EnhancementsPanel from '@/components/panels/enhancements/EnhancementsPanel.vue';
-import TranscriptionPanel from '@/components/panels/transcription/TranscriptionPanel.vue';
-import CommunicationsPanel from '@/components/panels/communications/CommunicationsPanel.vue';
-import SoulPanel from '@/components/panels/soul/SoulPanel.vue';
-import MemoryPanel from '@/components/panels/memory/MemoryPanel.vue';
-import ToolsPanel from '@/components/panels/tools/ToolsPanel.vue';
-import InfoPanel from '@/components/panels/info/InfoPanel.vue';
-import MetricsPanel from '@/components/panels/metrics/MetricsPanel.vue';
-import AccountPanel from '@/components/panels/account/AccountPanel.vue';
-import ThemePanel from '@/components/panels/theme/ThemePanel.vue';
-import ModelsPanel from '@/components/panels/models/ModelsPanel.vue';
-import EnergyPanel from '@/components/panels/energy/EnergyPanel.vue';
 import EnergyBadge from '@/components/energy/EnergyBadge.vue';
 import SearchOrbitCards from '@/components/search/SearchOrbitCards.vue';
+import SidebarModeSwitch from '@/components/sidebar/SidebarModeSwitch.vue';
+import BrowserPanel from '@/components/panels/BrowserPanel.vue';
 
 import { useWorkspaceStore } from '@/stores/workspace';
 import { useKwamiConfigWatchers } from '@/composables/useKwamiConfigSync';
 import { useSearchResults } from '@/composables/useSearchResults';
 import { useNavigation } from '@/composables/useNavigation';
+import { isBareShortcut, isEditableTarget } from '@/utils/keyboard';
 import { useWorkspaceAgentTools } from '@/composables/useWorkspaceAgentTools';
 import { useAvatarStore } from '@/stores/avatar';
 import { useBlobXyzSync } from '@/composables/avatar/sync/useBlobXyzSync';
 import { useBlackHoleSync } from '@/composables/avatar/sync/useBlackHoleSync';
 import { useParticlesFaceSync } from '@/composables/avatar/sync/useParticlesFaceSync';
+import { useEyeIrisSync } from '@/composables/avatar/sync/useEyeIrisSync';
 import { randomizeAvatarPanel } from '@/composables/avatar/randomizeAvatarPanel';
 
-const { kwami, init, switchRenderer, rendererType: kwamiRendererType, isConnected } = useKwami();
+const {
+  kwami,
+  init,
+  switchRenderer,
+  rendererType: kwamiRendererType,
+  isConnected,
+  dispose: disposeKwami,
+} = useKwami();
 const { initialize: initSceneBackground } = useSceneBackground();
 import { useVoiceStore } from '@/stores/voice';
 import { useCreditsStore } from '@/stores/credits';
 import { loadUserLocaleFromDb } from '@/lib/userAppSettings';
 
+// Panels are lazy: none of them is needed at first paint, and eagerly
+// importing all 23 put MemoryPanel (2.2k lines), SceneBackground (1.8k) and
+// ThemePanel (1.3k) into the entry chunk. defineAsyncComponent splits each
+// into its own chunk, fetched the first time the panel is opened.
+const AvatarPanel = defineAsyncComponent(() => import('@/components/panels/settings/avatar/AvatarPanel.vue'));
+const AudioPanel = defineAsyncComponent(() => import('@/components/panels/settings/audio/AudioPanel.vue'));
+const ScenePanel = defineAsyncComponent(() => import('@/components/panels/settings/scene/ScenePanel.vue'));
+const VoicePanel = defineAsyncComponent(() => import('@/components/panels/settings/voice/VoicePanel.vue'));
+const EnhancementsPanel = defineAsyncComponent(() => import('@/components/panels/settings/enhancements/EnhancementsPanel.vue'));
+const HistoryPanel = defineAsyncComponent(() => import('@/components/panels/settings/transcription/TranscriptionPanel.vue'));
+const PhonePanelSettings = defineAsyncComponent(() => import('@/components/panels/settings/communications/PhonePanel.vue'));
+const SoulPanel = defineAsyncComponent(() => import('@/components/panels/settings/soul/SoulPanel.vue'));
+const MemoryPanel = defineAsyncComponent(() => import('@/components/panels/settings/memory/MemoryPanel.vue'));
+const ToolsPanel = defineAsyncComponent(() => import('@/components/panels/settings/tools/ToolsPanel.vue'));
+const InfoPanel = defineAsyncComponent(() => import('@/components/panels/settings/info/InfoPanel.vue'));
+const MetricsPanel = defineAsyncComponent(() => import('@/components/panels/settings/metrics/MetricsPanel.vue'));
+const AccountPanel = defineAsyncComponent(() => import('@/components/panels/settings/account/AccountPanel.vue'));
+const ThemePanel = defineAsyncComponent(() => import('@/components/panels/settings/theme/ThemePanel.vue'));
+const ModelsPanel = defineAsyncComponent(() => import('@/components/panels/settings/models/ModelsPanel.vue'));
+const EnergyPanel = defineAsyncComponent(() => import('@/components/panels/settings/energy/EnergyPanel.vue'));
+const ContactsPanel = defineAsyncComponent(() => import('@/components/panels/apps/contacts/ContactsPanel.vue'));
+const EmailPanel = defineAsyncComponent(() => import('@/components/panels/apps/email/EmailPanel.vue'));
+const WalletPanel = defineAsyncComponent(() => import('@/components/panels/apps/wallet/WalletPanel.vue'));
+const CalendarPanel = defineAsyncComponent(() => import('@/components/panels/apps/calendar/CalendarPanel.vue'));
+const PhonePanel = defineAsyncComponent(() => import('@/components/panels/apps/phone/PhonePanel.vue'));
+const WhatsappPanel = defineAsyncComponent(() => import('@/components/panels/apps/whatsapp/WhatsappPanel.vue'));
+const SmsPanel = defineAsyncComponent(() => import('@/components/panels/apps/sms/SmsPanel.vue'));
+
 const uiStore = useUIStore();
 const authStore = useAuthStore();
 const workspaceStore = useWorkspaceStore();
 
-// Search results: callback + event listener both update store; panel reads store
 const searchResults = useSearchResults();
 const avatarStore = useAvatarStore();
 
+const splitRatio = ref(50);
+const isDraggingSplitter = ref(false);
+
+function startDrag() {
+  isDraggingSplitter.value = true;
+  document.addEventListener('mousemove', onDrag);
+  document.addEventListener('mouseup', stopDrag);
+}
+
+function onDrag(e: MouseEvent) {
+  if (!isDraggingSplitter.value) return;
+  const isRight = themeStore.sidebarPosition === 'right';
+  let newRatio = (e.clientX / window.innerWidth) * 100;
+  if (isRight) {
+    newRatio = 100 - newRatio;
+  }
+  if (newRatio < 20) newRatio = 20;
+  if (newRatio > 80) newRatio = 80;
+  splitRatio.value = newRatio;
+}
+
+function stopDrag() {
+  isDraggingSplitter.value = false;
+  document.removeEventListener('mousemove', onDrag);
+  document.removeEventListener('mouseup', stopDrag);
+}
+
 // Navigation: extension opens tab/split; no sidebar
-useNavigation();
+const navState = useNavigation();
 useWorkspaceAgentTools();
 
 // Sync per-kwami config: apply config when switching kwami, debounced save to DB
 useKwamiConfigWatchers();
 const voiceStore = useVoiceStore();
 const creditsStore = useCreditsStore();
+const themeStore = useThemeStore();
 const toast = useToast();
 const { t } = useI18n();
 
@@ -75,11 +126,15 @@ const { applyToKwami: applyBlobToKwami } = useBlobXyzSync({
 });
 const { applyToKwami: applyBlackHoleToKwami } = useBlackHoleSync({
   kwami,
-  getBlackHole: () => (kwami.value?.avatar as any)?.getBlackHole?.(),
+  getBlackHole: () => kwami.value?.avatar.getBlackHole() ?? undefined,
 });
 const { applyToKwami: applyParticlesFaceToKwami } = useParticlesFaceSync({
   kwami,
-  getParticlesFace: () => (kwami.value?.avatar as any)?.getParticlesFace?.(),
+  getParticlesFace: () => kwami.value?.avatar.getParticlesFace() ?? undefined,
+});
+const { applyToKwami: applyEyeIrisToKwami } = useEyeIrisSync({
+  kwami,
+  getEyeIris: () => kwami.value?.avatar.getEyeIris() ?? undefined,
 });
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
@@ -116,6 +171,7 @@ function onRandomizeAvatarPanel() {
     applyBlob: applyBlobToKwami,
     applyBlackHole: applyBlackHoleToKwami,
     applyParticles: applyParticlesFaceToKwami,
+    applyEyeIris: applyEyeIrisToKwami,
   });
   window.dispatchEvent(new CustomEvent('kwami:randomized'));
 }
@@ -143,7 +199,7 @@ function applySavedAvatarState() {
 
   // Switch to saved renderer if different from default
   if (kwamiRendererType.value !== savedRenderer) {
-    switchRenderer(savedRenderer as any);
+    switchRenderer(savedRenderer);
   }
 
   // Apply the saved state for the active renderer
@@ -151,6 +207,7 @@ function applySavedAvatarState() {
     case 'blob-xyz': applyBlobToKwami(); break;
     case 'black-hole': applyBlackHoleToKwami(); break;
     case 'particles-face': applyParticlesFaceToKwami(); break;
+    case 'eye-iris': applyEyeIrisToKwami(); break;
   }
 }
 
@@ -229,11 +286,76 @@ function handleResize() {
 }
 
 // Watch for canvas to become available (happens after auth guard shows slot)
+let resizeObserver: ResizeObserver | null = null;
 watch(canvasRef, (canvas) => {
   if (canvas) {
     initializeKwami();
+    if (canvas.parentElement) {
+      if (resizeObserver) resizeObserver.disconnect();
+      resizeObserver = new ResizeObserver(() => {
+        handleResize();
+      });
+      resizeObserver.observe(canvas.parentElement);
+    }
   }
 });
+
+/**
+ * Global avatar/panel shortcuts.
+ *
+ * Alt+1/2/3 size the panel; the rest are bare keys, so they must not fire
+ * while the user is typing or when a browser/OS chord is held.
+ */
+function onGlobalKeydown(e: KeyboardEvent) {
+  if (isEditableTarget(e.target)) return;
+
+  // Panel size shortcuts (Alt+1/2/3)
+  if (e.altKey && e.key === '1') {
+    e.preventDefault();
+    uiStore.setSizePreset('small');
+    return;
+  }
+  if (e.altKey && e.key === '2') {
+    e.preventDefault();
+    uiStore.setSizePreset('medium');
+    return;
+  }
+  if (e.altKey && e.key === '3') {
+    e.preventDefault();
+    uiStore.setSizePreset('large');
+    return;
+  }
+
+  if (!isBareShortcut(e)) return;
+
+  // NOTE: panel keys (digits, 0, -, =, and `p`) belong to usePanelShortcuts,
+  // which SidebarNavigation mounts. Handling `p` here too toggled the panel
+  // twice per press and cancelled itself out. Keep this switch to
+  // renderer/avatar keys only.
+  switch (e.key.toLowerCase()) {
+    case 'b':
+      switchRenderer('blob-xyz');
+      break;
+    case 'h':
+      switchRenderer('black-hole');
+      break;
+    case 'r':
+      onRandomizeAvatarPanel();
+      break;
+    case 'l':
+      kwami.value?.setState('listening');
+      window.dispatchEvent(new CustomEvent('kwami:stateChanged', { detail: 'listening' }));
+      break;
+    case 't':
+      kwami.value?.setState('thinking');
+      window.dispatchEvent(new CustomEvent('kwami:stateChanged', { detail: 'thinking' }));
+      break;
+    case 'i':
+      kwami.value?.setState('idle');
+      window.dispatchEvent(new CustomEvent('kwami:stateChanged', { detail: 'idle' }));
+      break;
+  }
+}
 
 onMounted(() => {
   // Try to initialize if canvas is already available
@@ -243,64 +365,38 @@ onMounted(() => {
   window.addEventListener('resize', handleResize);
 
   // Shortcuts
-  document.addEventListener('keydown', (e) => {
-    const target = e.target as HTMLElement;
-    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
-
-    // Panel size shortcuts (Alt+1/2/3)
-    if (e.altKey && e.key === '1') {
-      e.preventDefault();
-      uiStore.setSizePreset('small');
-    }
-    if (e.altKey && e.key === '2') {
-      e.preventDefault();
-      uiStore.setSizePreset('medium');
-    }
-    if (e.altKey && e.key === '3') {
-      e.preventDefault();
-      uiStore.setSizePreset('large');
-    }
-
-    // Panel toggle
-    if (e.key === 'p' || e.key === 'P') {
-      uiStore.togglePanel();
-    }
-    // Renderer switch shortcuts
-    if (e.key === 'b' || e.key === 'B') switchRenderer('blob-xyz');
-    if (e.key === 'h' || e.key === 'H') switchRenderer('black-hole');
-    // Avatar state shortcuts
-    if (e.key === 'r') {
-      onRandomizeAvatarPanel();
-      console.log('🎲 Randomized!');
-    }
-    if (e.key === 'l') {
-      kwami.value?.setState('listening');
-      window.dispatchEvent(new CustomEvent('kwami:stateChanged', { detail: 'listening' }));
-      console.log('🎤 Listening mode');
-    }
-    if (e.key === 't') {
-      kwami.value?.setState('thinking');
-      window.dispatchEvent(new CustomEvent('kwami:stateChanged', { detail: 'thinking' }));
-      console.log('🤔 Thinking mode');
-    }
-    if (e.key === 'i') {
-      kwami.value?.setState('idle');
-      window.dispatchEvent(new CustomEvent('kwami:stateChanged', { detail: 'idle' }));
-      console.log('😴 Idle mode');
-    }
-  });
+  document.addEventListener('keydown', onGlobalKeydown);
 });
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize);
+  document.removeEventListener('keydown', onGlobalKeydown);
+  if (resizeObserver) {
+    resizeObserver.disconnect();
+    resizeObserver = null;
+  }
+  // Releases the WebGL context, the LiveKit room and the audio graph.
+  void disposeKwami();
+  isInitialized.value = false;
 });
 </script>
 
 <template>
   <AuthGuard>
-    <div id="kwami-root" class="root-layout">
+    <div 
+      id="kwami-root" 
+      class="root-layout"
+      :class="{
+        'split-layout': navState.isActive.value && !!navState.liveUrl.value,
+        'sidebar-right': themeStore.sidebarPosition === 'right',
+        'is-dragging': isDraggingSplitter
+      }"
+    >
       <!-- Main area: canvas + overlays (no nav sidebar) -->
-      <div class="main-area">
+      <div 
+        class="main-area"
+        :style="navState.isActive.value && !!navState.liveUrl.value ? { flex: `0 0 ${splitRatio}%` } : {}"
+      >
         <canvas id="kwami-canvas" ref="canvasRef"></canvas>
 
         <!-- UI controls only shown when authenticated and welcome complete -->
@@ -312,8 +408,19 @@ onUnmounted(() => {
             <EnergyBadge />
             <ControlBar />
           </div>
+          <SidebarModeSwitch />
         </template>
       </div>
+
+      <div 
+        v-if="navState.isActive.value && !!navState.liveUrl.value" 
+        class="layout-splitter" 
+        @mousedown="startDrag"
+      >
+        <div class="splitter-handle"></div>
+      </div>
+
+      <BrowserPanel />
 
       <template v-if="authStore.isAuthenticated">
         <TheSidebar>
@@ -322,8 +429,8 @@ onUnmounted(() => {
           <ScenePanel v-if="uiStore.activePanel === 'scene'" />
           <VoicePanel v-if="uiStore.activePanel === 'voice'" />
           <EnhancementsPanel v-if="uiStore.activePanel === 'enhancements'" />
-          <TranscriptionPanel v-if="uiStore.activePanel === 'transcription'" />
-          <CommunicationsPanel v-if="uiStore.activePanel === 'communications'" />
+          <HistoryPanel v-if="uiStore.activePanel === 'history'" />
+          <PhonePanelSettings v-if="uiStore.activePanel === 'communications'" />
           <SoulPanel v-if="uiStore.activePanel === 'soul'" />
           <MemoryPanel v-if="uiStore.activePanel === 'memory'" />
           <ToolsPanel v-if="uiStore.activePanel === 'tools'" />
@@ -333,6 +440,13 @@ onUnmounted(() => {
           <ThemePanel v-if="uiStore.activePanel === 'theme'" />
           <ModelsPanel v-if="uiStore.activePanel === 'models'" />
           <EnergyPanel v-if="uiStore.activePanel === 'credits'" />
+          <ContactsPanel v-if="uiStore.activePanel === 'contacts'" />
+          <EmailPanel v-if="uiStore.activePanel === 'email'" />
+          <WalletPanel v-if="uiStore.activePanel === 'wallet'" />
+          <CalendarPanel v-if="uiStore.activePanel === 'calendar'" />
+          <PhonePanel v-if="uiStore.activePanel === 'phone'" />
+          <WhatsappPanel v-if="uiStore.activePanel === 'whatsapp'" />
+          <SmsPanel v-if="uiStore.activePanel === 'sms'" />
         </TheSidebar>
       </template>
     </div>
@@ -354,6 +468,21 @@ onUnmounted(() => {
 .root-layout {
   display: flex;
   flex-direction: row;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.root-layout.split-layout.sidebar-right {
+  flex-direction: row-reverse;
+}
+
+.root-layout.is-dragging,
+.root-layout.is-dragging * {
+  cursor: col-resize !important;
+}
+
+.root-layout.is-dragging :deep(iframe) {
+  pointer-events: none !important;
 }
 
 /* Main area: canvas + overlays; always full width */
@@ -362,6 +491,35 @@ onUnmounted(() => {
   min-width: 0;
   position: relative;
   overflow: hidden;
+  /* Remove transition to allow smooth dragging */
+}
+
+/* Splitter */
+.layout-splitter {
+  width: 12px;
+  background: transparent;
+  cursor: col-resize;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  /* Prevent text selection while dragging */
+  user-select: none;
+}
+.layout-splitter:hover,
+.layout-splitter:active {
+  background: rgba(255, 255, 255, 0.05);
+}
+.splitter-handle {
+  width: 4px;
+  height: 40px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.2);
+}
+.layout-splitter:hover .splitter-handle,
+.layout-splitter:active .splitter-handle {
+  background: rgba(255, 255, 255, 0.4);
 }
 
 /* Canvas fills main area */

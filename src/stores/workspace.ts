@@ -13,6 +13,17 @@ export interface KwamiWorkspace {
   hasUnsavedConfig?: boolean;
 }
 
+/**
+ * DB-backed kwamis have a UUID id; locally-created ones do not exist in
+ * `user_kwamis` yet, so they must not be sent to endpoints that validate
+ * ownership against that table.
+ */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export function isPersistedKwamiId(id: string): boolean {
+  return UUID_RE.test(id);
+}
+
 export const useWorkspaceStore = defineStore('workspace', () => {
   const workspaces = ref<KwamiWorkspace[]>([]);
   const activeWorkspaceId = ref<string>('');
@@ -215,7 +226,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     const idx = workspaces.value.findIndex((w) => w.id === id);
     if (idx === -1) return false;
     const wasActive = activeWorkspaceId.value === id;
-    const isDbId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    const isDbId = isPersistedKwamiId(id);
     if (isDbId && userId) {
       const { error } = await supabase.from('user_kwamis').delete().eq('id', id).eq('user_id', userId);
       if (error) {
@@ -243,7 +254,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     if (payload.name !== undefined) ws.name = payload.name.trim().slice(0, 64);
     if (payload.emoji !== undefined) ws.emoji = payload.emoji;
     if (payload.colors !== undefined) ws.colors = { ...ws.colors, ...payload.colors };
-    const isDbId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    const isDbId = isPersistedKwamiId(id);
     if (!isDbId || !userId) return;
     try {
       const body: Record<string, unknown> = {};
@@ -268,8 +279,17 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     }
   }
 
+  /**
+   * Pure read. It must NOT call ensureLocalWorkspace(): this runs from
+   * computeds and from the config watcher's immediate pass, which fire before
+   * loadFromDb() resolves. Creating a workspace here spawned a throwaway
+   * "phantom" kwami that config was then rebased against, moments before
+   * loadFromDb() replaced workspaces wholesale.
+   *
+   * The genuine "no workspaces yet" cases are handled explicitly by
+   * loadFromDb() and deleteWorkspace().
+   */
   function getActiveWorkspace(): KwamiWorkspace | undefined {
-    ensureLocalWorkspace();
     return workspaces.value.find((w) => w.id === activeWorkspaceId.value);
   }
 
@@ -277,6 +297,19 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     const ws = getActiveWorkspace();
     if (!ws) return;
     setWorkspaceConfig(ws, config, false);
+  }
+
+  /**
+   * Re-anchors savedConfig to the provided config without marking dirty.
+   * Called after applyConfig so that store defaults for schema-evolved fields
+   * (fields added after the config was originally saved) don't permanently
+   * show as unsaved changes.
+   */
+  function rebaseActiveSavedConfig(config: KwamiConfig) {
+    const ws = getActiveWorkspace();
+    if (!ws) return;
+    ws.savedConfig = cloneConfig(config);
+    syncDirtyState(ws);
   }
 
   function getActiveSavedConfig(): KwamiConfig | undefined {
@@ -302,7 +335,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     }
     // Only persist to DB when the active kwami has a DB id (UUID). Local-only kwamis have ids like kwami_*
     const id = activeWorkspaceId.value;
-    const isDbId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    const isDbId = isPersistedKwamiId(id);
     if (!isDbId) {
       setWorkspaceConfig(ws, config, true);
       return true;
@@ -338,6 +371,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     setActive,
     getActiveWorkspace,
     updateActiveConfigLocal,
+    rebaseActiveSavedConfig,
     getActiveSavedConfig,
     discardActiveConfigChanges,
     loadFromDb,

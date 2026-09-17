@@ -348,6 +348,7 @@ function drawVisualizerFrame() {
   const avatar = kwami.value?.avatar;
   avatar?.getBlackHole()?.setAudioLevels(levels.bass, levels.mid, levels.high);
   avatar?.getParticlesFace()?.setAudioLevels(levels.bass, levels.mid, levels.high);
+  avatar?.getEyeIris?.()?.setAudioLevels(levels.bass, levels.mid, levels.high);
 
   const gradient = ctx.createLinearGradient(0, height, width, 0);
   gradient.addColorStop(0, withAlpha(themePalette.accentPrimary, 0.95));

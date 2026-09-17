@@ -6,16 +6,18 @@ export const useNavigationStore = defineStore('navigation', () => {
   const currentUrl = ref('');
   const currentTitle = ref('');
   const isLoading = ref(false);
+  const liveUrl = ref('');
 
   const hasNavigation = computed(() => isActive.value);
 
-  function updateState(state: { url?: string; title?: string; isLoading?: boolean }) {
+  function updateState(state: { url?: string; title?: string; isLoading?: boolean; liveUrl?: string }) {
     if (state.url !== undefined) {
       currentUrl.value = state.url;
       if (state.url) isActive.value = true;
     }
     if (state.title !== undefined) currentTitle.value = state.title;
     if (state.isLoading !== undefined) isLoading.value = state.isLoading;
+    if (state.liveUrl !== undefined) liveUrl.value = state.liveUrl;
   }
 
   function end() {
@@ -23,6 +25,7 @@ export const useNavigationStore = defineStore('navigation', () => {
     currentUrl.value = '';
     currentTitle.value = '';
     isLoading.value = false;
+    liveUrl.value = '';
   }
 
   return {
@@ -30,6 +33,7 @@ export const useNavigationStore = defineStore('navigation', () => {
     currentUrl,
     currentTitle,
     isLoading,
+    liveUrl,
     hasNavigation,
     updateState,
     end,

@@ -14,39 +14,62 @@ export default defineConfig({
         }
       }
     }),
+    {
+      // Strip console/debugger from production bundles only.
+      //
+      // `apply: 'build'` rather than a top-level esbuild.drop: vitest merges
+      // this config, and a global drop would strip console from the test run
+      // and break any test asserting on a warning. It must also not fire in
+      // `vite dev`, where console is the debugging channel.
+      name: 'kwami:drop-console-in-build',
+      apply: 'build',
+      config() {
+        return { esbuild: { drop: ['console', 'debugger'] as const } }
+      }
+    },
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['sphere.svg'],
+      includeAssets: [
+        'sphere.svg',
+        'welcome.mp3',
+        'pwa-192.png',
+        'pwa-512.png',
+        'pwa-512-maskable.png',
+        'apple-touch-icon.png'
+      ],
       manifest: {
+        id: '/',
         name: 'Kwami App',
         short_name: 'Kwami',
         description: 'Kwami AI voice agent app',
         theme_color: '#050608',
         background_color: '#050608',
         display: 'standalone',
-        orientation: 'portrait-primary',
+        orientation: 'any',
+        lang: 'en',
         scope: '/',
         start_url: '/',
+        categories: ['utilities', 'productivity'],
         icons: [
-          {
-            src: '/sphere.svg',
-            sizes: 'any',
-            type: 'image/svg+xml',
-            purpose: 'any'
-          },
-          { src: '/sphere.svg', sizes: '192x192', type: 'image/svg+xml', purpose: 'any maskable' },
-          { src: '/sphere.svg', sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' }
+          { src: '/pwa-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: '/pwa-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: '/pwa-512-maskable.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          { src: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png', purpose: 'any' },
+          { src: '/sphere.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' }
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,mp3}'],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.(?:gstatic|googleapis)\.com\/.*/i,
             handler: 'CacheFirst',
             options: {
               cacheName: 'google-fonts',
-              expiration: { maxEntries: 4, maxAgeSeconds: 60 * 60 * 24 * 365 }
+              expiration: { maxEntries: 16, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              // Cross-origin font responses are opaque (status 0); without
+              // this they cache unpredictably.
+              cacheableResponse: { statuses: [0, 200] }
             }
           }
         ]
@@ -58,9 +81,24 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     }
   },
-  // Force Vite to re-bundle kwami when it changes
-  optimizeDeps: {
-    include: ['kwami'],
-    force: true  // Force re-bundling on every server start
+  server: {
+    port: 5173,
+    strictPort: true
+  },
+  build: {
+    // The entry chunk was 2.63 MB, over workbox's 2 MiB precache ceiling, so
+    // vite-plugin-pwa (>=0.20.2) failed the build outright. Splitting the
+    // heavy vendors keeps every chunk precacheable and lets the app shell
+    // load without waiting on Three.js or LiveKit.
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          three: ['three'],
+          kwami: ['kwami'],
+          supabase: ['@supabase/supabase-js'],
+          vendor: ['vue', 'pinia', 'vue-i18n', 'vue-toastification']
+        }
+      }
+    }
   }
 })

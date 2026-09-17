@@ -1,0 +1,51 @@
+name: Bug report
+description: Something in the Kwami App client is broken
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not paste access tokens, LiveKit JWTs, `.env` values, or full voice transcripts.
+        Security issues: email security@kwami.io ([SECURITY.md](../../../SECURITY.md)).
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      placeholder: What you expected vs what you saw.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Sign in
+        2. Open Memory
+        3. …
+    validations:
+      required: true
+  - type: input
+    id: commit
+    attributes:
+      label: Commit or tag
+      placeholder: abc1234 or main
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Surface
+      options:
+        - Web
+        - PWA
+        - Tauri desktop
+        - Playwright / unit test
+        - Unknown
+  - type: input
+    id: browser
+    attributes:
+      label: Browser / OS
+      placeholder: Chromium 131 · Linux
+  - type: textarea
+    id: extra
+    attributes:
+      label: Extra context
+      placeholder: Network status for /token, screenshots (no secrets).

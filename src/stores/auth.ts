@@ -3,9 +3,11 @@ import { ref, computed } from 'vue';
 import { supabase } from '@/lib/supabase';
 import type { User, Session, AuthError } from '@supabase/supabase-js';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 export const useAuthStore = defineStore('auth', () => {
+  // initAuth runs from AuthGuard's onMounted; a remount would otherwise stack
+  // a second message listener and a second onAuthStateChange subscription.
+  let initialized = false;
   const user = ref<User | null>(null);
   const session = ref<Session | null>(null);
   const loading = ref(true);
@@ -34,25 +36,53 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  /** Popup -> parent OAuth relay. Named so it can be removed again. */
+  function onPopupMessage(event: MessageEvent) {
+    // Verify origin for security
+    if (event.origin !== window.location.origin) return;
+
+    if (event.data?.type === 'supabase-auth-callback' && event.data?.session) {
+      // Update our session from the popup's callback
+      session.value = event.data.session;
+      user.value = event.data.session.user;
+      loading.value = false;
+    }
+  }
+
   // Initialize auth state listener
   function initAuth() {
+    if (initialized) return;
+    initialized = true;
+
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
-      session.value = initialSession;
-      user.value = initialSession?.user ?? null;
-      loading.value = false;
-      
-      // If we're in a popup and have a session, notify parent and close
-      if (isInPopup() && initialSession) {
-        handlePopupCallback(initialSession);
-        return;
-      }
-      
-      // Clean up URL hash after OAuth callback (Supabase returns tokens in hash)
-      if (window.location.hash && window.location.hash.includes('access_token')) {
-        window.history.replaceState({}, '', window.location.pathname);
-      }
-    });
+    supabase.auth
+      .getSession()
+      .then(({ data: { session: initialSession } }) => {
+        session.value = initialSession;
+        user.value = initialSession?.user ?? null;
+
+        // If we're in a popup and have a session, notify parent and close
+        if (isInPopup() && initialSession) {
+          handlePopupCallback(initialSession);
+          return;
+        }
+
+        // Clean up URL hash after OAuth callback (Supabase returns tokens in hash)
+        if (window.location.hash && window.location.hash.includes('access_token')) {
+          window.history.replaceState({}, '', window.location.pathname);
+        }
+      })
+      .catch((e: unknown) => {
+        // Without this the promise rejects silently, `loading` never clears and
+        // AuthGuard holds the welcome screen up forever with no way out.
+        console.error('Failed to restore session:', e);
+        session.value = null;
+        user.value = null;
+        error.value = e instanceof Error ? e.message : 'Failed to restore session';
+      })
+      .finally(() => {
+        loading.value = false;
+      });
 
     // Listen for auth changes
     supabase.auth.onAuthStateChange((event, newSession) => {
@@ -73,74 +103,13 @@ export const useAuthStore = defineStore('auth', () => {
     });
 
     // Listen for messages from OAuth popup (if we're the parent)
-    window.addEventListener('message', (event) => {
-      // Verify origin for security
-      if (event.origin !== window.location.origin) return;
-      
-      if (event.data?.type === 'supabase-auth-callback' && event.data?.session) {
-        // Update our session from the popup's callback
-        session.value = event.data.session;
-        user.value = event.data.session.user;
-        loading.value = false;
-      }
-    });
+    window.addEventListener('message', onPopupMessage);
   }
 
-  // Sign in with email and password
-  async function signInWithEmail(email: string, password: string) {
-    loading.value = true;
-    error.value = null;
-
-    try {
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (authError) {
-        error.value = authError.message;
-        return { success: false, error: authError };
-      }
-
-      user.value = data.user;
-      session.value = data.session;
-      return { success: true, data };
-    } catch (e) {
-      const err = e as AuthError;
-      error.value = err.message;
-      return { success: false, error: err };
-    } finally {
-      loading.value = false;
-    }
-  }
-
-  // Sign up with email and password
-  async function signUpWithEmail(email: string, password: string) {
-    loading.value = true;
-    error.value = null;
-
-    try {
-      const { data, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-      });
-
-      if (authError) {
-        error.value = authError.message;
-        return { success: false, error: authError };
-      }
-
-      // Note: User may need to confirm email before being fully authenticated
-      user.value = data.user;
-      session.value = data.session;
-      return { success: true, data };
-    } catch (e) {
-      const err = e as AuthError;
-      error.value = err.message;
-      return { success: false, error: err };
-    } finally {
-      loading.value = false;
-    }
+  /** Detach the popup relay. Paired with initAuth for tests and HMR. */
+  function teardownAuth() {
+    window.removeEventListener('message', onPopupMessage);
+    initialized = false;
   }
 
   // Sign in with Google ID token (for popup flow)
@@ -207,30 +176,6 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null;
   }
 
-  // Check if email exists in the system (for smart login/signup flow)
-  async function checkEmailExists(email: string): Promise<{ exists: boolean; error?: string }> {
-    try {
-      const response = await fetch(`${API_BASE}/auth/check-email`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        return { exists: false, error: errorData.message || 'Failed to check email' };
-      }
-
-      const data = await response.json();
-      return { exists: data.exists };
-    } catch (e) {
-      console.error('Error checking email:', e);
-      return { exists: false, error: 'Network error checking email' };
-    }
-  }
-
   return {
     // State
     user,
@@ -243,12 +188,10 @@ export const useAuthStore = defineStore('auth', () => {
     userEmail,
     // Actions
     initAuth,
-    signInWithEmail,
-    signUpWithEmail,
+    teardownAuth,
     signInWithGoogleIdToken,
     signOut,
     getAccessToken,
     clearError,
-    checkEmailExists,
   };
 });

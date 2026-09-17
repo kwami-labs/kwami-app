@@ -509,7 +509,6 @@ export const useBlackHoleStore = defineStore('blackHole', () => {
     getColorScheme: () => { scheme: string };
     getColors: () => { hot: string; mid1: string; mid2: string; mid3: string; outer: string };
     getScale: () => number;
-    getConfig: () => any;
     audioEffects?: {
       enabled?: boolean;
       reactivity?: number;
