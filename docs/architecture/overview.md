@@ -100,7 +100,7 @@ kwami-app/
 │   └── main.ts           # App bootstrap
 ├── src-tauri/            # Tauri 2 desktop shell
 ├── tests/                # Vitest unit/integration + MSW
-├── infra/                # Cloudflare Workers (wrangler.jsonc)
+├── infra/                # Wrangler Worker + Terraform custom domain
 └── .github/workflows/    # CI + Workers deploy
 ```
 
