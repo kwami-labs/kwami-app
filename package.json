@@ -17,7 +17,12 @@
     "test:unit": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "cf:preview": "wrangler dev --config infra/wrangler.jsonc --env production",
+    "cf:deploy": "bun run build && wrangler deploy --config infra/wrangler.jsonc --env production",
+    "cf:deploy:dry": "bun run build && wrangler deploy --config infra/wrangler.jsonc --env production --dry-run",
+    "cf:deploy:stg": "bun run build && wrangler deploy --config infra/wrangler.jsonc --env stg",
+    "cf:deploy:dev": "bun run build && wrangler deploy --config infra/wrangler.jsonc --env dev"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.93.1",
@@ -50,7 +55,8 @@
     "vite": "^7.2.4",
     "vite-plugin-pwa": "^1.2.0",
     "vitest": "^3.2.7",
-    "vue-tsc": "^3.1.4"
+    "vue-tsc": "^3.1.4",
+    "wrangler": "^4.133.0"
   },
   "overrides": {
     "rollup": "4.59.0",
