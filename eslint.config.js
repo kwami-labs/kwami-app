@@ -18,6 +18,7 @@ export default [
             '**/test-results/**',
             // Cargo emits generated .js into the Tauri build tree.
             'src-tauri/target/**',
+            '**/.wrangler/**',
         ],
     },
 

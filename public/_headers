@@ -1,0 +1,15 @@
+# Copied into dist/ by Vite. Applied to static-asset responses only.
+# CSP is intentionally omitted: WebGL, LiveKit, Supabase, and OAuth popups
+# need a long allowlist that would break the app if guessed. Tighten later
+# with a measured policy. COOP is same-origin-allow-popups so the OAuth
+# popup can still postMessage to window.opener (see docs/security.md).
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Cross-Origin-Opener-Policy: same-origin-allow-popups
+  Permissions-Policy: camera=(), geolocation=(), microphone=(self)

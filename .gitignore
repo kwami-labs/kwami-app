@@ -35,6 +35,9 @@ pnpm-debug.log*
 bun-debug.log*
 lerna-debug.log*
 
+# Cloudflare / wrangler
+.wrangler/
+
 # Tauri / Cargo (also listed in src-tauri/.gitignore)
 src-tauri/target/
 src-tauri/gen/schemas
