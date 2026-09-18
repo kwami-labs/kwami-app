@@ -47,7 +47,7 @@ You cannot have a useful voice session without a reachable API (`POST /token`) a
 
 ## Local Kwami SDK
 
-This app depends on the published `kwami` package (`^2.1.1`). To develop against a sibling checkout:
+This app depends on the published `kwami` package (`2.2.0-dev.1`). To develop against a sibling checkout:
 
 ```bash
 cd ../kwami

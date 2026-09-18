@@ -27,7 +27,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.93.1",
     "iconify-icon": "^3.0.2",
-    "kwami": "^2.1.1",
+    "kwami": "2.2.0-dev.1",
     "pinia": "^3.0.4",
     "three": "^0.186.0",
     "vue": "^3.5.30",

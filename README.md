@@ -70,7 +70,7 @@ Deep dive: [Architecture overview](docs/architecture/overview.md) · [Data flow]
 | UI | Vue 3 (Composition API, `<script setup>`), TypeScript 5.9 |
 | Build | Vite 7, bun |
 | State | Pinia |
-| 3D / voice runtime | `kwami` ^2.1.1, Three.js 0.186 |
+| 3D / voice runtime | `kwami` 2.2.0-dev.1, Three.js 0.186 |
 | Auth | `@supabase/supabase-js` |
 | i18n | `vue-i18n` |
 | PWA | `vite-plugin-pwa` |
