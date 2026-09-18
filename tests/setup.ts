@@ -1,11 +1,12 @@
 import { afterAll, afterEach, beforeAll, vi } from 'vitest';
 import { config } from '@vue/test-utils';
-import { createI18n } from 'vue-i18n';
 import { server } from './mocks/server';
 import { Kwami, resetKwamiStub } from './mocks/kwami';
-// The app's own message set, not a second copy of it: a bundle that is live
-// in the app and absent here renders as its key path under test only.
-import { messages } from '../src/i18n';
+// The app's own i18n instance, not a second one built from the same messages.
+// Two instances look identical until something calls `setLocale`, which drives
+// the app's instance while mounted components read the test's -- so a locale
+// switch appeared to do nothing under test and worked in the browser.
+import { i18n } from '../src/i18n';
 
 // --- the kwami runtime is WebGL + LiveKit; never construct the real one ---
 vi.mock('kwami', () => ({ Kwami }));
@@ -92,14 +93,7 @@ URL.revokeObjectURL = vi.fn();
 // --- global component config ---
 // Real messages (not a stub t()) so tests catch missing keys and the shadowed-`t`
 // class of bug rather than silently rendering the key back.
-config.global.plugins = [
-  createI18n({
-    legacy: false,
-    locale: 'en',
-    fallbackLocale: 'en',
-    messages,
-  }),
-];
+config.global.plugins = [i18n];
 config.global.stubs = { 'iconify-icon': true };
 config.global.mocks = { $toast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() } };
 

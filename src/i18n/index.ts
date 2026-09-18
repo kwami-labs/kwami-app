@@ -3,6 +3,7 @@ import {
   workspaceAgentToolsEn, 
   workspaceAgentToolsEs 
 } from './workspaceAgentTools.locale';
+import { appLocaleEn, appLocaleEs } from './appLocale.locale';
 import { commsAgentToolsEn, commsAgentToolsEs } from './commsAgentTools.locale';
 import { searchPanelEn, searchPanelEs } from './searchPanel.locale';
 import { en } from './translations/en';
@@ -15,6 +16,19 @@ const DEFAULT_LOCALE: SupportedLocale = 'en';
 const LOCALE_STORAGE_KEY = 'kwami.locale';
 
 /**
+ * Each language written in itself, not translated.
+ *
+ * A language picker is the one control whose labels must not follow the
+ * current locale: the person reaching for it is, by definition, someone who
+ * may not read the language the app is in right now. Endonyms also mean the
+ * list needs no entry in `en.ts` / `es.ts` -- adding a locale is one line here.
+ */
+export const LOCALE_ENDONYMS: Record<SupportedLocale, string> = {
+  en: 'English',
+  es: 'Espanol',
+};
+
+/**
  * Exported so tests build their i18n from the same object the app does.
  *
  * `tests/setup.ts` used to re-assemble this spread by hand, which meant a new
@@ -23,8 +37,8 @@ const LOCALE_STORAGE_KEY = 'kwami.locale';
  * were the ones nobody had checked.
  */
 export const messages = {
-  en: { ...en, ...workspaceAgentToolsEn, ...searchPanelEn, ...commsAgentToolsEn },
-  es: { ...es, ...workspaceAgentToolsEs, ...searchPanelEs, ...commsAgentToolsEs },
+  en: { ...en, ...workspaceAgentToolsEn, ...searchPanelEn, ...commsAgentToolsEn, ...appLocaleEn },
+  es: { ...es, ...workspaceAgentToolsEs, ...searchPanelEs, ...commsAgentToolsEs, ...appLocaleEs },
 } as const;
 
 export function normalizeLocale(locale: string | null | undefined): SupportedLocale {

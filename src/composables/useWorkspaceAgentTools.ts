@@ -29,6 +29,8 @@ import { useNavigationStore, BROWSER_PANEL_LAYOUTS, type BrowserPanelLayout } fr
 import { useWorkspaceStore } from '@/stores/workspace';
 import { useKwamiConfigSync } from '@/composables/useKwamiConfigSync';
 import { useSearchPanelAgentTools } from '@/composables/useSearchPanelAgentTools';
+import { useCommsAgentTools } from '@/composables/useCommsAgentTools';
+import { useLocaleAgentTools } from '@/composables/useLocaleAgentTools';
 import { soulPresets } from '@/presets/agent/soul-presets';
 import { sceneImagePresets } from '@/presets/scene/image-presets';
 import { sceneVideoPresets } from '@/presets/scene/video-presets';
@@ -260,6 +262,8 @@ export function useWorkspaceAgentTools() {
   // The search panel's tools live in their own composable but register through
   // this one, so there is a single place the agent's tool set is assembled.
   const searchPanelTools = useSearchPanelAgentTools();
+  const commsTools = useCommsAgentTools();
+  const localeTools = useLocaleAgentTools();
 
   function emitConfigApplied() {
     if (typeof window !== 'undefined') {
@@ -368,6 +372,22 @@ export function useWorkspaceAgentTools() {
     }
   }
 
+  /**
+   * Ask the user before an expensive-to-undo UI change.
+   *
+   * `confirm === true` short-circuits the dialog, which means the model can
+   * satisfy this gate by asserting it already asked. That is a deliberate
+   * trade and it only holds for what this file does: every action here is
+   * reversible, visible on screen, and self-contained, so the cost of the
+   * model getting it wrong is an annoyed user pressing undo.
+   *
+   * It is NOT the right gate for anything irreversible or outward-facing --
+   * sending a message, placing a call, moving money. Those live in
+   * `useCommsAgentTools.ts` and call `requestConfirmation` unconditionally,
+   * with no `confirm` parameter for the model to pass. The divergence between
+   * the two files is the point, not an oversight: the test is "can the user
+   * undo this unaided", not "does it feel important".
+   */
   async function confirmIfNeeded(
     required: boolean,
     confirm: unknown,
@@ -2203,6 +2223,8 @@ export function useWorkspaceAgentTools() {
 
   function registerTools(instance: Kwami) {
     searchPanelTools.registerSearchPanelTools(instance);
+    commsTools.registerCommsTools(instance);
+    localeTools.registerLocaleTools(instance);
 
     instance.registerTool({
       name: 'set_ui_control',

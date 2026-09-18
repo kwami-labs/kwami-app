@@ -172,8 +172,23 @@ export function useCommsAgentTools() {
   /**
    * The app's own confirmation dialog.
    *
-   * Deliberately takes no `confirm` argument from the model. Everything this
-   * gates is irreversible and aimed at a third party.
+   * Deliberately NOT `useWorkspaceAgentTools`'s `confirmIfNeeded`, and please
+   * do not "fix" the inconsistency: it is load-bearing.
+   *
+   * That helper short-circuits on `confirm === true` from the model, so the
+   * model can satisfy the gate by asserting it already asked. The dividing
+   * line is not important versus unimportant, it is **reversible and
+   * self-contained versus irreversible or outward-facing**. Everything that
+   * helper gates is the former -- resetting the avatar is visible and undoable,
+   * and the cost of a false positive is an annoyed user pressing undo.
+   * Everything gated here is the latter: a message or a call has a third party
+   * on the other end and no undo, and `delete_contact` cannot be undone by the
+   * user without help. For those, a gate the model can satisfy by itself is
+   * not a gate.
+   *
+   * So this takes no `confirm` argument at all, and none of these tools expose
+   * one. `tests/unit/commsAgentTools.test.ts` asserts that passing
+   * `confirm: true` does not bypass the dialog.
    */
   function confirmOutbound(title: string, message: string): Promise<boolean> {
     return actionState.requestConfirmation({
