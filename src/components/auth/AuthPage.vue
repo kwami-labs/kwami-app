@@ -5,14 +5,21 @@ import WelcomeBlob from './WelcomeBlob.vue';
 import LoginButton from './LoginButton.vue';
 import SoundtrackPill from './SoundtrackPill.vue';
 import AuthPreferencesPill from './AuthPreferencesPill.vue';
+import WelcomeVideoBackground from './WelcomeVideoBackground.vue';
+import { useWelcomeBackground } from '@/composables/useWelcomeBackground';
 
 const { t } = useI18n();
 const loginOpen = ref(false);
+const { video } = useWelcomeBackground();
 </script>
 
 <template>
   <div class="page">
-    <div class="ambient" aria-hidden="true" />
+    <WelcomeVideoBackground />
+
+    <!-- A blue glow tuned for the painted gradient; over a video it only
+         muddies whatever is playing. -->
+    <div v-if="!video" class="ambient" aria-hidden="true" />
 
     <h1 v-if="!loginOpen" class="hero-title" aria-label="kwami">
       <span class="title-main">KWAMI</span>

@@ -1,10 +1,10 @@
 <script setup lang="ts">
 /**
- * The login screen's two preferences: what language it speaks and whether it is
- * light or dark. Both are decisions someone needs to make *before* signing in
- * -- the account panel that holds them afterwards is behind the very screen
- * they are looking at -- so they get a corner of their own, mirroring
- * `SoundtrackPill` across the bottom of the page.
+ * The login screen's three preferences: what language it speaks, whether it is
+ * light or dark, and what it is painted with. All are decisions someone needs
+ * to make *before* signing in -- the settings panels that hold them afterwards
+ * are behind the very screen they are looking at -- so they get a corner of
+ * their own, mirroring `SoundtrackPill` across the bottom of the page.
  *
  * Styled from the `--auth-*` tokens in `variables.css`, like the rest of this
  * screen, rather than the `--surface-*` / `--accent-*` tokens the signed-in
@@ -21,9 +21,11 @@ import {
 } from '@/i18n';
 import { getFlagIcon } from '@/constants/language-flags';
 import { useThemeStore } from '@/stores/theme';
+import { useWelcomeBackground } from '@/composables/useWelcomeBackground';
 
 const { t } = useI18n();
 const themeStore = useThemeStore();
+const { videoId, video, presets, setVideo, shuffle } = useWelcomeBackground();
 
 const locales = SUPPORTED_LOCALES;
 const currentLocale = computed(() => getCurrentLocale());
@@ -41,34 +43,62 @@ const languageLabel = computed(() =>
   t('auth.languageCurrent', { language: LOCALE_ENDONYMS[currentLocale.value] }),
 );
 
-// --- language menu ---------------------------------------------------------
+const backgroundLabel = computed(() =>
+  video.value
+    ? t('auth.backgroundCurrent', { name: video.value.name })
+    : t('auth.backgroundMenu'),
+);
 
-const menuOpen = ref(false);
+// --- menus -----------------------------------------------------------------
+
+/**
+ * One slot, not a flag per menu: two popovers anchored to the same corner must
+ * never be open at once, and a single value makes that true by construction
+ * rather than by remembering to close the other one.
+ */
+type MenuName = 'language' | 'background';
+
+const openMenu = ref<MenuName | null>(null);
 const rootEl = ref<HTMLElement | null>(null);
-const triggerEl = ref<HTMLButtonElement | null>(null);
+const languageTriggerEl = ref<HTMLButtonElement | null>(null);
+const backgroundTriggerEl = ref<HTMLButtonElement | null>(null);
 const itemEls = ref<HTMLButtonElement[]>([]);
+
+/** Item index the menu should land on when it opens. */
+const languageIndex = computed(() => Math.max(0, locales.indexOf(currentLocale.value)));
+/** Offset by the two fixed rows (gradient, shuffle) that precede the clips. */
+const backgroundIndex = computed(() => {
+  const found = presets.findIndex((preset) => preset.id === videoId.value);
+  return found >= 0 ? found + 2 : 0;
+});
 
 function setItemEl(el: Element | null, index: number) {
   if (el) itemEls.value[index] = el as HTMLButtonElement;
 }
 
-function openMenu() {
-  menuOpen.value = true;
+function triggerFor(menu: MenuName) {
+  return menu === 'language' ? languageTriggerEl.value : backgroundTriggerEl.value;
+}
+
+function open(menu: MenuName) {
+  itemEls.value = [];
+  openMenu.value = menu;
   void nextTick(() => {
-    const active = locales.indexOf(currentLocale.value);
-    itemEls.value[active >= 0 ? active : 0]?.focus();
+    const index = menu === 'language' ? languageIndex.value : backgroundIndex.value;
+    (itemEls.value[index] ?? itemEls.value[0])?.focus();
   });
 }
 
-function closeMenu(refocus = true) {
-  if (!menuOpen.value) return;
-  menuOpen.value = false;
-  if (refocus) triggerEl.value?.focus();
+function close(refocus: MenuName | null = openMenu.value) {
+  if (!openMenu.value) return;
+  const trigger = refocus ? triggerFor(refocus) : null;
+  openMenu.value = null;
+  trigger?.focus();
 }
 
-function toggleMenu() {
-  if (menuOpen.value) closeMenu();
-  else openMenu();
+function toggle(menu: MenuName) {
+  if (openMenu.value === menu) close();
+  else open(menu);
 }
 
 function chooseLocale(locale: SupportedLocale) {
@@ -76,28 +106,38 @@ function chooseLocale(locale: SupportedLocale) {
   // `loadUserLocaleFromDb` seeds the table from whatever is live here the first
   // time this user signs in, so a choice made on this screen does carry over.
   setLocale(locale);
-  closeMenu();
+  close();
 }
 
-/** Roving focus, so the menu is usable without a pointer. */
-function onMenuKeydown(event: KeyboardEvent, index: number) {
+function chooseBackground(id: string | null) {
+  setVideo(id);
+  close();
+}
+
+function shuffleBackground() {
+  shuffle();
+  // Deliberately left open: shuffling is a "show me another" gesture, and
+  // reopening the menu for every reroll would make trying a few unbearable.
+}
+
+/** Roving focus, so either menu is usable without a pointer. */
+function onMenuKeydown(event: KeyboardEvent, index: number, count: number) {
   if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
   event.preventDefault();
   const delta = event.key === 'ArrowDown' ? 1 : -1;
-  const next = (index + delta + locales.length) % locales.length;
-  itemEls.value[next]?.focus();
+  itemEls.value[(index + delta + count) % count]?.focus();
 }
 
 function onDocumentPointerDown(event: PointerEvent) {
-  if (!rootEl.value?.contains(event.target as Node)) closeMenu(false);
+  if (!rootEl.value?.contains(event.target as Node)) close(null);
 }
 
 function onDocumentKeydown(event: KeyboardEvent) {
-  if (event.key === 'Escape') closeMenu();
+  if (event.key === 'Escape') close();
 }
 
-watch(menuOpen, (open) => {
-  if (open) {
+watch(openMenu, (menu) => {
+  if (menu) {
     document.addEventListener('pointerdown', onDocumentPointerDown);
     document.addEventListener('keydown', onDocumentKeydown);
   } else {
@@ -119,41 +159,118 @@ function toggleTheme() {
 <template>
   <div ref="rootEl" class="prefs-pill" :aria-label="t('auth.preferences')" role="group">
     <Transition name="menu-pop">
-      <div v-if="menuOpen" class="lang-menu" role="menu" :aria-label="t('auth.languageMenu')">
+      <div
+        v-if="openMenu === 'language'"
+        class="pill-menu"
+        role="menu"
+        :aria-label="t('auth.languageMenu')"
+      >
         <button
           v-for="(locale, index) in locales"
           :key="locale"
           :ref="(el) => setItemEl(el as Element | null, index)"
-          class="lang-item"
-          :class="{ 'lang-item--active': locale === currentLocale }"
+          class="menu-item"
+          :class="{ 'menu-item--active': locale === currentLocale }"
           type="button"
           role="menuitemradio"
           :aria-checked="locale === currentLocale"
           @click="chooseLocale(locale)"
-          @keydown="onMenuKeydown($event, index)"
+          @keydown="onMenuKeydown($event, index, locales.length)"
         >
-          <iconify-icon :icon="getFlagIcon(locale)" class="lang-flag"></iconify-icon>
-          <span class="lang-name">{{ LOCALE_ENDONYMS[locale] }}</span>
+          <iconify-icon :icon="getFlagIcon(locale)" class="menu-flag"></iconify-icon>
+          <span class="menu-name">{{ LOCALE_ENDONYMS[locale] }}</span>
           <iconify-icon
             v-if="locale === currentLocale"
             icon="ph:check-bold"
-            class="lang-check"
+            class="menu-check"
+          ></iconify-icon>
+        </button>
+      </div>
+    </Transition>
+
+    <Transition name="menu-pop">
+      <div
+        v-if="openMenu === 'background'"
+        class="pill-menu pill-menu--tall"
+        role="menu"
+        :aria-label="t('auth.backgroundMenu')"
+      >
+        <button
+          :ref="(el) => setItemEl(el as Element | null, 0)"
+          class="menu-item"
+          :class="{ 'menu-item--active': !video }"
+          type="button"
+          role="menuitemradio"
+          :aria-checked="!video"
+          @click="chooseBackground(null)"
+          @keydown="onMenuKeydown($event, 0, presets.length + 2)"
+        >
+          <iconify-icon icon="ph:paint-brush-broad-duotone" class="menu-flag"></iconify-icon>
+          <span class="menu-name">{{ t('auth.backgroundGradient') }}</span>
+          <iconify-icon v-if="!video" icon="ph:check-bold" class="menu-check"></iconify-icon>
+        </button>
+
+        <button
+          :ref="(el) => setItemEl(el as Element | null, 1)"
+          class="menu-item"
+          type="button"
+          role="menuitem"
+          @click="shuffleBackground"
+          @keydown="onMenuKeydown($event, 1, presets.length + 2)"
+        >
+          <iconify-icon icon="ph:shuffle-duotone" class="menu-flag"></iconify-icon>
+          <span class="menu-name">{{ t('auth.backgroundShuffle') }}</span>
+        </button>
+
+        <div class="menu-rule" role="separator"></div>
+
+        <button
+          v-for="(preset, index) in presets"
+          :key="preset.id"
+          :ref="(el) => setItemEl(el as Element | null, index + 2)"
+          class="menu-item"
+          :class="{ 'menu-item--active': preset.id === videoId }"
+          type="button"
+          role="menuitemradio"
+          :aria-checked="preset.id === videoId"
+          @click="chooseBackground(preset.id)"
+          @keydown="onMenuKeydown($event, index + 2, presets.length + 2)"
+        >
+          <iconify-icon icon="ph:film-strip-duotone" class="menu-flag"></iconify-icon>
+          <span class="menu-name">{{ preset.name }}</span>
+          <iconify-icon
+            v-if="preset.id === videoId"
+            icon="ph:check-bold"
+            class="menu-check"
           ></iconify-icon>
         </button>
       </div>
     </Transition>
 
     <button
-      ref="triggerEl"
+      ref="languageTriggerEl"
       class="pill-btn pill-btn--flag"
       type="button"
       aria-haspopup="menu"
-      :aria-expanded="menuOpen"
+      :aria-expanded="openMenu === 'language'"
       :title="languageLabel"
       :aria-label="languageLabel"
-      @click="toggleMenu"
+      @click="toggle('language')"
     >
       <iconify-icon :icon="getFlagIcon(currentLocale)" class="flag-icon"></iconify-icon>
+    </button>
+
+    <button
+      ref="backgroundTriggerEl"
+      class="pill-btn pill-btn--video"
+      type="button"
+      aria-haspopup="menu"
+      :aria-expanded="openMenu === 'background'"
+      :title="backgroundLabel"
+      :aria-label="backgroundLabel"
+      @click="toggle('background')"
+    >
+      <iconify-icon :icon="video ? 'ph:film-strip-fill' : 'ph:film-strip'"></iconify-icon>
     </button>
 
     <button
@@ -227,17 +344,24 @@ function toggleTheme() {
 }
 
 /* The flag is artwork, not a glyph: it keeps its own colours on hover and sits
-   a shade larger than the theme icon so the two read as the same weight. */
+   a shade larger than the other icons so the three read as the same weight. */
 .flag-icon {
   font-size: 20px;
   border-radius: 999px;
 }
 
-.pill-btn--flag[aria-expanded='true'] {
+.pill-btn[aria-expanded='true'] {
   background: var(--auth-active-fill);
+  color: var(--auth-icon-strong);
 }
 
-.lang-menu {
+/* A filled strip says a clip is playing; the outline says the screen is on its
+   painted gradient. */
+.pill-btn--video[aria-expanded='false'] {
+  background: transparent;
+}
+
+.pill-menu {
   position: absolute;
   right: 0;
   bottom: calc(100% + 8px);
@@ -254,7 +378,18 @@ function toggleTheme() {
   box-shadow: var(--auth-glass-shadow);
 }
 
-.lang-item {
+/* The clip list is 70-odd long, so it scrolls rather than running off the top
+   of the viewport. Capped against the viewport, not a fixed pixel count, so it
+   still fits on a short laptop screen. */
+.pill-menu--tall {
+  min-width: 210px;
+  max-height: min(340px, calc(100vh - 110px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.menu-item {
   display: flex;
   align-items: center;
   gap: 9px;
@@ -274,28 +409,35 @@ function toggleTheme() {
     color 160ms ease;
 }
 
-.lang-item:hover {
+.menu-item:hover {
   background: var(--auth-hover-fill);
   color: var(--auth-text);
 }
 
-.lang-item:focus-visible {
+.menu-item:focus-visible {
   outline: 2px solid var(--auth-focus-ring);
   outline-offset: -2px;
 }
 
-.lang-item--active {
+.menu-item--active {
   background: var(--auth-active-fill);
   color: var(--auth-text);
 }
 
-.lang-flag {
+.menu-rule {
+  flex: 0 0 auto;
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--auth-rule);
+}
+
+.menu-flag {
   flex: 0 0 auto;
   font-size: 18px;
   border-radius: 999px;
 }
 
-.lang-name {
+.menu-name {
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
@@ -303,7 +445,7 @@ function toggleTheme() {
   white-space: nowrap;
 }
 
-.lang-check {
+.menu-check {
   flex: 0 0 auto;
   font-size: 12px;
   color: var(--auth-icon-dim);
@@ -326,7 +468,7 @@ function toggleTheme() {
 @media (prefers-reduced-motion: reduce) {
   .prefs-pill,
   .pill-btn,
-  .lang-item,
+  .menu-item,
   .menu-pop-enter-active,
   .menu-pop-leave-active {
     transition: none;

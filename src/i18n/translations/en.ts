@@ -332,6 +332,10 @@ export const en = {
     languageCurrent: 'Language: {language}',
     switchToLight: 'Switch to light mode',
     switchToDark: 'Switch to dark mode',
+    backgroundMenu: 'Change background',
+    backgroundCurrent: 'Background: {name}',
+    backgroundGradient: 'Gradient',
+    backgroundShuffle: 'Surprise me',
   },
   welcomeScreen: {
     clickToSkip: 'Click anywhere to skip',

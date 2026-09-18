@@ -332,6 +332,10 @@ export const es = {
     languageCurrent: 'Idioma: {language}',
     switchToLight: 'Cambiar al modo claro',
     switchToDark: 'Cambiar al modo oscuro',
+    backgroundMenu: 'Cambiar el fondo',
+    backgroundCurrent: 'Fondo: {name}',
+    backgroundGradient: 'Degradado',
+    backgroundShuffle: 'Sorpréndeme',
   },
   welcomeScreen: {
     clickToSkip: 'Haz clic en cualquier lugar para omitir',
