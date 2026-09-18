@@ -59,7 +59,25 @@ onUnmounted(() => {
         @click="onChoose(provider)"
       >
         <span class="wallet-card__icon" aria-hidden="true">
-          <iconify-icon :icon="provider.icon" />
+          <svg
+            v-if="provider.id === 'phantom'"
+            class="wallet-card__mark"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+          >
+            <path
+              d="M12 2c5.2 0 9 3.7 9 9.2 0 4.1-1.6 6.8-3.2 8.7-.5.6-1.4.3-1.4-.5v-2.2c0-1.4-1.1-2.5-2.4-2.5H10c-1.3 0-2.4 1.1-2.4 2.5v2.2c0 .8-.9 1.1-1.4.5C4.6 18 3 15.3 3 11.2 3 5.7 6.8 2 12 2zm-3.2 8.2a1.4 1.4 0 1 0 0-2.8 1.4 1.4 0 0 0 0 2.8zm6.4 0a1.4 1.4 0 1 0 0-2.8 1.4 1.4 0 0 0 0 2.8z"
+            />
+          </svg>
+          <svg
+            v-else-if="provider.id === 'metamask'"
+            class="wallet-card__mark"
+            viewBox="0 0 24 24"
+          >
+            <path fill="#E2761B" d="M4.6 4.2 11.8 9l-1.3 3.2-6.8-1.6 1-6.4zm14.8 0 1 6.4-6.8 1.6L12.2 9l7.2-4.8zM8.4 14.2l1.6 5.6L7 21.8l1.4-7.6zm7.2 0L17 21.8l-3-2-1.6-5.6z" />
+            <path fill="#F5AE31" d="m8.4 14.2 3.6 1.1 3.6-1.1-1.5 3.2H9.9z" />
+          </svg>
+          <iconify-icon v-else :icon="provider.icon" />
         </span>
         <span class="wallet-card__copy">
           <span class="wallet-card__name">{{ t(provider.labelKey) }}</span>
@@ -165,10 +183,21 @@ onUnmounted(() => {
 .wallet-card__icon {
   display: grid;
   place-items: center;
-  width: 2.15rem;
-  height: 2.15rem;
+  width: 2.2rem;
+  height: 2.2rem;
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.08);
+  color: #c4b5fd;
+}
+
+.wallet-card--metamask .wallet-card__icon {
+  color: #e2761b;
+}
+
+.wallet-card__mark {
+  width: 1.25rem;
+  height: 1.25rem;
+  display: block;
 }
 
 .wallet-card__icon iconify-icon {
