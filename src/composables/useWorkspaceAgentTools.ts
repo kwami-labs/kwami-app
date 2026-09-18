@@ -19,11 +19,18 @@ import { useAvatarStore } from '@/stores/avatar';
 import { useBlobXyzStore } from '@/stores/avatar.blob-xyz';
 import { useBlackHoleStore } from '@/stores/avatar.black-hole';
 import { useParticlesFaceStore } from '@/stores/avatar.particles-face';
+import { useEyeIrisStore } from '@/stores/avatar.eye-iris';
 import { useTranscriptionState } from '@/composables/useTranscriptionState';
 import { useAgentActionState } from '@/composables/useAgentActionState';
 import { avatarPresets } from '@/presets/avatar/avatar-presets';
 import { useEmailStore, type EmailCategory } from '@/stores/email';
 import { useCalendarStore, type CalendarEventType } from '@/stores/calendar';
+import { useNavigationStore, BROWSER_PANEL_LAYOUTS, type BrowserPanelLayout } from '@/stores/navigation';
+import { useWorkspaceStore } from '@/stores/workspace';
+import { useKwamiConfigSync } from '@/composables/useKwamiConfigSync';
+import { sceneImagePresets } from '@/presets/scene/image-presets';
+import { sceneVideoPresets } from '@/presets/scene/video-presets';
+import { sceneHdriPresets } from '@/presets/scene/hdri-presets';
 
 const WORKSPACE_PANELS = [
   'avatar',
@@ -81,6 +88,16 @@ const PANEL_ALIASES: Record<string, WorkspacePanel> = {
   schedule: 'calendar',
 };
 
+/**
+ * Every avatar renderer the app can actually show.
+ *
+ * `eye-iris` was missing here while the store, its preset file and
+ * `applySnapshot` have all supported it from the start -- so it was selectable
+ * by hand and unreachable by voice, for no reason anyone had decided.
+ */
+const AVATAR_RENDERERS = ['blob-xyz', 'black-hole', 'particles-face', 'eye-iris'] as const;
+type AvatarRenderer = (typeof AVATAR_RENDERERS)[number];
+
 const ADVANCED_VOICE_CONTROLS = new Set([
   'pipelineMode',
   'llmModel',
@@ -100,6 +117,7 @@ const UI_CONTROL_DOMAINS = [
   'enhancements',
   'memory',
   'search',
+  'browser',
 ] as const;
 
 type UiControlDomain = (typeof UI_CONTROL_DOMAINS)[number];
@@ -111,6 +129,10 @@ const UI_DOMAIN_ALIASES: Record<string, UiControlDomain> = {
   enhancements: 'enhancements',
   memory: 'memory',
   memoryui: 'memory',
+  browser: 'browser',
+  browserpanel: 'browser',
+  navigation: 'browser',
+  web: 'browser',
   panel: 'panel',
   panels: 'panel',
   scene: 'scene',
@@ -156,6 +178,37 @@ function getErrorMessage(error: unknown): string {
   return 'unknown error';
 }
 
+/**
+ * Send a config update whose `updateType` the installed SDK does not name.
+ *
+ * `Agent.syncConfigToBackend`'s union is
+ * `'voice' | 'soul' | 'tools' | 'full' | 'llm' | 'memory'`, and the backend
+ * also understands `'pipeline'` for switching between the standard and
+ * realtime pipelines mid-session. The app depends on the published `kwami`
+ * package rather than the workspace source, so widening that union means
+ * republishing the SDK; this reaches the same `sendConfigUpdate` the typed
+ * method does, via the pipeline the SDK already exposes for exactly this.
+ *
+ * Returns false when there is no connected pipeline to send on, so callers can
+ * tell the user the truth instead of reporting a switch that never left.
+ */
+function sendRawConfigUpdate(
+  instance: Kwami,
+  updateType: string,
+  config: Record<string, unknown>,
+): boolean {
+  const pipeline = instance.agent.getPipeline() as
+    | { sendConfigUpdate?: (type: string, config: unknown) => void }
+    | null;
+  if (!pipeline || typeof pipeline.sendConfigUpdate !== 'function') return false;
+  try {
+    pipeline.sendConfigUpdate(updateType, config);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function buildSoulConfig(voiceStore: ReturnType<typeof useVoiceStore>) {
   const saved = voiceStore.soulConfig;
   return {
@@ -186,6 +239,10 @@ export function useWorkspaceAgentTools() {
   const blobStore = useBlobXyzStore();
   const blackHoleStore = useBlackHoleStore();
   const particlesFaceStore = useParticlesFaceStore();
+  const eyeIrisStore = useEyeIrisStore();
+  const navigationStore = useNavigationStore();
+  const workspaceStore = useWorkspaceStore();
+  const { switchToKwami } = useKwamiConfigSync();
   const { messages } = useTranscriptionState();
   const actionState = useAgentActionState();
 
@@ -352,7 +409,9 @@ export function useWorkspaceAgentTools() {
   }
 
   async function setRenderer(renderer: unknown) {
-    if (renderer !== 'blob-xyz' && renderer !== 'black-hole' && renderer !== 'particles-face') {
+    const requested = normalizeKey(asString(renderer));
+    const match = AVATAR_RENDERERS.find((item) => normalizeKey(item) === requested);
+    if (!match) {
       actionState.recordError(
         t('workspaceAgentTools.errSwitchRenderer'),
         `Unknown renderer "${String(renderer)}"`,
@@ -363,13 +422,13 @@ export function useWorkspaceAgentTools() {
       };
     }
 
-    avatarStore.setRendererType(renderer);
+    avatarStore.setRendererType(match as AvatarRenderer);
     persistAvatarChanges();
-    actionState.recordAction(t('workspaceAgentTools.actionSwitchedRenderer'), renderer, { announce: true });
+    actionState.recordAction(t('workspaceAgentTools.actionSwitchedRenderer'), match, { announce: true });
     return {
       success: true,
-      renderer,
-      message: t('workspaceAgentTools.switchedRenderer', { renderer }),
+      renderer: match,
+      message: t('workspaceAgentTools.switchedRenderer', { renderer: match }),
     };
   }
 
@@ -739,6 +798,24 @@ export function useWorkspaceAgentTools() {
         if (!isRecord(value)) return { success: false, message: t('workspaceAgentTools.particlesFaceObject') };
         particlesFaceStore.update(value);
         break;
+      // The eye-iris renderer had no agent-facing controls at all, so it could
+      // be selected by voice and then not adjusted by voice.
+      case 'eyeirispalette':
+        if (typeof value !== 'string') return { success: false, message: t('workspaceAgentTools.eyeIrisPaletteName') };
+        eyeIrisStore.applyPalettePreset(value as Parameters<typeof eyeIrisStore.applyPalettePreset>[0]);
+        break;
+      case 'eyeiriscolors':
+        if (!isRecord(value)) return { success: false, message: t('workspaceAgentTools.eyeIrisColorsObject') };
+        eyeIrisStore.importState({ color: { ...eyeIrisStore.state.color, ...(value as Record<string, string>) } });
+        break;
+      case 'eyeirispupil':
+        if (!isRecord(value)) return { success: false, message: t('workspaceAgentTools.eyeIrisPupilObject') };
+        eyeIrisStore.importState({ geometry: { ...eyeIrisStore.state.geometry, ...value } });
+        break;
+      case 'eyeirismotion':
+        if (!isRecord(value)) return { success: false, message: t('workspaceAgentTools.eyeIrisMotionObject') };
+        eyeIrisStore.importState({ animation: { ...eyeIrisStore.state.animation, ...value } });
+        break;
       default:
         return { success: false, message: t('workspaceAgentTools.unknownAvatarControl', { control }) };
     }
@@ -897,12 +974,19 @@ export function useWorkspaceAgentTools() {
           },
         });
       }
+      // `updateConfig` only mutates the local object. Without this the backend
+      // never heard about the switch at all, which is why the message below
+      // used to tell the user to reconnect. It can now be applied live.
+      const switchedLive =
+        isConnected.value && !!kwami.value && sendRawConfigUpdate(kwami.value, 'pipeline', { pipelineType: value });
       actionState.recordAction(t('workspaceAgentTools.actionUpdatedPipeline'), value, { announce: true });
       return {
         success: true,
-        message: isConnected.value
-          ? t('workspaceAgentTools.pipelineModeSetReconnect', { mode: value })
-          : t('workspaceAgentTools.pipelineModeSet', { mode: value }),
+        message: switchedLive
+          ? t('workspaceAgentTools.pipelineModeSwitched', { mode: value })
+          : isConnected.value
+            ? t('workspaceAgentTools.pipelineModeSetReconnect', { mode: value })
+            : t('workspaceAgentTools.pipelineModeSet', { mode: value }),
       };
     }
 
@@ -1290,6 +1374,309 @@ export function useWorkspaceAgentTools() {
     };
   }
 
+  // ---------------------------------------------------------------------------
+  // Live browser panel
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Drive the layout of the live browsing panel.
+   *
+   * Deliberately does not open or close the browser: the session itself is the
+   * agent's own `navigate_to` / `close_navigation`. Opening a page and moving
+   * the window that shows it are different things, and folding them together
+   * gave the model two ways to do one job and no way to do the other.
+   */
+  async function setBrowserPanelControl(control: unknown, value: unknown) {
+    if (typeof control !== 'string') {
+      return { success: false, message: t('workspaceAgentTools.browserControlString') };
+    }
+
+    const normalized = normalizeKey(control);
+
+    function result(message: string) {
+      actionState.recordAction(t('workspaceAgentTools.actionUpdatedBrowserPanel'), String(control), {
+        announce: true,
+      });
+      return {
+        success: true,
+        layout: navigationStore.layout,
+        rect: { ...navigationStore.floatingRect },
+        isOpen: navigationStore.isActive,
+        message,
+      };
+    }
+
+    switch (normalized) {
+      case 'layout':
+      case 'mode': {
+        const layout = typeof value === 'string' ? normalizeKey(value) : '';
+        const match = BROWSER_PANEL_LAYOUTS.find((item) => normalizeKey(item) === layout);
+        if (!match) {
+          return {
+            success: false,
+            message: t('workspaceAgentTools.browserLayoutInvalid', {
+              list: BROWSER_PANEL_LAYOUTS.join(', '),
+            }),
+          };
+        }
+        navigationStore.setLayout(match as BrowserPanelLayout);
+        return result(t('workspaceAgentTools.browserLayoutSet', { layout: match }));
+      }
+
+      case 'expand':
+      case 'fullscreen': {
+        if (typeof value !== 'boolean') {
+          return { success: false, message: t('workspaceAgentTools.browserExpandBool') };
+        }
+        // Collapsing returns to docked rather than to whatever it was before:
+        // the component tracks "before fullscreen" for its own button, and the
+        // agent has no way to know that value, so guessing it here would make
+        // the spoken and clicked paths disagree.
+        navigationStore.setLayout(value ? 'fullscreen' : 'docked');
+        return result(
+          value
+            ? t('workspaceAgentTools.browserExpanded')
+            : t('workspaceAgentTools.browserCollapsed'),
+        );
+      }
+
+      case 'position':
+      case 'move': {
+        if (!isRecord(value) || typeof value.x !== 'number' || typeof value.y !== 'number') {
+          return { success: false, message: t('workspaceAgentTools.browserPositionObject') };
+        }
+        // Moving implies floating: asking a docked split pane to go to (40, 40)
+        // would otherwise report success and visibly do nothing.
+        navigationStore.setLayout('floating');
+        navigationStore.moveTo(value.x, value.y);
+        return result(t('workspaceAgentTools.browserMoved'));
+      }
+
+      case 'size':
+      case 'resize': {
+        if (
+          !isRecord(value) ||
+          typeof value.width !== 'number' ||
+          typeof value.height !== 'number'
+        ) {
+          return { success: false, message: t('workspaceAgentTools.browserSizeObject') };
+        }
+        navigationStore.setLayout('floating');
+        navigationStore.resizeTo(value.width, value.height);
+        return result(t('workspaceAgentTools.browserResized'));
+      }
+
+      case 'center':
+      case 'centre':
+        navigationStore.setLayout('floating');
+        navigationStore.centerPanel();
+        return result(t('workspaceAgentTools.browserCentered'));
+
+      case 'reset':
+        navigationStore.resetLayout();
+        return result(t('workspaceAgentTools.browserReset'));
+
+      default:
+        return {
+          success: false,
+          message: t('workspaceAgentTools.unknownBrowserControl', { control }),
+        };
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Scene presets
+  // ---------------------------------------------------------------------------
+
+  const SCENE_PRESET_KINDS = ['image', 'video', 'hdri'] as const;
+  type ScenePresetKind = (typeof SCENE_PRESET_KINDS)[number];
+
+  function scenePresetsFor(kind: ScenePresetKind): { id: string; name: string; url: string }[] {
+    if (kind === 'image') return sceneImagePresets;
+    if (kind === 'video') return sceneVideoPresets;
+    return sceneHdriPresets.map(({ id, name, url }) => ({ id, name, url }));
+  }
+
+  function normalizeSceneKind(kind: unknown): ScenePresetKind | null {
+    const normalized = normalizeKey(asString(kind));
+    if (normalized === 'image' || normalized === 'photo' || normalized === 'picture') return 'image';
+    if (normalized === 'video' || normalized === 'movie' || normalized === 'clip') return 'video';
+    if (normalized === 'hdri' || normalized === 'environment' || normalized === 'hdr') return 'hdri';
+    return null;
+  }
+
+  /**
+   * List the backgrounds that ship with the app.
+   *
+   * `set_scene_control` only ever accepted raw URLs, which the model has no way
+   * to produce -- it cannot invent a Poly Haven asset path. So every "put a
+   * forest behind you" either failed or hallucinated a dead URL, even though
+   * the app has had a curated set the whole time.
+   */
+  async function listScenePresets(kind: unknown) {
+    const requested = kind === undefined || kind === null || normalizeKey(asString(kind)) === 'all'
+      ? [...SCENE_PRESET_KINDS]
+      : [normalizeSceneKind(kind)].filter(Boolean as unknown as (k: ScenePresetKind | null) => k is ScenePresetKind);
+
+    if (!requested.length) {
+      return {
+        success: false,
+        message: t('workspaceAgentTools.scenePresetKindInvalid', {
+          list: SCENE_PRESET_KINDS.join(', '),
+        }),
+      };
+    }
+
+    const presets = Object.fromEntries(
+      requested.map((k) => [k, scenePresetsFor(k).map((p) => p.name)]),
+    );
+    return {
+      success: true,
+      presets,
+      message: t('workspaceAgentTools.scenePresetsListed', {
+        count: Object.values(presets).reduce((sum, list) => sum + list.length, 0),
+      }),
+    };
+  }
+
+  async function applyScenePreset(kind: unknown, name: unknown) {
+    const resolvedKind = normalizeSceneKind(kind);
+    if (!resolvedKind) {
+      return {
+        success: false,
+        message: t('workspaceAgentTools.scenePresetKindInvalid', {
+          list: SCENE_PRESET_KINDS.join(', '),
+        }),
+      };
+    }
+
+    const wanted = normalizeKey(asString(name));
+    if (!wanted) {
+      return { success: false, message: t('workspaceAgentTools.scenePresetNameRequired') };
+    }
+
+    const presets = scenePresetsFor(resolvedKind);
+    // Exact id or name first, then a contains match, so "waterfall" finds
+    // "Beautiful Waterfall Panoramic" without "forest" matching everything.
+    const preset =
+      presets.find((p) => normalizeKey(p.id) === wanted || normalizeKey(p.name) === wanted) ??
+      presets.find((p) => normalizeKey(p.name).includes(wanted));
+
+    if (!preset) {
+      return {
+        success: false,
+        message: t('workspaceAgentTools.scenePresetUnknown', {
+          name: asString(name),
+          list: presets
+            .slice(0, 8)
+            .map((p) => p.name)
+            .join(', '),
+        }),
+      };
+    }
+
+    if (resolvedKind === 'image') {
+      sceneStore.setImageUrl(preset.url);
+    } else if (resolvedKind === 'video') {
+      sceneStore.setVideoUrl(preset.url);
+    } else {
+      sceneStore.setHdriUrl(preset.url);
+    }
+    // Setting the URL alone changes nothing on screen unless the background is
+    // actually showing that medium.
+    sceneStore.setMediaType(resolvedKind);
+
+    actionState.recordAction(t('workspaceAgentTools.actionAppliedScenePreset'), preset.name, {
+      announce: true,
+    });
+    return {
+      success: true,
+      kind: resolvedKind,
+      preset: preset.name,
+      message: t('workspaceAgentTools.scenePresetApplied', { name: preset.name }),
+    };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Kwami profiles
+  // ---------------------------------------------------------------------------
+
+  async function listKwamiProfiles() {
+    const profiles = workspaceStore.workspaces.map((workspace) => ({
+      id: workspace.id,
+      name: workspace.name,
+      active: workspace.id === workspaceStore.activeWorkspaceId,
+    }));
+    return {
+      success: true,
+      profiles,
+      message: profiles.length
+        ? t('workspaceAgentTools.profilesListed', {
+            names: profiles.map((p) => p.name).join(', '),
+          })
+        : t('workspaceAgentTools.profilesNone'),
+    };
+  }
+
+  /**
+   * Switch the active kwami.
+   *
+   * Confirmation-gated because this is not a single setting: it swaps avatar,
+   * voice, scene, theme and telephony config together, and any unsaved edits to
+   * the current one are only held in the local draft.
+   */
+  async function switchKwamiProfile(nameOrId: unknown, confirm: unknown) {
+    const wanted = normalizeKey(asString(nameOrId));
+    if (!wanted) {
+      return { success: false, message: t('workspaceAgentTools.profileNameRequired') };
+    }
+
+    const match =
+      workspaceStore.workspaces.find(
+        (w) => normalizeKey(w.id) === wanted || normalizeKey(w.name) === wanted,
+      ) ?? workspaceStore.workspaces.find((w) => normalizeKey(w.name).includes(wanted));
+
+    if (!match) {
+      return {
+        success: false,
+        message: t('workspaceAgentTools.profileUnknown', {
+          name: asString(nameOrId),
+          list: workspaceStore.workspaces.map((w) => w.name).join(', '),
+        }),
+      };
+    }
+
+    if (match.id === workspaceStore.activeWorkspaceId) {
+      return { success: true, message: t('workspaceAgentTools.profileAlreadyActive', { name: match.name }) };
+    }
+
+    const approved = await confirmIfNeeded(
+      true,
+      confirm,
+      t('workspaceAgentTools.confirmProfileTitle'),
+      t('workspaceAgentTools.confirmProfileBody', { name: match.name }),
+    );
+    if (!approved) {
+      return {
+        success: false,
+        cancelled: true,
+        message: t('workspaceAgentTools.profileSwitchCancelled', { name: match.name }),
+      };
+    }
+
+    // Goes through the config sync rather than workspaceStore.setActive so the
+    // outgoing kwami's draft is saved first; setActive on its own discards it.
+    switchToKwami(match.id);
+    actionState.recordAction(t('workspaceAgentTools.actionSwitchedProfile'), match.name, {
+      announce: true,
+    });
+    return {
+      success: true,
+      profile: match.name,
+      message: t('workspaceAgentTools.profileSwitched', { name: match.name }),
+    };
+  }
+
   async function setUiControl(
     domain: unknown,
     control: unknown,
@@ -1347,6 +1734,10 @@ export function useWorkspaceAgentTools() {
 
     if (normalizedDomain === 'scene') {
       return setSceneControl(control, value);
+    }
+
+    if (normalizedDomain === 'browser') {
+      return setBrowserPanelControl(control, value);
     }
 
     if (normalizedDomain === 'voice') {
@@ -1492,9 +1883,57 @@ export function useWorkspaceAgentTools() {
       name: 'set_workspace_renderer',
       description: t('workspaceAgentTools.toolDescSetRenderer'),
       parameters: {
-        renderer: { type: 'string', enum: ['blob-xyz', 'black-hole', 'particles-face'] },
+        renderer: { type: 'string', enum: [...AVATAR_RENDERERS] },
       },
       handler: async ({ renderer }) => setRenderer(renderer),
+    });
+
+    instance.registerTool({
+      name: 'set_browser_panel',
+      description: t('workspaceAgentTools.toolDescSetBrowserPanel'),
+      parameters: {
+        control: {
+          type: 'string',
+          enum: ['layout', 'expand', 'position', 'size', 'center', 'reset'],
+        },
+        value: {},
+      },
+      handler: async ({ control, value }) => setBrowserPanelControl(control, value),
+    });
+
+    instance.registerTool({
+      name: 'list_scene_presets',
+      description: t('workspaceAgentTools.toolDescListScenePresets'),
+      parameters: {
+        kind: { type: 'string', enum: ['image', 'video', 'hdri', 'all'] },
+      },
+      handler: async ({ kind }) => listScenePresets(kind),
+    });
+
+    instance.registerTool({
+      name: 'apply_scene_preset',
+      description: t('workspaceAgentTools.toolDescApplyScenePreset'),
+      parameters: {
+        kind: { type: 'string', enum: ['image', 'video', 'hdri'] },
+        name: { type: 'string' },
+      },
+      handler: async ({ kind, name }) => applyScenePreset(kind, name),
+    });
+
+    instance.registerTool({
+      name: 'list_kwami_profiles',
+      description: t('workspaceAgentTools.toolDescListKwamiProfiles'),
+      handler: async () => listKwamiProfiles(),
+    });
+
+    instance.registerTool({
+      name: 'switch_kwami_profile',
+      description: t('workspaceAgentTools.toolDescSwitchKwamiProfile'),
+      parameters: {
+        name: { type: 'string' },
+        confirm: { type: 'boolean' },
+      },
+      handler: async ({ name, confirm }) => switchKwamiProfile(name, confirm),
     });
 
     instance.registerTool({
