@@ -84,15 +84,20 @@ test.describe('console hygiene', () => {
 });
 
 /**
- * Opens the login panel and waits for it to be usable.
+ * Opens the login panel and waits for it to be genuinely usable.
  *
- * The CTA only reacts once AuthGuard has released the welcome rings, so this
- * waits on the wordmark first rather than clicking into a still-hidden panel.
+ * Two waits, both load-bearing. The CTA only reacts once AuthGuard has released
+ * the welcome rings, hence the wordmark. And `login-entry--open` lands ~230ms
+ * before the panel's max-height transition starts, a window in which the form is
+ * laid out below the fold inside a still-zero-height scroll container — visible
+ * to a locator, but not yet clickable. Waiting for the last control in the form
+ * to be fully in the viewport is what says the panel has settled.
  */
 async function openLoginPanel(page: import('@playwright/test').Page) {
   await expect(page.locator('.title-main')).toBeVisible({ timeout: WELCOME_MS + 5_000 });
   await page.locator('.login-cta').click();
   await expect(page.locator('.login-entry')).toHaveClass(/login-entry--open/);
+  await expect(page.locator('.email-auth__switch-btn')).toBeInViewport({ ratio: 1 });
 }
 
 test.describe('email and password', () => {

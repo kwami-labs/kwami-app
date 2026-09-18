@@ -5,6 +5,12 @@
  * A real <form> rather than a pile of buttons: Enter submits, browsers offer
  * password-manager autofill, and the autocomplete hints tell them whether they
  * are saving a new credential or filling an existing one.
+ *
+ * `novalidate` is deliberate. `type="email"` still earns the right mobile
+ * keyboard, but the browser's own validation bubble would block submit before
+ * our checks ever run, and would arrive in the browser's language and styling
+ * while the password-length error arrives in ours. One validation path, one
+ * look, one language.
  */
 import { useI18n } from 'vue-i18n';
 import BaseButton from '@/components/ui/BaseButton.vue';
@@ -21,13 +27,19 @@ const {
   notice,
   isSignUp,
   submitLabel,
+  busyLabel,
   toggleMode,
   submit,
 } = useEmailAuth();
 </script>
 
 <template>
-  <form class="email-auth" :aria-label="t('auth.emailFormLabel')" @submit.prevent="submit">
+  <form
+    class="email-auth"
+    novalidate
+    :aria-label="t('auth.emailFormLabel')"
+    @submit.prevent="submit"
+  >
     <BaseInput
       v-model="email"
       type="email"
@@ -65,8 +77,10 @@ const {
     <p v-if="error" class="email-auth__error" role="alert">{{ error }}</p>
     <p v-else-if="notice" class="email-auth__notice" role="status">{{ notice }}</p>
 
+    <!-- The spinner alone does not say which request is in flight; naming it
+         also gives screen readers the state change. -->
     <BaseButton type="submit" variant="primary" block :loading="isLoading">
-      {{ submitLabel }}
+      {{ isLoading ? busyLabel : submitLabel }}
     </BaseButton>
 
     <p class="email-auth__switch">
