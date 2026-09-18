@@ -119,7 +119,7 @@ const {
   margin: 0.15rem 0 0;
   font-size: 12px;
   text-align: center;
-  color: rgba(194, 203, 227, 0.72);
+  color: var(--auth-text-dim);
 }
 
 .email-auth__switch-btn {
@@ -128,7 +128,7 @@ const {
   background: none;
   font: inherit;
   font-weight: 700;
-  color: rgba(248, 252, 255, 0.95);
+  color: var(--auth-text);
   cursor: pointer;
   text-decoration: underline;
   text-underline-offset: 2px;

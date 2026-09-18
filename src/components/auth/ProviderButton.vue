@@ -106,7 +106,7 @@ function onClick() {
   font-size: 12px;
   font-weight: 700;
   text-align: center;
-  color: rgba(248, 252, 255, 0.95);
+  color: var(--auth-text);
   text-decoration: underline;
   text-underline-offset: 2px;
 }

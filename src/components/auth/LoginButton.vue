@@ -292,6 +292,8 @@ onUnmounted(() => {
   transition: color 220ms ease;
 }
 
+/* Literal white, not an --auth-* token: this text sits on the indicator's
+   saturated blue-teal gradient, which is the same in either theme. */
 .tab-btn--active {
   color: rgba(248, 252, 255, 1);
 }
