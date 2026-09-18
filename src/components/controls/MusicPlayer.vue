@@ -3,7 +3,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useKwami } from '@/composables/useKwami';
 import { useWorkspaceSoundtrack } from '@/composables/useSoundtrack';
-import { getBandLevels } from '@/utils/audioBands';
+import { createBandEnvelope, getBandLevels, SILENCE } from '@/utils/audioBands';
 import { hexToRgb } from '@/utils/color';
 
 const { t } = useI18n();
@@ -32,6 +32,20 @@ const crateTrack = crate.currentTrack;
 
 let audioElement: HTMLAudioElement | null = null;
 let animationFrameId: number | null = null;
+
+/**
+ * FFT magnitudes jitter frame to frame, and the renderers below are handed
+ * them raw. The bars could live with that — a spectrum analyser is meant to
+ * flicker — but `setAudioLevels` drives geometry, and unsmoothed levels read
+ * as twitching rather than dancing. Matches the login screen's envelope so the
+ * same track moves both avatars the same way.
+ *
+ * Only the analyser's `smoothingTimeConstant` would be cheaper, and it is
+ * deliberately left alone here: this kwami's analyser is shared with the
+ * agent's voice, where the SDK's fast 0.35 is what keeps a mouth on syllables.
+ */
+const bandEnvelope = createBandEnvelope({ attackMs: 45, releaseMs: 320 });
+let lastFrameAt = 0;
 
 const progress = computed(() => {
   if (!duration.value) return 0;
@@ -335,7 +349,15 @@ function drawVisualizerFrame() {
   const audio = getAudio();
   const frequencyData = audio?.getFrequencyData() ?? new Uint8Array();
   const hasSignal = isPlaying.value && frequencyData.length > 0;
-  const levels = hasSignal ? getBandLevels(frequencyData) : { bass: 0, mid: 0, high: 0 };
+  const now = performance.now();
+  // First frame has no predecessor: no elapsed time, so the envelope holds.
+  const deltaMs = lastFrameAt === 0 ? 0 : now - lastFrameAt;
+  lastFrameAt = now;
+
+  // Silence goes through the envelope too, so pausing falls away rather than
+  // dropping to zero between one frame and the next.
+  const raw = hasSignal ? getBandLevels(frequencyData) : SILENCE;
+  const levels = bandEnvelope.follow(raw, deltaMs);
 
   bass.value = levels.bass;
   mid.value = levels.mid;
