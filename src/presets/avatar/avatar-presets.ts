@@ -74,14 +74,19 @@ const _avatarPresetsData: AvatarPreset[] = [
 
 // Persist reactive ref across HMR updates using import.meta.hot.data
 function getOrCreatePresetsRef(): ShallowRef<AvatarPreset[]> {
-  if (import.meta.hot) {
+  // `import.meta.hot` exists under Vitest too, but without the `data` bag the
+  // dev server provides -- so the unguarded `hot.data.avatarPresetsRef` threw
+  // at import time, and any test that touched the avatar store failed before
+  // it ran a line of its own.
+  const hotData = import.meta.hot?.data;
+  if (hotData) {
     // Reuse existing ref from previous HMR update, or create new one
-    if (!import.meta.hot.data.avatarPresetsRef) {
-      import.meta.hot.data.avatarPresetsRef = shallowRef<AvatarPreset[]>(_avatarPresetsData);
+    if (!hotData.avatarPresetsRef) {
+      hotData.avatarPresetsRef = shallowRef<AvatarPreset[]>(_avatarPresetsData);
     }
-    return import.meta.hot.data.avatarPresetsRef;
+    return hotData.avatarPresetsRef;
   }
-  // Production: just create the ref
+  // Production (and tests): just create the ref
   return shallowRef<AvatarPreset[]>(_avatarPresetsData);
 }
 
