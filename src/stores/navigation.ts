@@ -4,6 +4,7 @@ import {
   createPanelLayout,
   MIN_PANEL_HEIGHT,
   MIN_PANEL_WIDTH,
+  PANEL_LAYOUTS,
   type PanelLayout,
   type PanelRect,
 } from '@/lib/panelLayout';
@@ -22,11 +23,14 @@ import {
  */
 export type BrowserPanelLayout = PanelLayout;
 
-export const BROWSER_PANEL_LAYOUTS: readonly BrowserPanelLayout[] = [
-  'docked',
-  'floating',
-  'fullscreen',
-] as const;
+/**
+ * Re-exported rather than re-listed.
+ *
+ * A second copy of the same three strings is the shape of bug that has bitten
+ * this repo twice today: two definitions written "the same way" that quietly
+ * stop agreeing, with both sides still passing their own tests.
+ */
+export const BROWSER_PANEL_LAYOUTS: readonly BrowserPanelLayout[] = PANEL_LAYOUTS;
 
 export type FloatingRect = PanelRect;
 
