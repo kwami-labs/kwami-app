@@ -26,18 +26,45 @@ import { useAgentActionState } from '@/composables/useAgentActionState';
  * that looks broken when it was set by speaking.
  */
 
-/** Names the model is likely to produce, mapped to the locales we ship. */
-const LANGUAGE_ALIASES: Record<string, SupportedLocale> = {
-  en: 'en',
-  eng: 'en',
-  english: 'en',
-  ingles: 'en',
-  es: 'es',
-  spa: 'es',
-  spanish: 'es',
-  espanol: 'es',
+/**
+ * Extra spoken names that `Intl` will not produce on its own.
+ *
+ * Everything derivable is derived below; this is only for the words people
+ * actually say that no locale data lists -- "castellano" for Spanish being
+ * the obvious one.
+ */
+const EXTRA_ALIASES: Record<string, SupportedLocale> = {
   castellano: 'es',
 };
+
+/**
+ * Every spoken form that should resolve to a locale we ship.
+ *
+ * Built from `SUPPORTED_LOCALES` rather than hand-listed, so adding a
+ * language to the app makes it reachable by voice with no change here. For
+ * each locale it collects the tag itself plus that language's name as spoken
+ * in every locale we support -- so "French", "francais" and "francese" all
+ * arrive at `fr`. Hand-maintaining that table costs one entry per pair and
+ * grows with the square of the language count; this costs nothing.
+ */
+function buildAliases(): Record<string, SupportedLocale> {
+  const aliases: Record<string, SupportedLocale> = {};
+  for (const locale of SUPPORTED_LOCALES) {
+    aliases[locale] = locale;
+    for (const spokenIn of SUPPORTED_LOCALES) {
+      const name = languageName(locale, spokenIn);
+      if (name) aliases[normalizeKey(name)] = locale;
+    }
+  }
+  return { ...aliases, ...EXTRA_ALIASES };
+}
+
+let aliasCache: Record<string, SupportedLocale> | null = null;
+
+function languageAliases(): Record<string, SupportedLocale> {
+  aliasCache ??= buildAliases();
+  return aliasCache;
+}
 
 function normalizeKey(value: string): string {
   return (
@@ -55,6 +82,24 @@ function asString(value: unknown, fallback = ''): string {
   return typeof value === 'string' ? value : fallback;
 }
 
+/**
+ * A language's name as spoken in another language -- "Spanish" in English,
+ * "espagnol" in French.
+ *
+ * `Intl.DisplayNames` already holds this for every pair, correctly accented,
+ * so the app does not carry a hand-written table that grows with the square
+ * of the language count. Falls back to the bare tag on the runtimes that ship
+ * without full locale data rather than throwing, since a tool that cannot
+ * name a language should still be able to switch to it.
+ */
+export function languageName(locale: SupportedLocale, spokenIn: SupportedLocale): string {
+  try {
+    return new Intl.DisplayNames([spokenIn], { type: 'language' }).of(locale) ?? locale;
+  } catch {
+    return locale;
+  }
+}
+
 export function useLocaleAgentTools() {
   const { t } = useI18n();
   const actionState = useAgentActionState();
@@ -62,11 +107,12 @@ export function useLocaleAgentTools() {
   function resolveLocale(language: unknown): SupportedLocale | null {
     const raw = asString(language).trim();
     if (!raw) return null;
+    const aliases = languageAliases();
     const key = normalizeKey(raw);
-    if (LANGUAGE_ALIASES[key]) return LANGUAGE_ALIASES[key];
+    if (aliases[key]) return aliases[key];
     // A tag like "es-ES" still names a locale we ship.
     const base = normalizeKey(raw.split(/[-_]/)[0] ?? '');
-    return LANGUAGE_ALIASES[base] ?? null;
+    return aliases[base] ?? null;
   }
 
   function getAppLanguage() {
@@ -75,7 +121,12 @@ export function useLocaleAgentTools() {
       success: true,
       language: current,
       available: [...SUPPORTED_LOCALES],
-      message: t('appLocale.current', { language: t(`appLocale.name.${current}`) }),
+      // Named in the language the user is currently reading, which is what
+      // makes the sentence natural rather than a tag read aloud.
+      languageNames: Object.fromEntries(
+        SUPPORTED_LOCALES.map((l) => [l, languageName(l, current)]),
+      ),
+      message: t('appLocale.current', { language: languageName(current, current) }),
     };
   }
 
@@ -97,7 +148,7 @@ export function useLocaleAgentTools() {
         success: true,
         language: target,
         changed: false,
-        message: t('appLocale.already', { language: t(`appLocale.name.${target}`) }),
+        message: t('appLocale.already', { language: languageName(target, current) }),
       };
     }
 
@@ -119,9 +170,9 @@ export function useLocaleAgentTools() {
       success: true,
       language: target,
       changed: true,
-      // Reported in the language just switched to, which is itself the proof
-      // to the user that it took.
-      message: t('appLocale.changed', { language: t(`appLocale.name.${target}`) }),
+      // Named in the language just switched to, which is itself the proof to
+      // the user that it took.
+      message: t('appLocale.changed', { language: languageName(target, target) }),
     };
   }
 

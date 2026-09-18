@@ -4,16 +4,16 @@
  * The trap this exists to prevent: the agent already has `change_language`,
  * which sounds like it covers this and does not — it retunes speech
  * recognition and synthesis and leaves every label on screen in the old
- * language. A Spanish speaker asking for "la app en espanol" got a Kwami that
+ * language. A Spanish speaker asking for "la app en español" got a Kwami that
  * listened in Spanish and an interface still in English.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { defineComponent, h } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 import { mount } from '@vue/test-utils';
 import { createI18n } from 'vue-i18n';
 import { useLocaleAgentTools } from '@/composables/useLocaleAgentTools';
-import { getCurrentLocale, setLocale } from '@/i18n';
+import { SUPPORTED_LOCALES, getCurrentLocale, setLocale } from '@/i18n';
 import { useAuthStore } from '@/stores/auth';
 import { appLocaleEn, appLocaleEs } from '@/i18n/appLocale.locale';
 
@@ -64,6 +64,20 @@ beforeEach(() => {
   setActivePinia(createPinia());
   setLocale('en');
   mount(Host);
+});
+
+/**
+ * Put the shared locale back.
+ *
+ * `tests/setup.ts` installs the app's own i18n instance rather than a copy of
+ * it, which is what makes `setLocale` observable here at all. Vitest isolates
+ * module state per file today, so leaving it on Spanish harms nothing — but
+ * the runner keeps suggesting `isolate: false` for speed in its own output,
+ * and the day someone takes that advice this file would silently translate
+ * every test that ran after it in the same worker.
+ */
+afterEach(() => {
+  setLocale('en');
 });
 
 describe('set_app_language', () => {
@@ -124,7 +138,9 @@ describe('set_app_language', () => {
   it('answers in the language it just switched to', async () => {
     const result = await call('set_app_language', { language: 'es' });
     // The reply is itself the proof to the user that the switch took.
-    expect(String(result.message)).toContain('espanol');
+    // Accented, because the name now comes from Intl rather than a
+    // hand-written table -- which is the whole point of the change.
+    expect(String(result.message)).toContain('español');
   });
 });
 
@@ -132,7 +148,48 @@ describe('get_app_language', () => {
   it('reports the current language and what else there is', async () => {
     const result = await call('get_app_language');
     expect(result.language).toBe('en');
-    expect(result.available).toEqual(['en', 'es']);
+    // Read from the app rather than hardcoded: the list grows whenever a
+    // locale is added, and this test should not be the thing that blocks it.
+    expect(result.available).toEqual([...SUPPORTED_LOCALES]);
+  });
+
+  it('names every language in the language being read', async () => {
+    const result = await call('get_app_language');
+    const names = result.languageNames as Record<string, string>;
+    for (const locale of SUPPORTED_LOCALES) {
+      expect(names[locale], `no name for ${locale}`).toBeTruthy();
+      // A bare tag means Intl had no data and the fallback fired.
+      expect(names[locale]).not.toBe(locale);
+    }
+  });
+});
+
+describe('derived aliases', () => {
+  // The alias table is built from SUPPORTED_LOCALES plus Intl rather than
+  // hand-listed, so adding a language makes it reachable by voice with no
+  // code change. These pin the derivation, not a list.
+  it('resolves every supported language by its own name', async () => {
+    for (const locale of SUPPORTED_LOCALES) {
+      const own = new Intl.DisplayNames([locale], { type: 'language' }).of(locale)!;
+      setLocale('en');
+      const result = await call('set_app_language', { language: own });
+      expect(result.success, `${own} did not resolve`).toBe(true);
+      expect(result.language).toBe(locale);
+    }
+  });
+
+  it('resolves a language named in a different language', async () => {
+    // "francese" is Italian for French; nobody hand-wrote that pair.
+    if (!SUPPORTED_LOCALES.includes('fr' as never)) return;
+    const result = await call('set_app_language', { language: 'francese' });
+    expect(result.success).toBe(true);
+    expect(result.language).toBe('fr');
+  });
+
+  it('keeps the one alias no locale data lists', async () => {
+    const result = await call('set_app_language', { language: 'castellano' });
+    expect(result.success).toBe(true);
+    expect(result.language).toBe('es');
   });
 });
 

@@ -188,3 +188,267 @@ export const commsAgentToolsEs = {
       'Lee el monedero: si existe, en que red esta y que saldos tiene. Solo lectura. No puede mover, enviar ni gastar nada, y el campo canSpend siempre es false, asi que si el usuario pide transferir o anadir fondos dile que eso hay que hacerlo a mano en el panel del monedero.',
   },
 } as const;
+
+export const commsAgentToolsFr = {
+  comms: {
+    recipientRequired: 'Dis qui contacter, soit un nom des contacts, soit un numéro de téléphone.',
+    recipientLabel: '{name} au numéro se terminant par {tail}',
+    contactNotFound: 'Aucun contact appelé "{name}". Vérifie le nom, ou donne le numéro directement.',
+    contactAmbiguous:
+      'Plusieurs contacts correspondent à "{name}" : {list}. Demande lequel avant d envoyer quoi que ce soit.',
+    contactHasNoNumber: 'Le contact {name} n a pas de numéro enregistré pour {channel}.',
+    contactLookupFailed: 'Impossible de lire les contacts : {error}',
+    noActiveKwami: 'Aucun Kwami n est sélectionné, donc il n y a rien depuis quoi envoyer.',
+
+    channelsFound: '{count} canaux connectés trouvés.',
+    noChannels: 'Ce Kwami n a encore aucun canal téléphone, SMS ou WhatsApp connecté.',
+    channelsFailed: 'Impossible de lire les canaux : {error}',
+    numbersFound: '{count} numéros disponibles trouvés.',
+    noNumbersFound: 'Aucun numéro disponible ne correspond à cette recherche.',
+    numberSearchFailed: 'Impossible de rechercher des numéros : {error}',
+
+    bodyRequired: 'Dis ce que doit contenir le message.',
+    confirmSmsTitle: 'Envoyer ce message texte',
+    confirmWhatsappTitle: 'Envoyer ce message WhatsApp',
+    confirmSendBody: 'À {recipient}. Message : {text}',
+    confirmSend: 'Envoyer',
+    confirmCancel: 'Annuler',
+    sendCancelled: 'Non envoyé. Le message à {recipient} a été annulé.',
+    sendAccepted: 'Le fournisseur a accepté le message à {recipient} pour livraison.',
+    sendFailed: 'Le message à {recipient} n a pas été envoyé : {error}',
+    errSend: 'Échec de l envoi',
+    actionSentSms: 'Message texte envoyé',
+    actionSentWhatsapp: 'Message WhatsApp envoyé',
+
+    confirmCallTitle: 'Passer cet appel',
+    confirmCallBody: 'Appel de {recipient}. Numéro complet : {number}',
+    callCancelled: 'Pas appelé. L appel à {recipient} a été annulé.',
+    callStarted: 'Composition du numéro de {recipient} en cours.',
+    callFailed: 'L appel à {recipient} n a pas démarré : {error}',
+    errCall: 'Échec de l appel',
+    actionPlacedCall: 'Appel passé',
+
+    contactsFound: '{count} contacts trouvés.',
+    noContacts: 'Aucun contact enregistré pour l instant.',
+    contactSingle: 'Une correspondance : {name}, au {phone}.',
+    contactMultiple: '{count} contacts correspondent. Demande lequel est visé.',
+    contactNameRequired: 'Un contact a besoin d un nom.',
+    contactPhoneRequired: 'Un contact a besoin d un numéro de téléphone.',
+    contactTargetRequired: 'Dis quel contact, par nom ou par identifiant.',
+    contactNothingToChange: 'Rien n a été indiqué à changer sur ce contact.',
+    contactCreated: '{name} a été enregistré dans les contacts.',
+    contactUpdated: '{name} a été mis à jour.',
+    contactDeleted: '{name} a été supprimé des contacts.',
+    contactSaveFailed: 'Impossible d enregistrer le contact : {error}',
+    confirmDeleteContactTitle: 'Supprimer ce contact',
+    confirmDeleteContactBody: 'Ceci supprime {name} au {phone} et est irréversible.',
+    deleteCancelled: 'Non supprimé. {name} est toujours dans les contacts.',
+    actionCreatedContact: 'Contact enregistré',
+    actionUpdatedContact: 'Contact mis à jour',
+    actionDeletedContact: 'Contact supprimé',
+
+    noWallet: 'Ce Kwami n a pas encore de portefeuille.',
+    walletEmpty: 'Le portefeuille existe mais ne contient aucun solde.',
+    walletSummary: 'Le portefeuille contient {list}.',
+    walletFailed: 'Impossible de lire le portefeuille : {error}',
+
+    toolDescListPhoneChannels:
+      'Liste les canaux téléphone, SMS et WhatsApp connectés à ce Kwami, avec leurs numéros et leur état. Consulte-le avant d envoyer quoi que ce soit si on ne sait pas déjà qu un canal existe, car envoyer sans canal échoue.',
+    toolDescSearchPhoneNumbers:
+      'Recherche des numéros de téléphone disponibles à l achat, par indicatif de pays et éventuellement un indicatif régional ou des chiffres que le numéro doit contenir. Ceci ne fait que chercher et ne peut jamais acheter un numéro, car l approvisionnement dépense de l argent réel. Dis à l utilisateur qu il doit l acheter lui-même dans le panneau téléphone.',
+    toolDescSendSms:
+      'Envoie un message texte. Le destinataire peut être un nom de contact ou un numéro de téléphone, et un nom est recherché dans les contacts plutôt que deviné : si plusieurs contacts correspondent, l outil refuse et les liste, donc demande lequel est visé. L application demande confirmation à l utilisateur avant que quoi que ce soit parte, donc dis à qui cela va et relis le message d abord, puis attends le résultat et ne dis pas à l utilisateur que c est envoyé pendant que la boîte de dialogue est encore ouverte. Rapporte ce que renvoie l outil, pas ce que tu as demandé. Un message peut être rejeté par l opérateur et un numéro peut être injoignable ; le champ accepted dit si le fournisseur l a pris en charge pour livraison, ce qui n est pas la même chose que le destinataire l ayant lu. En cas d échec, dis-le franchement plutôt que de l adoucir, car l utilisateur agira en croyant que c est parti.',
+    toolDescSendWhatsapp:
+      'Envoie un message WhatsApp. Le destinataire peut être un nom de contact ou un numéro, et un nom est résolu contre les contacts plutôt que deviné : un nom ambigu est refusé avec la liste des candidats, donc demande lequel est visé. Il utilise l adresse WhatsApp enregistrée du contact quand il y en a une et son numéro de téléphone sinon. L application demande confirmation d abord, donc relis le message, puis attends le résultat plutôt que d annoncer un succès pendant que la boîte de dialogue est ouverte. Rapporte le champ accepted plutôt que de supposer que c est arrivé.',
+    toolDescPlaceCall:
+      'Passe un appel téléphonique à un contact ou à un numéro. Traite ceci comme plus lourd qu envoyer un message : un texte se lit plus tard, un appel sonne immédiatement chez une personne réelle et ne peut pas être rappelé. Dis toujours qui est appelé et à quel numéro avant d appeler cet outil, et quand le numéro vient des contacts plutôt que de l utilisateur, dis le nom et les derniers chiffres ensemble pour qu une erreur de contact puisse être rattrapée. L application demande confirmation, donc attends le résultat. Le champ dialling dit si l appel a réellement démarré ; rapporte cela plutôt que d annoncer une connexion, car savoir si quelqu un décroche est impossible ici.',
+    toolDescListContacts:
+      'Liste les contacts enregistrés, filtrés éventuellement par un mot de recherche. Lecture seule et sans risque à appeler dès qu un nom doit être vérifié.',
+    toolDescFindContact:
+      'Cherche un contact par son nom et relit son numéro. Utilise-le avant d envoyer ou d appeler quand l utilisateur a nommé une personne plutôt qu un numéro, pour que le numéro puisse être confirmé à voix haute. Il renvoie toutes les correspondances plutôt que d en choisir une, et le champ unique dit s il y en avait exactement une.',
+    toolDescCreateContact:
+      'Enregistre un nouveau contact avec un nom et un numéro de téléphone, et éventuellement une adresse WhatsApp et un courriel. Sans risque et réversible, donc il ne demande pas de confirmation.',
+    toolDescUpdateContact:
+      'Change certaines informations d un contact existant, désigné par nom ou identifiant. Seuls les champs donnés changent et le reste est laissé intact, donc il est sûr de l appeler avec la seule chose qui diffère. Un nom ambigu est refusé avec la liste des candidats plutôt que deviné.',
+    toolDescDeleteContact:
+      'Supprime un contact, désigné par nom ou identifiant. Irréversible, donc l application demande confirmation et nomme d abord le contact et son numéro. Attends le résultat plutôt que de le déclarer supprimé pendant que la boîte de dialogue est ouverte.',
+    toolDescGetWalletSummary:
+      'Lit le portefeuille : s il existe, sur quel réseau il est, et quels soldes il contient. Lecture seule. Il ne peut rien déplacer, envoyer ni dépenser, et le champ canSpend vaut toujours false, donc si l utilisateur demande un transfert ou un ajout de fonds, dis-lui que cela doit se faire à la main dans le panneau portefeuille.',
+  },
+} as const;
+
+export const commsAgentToolsPt = {
+  comms: {
+    recipientRequired: 'Diz quem contactar, com um nome dos contactos ou um número de telefone.',
+    recipientLabel: '{name} no número terminado em {tail}',
+    contactNotFound: 'Não há nenhum contacto chamado "{name}". Verifica o nome, ou dá o número diretamente.',
+    contactAmbiguous:
+      'Há mais do que um contacto que corresponde a "{name}": {list}. Pergunta qual antes de enviar seja o que for.',
+    contactHasNoNumber: 'O contacto {name} não tem número guardado para {channel}.',
+    contactLookupFailed: 'Não foi possível ler os contactos: {error}',
+    noActiveKwami: 'Não há nenhum Kwami selecionado, por isso não há de onde enviar.',
+
+    channelsFound: 'Encontrados {count} canais ligados.',
+    noChannels: 'Este Kwami ainda não tem nenhum canal de telefone, SMS ou WhatsApp ligado.',
+    channelsFailed: 'Não foi possível ler os canais: {error}',
+    numbersFound: 'Encontrados {count} números disponíveis.',
+    noNumbersFound: 'Nenhum número disponível corresponde a essa pesquisa.',
+    numberSearchFailed: 'Não foi possível procurar números: {error}',
+
+    bodyRequired: 'Diz o que a mensagem deve dizer.',
+    confirmSmsTitle: 'Enviar esta mensagem de texto',
+    confirmWhatsappTitle: 'Enviar esta mensagem de WhatsApp',
+    confirmSendBody: 'Para {recipient}. Mensagem: {text}',
+    confirmSend: 'Enviar',
+    confirmCancel: 'Cancelar',
+    sendCancelled: 'Não enviado. A mensagem para {recipient} foi cancelada.',
+    sendAccepted: 'O fornecedor aceitou a mensagem para {recipient} para entrega.',
+    sendFailed: 'A mensagem para {recipient} não foi enviada: {error}',
+    errSend: 'Falha no envio',
+    actionSentSms: 'Mensagem enviada',
+    actionSentWhatsapp: 'WhatsApp enviado',
+
+    confirmCallTitle: 'Fazer esta chamada',
+    confirmCallBody: 'A ligar a {recipient}. Número completo: {number}',
+    callCancelled: 'Não se ligou. A chamada para {recipient} foi cancelada.',
+    callStarted: 'A marcar para {recipient} agora.',
+    callFailed: 'A chamada para {recipient} não começou: {error}',
+    errCall: 'Falha na chamada',
+    actionPlacedCall: 'Chamada feita',
+
+    contactsFound: 'Encontrados {count} contactos.',
+    noContacts: 'Ainda não há contactos guardados.',
+    contactSingle: 'Uma correspondência: {name}, em {phone}.',
+    contactMultiple: 'Correspondem {count} contactos. Pergunta qual se pretende.',
+    contactNameRequired: 'Um contacto precisa de um nome.',
+    contactPhoneRequired: 'Um contacto precisa de um número de telefone.',
+    contactTargetRequired: 'Diz qual contacto, por nome ou por identificador.',
+    contactNothingToChange: 'Não foi indicado nada para mudar nesse contacto.',
+    contactCreated: 'Guardado {name} nos contactos.',
+    contactUpdated: 'Atualizado {name}.',
+    contactDeleted: 'Eliminado {name} dos contactos.',
+    contactSaveFailed: 'Não foi possível guardar o contacto: {error}',
+    confirmDeleteContactTitle: 'Eliminar este contacto',
+    confirmDeleteContactBody: 'Isto remove {name} em {phone} e não pode ser desfeito.',
+    deleteCancelled: 'Não eliminado. {name} continua nos contactos.',
+    actionCreatedContact: 'Contacto guardado',
+    actionUpdatedContact: 'Contacto atualizado',
+    actionDeletedContact: 'Contacto eliminado',
+
+    noWallet: 'Este Kwami ainda não tem carteira.',
+    walletEmpty: 'A carteira existe mas não tem saldo.',
+    walletSummary: 'A carteira tem {list}.',
+    walletFailed: 'Não foi possível ler a carteira: {error}',
+
+    toolDescListPhoneChannels:
+      'Lista os canais de telefone, SMS e WhatsApp que este Kwami tem ligados, com os seus números e estado. Consulta-o antes de enviar seja o que for se ainda não se souber se existe um canal, porque enviar sem um falha.',
+    toolDescSearchPhoneNumbers:
+      'Procura números de telefone disponíveis para comprar, por indicativo de país e opcionalmente um indicativo regional ou dígitos que o número deva conter. Isto só procura e nunca pode comprar um número, porque o aprovisionamento gasta dinheiro real. Diz ao utilizador que tem de o comprar ele próprio no painel de telefone.',
+    toolDescSendSms:
+      'Envia uma mensagem de texto. O destinatário pode ser um nome de contacto ou um número, e um nome é procurado nos contactos em vez de adivinhado: se corresponder mais do que um contacto, a ferramenta recusa e lista-os, por isso pergunta qual se pretende. A aplicação pede confirmação ao utilizador antes de sair seja o que for, por isso diz para quem vai e relê a mensagem primeiro, depois espera pelo resultado e não digas ao utilizador que está enviada enquanto a caixa de diálogo ainda está aberta. Relata o que a ferramenta devolve, não o que pediste. Uma mensagem pode ser rejeitada pela operadora e um número pode estar inacessível; o campo accepted diz se o fornecedor a aceitou para entrega, o que não é o mesmo que o destinatário a ter lido. Se falhou, di-lo claramente em vez de suavizar, porque o utilizador vai agir a acreditar que foi enviada.',
+    toolDescSendWhatsapp:
+      'Envia uma mensagem de WhatsApp. O destinatário pode ser um nome de contacto ou um número, e um nome é resolvido contra os contactos em vez de adivinhado: um nome ambíguo é recusado com os candidatos listados, por isso pergunta qual se pretende. Usa o endereço de WhatsApp guardado do contacto quando existe e o número de telefone caso contrário. A aplicação pede confirmação primeiro, por isso relê a mensagem e depois espera pelo resultado em vez de anunciar sucesso enquanto a caixa de diálogo está aberta. Relata o campo accepted em vez de assumir que chegou.',
+    toolDescPlaceCall:
+      'Faz uma chamada telefónica para um contacto ou um número. Trata isto como mais sério do que enviar uma mensagem: um texto lê-se depois, uma chamada toca imediatamente no telefone de uma pessoa real e não pode ser retirada. Diz sempre quem é chamado e para que número antes de chamar esta ferramenta, e quando o número vier dos contactos em vez de vir do utilizador, diz o nome e os últimos dígitos juntos para que uma correspondência errada possa ser apanhada. A aplicação pede confirmação, por isso espera pelo resultado. O campo dialling diz se a chamada começou mesmo; relata isso em vez de anunciar uma ligação, porque daqui não se pode saber se alguém atende.',
+    toolDescListContacts:
+      'Lista os contactos guardados, opcionalmente filtrados por uma palavra de pesquisa. Só de leitura e seguro de usar sempre que seja preciso verificar um nome.',
+    toolDescFindContact:
+      'Procura um contacto pelo nome e relê o seu número. Usa-o antes de enviar ou ligar quando o utilizador tiver nomeado uma pessoa em vez de um número, para que o número possa ser confirmado em voz alta. Devolve todas as correspondências em vez de escolher uma, e o campo unique diz se havia exatamente uma.',
+    toolDescCreateContact:
+      'Guarda um contacto novo com nome e número de telefone, e opcionalmente um endereço de WhatsApp e um email. É seguro e reversível, por isso não pede confirmação.',
+    toolDescUpdateContact:
+      'Muda alguns dados de um contacto existente, indicado por nome ou identificador. Só mudam os campos indicados e o resto fica igual, por isso é seguro chamá-lo só com o que é diferente. Um nome ambíguo é recusado com os candidatos listados em vez de adivinhado.',
+    toolDescDeleteContact:
+      'Elimina um contacto, indicado por nome ou identificador. Não pode ser desfeito, por isso a aplicação pede confirmação e nomeia primeiro o contacto e o seu número. Espera pelo resultado em vez de o dar como eliminado enquanto a caixa de diálogo está aberta.',
+    toolDescGetWalletSummary:
+      'Lê a carteira: se existe, em que rede está e que saldos tem. Só de leitura. Não pode mover, enviar nem gastar nada, e o campo canSpend é sempre false, por isso se o utilizador pedir para transferir ou adicionar fundos diz-lhe que isso tem de ser feito à mão no painel de carteira.',
+  },
+} as const;
+
+export const commsAgentToolsIt = {
+  comms: {
+    recipientRequired: 'Di chi contattare, con un nome dai contatti o un numero di telefono.',
+    recipientLabel: '{name} al numero che finisce con {tail}',
+    contactNotFound: 'Nessun contatto chiamato "{name}". Controlla il nome, o dai direttamente il numero.',
+    contactAmbiguous:
+      'Più di un contatto corrisponde a "{name}": {list}. Chiedi quale prima di inviare qualsiasi cosa.',
+    contactHasNoNumber: 'Il contatto {name} non ha un numero salvato per {channel}.',
+    contactLookupFailed: 'Non è stato possibile leggere i contatti: {error}',
+    noActiveKwami: 'Non è selezionato nessun Kwami, quindi non c è da dove inviare.',
+
+    channelsFound: 'Trovati {count} canali collegati.',
+    noChannels: 'Questo Kwami non ha ancora nessun canale telefono, SMS o WhatsApp collegato.',
+    channelsFailed: 'Non è stato possibile leggere i canali: {error}',
+    numbersFound: 'Trovati {count} numeri disponibili.',
+    noNumbersFound: 'Nessun numero disponibile corrisponde a questa ricerca.',
+    numberSearchFailed: 'Non è stato possibile cercare numeri: {error}',
+
+    bodyRequired: 'Di cosa deve contenere il messaggio.',
+    confirmSmsTitle: 'Inviare questo messaggio di testo',
+    confirmWhatsappTitle: 'Inviare questo messaggio WhatsApp',
+    confirmSendBody: 'A {recipient}. Messaggio: {text}',
+    confirmSend: 'Invia',
+    confirmCancel: 'Annulla',
+    sendCancelled: 'Non inviato. Il messaggio a {recipient} è stato annullato.',
+    sendAccepted: 'Il fornitore ha accettato il messaggio a {recipient} per la consegna.',
+    sendFailed: 'Il messaggio a {recipient} non è stato inviato: {error}',
+    errSend: 'Invio fallito',
+    actionSentSms: 'Messaggio inviato',
+    actionSentWhatsapp: 'WhatsApp inviato',
+
+    confirmCallTitle: 'Fare questa chiamata',
+    confirmCallBody: 'Chiamata a {recipient}. Numero completo: {number}',
+    callCancelled: 'Non chiamato. La chiamata a {recipient} è stata annullata.',
+    callStarted: 'Sto componendo il numero di {recipient}.',
+    callFailed: 'La chiamata a {recipient} non è partita: {error}',
+    errCall: 'Chiamata fallita',
+    actionPlacedCall: 'Chiamata effettuata',
+
+    contactsFound: 'Trovati {count} contatti.',
+    noContacts: 'Non ci sono ancora contatti salvati.',
+    contactSingle: 'Una corrispondenza: {name}, al {phone}.',
+    contactMultiple: 'Corrispondono {count} contatti. Chiedi quale si intende.',
+    contactNameRequired: 'Un contatto ha bisogno di un nome.',
+    contactPhoneRequired: 'Un contatto ha bisogno di un numero di telefono.',
+    contactTargetRequired: 'Di quale contatto, per nome o per identificativo.',
+    contactNothingToChange: 'Non è stato indicato nulla da cambiare su quel contatto.',
+    contactCreated: 'Salvato {name} nei contatti.',
+    contactUpdated: 'Aggiornato {name}.',
+    contactDeleted: 'Eliminato {name} dai contatti.',
+    contactSaveFailed: 'Non è stato possibile salvare il contatto: {error}',
+    confirmDeleteContactTitle: 'Eliminare questo contatto',
+    confirmDeleteContactBody: 'Questo rimuove {name} al {phone} e non si può annullare.',
+    deleteCancelled: 'Non eliminato. {name} è ancora nei contatti.',
+    actionCreatedContact: 'Contatto salvato',
+    actionUpdatedContact: 'Contatto aggiornato',
+    actionDeletedContact: 'Contatto eliminato',
+
+    noWallet: 'Questo Kwami non ha ancora un portafoglio.',
+    walletEmpty: 'Il portafoglio esiste ma non ha saldo.',
+    walletSummary: 'Il portafoglio contiene {list}.',
+    walletFailed: 'Non è stato possibile leggere il portafoglio: {error}',
+
+    toolDescListPhoneChannels:
+      'Elenca i canali telefono, SMS e WhatsApp collegati a questo Kwami, con i loro numeri e il loro stato. Consultalo prima di inviare qualsiasi cosa se non si sa già che esiste un canale, perché inviare senza uno fallisce.',
+    toolDescSearchPhoneNumbers:
+      'Cerca numeri di telefono disponibili all acquisto, per prefisso internazionale ed eventualmente un prefisso locale o cifre che il numero deve contenere. Questo cerca soltanto e non può mai comprare un numero, perché il provisioning spende denaro reale. Di all utente che deve comprarlo lui stesso nel pannello telefono.',
+    toolDescSendSms:
+      'Invia un messaggio di testo. Il destinatario può essere un nome di contatto o un numero di telefono, e un nome viene cercato nei contatti invece che indovinato: se corrisponde più di un contatto, lo strumento rifiuta e li elenca, quindi chiedi quale si intende. L applicazione chiede conferma all utente prima che parta qualsiasi cosa, quindi di a chi è diretto e rileggi prima il messaggio, poi aspetta il risultato e non dire all utente che è inviato mentre la finestra di dialogo è ancora aperta. Riferisci ciò che lo strumento restituisce, non ciò che hai chiesto. Un messaggio può essere rifiutato dall operatore e un numero può essere irraggiungibile; il campo accepted dice se il fornitore lo ha preso in carico per la consegna, che non è lo stesso che il destinatario lo abbia letto. Se è fallito, dillo chiaramente invece di addolcirlo, perché l utente agirà credendo che sia partito.',
+    toolDescSendWhatsapp:
+      'Invia un messaggio WhatsApp. Il destinatario può essere un nome di contatto o un numero, e un nome viene risolto sui contatti invece che indovinato: un nome ambiguo viene rifiutato elencando i candidati, quindi chiedi quale si intende. Usa l indirizzo WhatsApp salvato del contatto quando c è e il suo numero di telefono altrimenti. L applicazione chiede prima conferma, quindi rileggi il messaggio e poi aspetta il risultato invece di annunciare un successo mentre la finestra di dialogo è aperta. Riferisci il campo accepted invece di dare per scontato che sia arrivato.',
+    toolDescPlaceCall:
+      'Effettua una telefonata a un contatto o a un numero. Trattala come più impegnativa di un messaggio: un testo si legge dopo, una chiamata squilla subito sul telefono di una persona reale e non può essere richiamata. Di sempre chi viene chiamato e a quale numero prima di chiamare questo strumento, e quando il numero viene dai contatti invece che dall utente, di il nome e le ultime cifre insieme perché una corrispondenza sbagliata possa essere colta. L applicazione chiede conferma, quindi aspetta il risultato. Il campo dialling dice se la chiamata è davvero partita; riferisci quello invece di annunciare una connessione, perché da qui non si può sapere se qualcuno risponde.',
+    toolDescListContacts:
+      'Elenca i contatti salvati, eventualmente filtrati da una parola di ricerca. Sola lettura e sicuro da chiamare ogni volta che serve controllare un nome.',
+    toolDescFindContact:
+      'Cerca un contatto per nome e rilegge il suo numero. Usalo prima di inviare o chiamare quando l utente ha nominato una persona invece di un numero, così il numero può essere confermato ad alta voce. Restituisce tutte le corrispondenze invece di sceglierne una, e il campo unique dice se ce n era esattamente una.',
+    toolDescCreateContact:
+      'Salva un nuovo contatto con nome e numero di telefono, ed eventualmente un indirizzo WhatsApp e un email. Sicuro e reversibile, quindi non chiede conferma.',
+    toolDescUpdateContact:
+      'Cambia alcuni dati di un contatto esistente, indicato per nome o identificativo. Cambiano solo i campi indicati e il resto resta com era, quindi è sicuro chiamarlo con la sola cosa che cambia. Un nome ambiguo viene rifiutato elencando i candidati invece di essere indovinato.',
+    toolDescDeleteContact:
+      'Elimina un contatto, indicato per nome o identificativo. Non si può annullare, quindi l applicazione chiede conferma e nomina prima il contatto e il suo numero. Aspetta il risultato invece di darlo per eliminato mentre la finestra di dialogo è aperta.',
+    toolDescGetWalletSummary:
+      'Legge il portafoglio: se esiste, su quale rete è e quali saldi contiene. Sola lettura. Non può spostare, inviare né spendere nulla, e il campo canSpend è sempre false, quindi se l utente chiede di trasferire o aggiungere fondi digli che va fatto a mano nel pannello portafoglio.',
+  },
+} as const;
