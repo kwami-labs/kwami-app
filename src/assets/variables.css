@@ -70,3 +70,125 @@
   --duration-normal: 0.25s;
   --duration-slow: 0.4s;
 }
+/* =====================================================
+   AUTH SCREEN TOKENS
+
+   The login screen is painted with its own glass idiom -- literal rgba over a
+   coloured radial wash -- rather than the --glass-* / --surface-* tokens the
+   signed-in chrome uses. Those tokens are rewritten by the theme store as
+   inline styles on <html>, which is fine for panels but would drag the login
+   screen's deliberately distinct look along with every slider in ThemePanel.
+
+   So the auth screen gets its own small palette, defined here and flipped by
+   `data-theme` alone. The dark values are the literals the components carried
+   before these tokens existed; the light ones are their counterparts.
+   ===================================================== */
+
+:root {
+  --auth-bg:
+    radial-gradient(ellipse 120% 82% at 50% -20%, rgba(53, 158, 238, 0.1), transparent 55%),
+    radial-gradient(ellipse 76% 55% at 82% 32%, rgba(239, 71, 111, 0.08), transparent 52%),
+    radial-gradient(ellipse 76% 55% at 10% 70%, rgba(3, 206, 164, 0.08), transparent 50%),
+    #06070a;
+  --auth-ambient: radial-gradient(ellipse at center, rgba(53, 158, 238, 0.1) 0%, transparent 72%);
+
+  /* Text */
+  --auth-text: #f6f8ff;
+  --auth-text-muted: rgba(180, 188, 210, 0.9);
+  --auth-text-dim: rgba(194, 203, 227, 0.72);
+  --auth-text-faint: rgba(255, 255, 255, 0.3);
+  --auth-title-glow: 0 0 34px rgba(53, 158, 238, 0.22);
+
+  /* Icon-only controls (pill buttons) */
+  --auth-icon: rgba(246, 248, 255, 0.86);
+  --auth-icon-strong: #f7f9ff;
+  --auth-icon-dim: rgba(246, 248, 255, 0.66);
+
+  /* Floating glass: the login card and the two corner pills */
+  --auth-glass-bg: linear-gradient(
+    130deg,
+    rgba(255, 255, 255, 0.26) 0%,
+    rgba(255, 255, 255, 0.12) 46%,
+    rgba(255, 255, 255, 0.08) 100%
+  );
+  --auth-glass-bg-open: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.2) 0%,
+    rgba(255, 255, 255, 0.1) 48%,
+    rgba(255, 255, 255, 0.05) 100%
+  );
+  --auth-glass-border: rgba(255, 255, 255, 0.24);
+  --auth-glass-border-strong: rgba(255, 255, 255, 0.3);
+  --auth-glass-border-open: rgba(255, 255, 255, 0.2);
+  --auth-glass-shadow: 0 14px 38px rgba(16, 28, 56, 0.44);
+  --auth-glass-shadow-open:
+    0 22px 72px rgba(0, 0, 0, 0.44),
+    inset 0 1px 0 rgba(255, 255, 255, 0.26);
+  --auth-hover-fill: rgba(255, 255, 255, 0.16);
+  --auth-active-fill: rgba(255, 255, 255, 0.14);
+  --auth-rule: rgba(255, 255, 255, 0.14);
+
+  /* Filled controls sitting inside the glass: provider buttons, tab shell */
+  --auth-field-bg: rgba(5, 10, 20, 0.66);
+  --auth-field-bg-hover: rgba(9, 16, 31, 0.78);
+  --auth-field-border: rgba(255, 255, 255, 0.2);
+  --auth-field-border-hover: rgba(255, 255, 255, 0.28);
+  --auth-field-text: rgba(250, 253, 255, 0.99);
+  --auth-tab-bg: rgba(7, 11, 20, 0.5);
+  --auth-tab-border: rgba(255, 255, 255, 0.16);
+
+  --auth-focus-ring: rgba(53, 158, 238, 0.85);
+}
+
+:root[data-theme='light'] {
+  --auth-bg:
+    radial-gradient(ellipse 120% 82% at 50% -20%, rgba(53, 158, 238, 0.18), transparent 55%),
+    radial-gradient(ellipse 76% 55% at 82% 32%, rgba(239, 71, 111, 0.14), transparent 52%),
+    radial-gradient(ellipse 76% 55% at 10% 70%, rgba(3, 206, 164, 0.14), transparent 50%),
+    #eef1f8;
+  --auth-ambient: radial-gradient(ellipse at center, rgba(53, 158, 238, 0.14) 0%, transparent 72%);
+
+  --auth-text: #10142a;
+  --auth-text-muted: rgba(48, 56, 84, 0.86);
+  --auth-text-dim: rgba(62, 72, 102, 0.76);
+  --auth-text-faint: rgba(16, 20, 42, 0.38);
+  --auth-title-glow: 0 0 34px rgba(53, 158, 238, 0.26);
+
+  --auth-icon: rgba(24, 30, 52, 0.76);
+  --auth-icon-strong: #10142a;
+  --auth-icon-dim: rgba(24, 30, 52, 0.56);
+
+  /* Light glass reads as frosted white: the translucent fills that separate a
+     card from a near-black page disappear against a near-white one, so these
+     run far more opaque and lean on the border and shadow instead. */
+  --auth-glass-bg: linear-gradient(
+    130deg,
+    rgba(255, 255, 255, 0.88) 0%,
+    rgba(255, 255, 255, 0.74) 46%,
+    rgba(255, 255, 255, 0.66) 100%
+  );
+  --auth-glass-bg-open: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.9) 0%,
+    rgba(255, 255, 255, 0.78) 48%,
+    rgba(255, 255, 255, 0.7) 100%
+  );
+  --auth-glass-border: rgba(16, 24, 48, 0.12);
+  --auth-glass-border-strong: rgba(16, 24, 48, 0.18);
+  --auth-glass-border-open: rgba(16, 24, 48, 0.1);
+  --auth-glass-shadow: 0 14px 38px rgba(22, 34, 64, 0.16);
+  --auth-glass-shadow-open:
+    0 22px 72px rgba(22, 34, 64, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --auth-hover-fill: rgba(16, 24, 48, 0.08);
+  --auth-active-fill: rgba(16, 24, 48, 0.07);
+  --auth-rule: rgba(16, 24, 48, 0.14);
+
+  --auth-field-bg: rgba(255, 255, 255, 0.82);
+  --auth-field-bg-hover: rgba(255, 255, 255, 0.95);
+  --auth-field-border: rgba(16, 24, 48, 0.16);
+  --auth-field-border-hover: rgba(16, 24, 48, 0.26);
+  --auth-field-text: rgba(12, 16, 34, 0.96);
+  --auth-tab-bg: rgba(16, 24, 48, 0.06);
+  --auth-tab-border: rgba(16, 24, 48, 0.12);
+}

@@ -39,11 +39,8 @@ const loginOpen = ref(false);
   inset: 0;
   overflow: hidden;
   z-index: 1000;
-  background:
-    radial-gradient(ellipse 120% 82% at 50% -20%, rgba(53, 158, 238, 0.1), transparent 55%),
-    radial-gradient(ellipse 76% 55% at 82% 32%, rgba(239, 71, 111, 0.08), transparent 52%),
-    radial-gradient(ellipse 76% 55% at 10% 70%, rgba(3, 206, 164, 0.08), transparent 50%),
-    #06070a;
+  background: var(--auth-bg);
+  transition: background 260ms ease;
 }
 
 .ambient {
@@ -54,7 +51,7 @@ const loginOpen = ref(false);
   width: 100%;
   max-width: 1000px;
   height: 52%;
-  background: radial-gradient(ellipse at center, rgba(53, 158, 238, 0.1) 0%, transparent 72%);
+  background: var(--auth-ambient);
   pointer-events: none;
   z-index: 0;
 }
@@ -77,8 +74,8 @@ const loginOpen = ref(false);
   font-weight: 900;
   line-height: 0.84;
   letter-spacing: 0.03em;
-  color: #f6f8ff;
-  text-shadow: 0 0 34px rgba(53, 158, 238, 0.22);
+  color: var(--auth-text);
+  text-shadow: var(--auth-title-glow);
 }
 
 .title-sub {
@@ -91,7 +88,7 @@ const loginOpen = ref(false);
   font-size: clamp(0.75rem, 1.9vw, 1.1rem);
   letter-spacing: 0.42em;
   font-weight: 700;
-  color: rgba(180, 188, 210, 0.9);
+  color: var(--auth-text-muted);
   text-align: center;
   white-space: nowrap;
   pointer-events: none;
@@ -121,7 +118,7 @@ const loginOpen = ref(false);
 
 .auth-footer p {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--auth-text-faint);
   margin: 0;
   letter-spacing: 0.5px;
 }
