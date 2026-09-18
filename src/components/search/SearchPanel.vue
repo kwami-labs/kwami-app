@@ -248,10 +248,14 @@ onBeforeUnmount(() => {
           <span v-if="results.length" class="search-panel__count">{{ results.length }}</span>
         </div>
 
+        <!-- Each control carries its own modifier class. Tests and e2e specs
+             address them by name rather than by position: a toolbar button
+             added later silently retargets an .nth() selector, which passes
+             while clicking the wrong thing. -->
         <div class="search-panel__actions">
           <button
             type="button"
-            class="search-panel__button"
+            class="search-panel__button search-panel__button--center"
             :aria-label="t('searchPanel.centerHint')"
             :title="t('searchPanel.centerHint')"
             :disabled="!isFloating"
@@ -261,7 +265,7 @@ onBeforeUnmount(() => {
           </button>
           <button
             type="button"
-            class="search-panel__button"
+            class="search-panel__button search-panel__button--float"
             :aria-label="isFloating ? t('searchPanel.dockHint') : t('searchPanel.floatHint')"
             :title="isFloating ? t('searchPanel.dockHint') : t('searchPanel.floatHint')"
             @click="toggleDocked"
@@ -270,7 +274,7 @@ onBeforeUnmount(() => {
           </button>
           <button
             type="button"
-            class="search-panel__button"
+            class="search-panel__button search-panel__button--expand"
             :aria-label="isFullscreen ? t('searchPanel.collapseHint') : t('searchPanel.expandHint')"
             :title="isFullscreen ? t('searchPanel.collapseHint') : t('searchPanel.expandHint')"
             @click="toggleFullscreen"
@@ -279,7 +283,7 @@ onBeforeUnmount(() => {
           </button>
           <button
             type="button"
-            class="search-panel__button"
+            class="search-panel__button search-panel__button--close"
             :aria-label="t('searchPanel.closeHint')"
             :title="t('searchPanel.closeHint')"
             @click="closePanel"
@@ -334,7 +338,7 @@ onBeforeUnmount(() => {
                 <div class="search-panel__item-actions">
                   <button
                     type="button"
-                    class="search-panel__link"
+                    class="search-panel__link search-panel__link--open"
                     @click="openInBrowser(result.url, index)"
                   >
                     {{ t('searchPanel.openInBrowser') }}
@@ -342,7 +346,7 @@ onBeforeUnmount(() => {
                   <!-- The user's own browser, for anything the cloud session
                        should not or cannot load. -->
                   <a
-                    class="search-panel__link search-panel__link--muted"
+                    class="search-panel__link search-panel__link--muted search-panel__link--tab"
                     :href="result.url"
                     target="_blank"
                     rel="noopener noreferrer"
@@ -351,7 +355,7 @@ onBeforeUnmount(() => {
                   </a>
                   <button
                     type="button"
-                    class="search-panel__link search-panel__link--muted"
+                    class="search-panel__link search-panel__link--muted search-panel__link--dismiss"
                     @click="removeResultAt(index)"
                   >
                     {{ t('searchPanel.dismiss') }}
@@ -364,7 +368,11 @@ onBeforeUnmount(() => {
       </div>
 
       <div class="search-panel__footer">
-        <button type="button" class="search-panel__link search-panel__link--muted" @click="clear">
+        <button
+          type="button"
+          class="search-panel__link search-panel__link--muted search-panel__link--clear"
+          @click="clear"
+        >
           {{ t('searchPanel.clearAll') }}
         </button>
       </div>
