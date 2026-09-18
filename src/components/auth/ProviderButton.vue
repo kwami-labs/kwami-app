@@ -25,6 +25,11 @@ const isLoading = computed(() =>
 );
 const error = computed(() => (isWeb3.value ? web3.error.value : oauth.error.value));
 const label = computed(() => t('auth.continueWith', { provider: t(props.provider.labelKey) }));
+/** Only set for a wallet that is not installed; see useWeb3SignIn. */
+const installUrl = computed(() => (isWeb3.value ? web3.installUrl.value : null));
+const installLabel = computed(() =>
+  t('auth.walletInstall', { wallet: t(props.provider.labelKey) }),
+);
 
 function onClick() {
   if (props.provider.oauth) {
@@ -48,6 +53,17 @@ function onClick() {
       {{ label }}
     </BaseButton>
     <p v-if="error" class="provider-error" role="alert">{{ error }}</p>
+    <!-- The tab is opened for them on click; this is the fallback for a blocked
+         pop-up, and it gives keyboard and screen-reader users a real link. -->
+    <a
+      v-if="installUrl"
+      class="provider-install"
+      :href="installUrl"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      {{ installLabel }}
+    </a>
   </div>
 </template>
 
@@ -62,5 +78,13 @@ function onClick() {
   font-size: 12px;
   color: var(--danger, #ef4444);
   text-align: center;
+}
+.provider-install {
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+  color: rgba(248, 252, 255, 0.95);
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 </style>

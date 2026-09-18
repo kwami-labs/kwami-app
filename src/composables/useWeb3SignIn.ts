@@ -16,10 +16,27 @@ import type { SolanaProvider } from '@/types/wallet-providers';
 
 export type Web3Wallet = 'phantom' | 'metamask';
 
+/**
+ * Where to send someone who does not have the extension yet.
+ *
+ * Phantom's own docs do exactly this — `window.open(...)` when the provider is
+ * missing — and give this as the install link.
+ */
+const WALLET_INSTALL_URLS: Record<Web3Wallet, string> = {
+  phantom: 'https://phantom.app/download',
+  metamask: 'https://metamask.io/download/',
+};
+
 export function useWeb3SignIn() {
   const { t } = useI18n();
   const isLoading = ref(false);
   const error = ref<string | null>(null);
+  /**
+   * Set when the wallet is missing, so the button can render a real link.
+   * The tab below is opened for them, but pop-up blockers get a vote; this is
+   * the fallback that always works.
+   */
+  const installUrl = ref<string | null>(null);
 
   /**
    * Phantom's Solana provider, or undefined when it is not installed.
@@ -39,15 +56,22 @@ export function useWeb3SignIn() {
   }
 
   async function signIn(wallet: Web3Wallet) {
-    // Check before calling Supabase so a missing extension reads as "install
-    // Phantom" rather than an opaque SDK error.
+    // Check before calling Supabase so a missing extension takes people to the
+    // download page rather than surfacing an opaque SDK error.
     if (!isAvailable(wallet)) {
+      const url = WALLET_INSTALL_URLS[wallet];
+      installUrl.value = url;
       error.value = t('auth.walletNotFound', { wallet: walletLabel(wallet) });
+      // Runs before any `await`, so this is still inside the click's user
+      // gesture and is not treated as an unsolicited pop-up. `noopener` keeps
+      // the new tab from reaching back through `window.opener`.
+      window.open(url, '_blank', 'noopener,noreferrer');
       return;
     }
 
     isLoading.value = true;
     error.value = null;
+    installUrl.value = null;
     try {
       // The statement must not contain newlines; Phantom requires one.
       const statement = t('auth.web3Statement');
@@ -75,5 +99,5 @@ export function useWeb3SignIn() {
     return wallet === 'phantom' ? 'Phantom' : 'MetaMask';
   }
 
-  return { signIn, isAvailable, isLoading, error };
+  return { signIn, isAvailable, isLoading, error, installUrl };
 }
