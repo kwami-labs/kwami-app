@@ -9,12 +9,27 @@
  * WalletConnect is deliberately absent: it has no Supabase equivalent and
  * would need @reown/appkit plus a Cloud project id.
  */
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { supabase } from '@/lib/supabase';
-import type { SolanaProvider } from '@/types/wallet-providers';
+import type { EthereumProvider, SolanaProvider } from '@/types/wallet-providers';
 
 export type Web3Wallet = 'phantom' | 'metamask';
+
+/**
+ * Where a card without a usable wallet should send you.
+ *
+ * `install` is the extension listing; `app` is a universal link that reopens
+ * this page inside the wallet's own in-app browser, which is the only place a
+ * phone has a provider to inject.
+ */
+export type WalletLinkMode = 'install' | 'app';
+
+export interface WalletLink {
+  wallet: Web3Wallet;
+  href: string;
+  mode: WalletLinkMode;
+}
 
 /**
  * Where to send someone who does not have the extension yet.
@@ -31,16 +46,67 @@ const WALLET_INSTALL_URLS: Record<Web3Wallet, string> = {
   metamask: 'https://metamask.io/download/',
 };
 
+/** MetaMask ships stable, Flask and Institutional; all announce under this. */
+const METAMASK_RDNS = 'io.metamask';
+
+/**
+ * EIP-6963 discovery, module-scoped so every caller shares one listener.
+ *
+ * MetaMask's own docs are blunt about this: `window.ethereum` "might fail if
+ * the user is running multiple wallet extensions simultaneously", because the
+ * last injector wins. Phantom ships an EVM provider of its own, so the two
+ * wallets this app offers are exactly the collision case — with Phantom
+ * installed and MetaMask not, `window.ethereum` exists and the naive check
+ * reports MetaMask as detected, then signs you in through Phantom.
+ */
+const announcedProviders = new Map<string, EthereumProvider>();
+let listening = false;
+
+function rememberAnnounced(event: WindowEventMap['eip6963:announceProvider']) {
+  const detail = event.detail;
+  if (detail?.info?.rdns && detail.provider) {
+    announcedProviders.set(detail.info.rdns, detail.provider);
+  }
+}
+
+/**
+ * Ask every installed EVM wallet to announce itself.
+ *
+ * Wallets reply synchronously to the request event, but they only start
+ * listening once their content script has run — so this is worth re-asking
+ * rather than firing once at import time.
+ */
+export function requestEthereumProviders(): void {
+  if (typeof window === 'undefined') return;
+  if (!listening) {
+    window.addEventListener('eip6963:announceProvider', rememberAnnounced);
+    listening = true;
+  }
+  window.dispatchEvent(new Event('eip6963:requestProvider'));
+}
+
+/** Test seam: EIP-6963 state is module-scoped and would leak between specs. */
+export function resetEthereumProviders(): void {
+  announcedProviders.clear();
+  if (listening && typeof window !== 'undefined') {
+    window.removeEventListener('eip6963:announceProvider', rememberAnnounced);
+  }
+  listening = false;
+}
+
 export function useWeb3SignIn() {
   const { t } = useI18n();
   const isLoading = ref(false);
+  /** Which wallet the current attempt is waiting on, so one card can say so. */
+  const pendingWallet = ref<Web3Wallet | null>(null);
   const error = ref<string | null>(null);
   /**
    * Set when the wallet is missing, so the button can render a real link.
    * The tab below is opened for them, but pop-up blockers get a vote; this is
    * the fallback that always works.
    */
-  const installUrl = ref<string | null>(null);
+  const installLink = ref<WalletLink | null>(null);
+  const installUrl = computed(() => installLink.value?.href ?? null);
 
   /**
    * Phantom's Solana provider, or undefined when it is not installed.
@@ -55,27 +121,80 @@ export function useWeb3SignIn() {
     return window.solana?.isPhantom ? window.solana : undefined;
   }
 
+  /**
+   * MetaMask's EVM provider, or undefined. EIP-6963 first — it is the only
+   * mechanism that survives two wallets — then the legacy `providers` stack,
+   * then the bare global. The `isPhantom` guard on the last two is what stops
+   * Phantom's EVM provider from passing as MetaMask.
+   */
+  function metamaskProvider(): EthereumProvider | undefined {
+    for (const [rdns, provider] of announcedProviders) {
+      if (rdns === METAMASK_RDNS || rdns.startsWith(`${METAMASK_RDNS}.`)) return provider;
+    }
+    const injected = window.ethereum;
+    const stacked = injected?.providers?.find((p) => p.isMetaMask && !p.isPhantom);
+    if (stacked) return stacked;
+    return injected?.isMetaMask && !injected.isPhantom ? injected : undefined;
+  }
+
   function isAvailable(wallet: Web3Wallet): boolean {
-    return wallet === 'phantom' ? Boolean(phantomProvider()) : Boolean(window.ethereum);
+    return Boolean(wallet === 'phantom' ? phantomProvider() : metamaskProvider());
+  }
+
+  /**
+   * True on a phone or tablet browser, where no extension can exist.
+   *
+   * `(pointer: coarse) and (hover: none)` rather than a UA sniff: a touchscreen
+   * laptop still reports a fine primary pointer and hover, so it keeps the
+   * desktop install path it can actually use.
+   */
+  function isHandheld(): boolean {
+    return window.matchMedia?.('(pointer: coarse) and (hover: none)').matches ?? false;
+  }
+
+  /**
+   * Reopen this page inside the wallet's in-app browser.
+   *
+   * Mobile Safari and mobile Chrome have no extensions, so the install link is
+   * a dead end there — a Chrome Web Store page that cannot install anything.
+   * Both wallets publish a universal link for exactly this, and the page that
+   * opens on the other side does have an injected provider.
+   */
+  function inAppBrowserLink(wallet: Web3Wallet): string {
+    const { href, origin, host, pathname, search } = window.location;
+    return wallet === 'phantom'
+      ? `https://phantom.app/ul/browse/${encodeURIComponent(href)}?ref=${encodeURIComponent(origin)}`
+      : `https://link.metamask.io/dapp/${host}${pathname}${search}`;
+  }
+
+  /** Where this wallet's card should point when there is no provider to talk to. */
+  function walletLink(wallet: Web3Wallet): WalletLink {
+    return isHandheld()
+      ? { wallet, href: inAppBrowserLink(wallet), mode: 'app' }
+      : { wallet, href: WALLET_INSTALL_URLS[wallet], mode: 'install' };
   }
 
   async function signIn(wallet: Web3Wallet) {
     // Check before calling Supabase so a missing extension takes people to the
     // download page rather than surfacing an opaque SDK error.
     if (!isAvailable(wallet)) {
-      const url = WALLET_INSTALL_URLS[wallet];
-      installUrl.value = url;
-      error.value = t('auth.walletNotFound', { wallet: walletLabel(wallet) });
+      const link = walletLink(wallet);
+      installLink.value = link;
+      error.value =
+        link.mode === 'app'
+          ? t('auth.walletOpenAppHint', { wallet: walletLabel(wallet) })
+          : t('auth.walletNotFound', { wallet: walletLabel(wallet) });
       // Runs before any `await`, so this is still inside the click's user
       // gesture and is not treated as an unsolicited pop-up. `noopener` keeps
       // the new tab from reaching back through `window.opener`.
-      window.open(url, '_blank', 'noopener,noreferrer');
+      window.open(link.href, '_blank', 'noopener,noreferrer');
       return;
     }
 
     isLoading.value = true;
+    pendingWallet.value = wallet;
     error.value = null;
-    installUrl.value = null;
+    installLink.value = null;
     try {
       // The statement must not contain newlines; Phantom requires one.
       const statement = t('auth.web3Statement');
@@ -88,7 +207,16 @@ export function useWeb3SignIn() {
               // back to window.solana, which may be a different wallet.
               wallet: phantomProvider(),
             })
-          : await supabase.auth.signInWithWeb3({ chain: 'ethereum', statement });
+          : await supabase.auth.signInWithWeb3({
+              chain: 'ethereum',
+              statement,
+              // Same reason, and the one that matters more: auth-js would reach
+              // for window.ethereum, which is whichever wallet injected last.
+              // auth-js types this as EIP1193Provider, which demands an
+              // `address` field and the EIP-1193 event methods that no injected
+              // provider actually exposes; it only ever calls `.request()`.
+              wallet: metamaskProvider() as never,
+            });
 
       if (authError) error.value = mapError(authError);
     } catch (e: unknown) {
@@ -96,6 +224,7 @@ export function useWeb3SignIn() {
       error.value = e instanceof Error ? mapError(e) : t('auth.web3Failed');
     } finally {
       isLoading.value = false;
+      pendingWallet.value = null;
     }
   }
 
@@ -124,5 +253,15 @@ export function useWeb3SignIn() {
     return err.message || t('auth.web3Failed');
   }
 
-  return { signIn, isAvailable, isLoading, error, installUrl };
+  return {
+    signIn,
+    isAvailable,
+    isHandheld,
+    walletLink,
+    isLoading,
+    pendingWallet,
+    error,
+    installLink,
+    installUrl,
+  };
 }

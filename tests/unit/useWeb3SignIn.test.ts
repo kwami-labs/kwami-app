@@ -1,7 +1,11 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { defineComponent } from 'vue';
 import { mount } from '@vue/test-utils';
-import { useWeb3SignIn } from '../../src/composables/useWeb3SignIn';
+import {
+  requestEthereumProviders,
+  resetEthereumProviders,
+  useWeb3SignIn,
+} from '../../src/composables/useWeb3SignIn';
 import { en } from '../../src/i18n/translations/en';
 
 vi.mock('@/lib/supabase', () => ({
@@ -22,11 +26,43 @@ function harness() {
 
 const win = window as unknown as Record<string, unknown>;
 let openSpy: ReturnType<typeof vi.fn>;
+const announcers: Array<() => void> = [];
+
+/**
+ * Impersonate an EIP-6963 wallet: reply to the discovery request the way a real
+ * extension does, by announcing itself synchronously.
+ */
+function announceWallet(rdns: string, provider: Record<string, unknown>) {
+  const reply = () =>
+    window.dispatchEvent(
+      new CustomEvent('eip6963:announceProvider', {
+        detail: { info: { uuid: rdns, name: rdns, icon: '', rdns }, provider },
+      }),
+    );
+  window.addEventListener('eip6963:requestProvider', reply);
+  announcers.push(() => window.removeEventListener('eip6963:requestProvider', reply));
+}
+
+/** Pretend to be a phone: no hover, coarse pointer, therefore no extensions. */
+function pretendHandheld(handheld: boolean) {
+  window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+    matches: handheld && query.includes('coarse'),
+    media: query,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+  })) as unknown as typeof window.matchMedia;
+}
+
+afterEach(() => {
+  announcers.splice(0).forEach((off) => off());
+  resetEthereumProviders();
+});
 
 beforeEach(() => {
   delete win.phantom;
   delete win.solana;
   delete win.ethereum;
+  resetEthereumProviders();
   signInWithWeb3.mockReset();
   signInWithWeb3.mockResolvedValue({ data: { user: {}, session: {} }, error: null } as never);
   openSpy = vi.fn(() => ({}) as Window);
@@ -160,5 +196,106 @@ describe('useWeb3SignIn when the wallet is present', () => {
     await web3.signIn('phantom');
 
     expect(web3.error.value).toBe(en.auth.web3Rejected);
+  });
+});
+
+describe('useWeb3SignIn MetaMask detection', () => {
+  it('does not mistake another wallet on window.ethereum for MetaMask', () => {
+    // Phantom injects an EVM provider too. Before EIP-6963 this read as
+    // "MetaMask: Detected" and then signed you in through Phantom.
+    win.ethereum = { isPhantom: true, request: vi.fn() };
+    const web3 = harness();
+
+    expect(web3.isAvailable('metamask')).toBe(false);
+  });
+
+  it('finds MetaMask through its EIP-6963 announcement', () => {
+    const provider = { request: vi.fn() };
+    announceWallet('io.metamask', provider);
+    const web3 = harness();
+
+    requestEthereumProviders();
+
+    expect(web3.isAvailable('metamask')).toBe(true);
+  });
+
+  it('finds MetaMask behind a wallet that claimed window.ethereum first', () => {
+    const metamask = { isMetaMask: true, request: vi.fn() };
+    announceWallet('io.metamask', metamask);
+    announceWallet('app.phantom', { isPhantom: true, request: vi.fn() });
+    win.ethereum = { isPhantom: true, request: vi.fn() };
+    const web3 = harness();
+
+    requestEthereumProviders();
+
+    expect(web3.isAvailable('metamask')).toBe(true);
+  });
+
+  it('still falls back to the legacy providers stack', () => {
+    const metamask = { isMetaMask: true, request: vi.fn() };
+    win.ethereum = { isPhantom: true, request: vi.fn(), providers: [metamask] };
+    const web3 = harness();
+
+    expect(web3.isAvailable('metamask')).toBe(true);
+  });
+
+  it('hands the discovered provider to Supabase rather than window.ethereum', async () => {
+    const metamask = { request: vi.fn() };
+    announceWallet('io.metamask', metamask);
+    // The global belongs to someone else; auth-js would have used it.
+    win.ethereum = { isPhantom: true, request: vi.fn() };
+    const web3 = harness();
+    requestEthereumProviders();
+
+    await web3.signIn('metamask');
+
+    expect(signInWithWeb3).toHaveBeenCalledWith({
+      chain: 'ethereum',
+      statement: en.auth.web3Statement,
+      wallet: metamask,
+    });
+  });
+});
+
+describe('useWeb3SignIn on a handheld browser', () => {
+  beforeEach(() => pretendHandheld(true));
+
+  it('reopens the page in the Phantom app instead of the extension store', async () => {
+    const web3 = harness();
+
+    await web3.signIn('phantom');
+
+    const expected = `https://phantom.app/ul/browse/${encodeURIComponent(
+      window.location.href,
+    )}?ref=${encodeURIComponent(window.location.origin)}`;
+    expect(web3.installUrl.value).toBe(expected);
+    expect(openSpy).toHaveBeenCalledWith(expected, '_blank', 'noopener,noreferrer');
+    expect(web3.installLink.value?.mode).toBe('app');
+  });
+
+  it('reopens the page in the MetaMask app', async () => {
+    const web3 = harness();
+
+    await web3.signIn('metamask');
+
+    const { host, pathname, search } = window.location;
+    expect(web3.installUrl.value).toBe(`https://link.metamask.io/dapp/${host}${pathname}${search}`);
+  });
+
+  it('says the app is what is missing, not a browser extension', async () => {
+    const web3 = harness();
+
+    await web3.signIn('phantom');
+
+    expect(web3.error.value).toBe(en.auth.walletOpenAppHint.replace('{wallet}', 'Phantom'));
+  });
+
+  it('keeps the extension store on a desktop pointer', async () => {
+    pretendHandheld(false);
+    const web3 = harness();
+
+    await web3.signIn('phantom');
+
+    expect(web3.installLink.value?.mode).toBe('install');
   });
 });

@@ -22,7 +22,33 @@ export interface SolanaProvider {
 
 export interface EthereumProvider {
   isMetaMask?: boolean;
+  /**
+   * Phantom injects an EVM provider too, and it lands on `window.ethereum` when
+   * it wins the race. Present so "is this really MetaMask?" can be answered
+   * without guessing.
+   */
+  isPhantom?: boolean;
+  /**
+   * The pre-EIP-6963 way several wallets coexisted: the loser of the
+   * `window.ethereum` race stacks itself here. Still populated by some wallets.
+   */
+  providers?: EthereumProvider[];
   request(args: { method: string; params?: unknown[] }): Promise<unknown>;
+}
+
+/** EIP-6963 announcement payload. */
+export interface Eip6963ProviderInfo {
+  uuid: string;
+  name: string;
+  /** Data URI of the wallet's own icon. */
+  icon: string;
+  /** Reverse-DNS wallet id, e.g. `io.metamask`. The only stable wallet key. */
+  rdns: string;
+}
+
+export interface Eip6963ProviderDetail {
+  info: Eip6963ProviderInfo;
+  provider: EthereumProvider;
 }
 
 declare global {
@@ -35,5 +61,10 @@ declare global {
      * user has more than one.
      */
     phantom?: { solana?: SolanaProvider; ethereum?: EthereumProvider };
+  }
+
+  interface WindowEventMap {
+    /** Fired by each installed EVM wallet in reply to `eip6963:requestProvider`. */
+    'eip6963:announceProvider': CustomEvent<Eip6963ProviderDetail>;
   }
 }

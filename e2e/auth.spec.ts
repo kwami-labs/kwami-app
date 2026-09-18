@@ -283,8 +283,11 @@ test.describe('phantom wallet', () => {
     await page.getByRole('tab', { name: 'Web3' }).click();
 
     await expect(page.getByText(/Approve a message in your wallet/i)).toBeVisible();
-    await expect(page.getByRole('button', { name: /Continue with Phantom/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Continue with MetaMask/i })).toBeVisible();
+    // Named for what pressing them does. With no extension in a headless
+    // browser that is an install, not a sign-in.
+    await expect(page.getByRole('button', { name: 'Install Phantom' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Install MetaMask' })).toBeVisible();
+    await expect(page.locator('.wallet-card--phantom')).toContainText('Not installed');
     await expect(page.getByText(/Your wallet address becomes your account/i)).toBeVisible();
   });
 
@@ -301,7 +304,7 @@ test.describe('phantom wallet', () => {
 
     const [popup] = await Promise.all([
       page.waitForEvent('popup'),
-      page.getByRole('button', { name: /Continue with Phantom/i }).click(),
+      page.getByRole('button', { name: 'Install Phantom' }).click(),
     ]);
 
     expect(popup.url()).toBe(
@@ -339,7 +342,8 @@ test.describe('phantom wallet', () => {
     await openLoginPanel(page);
 
     await page.getByRole('tab', { name: 'Web3' }).click();
-    await page.getByRole('button', { name: /Continue with Phantom/i }).click();
+    // Phantom is injected here, so this card offers the sign-in.
+    await page.getByRole('button', { name: /Connect Phantom with Solana/i }).click();
 
     await expect
       .poll(() => page.evaluate(() => (window as unknown as Record<string, unknown>).__PHANTOM_SIGNIN__))
