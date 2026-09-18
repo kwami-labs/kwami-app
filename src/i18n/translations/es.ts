@@ -308,6 +308,11 @@ export const es = {
     failedSendCode: 'No se pudo enviar el codigo',
     failedVerifyCode: 'No se pudo verificar el codigo',
     phoneFormLabel: 'Inicia sesion con tu numero de telefono',
+    preferences: 'Idioma y apariencia',
+    languageMenu: 'Cambiar idioma',
+    languageCurrent: 'Idioma: {language}',
+    switchToLight: 'Cambiar al modo claro',
+    switchToDark: 'Cambiar al modo oscuro',
   },
   welcomeScreen: {
     clickToSkip: 'Haz clic en cualquier lugar para omitir',

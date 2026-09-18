@@ -308,6 +308,11 @@ export const en = {
     failedSendCode: 'Could not send the code',
     failedVerifyCode: 'Could not verify the code',
     phoneFormLabel: 'Sign in with your phone number',
+    preferences: 'Language and appearance',
+    languageMenu: 'Change language',
+    languageCurrent: 'Language: {language}',
+    switchToLight: 'Switch to light mode',
+    switchToDark: 'Switch to dark mode',
   },
   welcomeScreen: {
     clickToSkip: 'Click anywhere to skip',

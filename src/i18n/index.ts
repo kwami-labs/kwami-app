@@ -25,7 +25,7 @@ const LOCALE_STORAGE_KEY = 'kwami.locale';
  */
 export const LOCALE_ENDONYMS: Record<SupportedLocale, string> = {
   en: 'English',
-  es: 'Espanol',
+  es: 'Español',
 };
 
 /**
