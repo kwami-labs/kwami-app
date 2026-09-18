@@ -50,3 +50,86 @@ export function getBandLevels(frequencyData: Uint8Array): BandLevels {
     high: highSum / Math.max(1, length - midEnd) / 255,
   };
 }
+
+/**
+ * How fast an envelope follows a band up and down, in milliseconds.
+ *
+ * Asymmetric on purpose. FFT magnitudes are noisy frame to frame, and
+ * smoothing them evenly buys calm by flattening the hits — the avatar stops
+ * twitching but also stops landing on the beat. A short attack keeps the hit
+ * and a long release lets it fall away over a musical length instead of
+ * snapping back before the next frame.
+ */
+export interface BandEnvelopeOptions {
+  /** Time to cover ~63% of a rise. Short enough that transients survive. */
+  attackMs?: number;
+  /** The same on the way down, and the knob that reads as "musical". */
+  releaseMs?: number;
+}
+
+export interface BandEnvelope {
+  /**
+   * Advance the envelope by `deltaMs` towards `levels` and report where it is.
+   *
+   * @param levels - Raw bands, as `getBandLevels` hands them back.
+   * @param deltaMs - Since the last call. Frames are not evenly spaced, so the
+   *   coefficient is derived from this rather than assumed to be 1/60s.
+   */
+  follow(levels: BandLevels, deltaMs: number): BandLevels;
+  /** Drop back to silence — a new track, or a renderer that just appeared. */
+  reset(): void;
+}
+
+const DEFAULT_ATTACK_MS = 45;
+const DEFAULT_RELEASE_MS = 320;
+
+/**
+ * A frame that arrives later than this is treated as this long.
+ *
+ * A backgrounded tab stops calling `requestAnimationFrame`, so the first frame
+ * after it comes back carries seconds of delta. The exponential below saturates
+ * rather than overshooting, so the clamp is only there to keep the behaviour
+ * the same whether the gap was two seconds or twenty.
+ */
+const MAX_DELTA_MS = 250;
+
+/** Fraction of the way to the target that `ms` at time constant `tau` covers. */
+function coefficient(ms: number, tau: number): number {
+  if (tau <= 0) return 1;
+  return 1 - Math.exp(-ms / tau);
+}
+
+/**
+ * An envelope follower over the three bands.
+ *
+ * One per consumer: it carries state, so two renderers sharing an instance
+ * would advance each other's envelope by their own frame deltas.
+ */
+export function createBandEnvelope(options: BandEnvelopeOptions = {}): BandEnvelope {
+  const attackMs = options.attackMs ?? DEFAULT_ATTACK_MS;
+  const releaseMs = options.releaseMs ?? DEFAULT_RELEASE_MS;
+
+  const current: BandLevels = { ...SILENCE };
+
+  function step(value: number, target: number, ms: number): number {
+    const tau = target > value ? attackMs : releaseMs;
+    return value + (target - value) * coefficient(ms, tau);
+  }
+
+  return {
+    follow(levels, deltaMs) {
+      const ms = Math.min(MAX_DELTA_MS, Math.max(0, deltaMs));
+      if (ms > 0) {
+        current.bass = step(current.bass, levels.bass, ms);
+        current.mid = step(current.mid, levels.mid, ms);
+        current.high = step(current.high, levels.high, ms);
+      }
+      return { ...current };
+    },
+    reset() {
+      current.bass = 0;
+      current.mid = 0;
+      current.high = 0;
+    },
+  };
+}
