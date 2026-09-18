@@ -1,11 +1,23 @@
 import { createI18n } from 'vue-i18n';
-import { 
-  workspaceAgentToolsEn, 
-  workspaceAgentToolsEs 
+import {
+  workspaceAgentToolsEn,
+  workspaceAgentToolsEs,
 } from './workspaceAgentTools.locale';
 import { appLocaleEn, appLocaleEs } from './appLocale.locale';
-import { commsAgentToolsEn, commsAgentToolsEs } from './commsAgentTools.locale';
-import { searchPanelEn, searchPanelEs } from './searchPanel.locale';
+import {
+  commsAgentToolsEn,
+  commsAgentToolsEs,
+} from './commsAgentTools.locale';
+import {
+  kwamiAdminEn,
+  kwamiAdminEs,
+} from './kwamiAdmin.locale';
+import { extrasEn, extrasEs } from './extras.locale';
+import { recallEn, recallEs } from './recall.locale';
+import {
+  searchPanelEn,
+  searchPanelEs,
+} from './searchPanel.locale';
 import { en } from './translations/en';
 import { es } from './translations/es';
 
@@ -22,6 +34,12 @@ const LOCALE_STORAGE_KEY = 'kwami.locale';
  * current locale: the person reaching for it is, by definition, someone who
  * may not read the language the app is in right now. Endonyms also mean the
  * list needs no entry in `en.ts` / `es.ts` -- adding a locale is one line here.
+ *
+ * Not to be merged with `languageName()` in `useLocaleAgentTools`, which looks
+ * like the same thing and is not: that returns a language's name *in the
+ * current locale* ("Spanish" in English, "espagnol" in French) because it is
+ * read back inside a sentence the agent speaks, and it comes from
+ * `Intl.DisplayNames`. These are endonyms for a picker, and never translate.
  */
 export const LOCALE_ENDONYMS: Record<SupportedLocale, string> = {
   en: 'English',
@@ -37,8 +55,8 @@ export const LOCALE_ENDONYMS: Record<SupportedLocale, string> = {
  * were the ones nobody had checked.
  */
 export const messages = {
-  en: { ...en, ...workspaceAgentToolsEn, ...searchPanelEn, ...commsAgentToolsEn, ...appLocaleEn },
-  es: { ...es, ...workspaceAgentToolsEs, ...searchPanelEs, ...commsAgentToolsEs, ...appLocaleEs },
+  en: { ...en, ...workspaceAgentToolsEn, ...searchPanelEn, ...commsAgentToolsEn, ...appLocaleEn, ...kwamiAdminEn, ...recallEn, ...extrasEn },
+  es: { ...es, ...workspaceAgentToolsEs, ...searchPanelEs, ...commsAgentToolsEs, ...appLocaleEs, ...kwamiAdminEs, ...recallEs, ...extrasEs },
 } as const;
 
 export function normalizeLocale(locale: string | null | undefined): SupportedLocale {
@@ -77,6 +95,11 @@ export function getCurrentLocale(): SupportedLocale {
 }
 
 /** BCP 47 tag for `Intl` date/time formatting (matches app locale). */
+const INTL_TAGS: Record<SupportedLocale, string> = {
+  en: 'en-US',
+  es: 'es-ES',
+};
+
 export function intlLocaleTag(locale: SupportedLocale): string {
-  return locale === 'es' ? 'es-ES' : 'en-US';
+  return INTL_TAGS[locale] ?? INTL_TAGS.en;
 }
