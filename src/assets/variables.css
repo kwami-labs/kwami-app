@@ -137,6 +137,14 @@
   --auth-tab-bg: rgba(7, 11, 20, 0.5);
   --auth-tab-border: rgba(255, 255, 255, 0.16);
 
+  /* Phantom is the one provider button carrying a fill of its own, so the
+     wallet route reads as a first-class choice rather than a footnote. */
+  --auth-phantom-bg: linear-gradient(135deg, #4aa8f0 0%, #2b7fd4 100%);
+  --auth-phantom-bg-hover: linear-gradient(135deg, #5cb3f5 0%, #3a8ede 100%);
+  --auth-phantom-border: rgba(120, 190, 255, 0.55);
+  --auth-phantom-border-hover: rgba(150, 210, 255, 0.72);
+  --auth-phantom-text: #f7fbff;
+
   --auth-focus-ring: rgba(53, 158, 238, 0.85);
 }
 
@@ -191,4 +199,13 @@
   --auth-field-text: rgba(12, 16, 34, 0.96);
   --auth-tab-bg: rgba(16, 24, 48, 0.06);
   --auth-tab-border: rgba(16, 24, 48, 0.12);
+
+  /* The fill stays: it carries white text at >4.5:1 on either page, and going
+     pale here would cost the button the emphasis it exists for. Only the
+     border moves, since a light halo vanishes against a near-white card. */
+  --auth-phantom-bg: linear-gradient(135deg, #3d9bec 0%, #1f6fc4 100%);
+  --auth-phantom-bg-hover: linear-gradient(135deg, #4aa8f0 0%, #2b7fd4 100%);
+  --auth-phantom-border: rgba(24, 92, 168, 0.42);
+  --auth-phantom-border-hover: rgba(24, 92, 168, 0.58);
+  --auth-phantom-text: #ffffff;
 }

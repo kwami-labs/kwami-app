@@ -91,15 +91,15 @@ function onClick() {
 /* Two classes so this outranks BaseButton's own single-class `.variant-secondary`,
    whose scoped stylesheet may be ordered after this one in the bundle. */
 .provider-slot .provider-btn--phantom {
-  background: linear-gradient(135deg, #4aa8f0 0%, #2b7fd4 100%);
-  border-color: rgba(120, 190, 255, 0.55);
-  color: #f7fbff;
+  background: var(--auth-phantom-bg);
+  border-color: var(--auth-phantom-border);
+  color: var(--auth-phantom-text);
 }
 
 .provider-slot .provider-btn--phantom:hover:not(:disabled) {
-  background: linear-gradient(135deg, #5cb3f5 0%, #3a8ede 100%);
-  border-color: rgba(150, 210, 255, 0.72);
-  color: #ffffff;
+  background: var(--auth-phantom-bg-hover);
+  border-color: var(--auth-phantom-border-hover);
+  color: var(--auth-phantom-text);
 }
 
 .provider-install {
