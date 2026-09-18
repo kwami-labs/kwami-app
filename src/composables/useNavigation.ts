@@ -163,6 +163,8 @@ export function useNavigation() {
     isFloating,
     isFullscreen,
     setLayout: store.setLayout,
+    expandFullscreen: store.expandFullscreen,
+    collapseFullscreen: store.collapseFullscreen,
     toggleFullscreen: store.toggleFullscreen,
     moveTo: store.moveTo,
     resizeTo: store.resizeTo,

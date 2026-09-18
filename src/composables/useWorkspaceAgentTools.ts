@@ -1428,11 +1428,11 @@ export function useWorkspaceAgentTools() {
         if (typeof value !== 'boolean') {
           return { success: false, message: t('workspaceAgentTools.browserExpandBool') };
         }
-        // Collapsing returns to docked rather than to whatever it was before:
-        // the component tracks "before fullscreen" for its own button, and the
-        // agent has no way to know that value, so guessing it here would make
-        // the spoken and clicked paths disagree.
-        navigationStore.setLayout(value ? 'fullscreen' : 'docked');
+        // Collapsing returns to whatever the panel was before it expanded --
+        // the store remembers, so "expand, read this page, put it back" does
+        // not quietly dock a panel the user had floating.
+        if (value) navigationStore.expandFullscreen();
+        else navigationStore.collapseFullscreen();
         return result(
           value
             ? t('workspaceAgentTools.browserExpanded')

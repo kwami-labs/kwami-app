@@ -67,15 +67,28 @@ function isLayout(value: unknown): value is BrowserPanelLayout {
   return typeof value === 'string' && (BROWSER_PANEL_LAYOUTS as readonly string[]).includes(value);
 }
 
-function loadPersisted(): { layout: BrowserPanelLayout; rect: FloatingRect } {
-  const fallback = { layout: 'docked' as BrowserPanelLayout, rect: { ...DEFAULT_RECT } };
+function loadPersisted(): {
+  layout: BrowserPanelLayout;
+  rect: FloatingRect;
+  previous: BrowserPanelLayout;
+} {
+  const fallback = {
+    layout: 'docked' as BrowserPanelLayout,
+    rect: { ...DEFAULT_RECT },
+    previous: 'docked' as BrowserPanelLayout,
+  };
   if (typeof localStorage === 'undefined') return fallback;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return fallback;
-    const parsed = JSON.parse(raw) as { layout?: unknown; rect?: Partial<FloatingRect> };
+    const parsed = JSON.parse(raw) as {
+      layout?: unknown;
+      rect?: Partial<FloatingRect>;
+      previous?: unknown;
+    };
     const rect = { ...DEFAULT_RECT, ...(parsed.rect ?? {}) };
     return {
+      previous: isLayout(parsed.previous) ? parsed.previous : 'docked',
       layout: isLayout(parsed.layout) ? parsed.layout : 'docked',
       // Not clamped here: the viewport is not necessarily final at module load
       // (mobile browsers resize as chrome settles). `syncToViewport` does it.
@@ -109,6 +122,18 @@ export const useNavigationStore = defineStore('navigation', () => {
   const persisted = loadPersisted();
   const layout = ref<BrowserPanelLayout>(persisted.layout);
   const floatingRect = ref<FloatingRect>(persisted.rect);
+  /**
+   * Where leaving fullscreen returns to.
+   *
+   * Held here rather than in the panel component because both the expand
+   * button and the agent's `set_browser_panel` drive fullscreen, and the agent
+   * has no way to know what the layout was before it expanded. With the memory
+   * living in the component, an agent told to "expand, read the page, collapse"
+   * dropped a floating panel back into the dock every time.
+   */
+  const layoutBeforeFullscreen = ref<BrowserPanelLayout>(
+    persisted.previous === 'fullscreen' ? 'docked' : persisted.previous,
+  );
   /** True while a drag or resize is in flight; the panel shields the iframe. */
   const isManipulating = ref(false);
 
@@ -123,7 +148,11 @@ export const useNavigationStore = defineStore('navigation', () => {
     try {
       localStorage.setItem(
         STORAGE_KEY,
-        JSON.stringify({ layout: layout.value, rect: floatingRect.value }),
+        JSON.stringify({
+          layout: layout.value,
+          rect: floatingRect.value,
+          previous: layoutBeforeFullscreen.value,
+        }),
       );
     } catch {
       // Private mode, or storage disabled. The panel still works for this
@@ -152,14 +181,28 @@ export const useNavigationStore = defineStore('navigation', () => {
 
   function setLayout(next: BrowserPanelLayout) {
     if (!isLayout(next) || layout.value === next) return;
+    // Remember what we are leaving, so collapsing returns there. Captured on
+    // the way in rather than on the way out, which is the only moment the
+    // answer is still knowable.
+    if (next === 'fullscreen') layoutBeforeFullscreen.value = layout.value;
     layout.value = next;
     if (next === 'floating') floatingRect.value = clampRect(floatingRect.value);
     persist();
   }
 
-  /** Fullscreen from anywhere; from fullscreen, back to where it came from. */
-  function toggleFullscreen(previous: BrowserPanelLayout = 'docked') {
-    setLayout(layout.value === 'fullscreen' ? previous : 'fullscreen');
+  function expandFullscreen() {
+    setLayout('fullscreen');
+  }
+
+  /** Leave fullscreen for whatever layout it was entered from. */
+  function collapseFullscreen() {
+    if (layout.value !== 'fullscreen') return;
+    setLayout(layoutBeforeFullscreen.value === 'fullscreen' ? 'docked' : layoutBeforeFullscreen.value);
+  }
+
+  function toggleFullscreen() {
+    if (layout.value === 'fullscreen') collapseFullscreen();
+    else expandFullscreen();
   }
 
   function moveTo(x: number, y: number) {
@@ -201,6 +244,7 @@ export const useNavigationStore = defineStore('navigation', () => {
 
   function resetLayout() {
     layout.value = 'docked';
+    layoutBeforeFullscreen.value = 'docked';
     floatingRect.value = clampRect({ ...DEFAULT_RECT });
     persist();
   }
@@ -231,6 +275,7 @@ export const useNavigationStore = defineStore('navigation', () => {
     vendor,
     isPersistent,
     layout,
+    layoutBeforeFullscreen,
     floatingRect,
     isManipulating,
     hasNavigation,
@@ -239,6 +284,8 @@ export const useNavigationStore = defineStore('navigation', () => {
     isDocked,
     updateState,
     setLayout,
+    expandFullscreen,
+    collapseFullscreen,
     toggleFullscreen,
     moveTo,
     resizeTo,

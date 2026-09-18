@@ -22,7 +22,6 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useNavigation } from '@/composables/useNavigation';
-import { type BrowserPanelLayout } from '@/stores/navigation';
 
 const {
   isActive,
@@ -36,6 +35,8 @@ const {
   isFloating,
   isFullscreen,
   setLayout,
+  collapseFullscreen,
+  toggleFullscreen,
   setRect,
   syncToViewport,
   centerPanel,
@@ -136,40 +137,22 @@ const iframeSrc = computed(() => liveUrl.value || '');
 // Layout
 // ---------------------------------------------------------------------------
 
-/**
- * Where fullscreen returns to. Captured on the way in, because "collapse"
- * meaning "go back to docked" would silently undo a user who was floating.
- */
-const layoutBeforeFullscreen = ref<BrowserPanelLayout>('docked');
-
-function expand() {
-  if (isFullscreen.value) return;
-  layoutBeforeFullscreen.value = layout.value;
-  setLayout('fullscreen');
-}
-
-function collapse() {
-  setLayout(layoutBeforeFullscreen.value === 'fullscreen' ? 'docked' : layoutBeforeFullscreen.value);
-}
-
+// Fullscreen's "return to" layout lives in the store, not here: the agent
+// drives expand/collapse too, and a memory held in this component would send a
+// floating panel back to the dock every time the agent expanded to read a page.
 function toggleExpanded() {
-  if (isFullscreen.value) collapse();
-  else expand();
+  toggleFullscreen();
 }
 
 function toggleFloating() {
-  if (isFloating.value) setLayout('docked');
-  else {
-    layoutBeforeFullscreen.value = 'floating';
-    setLayout('floating');
-  }
+  setLayout(isFloating.value ? 'docked' : 'floating');
 }
 
 /** Escape leaves fullscreen — the panel covers everything, including its own chrome. */
 function onKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape' && isFullscreen.value) {
     event.stopPropagation();
-    collapse();
+    collapseFullscreen();
   }
 }
 
