@@ -205,14 +205,31 @@ test.describe('phantom wallet', () => {
     await expect(page.getByRole('button', { name: /Continue with Phantom/i })).toBeVisible();
   });
 
-  test('says so when the extension is not installed', async ({ signedOut: page }) => {
+  test('opens the download page when the extension is not installed', async ({ signedOut: page }) => {
+    // Context-level so it also catches the pop-up, which is a separate Page and
+    // would otherwise escape this page's routes and hit the real phantom.app.
+    await page.context().route('https://phantom.app/**', (route) =>
+      route.fulfill({ status: 200, contentType: 'text/html', body: '<title>Phantom</title>' }),
+    );
+
     await gotoApp(page);
     await openLoginPanel(page);
-
     await page.getByRole('tab', { name: 'Web3' }).click();
-    await page.getByRole('button', { name: /Continue with Phantom/i }).click();
 
-    await expect(page.locator('.provider-error')).toContainText('Phantom was not detected');
+    const [popup] = await Promise.all([
+      page.waitForEvent('popup'),
+      page.getByRole('button', { name: /Continue with Phantom/i }).click(),
+    ]);
+
+    expect(popup.url()).toBe('https://phantom.app/download');
+    await popup.close();
+
+    // And the in-page fallback, for when a pop-up blocker wins.
+    await expect(page.locator('.provider-error')).toContainText('Phantom is not installed');
+    await expect(page.locator('.provider-install')).toHaveAttribute(
+      'href',
+      'https://phantom.app/download',
+    );
   });
 
   test('uses the Phantom-namespaced provider over a foreign window.solana', async ({ signedOut: page }) => {
