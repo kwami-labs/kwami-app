@@ -21,8 +21,9 @@
  *   `GainNode` crossfades are reproduced here as a rAF volume ramp.
  */
 
-import { ref, shallowRef, type Ref } from 'vue';
+import { ref, shallowRef, watch, type Ref } from 'vue';
 import type { KwamiAudio } from 'kwami';
+import { useKwami } from '@/composables/useKwami';
 import { pickFirstTrack, pickTrack, type Track } from '@/lib/soundtrack';
 
 /** Nexow's fade lengths, in milliseconds. */
@@ -305,4 +306,46 @@ export function unregisterWelcomeAudio(): void {
 
 export function useWelcomeSoundtrack(): SoundtrackController {
   return welcomeSoundtrack;
+}
+
+// --- The workspace instance -------------------------------------------------
+//
+// `MusicPlayer` sits in the audio panel, and `App.vue` mounts that panel behind
+// a `v-if`. A controller owned by the component therefore only existed while
+// the panel was open: closing it orphaned whatever was on — the track played
+// out, but nothing followed it, and reopening showed an empty deck. So the
+// workspace crate is module state for the same reason the welcome one is, and
+// anything outside the panel reaches it through here.
+
+const workspaceLevel = ref(DEFAULT_LEVEL);
+
+let workspaceSoundtrack: SoundtrackController | null = null;
+
+export interface WorkspaceSoundtrack {
+  soundtrack: SoundtrackController;
+  /** Playback volume, 0..1, shared by the crate and by a local file. */
+  level: Ref<number>;
+}
+
+/**
+ * The one workspace crate, built on first use.
+ *
+ * Built lazily rather than at import: `useKwami()` reaches for Pinia stores,
+ * and this module is imported before the app installs Pinia.
+ */
+export function useWorkspaceSoundtrack(): WorkspaceSoundtrack {
+  if (!workspaceSoundtrack) {
+    const { kwami } = useKwami();
+    const resolveAudio = () => kwami.value?.avatar.getAudio() ?? null;
+
+    workspaceSoundtrack = createSoundtrack(resolveAudio, { level: () => workspaceLevel.value });
+
+    // A volume change has to reach the element with the panel closed too.
+    watch(workspaceLevel, (next) => resolveAudio()?.setVolume(next));
+
+    // A new kwami is a new audio object: stop claiming the old one's record.
+    watch(kwami, () => workspaceSoundtrack?.release());
+  }
+
+  return { soundtrack: workspaceSoundtrack, level: workspaceLevel };
 }

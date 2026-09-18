@@ -2,7 +2,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useKwami } from '@/composables/useKwami';
-import { createSoundtrack } from '@/composables/useSoundtrack';
+import { useWorkspaceSoundtrack } from '@/composables/useSoundtrack';
 import { getBandLevels } from '@/utils/audioBands';
 import { hexToRgb } from '@/utils/color';
 
@@ -18,7 +18,6 @@ const isDraggingSeek = ref(false);
 const trackName = ref('');
 const currentTime = ref(0);
 const duration = ref(0);
-const volume = ref(0.8);
 const bass = ref(0);
 const mid = ref(0);
 const high = ref(0);
@@ -26,10 +25,9 @@ const errorMessage = ref('');
 
 // The same record crate the login screen plays, through this avatar's audio
 // object. A local file and a crate track share one element, so whichever was
-// asked for last owns it.
-const crate = createSoundtrack(() => kwami.value?.avatar.getAudio() ?? null, {
-  level: () => volume.value,
-});
+// asked for last owns it. The crate outlives this panel, so the player picks up
+// whatever is already on rather than starting its own.
+const { soundtrack: crate, level: volume } = useWorkspaceSoundtrack();
 const crateTrack = crate.currentTrack;
 
 let audioElement: HTMLAudioElement | null = null;
@@ -319,10 +317,6 @@ function onSeekEnd() {
   isDraggingSeek.value = false;
 }
 
-watch(volume, (nextVolume) => {
-  getAudio()?.setVolume(nextVolume);
-});
-
 watch(kwami, () => {
   bindAudioElement();
 }, { immediate: true });
@@ -401,7 +395,6 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  crate.dispose();
   removeAudioListeners();
 
   if (animationFrameId !== null) {
