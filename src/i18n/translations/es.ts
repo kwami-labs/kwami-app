@@ -1564,7 +1564,7 @@ export const es = {
     importTheme: 'Importar tema',
     chooseFile: 'Elegir archivo',
     orPasteJson: 'o pega JSON',
-    importJsonPlaceholder: '{"mode": "dark", ...}',
+    importJsonPlaceholder: `{'{'}"mode": "dark", ...{'}'}`,
     cancel: 'Cancelar',
     invalidThemeFormat: 'Formato de tema invalido',
     modeDark: 'Oscuro',

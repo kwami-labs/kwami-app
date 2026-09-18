@@ -1564,7 +1564,7 @@ export const en = {
     importTheme: 'Import Theme',
     chooseFile: 'Choose File',
     orPasteJson: 'or paste JSON',
-    importJsonPlaceholder: '{"mode": "dark", ...}',
+    importJsonPlaceholder: `{'{'}"mode": "dark", ...{'}'}`,
     cancel: 'Cancel',
     invalidThemeFormat: 'Invalid theme format',
     modeDark: 'Dark',
