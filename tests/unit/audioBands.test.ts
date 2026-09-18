@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getBandLevels, SILENCE } from '../../src/utils/audioBands';
+import { createBandEnvelope, getBandLevels, SILENCE } from '../../src/utils/audioBands';
 
 /** `length * 0.1` and `length * 0.4` put the splits at 10 and 40 of these. */
 function spectrum(fill: (index: number) => number, length = 100) {
@@ -55,5 +55,89 @@ describe('getBandLevels', () => {
     expect(levels.mid).toBe(1);
     expect(levels.high).toBe(0);
     expect(Number.isNaN(levels.high)).toBe(false);
+  });
+});
+
+describe('createBandEnvelope', () => {
+  const LOUD = { bass: 1, mid: 1, high: 1 };
+
+  it('starts at silence', () => {
+    expect(createBandEnvelope().follow(LOUD, 0)).toEqual(SILENCE);
+  });
+
+  it('approaches a rise without arriving in a single frame', () => {
+    const envelope = createBandEnvelope({ attackMs: 45, releaseMs: 320 });
+    const levels = envelope.follow(LOUD, 16);
+
+    expect(levels.bass).toBeGreaterThan(0);
+    expect(levels.bass).toBeLessThan(1);
+  });
+
+  it('covers about 63% of a rise in one attack time constant', () => {
+    const envelope = createBandEnvelope({ attackMs: 45, releaseMs: 320 });
+    expect(envelope.follow(LOUD, 45).bass).toBeCloseTo(1 - Math.exp(-1), 5);
+  });
+
+  it('falls slower than it rises, which is what reads as musical', () => {
+    const envelope = createBandEnvelope({ attackMs: 45, releaseMs: 320 });
+    const peak = envelope.follow(LOUD, 45).bass;
+    const afterSameGapOfSilence = envelope.follow(SILENCE, 45).bass;
+
+    const rose = peak;
+    const fell = peak - afterSameGapOfSilence;
+    expect(fell).toBeLessThan(rose);
+  });
+
+  it('holds still across a frame that took no time', () => {
+    const envelope = createBandEnvelope();
+    const before = envelope.follow(LOUD, 20).bass;
+    expect(envelope.follow(LOUD, 0).bass).toBe(before);
+  });
+
+  it('treats a negative delta as no time at all', () => {
+    const envelope = createBandEnvelope();
+    const before = envelope.follow(LOUD, 20).bass;
+    expect(envelope.follow(LOUD, -500).bass).toBe(before);
+  });
+
+  it('settles on the target rather than overshooting it after a long gap', () => {
+    // A backgrounded tab stops calling rAF; the frame that resumes it carries
+    // seconds of delta. The clamp caps that at a quarter second, so the
+    // envelope arrives all but exactly rather than literally — and, either
+    // way, never past the target.
+    const levels = createBandEnvelope().follow(LOUD, 30_000);
+    expect(levels.bass).toBeLessThanOrEqual(1);
+    expect(levels.bass).toBeGreaterThan(0.99);
+  });
+
+  it('caps a long gap, so a tab restored after a minute behaves like one after a second', () => {
+    const afterAMinute = createBandEnvelope().follow(LOUD, 60_000).bass;
+    const afterTheClamp = createBandEnvelope().follow(LOUD, 250).bass;
+
+    expect(afterAMinute).toBe(afterTheClamp);
+  });
+
+  it('does not hand back the state it is about to keep advancing', () => {
+    const envelope = createBandEnvelope();
+    const levels = envelope.follow(LOUD, 45);
+    levels.bass = 99;
+
+    expect(envelope.follow(LOUD, 0).bass).toBeLessThan(1);
+  });
+
+  it('drops back to silence on reset', () => {
+    const envelope = createBandEnvelope();
+    envelope.follow(LOUD, 1_000);
+    envelope.reset();
+
+    expect(envelope.follow(LOUD, 0)).toEqual(SILENCE);
+  });
+
+  it('keeps each band on its own envelope', () => {
+    const envelope = createBandEnvelope({ attackMs: 45, releaseMs: 320 });
+    const levels = envelope.follow({ bass: 1, mid: 0, high: 0.5 }, 45);
+
+    expect(levels.bass).toBeGreaterThan(levels.high);
+    expect(levels.mid).toBe(0);
   });
 });
