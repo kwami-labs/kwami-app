@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { defineAsyncComponent, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, defineAsyncComponent, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useToast } from 'vue-toastification';
 import { useKwami } from '@/composables/useKwami';
@@ -105,6 +105,17 @@ function stopDrag() {
 
 // Navigation: extension opens tab/split; no sidebar
 const navState = useNavigation();
+
+/**
+ * Whether the browser panel is taking part in the split.
+ *
+ * Only the docked layout does. Floating and fullscreen panels are fixed
+ * overlays, so reserving half the row for them squeezed the avatar into a
+ * sliver of the screen with nothing rendered beside it.
+ */
+const isSplitWithBrowser = computed(
+  () => navState.isActive.value && !!navState.liveUrl.value && navState.isDocked.value,
+);
 useWorkspaceAgentTools();
 
 // Sync per-kwami config: apply config when switching kwami, debounced save to DB
@@ -387,7 +398,7 @@ onUnmounted(() => {
       id="kwami-root" 
       class="root-layout"
       :class="{
-        'split-layout': navState.isActive.value && !!navState.liveUrl.value,
+        'split-layout': isSplitWithBrowser,
         'sidebar-right': themeStore.sidebarPosition === 'right',
         'is-dragging': isDraggingSplitter
       }"
@@ -395,7 +406,7 @@ onUnmounted(() => {
       <!-- Main area: canvas + overlays (no nav sidebar) -->
       <div 
         class="main-area"
-        :style="navState.isActive.value && !!navState.liveUrl.value ? { flex: `0 0 ${splitRatio}%` } : {}"
+        :style="isSplitWithBrowser ? { flex: `0 0 ${splitRatio}%` } : {}"
       >
         <canvas id="kwami-canvas" ref="canvasRef"></canvas>
 
@@ -413,7 +424,7 @@ onUnmounted(() => {
       </div>
 
       <div 
-        v-if="navState.isActive.value && !!navState.liveUrl.value" 
+        v-if="isSplitWithBrowser" 
         class="layout-splitter" 
         @mousedown="startDrag"
       >

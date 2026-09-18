@@ -5,8 +5,22 @@ let navigationListenerAttached = false;
 
 export function useNavigation() {
   const store = useNavigationStore();
-  const { isActive, currentUrl, currentTitle, isLoading, liveUrl, hasNavigation } =
-    storeToRefs(store);
+  const {
+    isActive,
+    currentUrl,
+    currentTitle,
+    isLoading,
+    liveUrl,
+    vendor,
+    isPersistent,
+    hasNavigation,
+    layout,
+    floatingRect,
+    isManipulating,
+    isDocked,
+    isFloating,
+    isFullscreen,
+  } = storeToRefs(store);
 
   if (!navigationListenerAttached) {
     navigationListenerAttached = true;
@@ -20,6 +34,8 @@ export function useNavigation() {
         liveUrl?: string;
         url?: string;
         title?: string;
+        vendor?: string;
+        persistent?: boolean;
       };
       if (!detail?.action) return;
 
@@ -29,6 +45,8 @@ export function useNavigation() {
             url: detail.url || '',
             title: detail.title || '',
             liveUrl: detail.liveUrl || '',
+            vendor: detail.vendor,
+            persistent: detail.persistent,
             isLoading: false,
           });
           // Force isActive to true even if url is empty
@@ -130,7 +148,30 @@ export function useNavigation() {
     currentTitle,
     isLoading,
     liveUrl,
+    vendor,
+    isPersistent,
     hasNavigation,
+
+    // Panel layout. Exposed here rather than reached for through the store so
+    // the agent's client tools and the panel's own chrome drive exactly the
+    // same code path -- "make the browser fullscreen" by voice and clicking
+    // the expand button must not be two different behaviours.
+    layout,
+    floatingRect,
+    isManipulating,
+    isDocked,
+    isFloating,
+    isFullscreen,
+    setLayout: store.setLayout,
+    toggleFullscreen: store.toggleFullscreen,
+    moveTo: store.moveTo,
+    resizeTo: store.resizeTo,
+    setRect: store.setRect,
+    syncToViewport: store.syncToViewport,
+    centerPanel: store.centerPanel,
+    resetLayout: store.resetLayout,
+    setManipulating: store.setManipulating,
+
     end: store.end,
     requestBrowserClose,
   };
