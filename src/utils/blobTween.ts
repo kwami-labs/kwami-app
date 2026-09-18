@@ -113,3 +113,91 @@ export function blendShape(live: BlobShape, from: BlobShape, to: BlobShape, t: n
     live.channels[i] = lerp(from.channels[i] ?? 0, to.channels[i] ?? 0, t);
   }
 }
+
+/**
+ * How far one tick is allowed to move each parameter, as a fraction of its
+ * range.
+ *
+ * `randomShape` picks uniformly across the whole range, which is right for the
+ * first shape and wrong for every one after it: at the 1s default the blob was
+ * being handed a destination with no relationship to where it was, so the
+ * fastest thing on screen was the randomiser rather than the music. `time`
+ * was the worst of them — a re-roll could change how fast the surface noise
+ * scrolls by sixteen times, which reads as the blob boiling.
+ *
+ * Small enough that a tick is a drift rather than a replacement, large enough
+ * that a minute of watching does not land where it started.
+ */
+const DRIFT_FRACTIONS = {
+  spikes: 0.1,
+  amplitude: 0.12,
+  /** Tightest of the four: this one sets the speed of everything else. */
+  time: 0.06,
+  shininess: 0.16,
+} as const;
+
+/** And for colour, in 0–255 channels rather than a fraction of anything. */
+const CHANNEL_DRIFT = 26;
+
+/**
+ * Fold a value back inside `[min, max]` instead of clamping it there.
+ *
+ * Clamping makes a random walk stick to the ends: once a parameter reaches the
+ * top of its range, half of every subsequent roll is discarded and it sits
+ * there. Reflecting turns the same roll around, so the walk stays live.
+ */
+function reflect(value: number, min: number, max: number): number {
+  if (!(max > min)) return min;
+
+  let folded = value;
+  // A drift step is a fraction of the span, so one fold is always enough — the
+  // loop is a guard against a caller that passed something wilder, not a
+  // general-purpose reducer.
+  for (let guard = 0; guard < 4 && (folded < min || folded > max); guard += 1) {
+    if (folded < min) folded = min + (min - folded);
+    else folded = max - (folded - max);
+  }
+  return Math.max(min, Math.min(max, folded));
+}
+
+function drift(
+  value: number,
+  range: readonly [number, number],
+  fraction: number,
+  random: () => number,
+): number {
+  const span = (range[1] - range[0]) * fraction;
+  return reflect(value + (random() * 2 - 1) * span, range[0], range[1]);
+}
+
+/**
+ * The next destination, a bounded step from the shape the blob is already on.
+ *
+ * Every parameter stays inside the same range `randomShape` draws from, so the
+ * two are interchangeable as tween endpoints — this one just refuses to cross
+ * the range in a single tick.
+ *
+ * @param from - Where the blob is now. Not mutated.
+ * @param random - Injected so tests can pin the roll.
+ */
+export function driftShape(from: BlobShape, random: () => number = Math.random): BlobShape {
+  const triple = (
+    values: readonly [number, number, number],
+    range: readonly [number, number],
+    fraction: number,
+  ): [number, number, number] => [
+    drift(values[0], range, fraction, random),
+    drift(values[1], range, fraction, random),
+    drift(values[2], range, fraction, random),
+  ];
+
+  return {
+    spikes: triple(from.spikes, SPIKE_RANGE, DRIFT_FRACTIONS.spikes),
+    amplitude: triple(from.amplitude, AMPLITUDE_RANGE, DRIFT_FRACTIONS.amplitude),
+    time: triple(from.time, TIME_RANGE, DRIFT_FRACTIONS.time),
+    shininess: drift(from.shininess, SHININESS_RANGE, DRIFT_FRACTIONS.shininess, random),
+    channels: from.channels.map((channel) =>
+      reflect(channel + (random() * 2 - 1) * CHANNEL_DRIFT, 0, 255),
+    ),
+  };
+}

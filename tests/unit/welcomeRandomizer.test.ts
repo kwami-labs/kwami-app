@@ -6,7 +6,7 @@
  * see one value. The button's face is the contract the user reads, so it is
  * asserted as rendered text, not as the ref behind it.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import SoundtrackPill from '@/components/auth/SoundtrackPill.vue';
 import { RANDOMIZE_INTERVALS_MS, useWelcomeRandomizer } from '@/composables/useWelcomeRandomizer';
@@ -32,8 +32,39 @@ vi.mock('@/composables/useSoundtrack', async (importOriginal) => {
 
 const rateButton = (wrapper: ReturnType<typeof mount>) => wrapper.get('.pill-btn--rate');
 
+/**
+ * Mount through here so nothing is left standing.
+ *
+ * Nothing in `tests/` calls `enableAutoUnmount`, so a wrapper that is never
+ * unmounted stays live for the rest of the file — and every one of these is
+ * subscribed to the `useWelcomeRandomizer` singleton, so leaked pills go on
+ * reacting to rate changes in later tests.
+ */
+const mounted: { unmount: () => void }[] = [];
+
+function mountPill() {
+  const wrapper = mount(SoundtrackPill);
+  mounted.push(wrapper);
+  return wrapper;
+}
+
 beforeEach(() => {
   // Module state: put it back on the default between tests.
+  useWelcomeRandomizer().intervalMs.value = RANDOMIZE_INTERVALS_MS[0];
+});
+
+/**
+ * Restoring on the way out, not just on the way in.
+ *
+ * `useWelcomeRandomizer` is a genuine app singleton, not a per-test double, so
+ * a `beforeEach` alone only protects this file from its neighbours — it leaves
+ * the rate wherever the last test put it for whatever runs next. That is
+ * harmless while vitest isolates module state per file, but vitest prints
+ * `isolate: false` as a performance suggestion in its own output on every run,
+ * and the day someone takes it this file would quietly re-time other people's.
+ */
+afterEach(() => {
+  while (mounted.length) mounted.pop()?.unmount();
   useWelcomeRandomizer().intervalMs.value = RANDOMIZE_INTERVALS_MS[0];
 });
 
@@ -44,11 +75,11 @@ describe('the randomize rate', () => {
 
   it('starts at one second', () => {
     expect(useWelcomeRandomizer().intervalMs.value).toBe(1_000);
-    expect(rateButton(mount(SoundtrackPill)).text()).toBe('1s');
+    expect(rateButton(mountPill()).text()).toBe('1s');
   });
 
   it('steps through every rate and wraps back to the fastest', async () => {
-    const wrapper = mount(SoundtrackPill);
+    const wrapper = mountPill();
     const seen: string[] = [rateButton(wrapper).text()];
 
     for (let i = 0; i < RANDOMIZE_INTERVALS_MS.length; i += 1) {
@@ -60,7 +91,7 @@ describe('the randomize rate', () => {
   });
 
   it('shows the blob and the button one value, not a copy each', async () => {
-    const wrapper = mount(SoundtrackPill);
+    const wrapper = mountPill();
     // Whoever else asks — `WelcomeBlob` does exactly this — sees the click.
     const elsewhere = useWelcomeRandomizer();
 
@@ -71,7 +102,7 @@ describe('the randomize rate', () => {
   });
 
   it('names the current rate for screen readers', async () => {
-    const wrapper = mount(SoundtrackPill);
+    const wrapper = mountPill();
 
     expect(rateButton(wrapper).attributes('aria-label')).toContain('1s');
     await rateButton(wrapper).trigger('click');

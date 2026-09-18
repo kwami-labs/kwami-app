@@ -64,11 +64,46 @@ vi.mock('kwami', () => ({
 const mounted: { unmount: () => void }[] = [];
 
 /** Mount, then run out the `await`s in `onMounted` before the first tick. */
+/**
+ * Mount, then put the fake clock in the same place on every run.
+ *
+ * `onMounted` does two kinds of waiting, and the bug was mixing them. It sleeps
+ * on a 10ms timer (`WelcomeBlob.vue`), which only fake time crosses, and it
+ * awaits two real dynamic `import()`s, which no amount of fake time helps
+ * because they are real I/O. The earlier helper waited for both by advancing
+ * 20ms of fake time per iteration until the component armed — so the fake clock
+ * moved by `iterations x 20`, and `iterations` was set by how busy the machine
+ * was. Measurement then began at a different fake timestamp every run, which is
+ * fatal to files asserting on per-frame step sizes.
+ *
+ * So the two waits are separated: a fixed advance for the timer, then yields
+ * that cost no fake time at all for the imports, then a fixed settle. Total
+ * fake time here is a constant, on a quiet machine and under 36 parallel files
+ * alike. (`performance.now()` is not the culprit and was measured out: vitest
+ * fakes it, and it advances exactly with the fake clock.)
+ */
 async function mountBlob() {
+  const before = avatar.switchRenderer.mock.calls.length;
   const WelcomeBlob = (await import('@/components/auth/WelcomeBlob.vue')).default;
   const wrapper = mount(WelcomeBlob, { attachTo: document.body });
   mounted.push(wrapper);
-  await vi.advanceTimersByTimeAsync(50);
+
+  // Cross the 10ms sleep. Fixed.
+  await vi.advanceTimersByTimeAsync(10);
+
+  // Let the dynamic imports land. Each yield turns the real event loop and
+  // advances the fake clock by zero, so a slow machine costs wall time here
+  // and nothing else.
+  for (let i = 0; i < 500; i += 1) {
+    if (avatar.switchRenderer.mock.calls.length > before) break;
+    await vi.advanceTimersByTimeAsync(0);
+  }
+  if (avatar.switchRenderer.mock.calls.length === before) {
+    throw new Error('WelcomeBlob never armed its randomize loop');
+  }
+
+  // Settle the first frame. Fixed.
+  await vi.advanceTimersByTimeAsync(64);
   return wrapper;
 }
 
@@ -83,6 +118,10 @@ afterEach(async () => {
   while (mounted.length) mounted.pop()?.unmount();
   await vi.advanceTimersByTimeAsync(0);
   vi.useRealTimers();
+  // The rate is a real app singleton: hand it back on the default rather than
+  // leaving it wherever the last test put it. Harmless under per-file module
+  // isolation, a landmine the day anyone takes vitest's `isolate: false` hint.
+  useWelcomeRandomizer().intervalMs.value = RANDOMIZE_INTERVALS_MS[0];
 });
 
 describe('the welcome blob timer', () => {

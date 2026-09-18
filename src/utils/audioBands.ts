@@ -93,8 +93,15 @@ const DEFAULT_RELEASE_MS = 320;
  */
 const MAX_DELTA_MS = 250;
 
-/** Fraction of the way to the target that `ms` at time constant `tau` covers. */
-function coefficient(ms: number, tau: number): number {
+/**
+ * Fraction of the way to the target that `ms` at time constant `tau` covers.
+ *
+ * Exported because every envelope in the app has to be framed the same way:
+ * derived from the frame's own delta rather than assumed to be 1/60s, or the
+ * avatar reacts differently on a 120 Hz display than on a 60 Hz one.
+ * `musicPulse.ts` runs its own envelopes and uses this.
+ */
+export function envelopeCoefficient(ms: number, tau: number): number {
   if (tau <= 0) return 1;
   return 1 - Math.exp(-ms / tau);
 }
@@ -113,7 +120,7 @@ export function createBandEnvelope(options: BandEnvelopeOptions = {}): BandEnvel
 
   function step(value: number, target: number, ms: number): number {
     const tau = target > value ? attackMs : releaseMs;
-    return value + (target - value) * coefficient(ms, tau);
+    return value + (target - value) * envelopeCoefficient(ms, tau);
   }
 
   return {
