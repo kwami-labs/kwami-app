@@ -10,6 +10,14 @@ import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useWelcomeSoundtrack } from '@/composables/useSoundtrack';
 
+/**
+ * `loginOpen` collapses the pill to its play button. The login panel grew an
+ * email form, and at small viewport sizes the expanded pill runs underneath it
+ * — still clickable, since the pill sits above, but sitting over the form is
+ * not what a background soundtrack control should be doing.
+ */
+const props = withDefaults(defineProps<{ loginOpen?: boolean }>(), { loginOpen: false });
+
 const { t } = useI18n();
 const { currentTrack, isPlaying, toggle, next } = useWelcomeSoundtrack();
 
@@ -19,7 +27,13 @@ const toggleLabel = computed(() =>
 </script>
 
 <template>
-  <div class="soundtrack-pill" :class="{ 'soundtrack-pill--open': currentTrack !== null }">
+  <div
+    class="soundtrack-pill"
+    :class="{
+      'soundtrack-pill--open': currentTrack !== null,
+      'soundtrack-pill--compact': props.loginOpen,
+    }"
+  >
     <button
       class="pill-btn pill-btn--main"
       type="button"
@@ -192,12 +206,19 @@ const toggleLabel = computed(() =>
 }
 
 /* Narrow screens: keep the transport, drop the credit line, so the pill never
-   crowds the hero wordmark. */
+   crowds the hero wordmark. Same treatment while the login panel is open, which
+   is when the screen has the least room to spare. */
 @media (max-width: 600px) {
   .pill-track,
   .pill-btn--credit {
     display: none;
   }
+}
+
+.soundtrack-pill--compact .pill-track,
+.soundtrack-pill--compact .pill-btn--credit,
+.soundtrack-pill--compact .pill-btn:not(.pill-btn--main) {
+  display: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

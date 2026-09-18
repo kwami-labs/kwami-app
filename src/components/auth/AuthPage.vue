@@ -21,7 +21,7 @@ const loginOpen = ref(false);
 
     <LoginButton v-model:open="loginOpen" />
 
-    <SoundtrackPill />
+    <SoundtrackPill :login-open="loginOpen" />
 
     <div class="blob-zone">
       <WelcomeBlob />
