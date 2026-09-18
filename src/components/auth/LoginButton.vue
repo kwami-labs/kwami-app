@@ -265,7 +265,7 @@ onUnmounted(() => {
   height: calc(100% - 8px);
   border-radius: 999px;
   background: var(--auth-tab-indicator);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  box-shadow: var(--auth-tab-indicator-shadow);
   transform: translateX(calc(var(--tab-index) * 100%));
   transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -285,10 +285,8 @@ onUnmounted(() => {
   transition: color 220ms ease;
 }
 
-/* Literal white, not an --auth-* token: this text sits on the indicator, which
-   --auth-tab-indicator keeps dark enough to carry white in either theme. */
 .tab-btn--active {
-  color: rgba(248, 252, 255, 1);
+  color: var(--auth-text);
 }
 
 .provider-group {
