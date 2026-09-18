@@ -12,6 +12,7 @@ import TheSidebar from '@/components/sidebar/TheSidebar.vue';
 import ControlBar from '@/components/controls/ControlBar.vue';
 import EnergyBadge from '@/components/energy/EnergyBadge.vue';
 import SearchOrbitCards from '@/components/search/SearchOrbitCards.vue';
+import SearchPanel from '@/components/search/SearchPanel.vue';
 import SidebarModeSwitch from '@/components/sidebar/SidebarModeSwitch.vue';
 import BrowserPanel from '@/components/panels/BrowserPanel.vue';
 
@@ -412,8 +413,11 @@ onUnmounted(() => {
 
         <!-- UI controls only shown when authenticated and welcome complete -->
         <template v-if="authStore.isAuthenticated">
-          <!-- Search results as orbit cards around the Kwami (blob) -->
+          <!-- Search results. Two presentations of the same store: the orbit
+               cards around the Kwami, or a draggable window. Each hides
+               itself when the other is the current layout. -->
           <SearchOrbitCards />
+          <SearchPanel />
           <!-- Control Bar (top-right of main area; moves with canvas when nav opens) -->
           <div class="control-bar-container">
             <EnergyBadge />

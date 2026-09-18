@@ -140,7 +140,12 @@ onUnmounted(() => {
 
 <template>
   <div
-    v-if="searchStore.hasSearchData && !searchStore.error && results.length > 0"
+    v-if="
+      searchStore.hasSearchData &&
+      !searchStore.error &&
+      results.length > 0 &&
+      !searchStore.isWindowed
+    "
     ref="containerRef"
     class="deck-container"
     aria-label="Web search results"
