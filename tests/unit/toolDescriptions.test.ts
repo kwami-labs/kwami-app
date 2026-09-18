@@ -61,12 +61,19 @@ describe.each(Object.keys(bundles))('%s tool descriptions', (locale) => {
   const keys = toolDescriptionKeys(bundle);
 
   it('finds descriptions in every section, not just one', () => {
-    // The guard on the guard: if the filter ever stops matching, the
-    // assertions below would pass over an empty list and prove nothing.
+    // The guard on the guard: if the filter ever stops matching, every
+    // assertion below would pass over an empty list and prove nothing.
     expect(keys.length).toBeGreaterThan(30);
-    const sections = new Set(keys.map((key) => key.split('.')[0]));
-    expect([...sections].sort()).toEqual(
-      ['appLocale', 'comms', 'searchPanel', 'workspaceAgentTools'].sort(),
+
+    // `arrayContaining`, not equality. A section disappearing means the
+    // filter broke and must fail; a section being ADDED is a new locale
+    // bundle that should simply be covered, not a test to go and edit. The
+    // earlier version asserted the exact set, so the next bundle would have
+    // failed here with "arrays are not equal" and told its author nothing
+    // about what to do.
+    const sections = [...new Set(keys.map((key) => key.split('.')[0]))];
+    expect(sections).toEqual(
+      expect.arrayContaining(['appLocale', 'comms', 'searchPanel', 'workspaceAgentTools']),
     );
   });
 

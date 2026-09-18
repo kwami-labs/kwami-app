@@ -14,9 +14,17 @@
  *
  * The silent one is the dangerous half and it is what the second test below
  * exists for. A bare pipe makes the message a plural, and rendering it without
- * a count returns one arbitrary branch — not the first: the three-branch case
- * above yields the *middle* one. Nothing throws, nothing warns, and the string
- * is simply shorter than it was written.
+ * a count resolves as n=1 — which is a *different branch* depending on how
+ * many you wrote:
+ *
+ *     "one | two"                -> "one"     (index 0)
+ *     "one | two | three"        -> "two"     (index 1)
+ *     "one | two | three | four" -> "two"     (index 1)
+ *
+ * So there is no single fragment position to look for when diagnosing this:
+ * two pipes leave you a middle fragment, one pipe leaves you a head fragment.
+ * Nothing throws, nothing warns, and the string is simply shorter than it was
+ * written.
  *
  * That matters more here than in most apps, because these strings are not only
  * UI labels: every `toolDesc*` is a tool description handed to the model. A
@@ -26,8 +34,10 @@
  *
  * Compilation is lazy, so this walks every leaf and renders it.
  *
- * Credit to kwami-app-53, who found the silent case and proved it by shrinking
- * a real description from 329 characters to 8 with the whole suite still green.
+ * Credit to kwami-app-53, who found the silent case, proved it by shrinking a
+ * real description from 329 characters to 8 with the whole suite still green,
+ * and then measured the branch-index table above when two of us had each
+ * over-generalised from a single probe.
  * Their `toolDescriptions.test.ts` catches truncation from any cause by
  * comparing rendered against raw length; this file catches the syntax itself,
  * across every message rather than only descriptions. Both are worth having.
@@ -102,6 +112,16 @@ describe.each(Object.keys(bundles))('%s messages', (locale) => {
     // four bundles, and a filter naming one of them passes vacuously over the
     // rest the moment a fifth appears.
     const toolDescriptions = keys.filter((key) => /(^|\.)toolDesc[A-Z]/.test(key));
+
+    // A bare count passes vacuously: workspaceAgentTools alone carries 37, so
+    // the filter could silently stop matching the other three bundles and
+    // still clear any threshold worth setting. Assert the sections instead --
+    // `arrayContaining`, so a bundle disappearing fails while a new one is
+    // picked up for free, which is the point of matching any `toolDesc*` leaf.
+    const sections = [...new Set(toolDescriptions.map((key) => key.split('.')[0]))];
+    expect(sections).toEqual(
+      expect.arrayContaining(['appLocale', 'comms', 'searchPanel', 'workspaceAgentTools']),
+    );
     expect(toolDescriptions.length).toBeGreaterThan(20);
 
     for (const key of toolDescriptions) {
