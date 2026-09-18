@@ -18,6 +18,9 @@ This is the **Kwami App** client (`0.1.0`). There are no published tags yet; ent
 - Configurable OAuth and wallet sign-in via `VITE_AUTH_PROVIDERS`
 - PWA install icons and an Account-panel download flow
 - Particles-face renderer in the Avatar panel
+- A soundtrack on the login screen: a play/pause pill over the welcome kwami,
+  which moves to the music through the SDK's audio analyser. The same crate is
+  playable from Settings -> Audio
 - Memory Pinia store talking to `/memory/*` through the shared client
 - Single source of truth for panel order (`src/constants/panels.ts`)
 - CI workflow: typecheck, lint, format, unit coverage, production build, Playwright

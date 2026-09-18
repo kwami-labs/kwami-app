@@ -780,6 +780,11 @@ export const es = {
     stopTrack: 'Detener',
     progress: 'Progreso',
     volume: 'Volumen',
+    nowPlaying: 'Sonando ahora',
+    nextTrack: 'Poner otra cancion',
+    openOnYoutube: 'Abrir en YouTube',
+    playCrate: 'Reproducir de la coleccion',
+    helperCrate: 'Reproduciendo de la coleccion. Tu avatar sigue el ritmo.',
   },
   sttModelCard: {
     price: 'Precio',

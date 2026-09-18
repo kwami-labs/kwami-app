@@ -780,6 +780,11 @@ export const en = {
     stopTrack: 'Stop track',
     progress: 'Progress',
     volume: 'Volume',
+    nowPlaying: 'Now playing',
+    nextTrack: 'Play a different song',
+    openOnYoutube: 'Open on YouTube',
+    playCrate: 'Play from the soundtrack',
+    helperCrate: 'Playing from the soundtrack. Your avatar is riding the beat.',
   },
   sttModelCard: {
     price: 'Price',

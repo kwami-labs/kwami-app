@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import WelcomeBlob from './WelcomeBlob.vue';
 import LoginButton from './LoginButton.vue';
+import SoundtrackPill from './SoundtrackPill.vue';
 
 const { t } = useI18n();
 const loginOpen = ref(false);
@@ -19,6 +20,8 @@ const loginOpen = ref(false);
     <p class="title-sub" :class="{ 'title-sub--hidden': loginOpen }">THE AI THAT FEELS ALIVE</p>
 
     <LoginButton v-model:open="loginOpen" />
+
+    <SoundtrackPill />
 
     <div class="blob-zone">
       <WelcomeBlob />

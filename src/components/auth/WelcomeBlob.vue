@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, shallowRef } from 'vue';
 import type { Kwami, KwamiConfig } from 'kwami';
+import { registerWelcomeAudio, unregisterWelcomeAudio } from '@/composables/useSoundtrack';
+import { getBandLevels } from '@/utils/audioBands';
 
 const RANDOMIZE_INTERVAL_MS = 2_000;
 const WELCOME_RENDERER_WEIGHTS = {
@@ -83,8 +85,30 @@ onMounted(async () => {
   const kwami = new Kwami(canvas, kwamiConfig);
   kwamiRef.value = kwami;
 
-  const heroScale = window.innerWidth <= 768 ? 3.2 : 3.5;
-  kwami.avatar.setScale(heroScale);
+  // `SoundtrackPill` drives this kwami's own audio object. Routing music
+  // through it is what makes the avatar move: `KwamiAudio` runs the element
+  // through a Web Audio analyser, and `BlobXyz` reads that analyser every
+  // frame off its `audioEffects`, which default to enabled. Note there is no
+  // `audio.files` in `kwamiConfig` on purpose — the SDK would preload the
+  // first track on every page view, before anyone pressed play.
+  registerWelcomeAudio(kwami.avatar.getAudio());
+
+  const isNarrow = window.innerWidth <= 768;
+  const blobHeroScale = isNarrow ? 3.2 : 3.5;
+  // Eye default in the SDK is 5; keep the blob as-is and shrink only the iris.
+  const eyeHeroScale = isNarrow ? 3.9 : 4.2;
+
+  const applyHeroScale = (renderer: WelcomeRenderer) => {
+    try {
+      if (renderer === 'eye-iris') {
+        kwami.avatar.getEyeIris()?.setScale(eyeHeroScale);
+      } else {
+        kwami.avatar.setScale(blobHeroScale);
+      }
+    } catch {}
+  };
+
+  applyHeroScale('blob-xyz');
 
   const blob = kwami.avatar.getBlob();
   const blobMesh = blob?.getMesh();
@@ -132,10 +156,22 @@ onMounted(async () => {
       }
 
       const eye = (kwami.avatar as unknown as {
-        getEyeIris?: () => { getMesh: () => { rotation: { x: number; y: number } } } | null;
+        getEyeIris?: () => {
+          getMesh: () => { rotation: { x: number; y: number } };
+          setAudioLevels?: (bass: number, mid: number, high: number) => void;
+        } | null;
       }).getEyeIris?.();
       if (eye) {
         const eyeMesh = eye.getMesh();
+
+        // blob-xyz reads the shared analyser inside the SDK. eye-iris does not,
+        // so the music's levels have to be pushed at it once a frame, the way
+        // `MusicPlayer.vue` does for the renderers that are not the blob.
+        const audio = kwami.avatar.getAudio();
+        if (!audio.getAudioElement().paused) {
+          const { bass, mid, high } = getBandLevels(audio.getFrequencyData());
+          eye.setAudioLevels?.(bass, mid, high);
+        }
         if (eyeBasePupilRadius == null) {
           const base = (eye as unknown as { getConfig?: () => { geometry?: { pupilRadius?: number } } }).getConfig?.()?.geometry?.pupilRadius;
           eyeBasePupilRadius = typeof base === 'number' ? base : 0.26;
@@ -159,6 +195,12 @@ onMounted(async () => {
     animate();
 
     const proxyClickToCanvas = (event: MouseEvent) => {
+      // The forwarded event bubbles, so it reaches this same window listener
+      // again; without this guard every click on the screen recursed until the
+      // stack blew (RangeError). A click that is already on the canvas needs no
+      // forwarding either — the SDK's own handler has it.
+      if (event.target === canvas) return;
+
       const forwarded = new MouseEvent('click', {
         bubbles: true,
         cancelable: true,
@@ -227,6 +269,8 @@ onMounted(async () => {
         try { kwami.avatar.randomize(); } catch {}
       }
 
+      applyHeroScale(nextRenderer);
+
       if (nextRenderer !== 'eye-iris') {
         pointerTargetX = 0;
         pointerTargetY = 0;
@@ -249,6 +293,7 @@ onUnmounted(async () => {
   if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
   if (removeClickProxyHandler) { removeClickProxyHandler(); removeClickProxyHandler = null; }
   if (removePointerMoveHandler) { removePointerMoveHandler(); removePointerMoveHandler = null; }
+  unregisterWelcomeAudio();
   const k = kwamiRef.value;
   if (k) { await k.dispose(); kwamiRef.value = null; }
 });
