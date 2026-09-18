@@ -29,6 +29,32 @@ const ALL_SUBTYPES = [
 type Subtype = typeof ALL_SUBTYPES[number];
 type WelcomeRenderer = 'blob-xyz' | 'eye-iris';
 
+type EyeColorPalette = {
+  base: string;
+  secondary: string;
+  accent: string;
+  limbal: string;
+  collarette: string;
+  crypt: string;
+  streak: string;
+};
+
+/** SDK palettes are mostly brown. These cover the hues the welcome eye should cycle through. */
+const EYE_COLOR_PALETTES: readonly EyeColorPalette[] = [
+  { base: '#3d6ea8', secondary: '#6ea3d4', accent: '#c8e4ff', limbal: '#122033', collarette: '#8aa8c4', crypt: '#0c1624', streak: '#e8f4ff' },
+  { base: '#1e4d8c', secondary: '#3d7cc9', accent: '#7eb6f0', limbal: '#0a1a30', collarette: '#4a6fa0', crypt: '#07101c', streak: '#b8d8f8' },
+  { base: '#1f7a78', secondary: '#3dbeb4', accent: '#8ef0d8', limbal: '#0d3332', collarette: '#3a9a90', crypt: '#082422', streak: '#c4fff0' },
+  { base: '#2d6b3a', secondary: '#4fa05a', accent: '#9de07a', limbal: '#122814', collarette: '#3d7a44', crypt: '#0a180c', streak: '#c8f0a8' },
+  { base: '#2f8f84', secondary: '#4ac1aa', accent: '#a1e75c', limbal: '#12483e', collarette: '#3ea892', crypt: '#0d3129', streak: '#9fe5b2' },
+  { base: '#5a3d8c', secondary: '#8a64c4', accent: '#c9a4f0', limbal: '#1c1230', collarette: '#7a5aa0', crypt: '#100a1c', streak: '#e8d4ff' },
+  { base: '#6b2d7a', secondary: '#a04eb8', accent: '#e0a0f0', limbal: '#241028', collarette: '#8a4a98', crypt: '#160818', streak: '#f4d0ff' },
+  { base: '#5a6570', secondary: '#8a96a0', accent: '#c8d0d6', limbal: '#1c2228', collarette: '#6e7880', crypt: '#101418', streak: '#e4e8ec' },
+  { base: '#4a5560', secondary: '#708090', accent: '#b0c0cc', limbal: '#161c22', collarette: '#5a6874', crypt: '#0c1014', streak: '#d4dde4' },
+  { base: '#5f7692', secondary: '#9bb6cc', accent: '#dceaf7', limbal: '#1a2533', collarette: '#9a8673', crypt: '#132338', streak: '#e8f3ff' },
+  { base: '#8f4b24', secondary: '#b06a34', accent: '#e2a24d', limbal: '#3b1d10', collarette: '#a35a2c', crypt: '#2a160d', streak: '#f0b265' },
+  { base: '#6b4b23', secondary: '#a37229', accent: '#d0a73c', limbal: '#2b190a', collarette: '#845223', crypt: '#1d1208', streak: '#d6b45b' },
+] as const;
+
 function rand(min: number, max: number) {
   return min + Math.random() * (max - min);
 }
@@ -47,6 +73,18 @@ function pickRendererByProbability(): WelcomeRenderer {
   const roll = Math.random() * totalWeight;
   if (roll < WELCOME_RENDERER_WEIGHTS.blobXyz) return 'blob-xyz';
   return 'eye-iris';
+}
+
+function pickEyeColors(previous: EyeColorPalette | null): EyeColorPalette {
+  let next = EYE_COLOR_PALETTES[Math.floor(Math.random() * EYE_COLOR_PALETTES.length)]!;
+  if (previous && EYE_COLOR_PALETTES.length > 1) {
+    let guard = 0;
+    while (next.base === previous.base && guard < 8) {
+      next = EYE_COLOR_PALETTES[Math.floor(Math.random() * EYE_COLOR_PALETTES.length)]!;
+      guard += 1;
+    }
+  }
+  return next;
 }
 
 onMounted(async () => {
@@ -134,6 +172,7 @@ onMounted(async () => {
     let pupilMotionCurrent = 0;
     let eyeBasePupilRadius: number | null = null;
     let lastBlobSubtype: Subtype | null = null;
+    let lastEyePalette: EyeColorPalette | null = null;
     const eyeFollowRange = 0.35;
     const eyeFollowSmoothing = 0.1;
     const pupilMaxBoost = 0.18;
@@ -267,6 +306,11 @@ onMounted(async () => {
         }
       } else {
         try { kwami.avatar.randomize(); } catch {}
+        const eye = kwami.avatar.getEyeIris();
+        if (eye) {
+          lastEyePalette = pickEyeColors(lastEyePalette);
+          try { eye.setColors(lastEyePalette); } catch {}
+        }
       }
 
       applyHeroScale(nextRenderer);
