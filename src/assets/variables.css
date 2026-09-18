@@ -136,6 +136,10 @@
   --auth-field-text: rgba(250, 253, 255, 0.99);
   --auth-tab-bg: rgba(7, 11, 20, 0.5);
   --auth-tab-border: rgba(255, 255, 255, 0.16);
+  /* The active tab's label is white in both themes, so the indicator has to
+     stay dark enough underneath it. Over a near-black shell these alphas are
+     already vivid; over a light one they wash out, hence the opaque variant. */
+  --auth-tab-indicator: linear-gradient(125deg, rgba(53, 158, 238, 0.52), rgba(3, 206, 164, 0.36));
 
   /* Phantom is the one provider button carrying a fill of its own, so the
      wallet route reads as a first-class choice rather than a footnote. */
@@ -199,6 +203,7 @@
   --auth-field-text: rgba(12, 16, 34, 0.96);
   --auth-tab-bg: rgba(16, 24, 48, 0.06);
   --auth-tab-border: rgba(16, 24, 48, 0.12);
+  --auth-tab-indicator: linear-gradient(125deg, rgb(33, 114, 188), rgb(3, 138, 112));
 
   /* The fill stays: it carries white text at >4.5:1 on either page, and going
      pale here would cost the button the emphasis it exists for. Only the
