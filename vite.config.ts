@@ -60,6 +60,15 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,mp3}'],
+        // The 55 tour tracks under `public/audio/tour` are ~380 MB together,
+        // and precaching is install-time and all-or-nothing: including them
+        // would make every visitor pull the whole crate down before the app
+        // worked offline, and since vite-plugin-pwa 0.20.2 it simply fails the
+        // build on the 2 MiB per-file ceiling. The crate is loaded lazily, one
+        // record at a time, so it belongs in the runtime cache below instead.
+        // Overriding this drops workbox's default, hence node_modules here.
+        // `welcome.mp3` sits at the public root and stays precached.
+        globIgnores: ['**/node_modules/**/*', '**/audio/tour/**'],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.(?:gstatic|googleapis)\.com\/.*/i,
@@ -70,6 +79,22 @@ export default defineConfig({
               // Cross-origin font responses are opaque (status 0); without
               // this they cache unpredictably.
               cacheableResponse: { statuses: [0, 200] }
+            }
+          },
+          {
+            // Tolerates a `?v=` cache-buster: anchored on .mp3 alone, a
+            // query string would quietly fall through to the network.
+            urlPattern: /\/audio\/tour\/[^?]+\.mp3(?:\?.*)?$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'kwami-soundtrack',
+              // Around 10 MB a record: hold a few recent ones, not the crate.
+              expiration: { maxEntries: 8, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              cacheableResponse: { statuses: [0, 200] },
+              // An audio element asks for byte ranges, and a 206 is not
+              // cacheable on its own; this serves the slice from the full
+              // response workbox stored.
+              rangeRequests: true
             }
           }
         ]
