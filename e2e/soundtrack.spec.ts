@@ -44,7 +44,9 @@ test.describe('login soundtrack', () => {
     await stubTrackFiles(page);
     await gotoApp(page);
 
-    const toggle = page.locator('.soundtrack-pill button').first();
+    // Addressed by class, not by position: the pill has grown a control before
+    // now, and an nth() here silently retargets when it does.
+    const toggle = page.locator('.soundtrack-pill .pill-btn--main');
     await expect(toggle).toBeVisible(READY);
     await expect(toggle).toHaveAttribute('aria-pressed', 'false');
 
@@ -62,8 +64,14 @@ test.describe('login soundtrack', () => {
       'https://www.youtube.com/watch?v=ZE5zXLOyEOQ',
     );
 
-    await page.locator('.soundtrack-pill button').nth(1).click();
+    await page.locator('.soundtrack-pill .pill-btn--next').click();
     await expect(page.locator('.soundtrack-pill .pill-title')).not.toHaveText('Posterity');
+
+    // The randomize rate sits beside the transport and cycles on click.
+    const rate = page.locator('.soundtrack-pill .pill-btn--rate');
+    await expect(rate).toHaveText('1s');
+    await rate.click();
+    await expect(rate).toHaveText('2s');
 
     /**
      * Regression: `proxyClickToCanvas` forwarded a bubbling click onto the

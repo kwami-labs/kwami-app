@@ -1,14 +1,17 @@
 <script setup lang="ts">
 /**
- * The login screen's transport: play/pause, what is on, and a way to change it.
+ * The login screen's transport: play/pause, what is on, a way to change it, and
+ * how fast the avatar behind it reinvents itself.
  *
- * Styled against `AuthPage`'s own glass idiom (literal rgba, blurred backdrop)
- * rather than the `--surface-*` / `--accent-*` theme tokens, which are what the
- * signed-in chrome is built on and are not what this screen is painted with.
+ * Styled against `AuthPage`'s own glass idiom -- the `--auth-*` tokens in
+ * `variables.css` -- rather than the `--surface-*` / `--accent-*` theme tokens,
+ * which are what the signed-in chrome is built on and are not what this screen
+ * is painted with.
  */
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useWelcomeSoundtrack } from '@/composables/useSoundtrack';
+import { useWelcomeRandomizer } from '@/composables/useWelcomeRandomizer';
 
 /**
  * `loginOpen` collapses the pill to its play button. The login panel grew an
@@ -20,9 +23,14 @@ const props = withDefaults(defineProps<{ loginOpen?: boolean }>(), { loginOpen: 
 
 const { t } = useI18n();
 const { currentTrack, isPlaying, toggle, next } = useWelcomeSoundtrack();
+const { intervalSeconds, cycleInterval } = useWelcomeRandomizer();
 
 const toggleLabel = computed(() =>
   isPlaying.value ? t('musicPlayer.pauseTrack') : t('musicPlayer.playTrack'),
+);
+
+const randomizeLabel = computed(() =>
+  t('welcomeScreen.randomizeEvery', { seconds: intervalSeconds.value }),
 );
 </script>
 
@@ -43,6 +51,16 @@ const toggleLabel = computed(() =>
       @click="toggle"
     >
       <iconify-icon :icon="isPlaying ? 'ph:pause-fill' : 'ph:play-fill'"></iconify-icon>
+    </button>
+
+    <button
+      class="pill-btn pill-btn--rate"
+      type="button"
+      :title="randomizeLabel"
+      :aria-label="randomizeLabel"
+      @click="cycleInterval"
+    >
+      <span aria-hidden="true">{{ intervalSeconds }}s</span>
     </button>
 
     <template v-if="currentTrack">
@@ -66,7 +84,7 @@ const toggleLabel = computed(() =>
       </a>
 
       <button
-        class="pill-btn"
+        class="pill-btn pill-btn--next"
         type="button"
         :title="t('musicPlayer.nextTrack')"
         :aria-label="t('musicPlayer.nextTrack')"
@@ -92,16 +110,11 @@ const toggleLabel = computed(() =>
   padding: 4px;
   max-width: min(420px, calc(100vw - 40px));
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.24);
-  background: linear-gradient(
-    130deg,
-    rgba(255, 255, 255, 0.26) 0%,
-    rgba(255, 255, 255, 0.12) 46%,
-    rgba(255, 255, 255, 0.08) 100%
-  );
+  border: 1px solid var(--auth-glass-border);
+  background: var(--auth-glass-bg);
   backdrop-filter: blur(18px) saturate(170%);
   -webkit-backdrop-filter: blur(18px) saturate(170%);
-  box-shadow: 0 14px 38px rgba(16, 28, 56, 0.44);
+  box-shadow: var(--auth-glass-shadow);
   pointer-events: auto;
   transition:
     max-width 260ms ease,
@@ -110,7 +123,7 @@ const toggleLabel = computed(() =>
 }
 
 .soundtrack-pill--open {
-  border-color: rgba(255, 255, 255, 0.3);
+  border-color: var(--auth-glass-border-strong);
 }
 
 .pill-btn {
@@ -123,7 +136,7 @@ const toggleLabel = computed(() =>
   border: 0;
   border-radius: 999px;
   background: transparent;
-  color: rgba(246, 248, 255, 0.86);
+  color: var(--auth-icon);
   cursor: pointer;
   text-decoration: none;
   transition:
@@ -133,13 +146,13 @@ const toggleLabel = computed(() =>
 }
 
 .pill-btn:hover {
-  background: rgba(255, 255, 255, 0.16);
-  color: #f7f9ff;
+  background: var(--auth-hover-fill);
+  color: var(--auth-icon-strong);
   transform: translateY(-1px);
 }
 
 .pill-btn:focus-visible {
-  outline: 2px solid rgba(53, 158, 238, 0.85);
+  outline: 2px solid var(--auth-focus-ring);
   outline-offset: 2px;
 }
 
@@ -148,8 +161,8 @@ const toggleLabel = computed(() =>
 }
 
 .pill-btn--main {
-  background: rgba(255, 255, 255, 0.14);
-  color: #f7f9ff;
+  background: var(--auth-active-fill);
+  color: var(--auth-icon-strong);
 }
 
 .pill-btn--main iconify-icon {
@@ -157,7 +170,15 @@ const toggleLabel = computed(() =>
 }
 
 .pill-btn--credit {
-  color: rgba(246, 248, 255, 0.62);
+  color: var(--auth-icon-dim);
+}
+
+.pill-btn--rate {
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  color: var(--auth-icon-dim);
 }
 
 .pill-track {
@@ -178,19 +199,19 @@ const toggleLabel = computed(() =>
   overflow: hidden;
   text-overflow: ellipsis;
   font-weight: 700;
-  color: #f6f8ff;
+  color: var(--auth-text);
 }
 
 .pill-sep {
   flex: 0 0 auto;
-  color: rgba(180, 188, 210, 0.6);
+  color: var(--auth-text-dim);
 }
 
 .pill-artist {
   flex: 0 1 auto;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: rgba(180, 188, 210, 0.92);
+  color: var(--auth-text-muted);
 }
 
 .sr-only {
@@ -215,9 +236,11 @@ const toggleLabel = computed(() =>
   }
 }
 
+/* The rate button survives both, unlike the transport: it drives the avatar,
+   which is the whole screen, and it is the one control with nothing to read. */
 .soundtrack-pill--compact .pill-track,
 .soundtrack-pill--compact .pill-btn--credit,
-.soundtrack-pill--compact .pill-btn:not(.pill-btn--main) {
+.soundtrack-pill--compact .pill-btn:not(.pill-btn--main):not(.pill-btn--rate) {
   display: none;
 }
 
