@@ -118,7 +118,7 @@ Full walkthrough: [Getting started](docs/guides/getting-started.md)
 | `VITE_LIVEKIT_URL` | LiveKit WebSocket URL |
 | `VITE_SUPABASE_URL` | Supabase project URL |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase anon / publishable key |
-| `VITE_AUTH_PROVIDERS` | Optional. Comma-separated sign-in buttons (default `google`) |
+| `VITE_AUTH_PROVIDERS` | Optional. Comma-separated OAuth / wallet buttons (default `google`). Email + password is always on and is not listed here |
 
 These are public (`VITE_*` is inlined into the bundle). Provider secrets stay on the API. Reference: [Environment variables](docs/reference/environment-variables.md)
 

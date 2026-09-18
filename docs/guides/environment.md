@@ -23,7 +23,7 @@ Missing Supabase values fail boot (`isEnvValid` in [`src/lib/env.ts`](../../src/
 
 | Variable | Example | Used by |
 | --- | --- | --- |
-| `VITE_AUTH_PROVIDERS` | `google` or `google,github,phantom` | Auth buttons. Only list providers enabled in the Supabase dashboard |
+| `VITE_AUTH_PROVIDERS` | `google` or `google,github,phantom` | OAuth / wallet buttons. Only list providers enabled in the Supabase dashboard. Email + password is always on and needs no entry |
 | `VITE_WALLET_CARD_FUNDING` | `true` | Wallet panel card-funding UI (off unless exactly `true`) |
 
 ## Test mode

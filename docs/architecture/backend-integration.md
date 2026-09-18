@@ -80,7 +80,9 @@ Tables the app uses directly:
 | `user_kwamis` | Companion rows: `id`, `user_id`, `name`, `emoji`, `colors`, `config` |
 | `user_app_settings` | Per-user locale (`locale`, upsert on `user_id`) |
 
-Auth is Supabase OAuth (and optional wallet sign-in). Buttons are gated by `VITE_AUTH_PROVIDERS` (default `google`). Only list providers enabled in the dashboard — an unconfigured provider returns 400.
+Auth is Supabase: email + password, OAuth, and optional wallet sign-in. The OAuth and wallet buttons are gated by `VITE_AUTH_PROVIDERS` (default `google`) — only list providers enabled in the dashboard, since an unconfigured provider returns 400.
+
+Email + password is always rendered and has no env flag; it needs the Email provider enabled under Authentication -> Providers. Sign-up sends a confirmation mail unless confirmations are off, so `signUp` usually returns no session and the form says to check the inbox. Phantom additionally needs Authentication -> Web3 (Solana) enabled.
 
 Row Level Security must restrict `user_kwamis` and `user_app_settings` to `auth.uid()`. This repo does not ship migrations; they live with the backend / Supabase project.
 
