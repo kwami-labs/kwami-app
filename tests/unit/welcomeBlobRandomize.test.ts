@@ -5,6 +5,13 @@
  * re-arms on every rate change. That is the part a user would notice breaking —
  * the button face would step through 1s, 2s, 3s while the avatar kept flipping
  * at whatever rate it started on — and it is what this file holds.
+ *
+ * `switchRenderer` is the probe because it is the one call every tick makes
+ * unconditionally. `randomize()` used to serve, but the blob path no longer
+ * calls it: it re-rolled the blob's resolution, and a resolution change rebuilds
+ * a 26k-vertex geometry and wipes the SDK's per-vertex audio smoothing, which
+ * is a dropped frame and a reset envelope every second. The SDK returns early
+ * from a switch to the renderer already up, so calling it every tick is free.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
@@ -58,7 +65,7 @@ async function mountBlob() {
 
 beforeEach(() => {
   vi.useFakeTimers();
-  avatar.randomize.mockClear();
+  avatar.switchRenderer.mockClear();
   useWelcomeRandomizer().intervalMs.value = RANDOMIZE_INTERVALS_MS[0];
 });
 
@@ -72,12 +79,12 @@ describe('the welcome blob timer', () => {
   it('randomizes once a second by default', async () => {
     await mountBlob();
     // One on arrival, so the screen never opens on the same avatar twice.
-    const onArrival = avatar.randomize.mock.calls.length;
+    const onArrival = avatar.switchRenderer.mock.calls.length;
     expect(onArrival).toBeGreaterThan(0);
 
     await vi.advanceTimersByTimeAsync(3_000);
 
-    expect(avatar.randomize.mock.calls.length - onArrival).toBe(3);
+    expect(avatar.switchRenderer.mock.calls.length - onArrival).toBe(3);
   });
 
   it('re-arms at the new rate rather than finishing the old interval', async () => {
@@ -87,15 +94,15 @@ describe('the welcome blob timer', () => {
     await vi.advanceTimersByTimeAsync(900);
     cycleInterval(); // 1s -> 2s, 100ms before the pending tick would have fired
     await vi.advanceTimersByTimeAsync(0);
-    const baseline = avatar.randomize.mock.calls.length;
+    const baseline = avatar.switchRenderer.mock.calls.length;
 
     // The old 1s tick is gone: nothing at 900ms + 100ms.
     await vi.advanceTimersByTimeAsync(1_100);
-    expect(avatar.randomize.mock.calls.length).toBe(baseline);
+    expect(avatar.switchRenderer.mock.calls.length).toBe(baseline);
 
     // The new 2s one fires on its own schedule.
     await vi.advanceTimersByTimeAsync(900);
-    expect(avatar.randomize.mock.calls.length).toBe(baseline + 1);
+    expect(avatar.switchRenderer.mock.calls.length).toBe(baseline + 1);
   });
 
   it('stops randomizing once the login screen is gone', async () => {
@@ -104,10 +111,10 @@ describe('the welcome blob timer', () => {
     mounted.pop();
     wrapper.unmount();
     await vi.advanceTimersByTimeAsync(0);
-    const afterUnmount = avatar.randomize.mock.calls.length;
+    const afterUnmount = avatar.switchRenderer.mock.calls.length;
     await vi.advanceTimersByTimeAsync(5_000);
 
-    expect(avatar.randomize.mock.calls.length).toBe(afterUnmount);
+    expect(avatar.switchRenderer.mock.calls.length).toBe(afterUnmount);
   });
 
   it('does not leave a watcher driving a disposed kwami', async () => {
@@ -115,12 +122,12 @@ describe('the welcome blob timer', () => {
     mounted.pop();
     wrapper.unmount();
     await vi.advanceTimersByTimeAsync(0);
-    const afterUnmount = avatar.randomize.mock.calls.length;
+    const afterUnmount = avatar.switchRenderer.mock.calls.length;
 
     // A later rate change must not re-arm a timer for a screen that is gone.
     useWelcomeRandomizer().cycleInterval();
     await vi.advanceTimersByTimeAsync(10_000);
 
-    expect(avatar.randomize.mock.calls.length).toBe(afterUnmount);
+    expect(avatar.switchRenderer.mock.calls.length).toBe(afterUnmount);
   });
 });

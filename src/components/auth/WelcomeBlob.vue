@@ -4,6 +4,13 @@ import type { Kwami, KwamiConfig } from 'kwami';
 import { registerWelcomeAudio, unregisterWelcomeAudio } from '@/composables/useSoundtrack';
 import { useWelcomeRandomizer } from '@/composables/useWelcomeRandomizer';
 import { createBandEnvelope, getBandLevels, SILENCE } from '@/utils/audioBands';
+import {
+  blendShape,
+  channelsToHex,
+  cloneShape,
+  randomShape,
+  smoothstep,
+} from '@/utils/blobTween';
 
 const WELCOME_RENDERER_WEIGHTS = {
   blobXyz: 19,
@@ -151,76 +158,6 @@ function pickEyeColors(previous: EyeColorPalette | null): EyeColorPalette {
   return next;
 }
 
-// --- The blob's continuous parameters ---------------------------------------
-//
-// Everything here is a number on a continuum, which is what makes it tweenable.
-// Skin, wireframe and the renderer itself are not, and are handled as cuts.
-
-/** Three colours as nine 0–255 channels, because hex strings do not interpolate. */
-type BlobShape = {
-  spikes: [number, number, number];
-  amplitude: [number, number, number];
-  time: [number, number, number];
-  shininess: number;
-  channels: number[];
-};
-
-function randomChannels(): number[] {
-  return Array.from({ length: 9 }, () => Math.random() * 255);
-}
-
-function randomShape(): BlobShape {
-  return {
-    spikes: [rand(0.2, 3.3), rand(0.2, 3.3), rand(0.2, 3.3)],
-    amplitude: [rand(0.3, 1.5), rand(0.3, 1.5), rand(0.3, 1.5)],
-    time: [rand(0.5, 8), rand(0.5, 8), rand(0.5, 8)],
-    shininess: rand(10, 180),
-    channels: randomChannels(),
-  };
-}
-
-function cloneShape(shape: BlobShape): BlobShape {
-  return {
-    spikes: [...shape.spikes] as [number, number, number],
-    amplitude: [...shape.amplitude] as [number, number, number],
-    time: [...shape.time] as [number, number, number],
-    shininess: shape.shininess,
-    channels: [...shape.channels],
-  };
-}
-
-function channelsToHex(channels: number[], offset: number): string {
-  let hex = '#';
-  for (let i = offset; i < offset + 3; i += 1) {
-    const value = Math.max(0, Math.min(255, Math.round(channels[i] ?? 0)));
-    hex += value.toString(16).padStart(2, '0');
-  }
-  return hex;
-}
-
-/** Ease in and out, so a tween neither starts nor stops with a visible kick. */
-function smoothstep(t: number): number {
-  const clamped = Math.max(0, Math.min(1, t));
-  return clamped * clamped * (3 - 2 * clamped);
-}
-
-function lerp(from: number, to: number, t: number): number {
-  return from + (to - from) * t;
-}
-
-/** Write `t` of the way from `from` to `to` into `live`, in place. */
-function blendShape(live: BlobShape, from: BlobShape, to: BlobShape, t: number): void {
-  for (let i = 0; i < 3; i += 1) {
-    live.spikes[i] = lerp(from.spikes[i]!, to.spikes[i]!, t);
-    live.amplitude[i] = lerp(from.amplitude[i]!, to.amplitude[i]!, t);
-    live.time[i] = lerp(from.time[i]!, to.time[i]!, t);
-  }
-  live.shininess = lerp(from.shininess, to.shininess, t);
-  for (let i = 0; i < 9; i += 1) {
-    live.channels[i] = lerp(from.channels[i] ?? 0, to.channels[i] ?? 0, t);
-  }
-}
-
 onMounted(async () => {
   if (!containerRef.value) return;
 
@@ -329,7 +266,10 @@ onMounted(async () => {
     const pupilSmoothing = 0.12;
 
     let activeRenderer: WelcomeRenderer = 'blob-xyz';
-    let lastDiscreteSwapAt = 0;
+    // Negative infinity, not 0: `performance.now()` is time since the page
+    // loaded, so a login screen that mounted inside the first six seconds would
+    // otherwise open without ever picking a skin.
+    let lastDiscreteSwapAt = Number.NEGATIVE_INFINITY;
 
     // The shape the component believes in, independent of which renderer is up.
     // Carrying it across an eye-iris round trip is what stops the blob snapping
