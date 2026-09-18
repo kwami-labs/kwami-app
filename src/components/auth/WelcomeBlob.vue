@@ -40,6 +40,14 @@ const BLOB_RESOLUTION = 160;
  * Raising it is the one fix that reaches both renderers at once, because
  * `BlobXyz` reads this same analyser inside the SDK where app code cannot
  * intervene. Short of 0.8 so transients still read as hits.
+ *
+ * **This screen only — do not hoist into a shared constant.** The workspace
+ * kwami's analyser is the same class but a different instance, and it carries
+ * the agent's LiveKit voice as well as music. It needs the SDK's 0.35 to keep
+ * the avatar moving on syllables; at 0.72 the mouth lags the speech by a couple
+ * of hundred milliseconds, which reads as a broken avatar rather than a changed
+ * number, and nothing fails to point at it. `MusicPlayer.vue` leaves that one
+ * alone on purpose. Two intentional values, not an inconsistency.
  */
 const ANALYSER_SMOOTHING = 0.72;
 

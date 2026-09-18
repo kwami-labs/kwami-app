@@ -1,5 +1,6 @@
 /**
- * The rate button has to actually move the blob's timer.
+ * The rate button has to actually move the blob's timer, and the welcome
+ * analyser has to stay smoothed.
  *
  * `setInterval` cannot have its period changed once running, so `WelcomeBlob`
  * re-arms on every rate change. That is the part a user would notice breaking —
@@ -17,6 +18,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { RANDOMIZE_INTERVALS_MS, useWelcomeRandomizer } from '@/composables/useWelcomeRandomizer';
 
+/**
+ * One instance, not a fresh object per call: `WelcomeBlob` re-applies its
+ * smoothing only when it sees an analyser it has not configured, so a mock that
+ * returned a new object each frame would hide a broken identity check.
+ */
+const analyser = { smoothingTimeConstant: 0.35 };
+
 const avatar = {
   randomize: vi.fn(),
   switchRenderer: vi.fn(),
@@ -28,6 +36,7 @@ const avatar = {
   getAudio: vi.fn(() => ({
     getAudioElement: () => ({ paused: true }),
     getFrequencyData: () => new Uint8Array(0),
+    getAnalyser: () => analyser,
   })),
   getBlob: vi.fn(() => ({
     getMesh: () => ({ rotation: { x: 0, y: 0, z: 0 } }),
@@ -66,6 +75,7 @@ async function mountBlob() {
 beforeEach(() => {
   vi.useFakeTimers();
   avatar.switchRenderer.mockClear();
+  analyser.smoothingTimeConstant = 0.35;
   useWelcomeRandomizer().intervalMs.value = RANDOMIZE_INTERVALS_MS[0];
 });
 
@@ -129,5 +139,35 @@ describe('the welcome blob timer', () => {
     await vi.advanceTimersByTimeAsync(10_000);
 
     expect(avatar.switchRenderer.mock.calls.length).toBe(afterUnmount);
+  });
+});
+
+describe('the welcome analyser', () => {
+  it('raises the smoothing the SDK left at 0.35', async () => {
+    await mountBlob();
+
+    // The first animation frame runs synchronously inside onMounted, so this
+    // does not wait on rAF.
+    expect(analyser.smoothingTimeConstant).toBe(0.72);
+  });
+
+  it('leaves it raised rather than re-applying a value that drifted', async () => {
+    await mountBlob();
+    await vi.advanceTimersByTimeAsync(2_000);
+
+    expect(analyser.smoothingTimeConstant).toBe(0.72);
+  });
+
+  /**
+   * The trap this guards: the workspace kwami's analyser carries the agent's
+   * LiveKit voice and needs the SDK's 0.35 to stay on syllables, so the two
+   * values must not be unified. If someone hoists them into one shared
+   * constant, whichever side loses goes quiet rather than red — this is the
+   * half that can at least fail loudly.
+   */
+  it('does not settle for the SDK default', async () => {
+    await mountBlob();
+
+    expect(analyser.smoothingTimeConstant).not.toBe(0.35);
   });
 });
