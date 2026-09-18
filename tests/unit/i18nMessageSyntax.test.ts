@@ -16,16 +16,14 @@
  */
 import { describe, expect, it } from 'vitest';
 import { createI18n } from 'vue-i18n';
-import { en } from '@/i18n/translations/en';
-import { es } from '@/i18n/translations/es';
-import { workspaceAgentToolsEn, workspaceAgentToolsEs } from '@/i18n/workspaceAgentTools.locale';
+import { messages } from '@/i18n';
 
 type Messages = Record<string, unknown>;
 
-const bundles: Record<string, Messages> = {
-  en: { ...en, ...workspaceAgentToolsEn },
-  es: { ...es, ...workspaceAgentToolsEs },
-};
+// The app's own assembled bundle, not a hand-rolled copy of it. A locale file
+// added to src/i18n/index.ts and not here would otherwise ship unchecked —
+// which is exactly how the theme-panel message below reached production.
+const bundles: Record<string, Messages> = messages as unknown as Record<string, Messages>;
 
 function leafKeys(node: unknown, prefix = ''): string[] {
   if (typeof node === 'string') return [prefix];

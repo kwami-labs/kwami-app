@@ -3,6 +3,8 @@ import {
   workspaceAgentToolsEn, 
   workspaceAgentToolsEs 
 } from './workspaceAgentTools.locale';
+import { commsAgentToolsEn, commsAgentToolsEs } from './commsAgentTools.locale';
+import { searchPanelEn, searchPanelEs } from './searchPanel.locale';
 import { en } from './translations/en';
 import { es } from './translations/es';
 
@@ -12,9 +14,17 @@ export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
 const DEFAULT_LOCALE: SupportedLocale = 'en';
 const LOCALE_STORAGE_KEY = 'kwami.locale';
 
-const messages = {
-  en: { ...en, ...workspaceAgentToolsEn },
-  es: { ...es, ...workspaceAgentToolsEs },
+/**
+ * Exported so tests build their i18n from the same object the app does.
+ *
+ * `tests/setup.ts` used to re-assemble this spread by hand, which meant a new
+ * locale bundle was live in the app and missing under test -- every message in
+ * it rendered as its own key path, and the tool descriptions the model reads
+ * were the ones nobody had checked.
+ */
+export const messages = {
+  en: { ...en, ...workspaceAgentToolsEn, ...searchPanelEn, ...commsAgentToolsEn },
+  es: { ...es, ...workspaceAgentToolsEs, ...searchPanelEs, ...commsAgentToolsEs },
 } as const;
 
 export function normalizeLocale(locale: string | null | undefined): SupportedLocale {

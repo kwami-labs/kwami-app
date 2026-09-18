@@ -3,9 +3,9 @@ import { config } from '@vue/test-utils';
 import { createI18n } from 'vue-i18n';
 import { server } from './mocks/server';
 import { Kwami, resetKwamiStub } from './mocks/kwami';
-import { en } from '../src/i18n/translations/en';
-import { es } from '../src/i18n/translations/es';
-import { workspaceAgentToolsEn, workspaceAgentToolsEs } from '../src/i18n/workspaceAgentTools.locale';
+// The app's own message set, not a second copy of it: a bundle that is live
+// in the app and absent here renders as its key path under test only.
+import { messages } from '../src/i18n';
 
 // --- the kwami runtime is WebGL + LiveKit; never construct the real one ---
 vi.mock('kwami', () => ({ Kwami }));
@@ -97,10 +97,7 @@ config.global.plugins = [
     legacy: false,
     locale: 'en',
     fallbackLocale: 'en',
-    messages: {
-      en: { ...en, ...workspaceAgentToolsEn },
-      es: { ...es, ...workspaceAgentToolsEs },
-    },
+    messages,
   }),
 ];
 config.global.stubs = { 'iconify-icon': true };
