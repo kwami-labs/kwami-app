@@ -180,9 +180,9 @@ export async function failOnUnstubbedRequests(page: Page) {
     'api.iconify.design',
     'api.simplesvg.com',
     'api.unisvg.com',
-    // Wallet download pages: a missing extension opens one, and the auth spec
+    // Wallet install pages: a missing extension opens one, and the auth spec
     // stubs it at context level so nothing actually leaves the machine.
-    'phantom.app',
+    'chromewebstore.google.com',
     'metamask.io',
   ];
   const escapes: string[] = [];

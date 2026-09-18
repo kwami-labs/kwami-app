@@ -40,7 +40,7 @@ describe('useWeb3SignIn when the wallet is missing', () => {
     await web3.signIn('phantom');
 
     expect(openSpy).toHaveBeenCalledWith(
-      'https://phantom.app/download',
+      'https://chromewebstore.google.com/detail/phantom/bfnaelmomeimhlpmgjnjophhpkkoljpa',
       '_blank',
       'noopener,noreferrer',
     );
@@ -52,7 +52,9 @@ describe('useWeb3SignIn when the wallet is missing', () => {
 
     await web3.signIn('phantom');
 
-    expect(web3.installUrl.value).toBe('https://phantom.app/download');
+    expect(web3.installUrl.value).toBe(
+      'https://chromewebstore.google.com/detail/phantom/bfnaelmomeimhlpmgjnjophhpkkoljpa',
+    );
     expect(web3.error.value).toBe(
       en.auth.walletNotFound.replace('{wallet}', 'Phantom'),
     );

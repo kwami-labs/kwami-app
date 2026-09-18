@@ -20,10 +20,14 @@ export type Web3Wallet = 'phantom' | 'metamask';
  * Where to send someone who does not have the extension yet.
  *
  * Phantom's own docs do exactly this — `window.open(...)` when the provider is
- * missing — and give this as the install link.
+ * missing — but point at their download page, which is a marketing page you
+ * then have to click through. This is the Chrome Web Store listing itself, so
+ * the next click is Add to Chrome. On a non-Chromium browser the store cannot
+ * install anything; phantom.com/download is the cross-browser page if that ever
+ * matters more than the shorter path.
  */
 const WALLET_INSTALL_URLS: Record<Web3Wallet, string> = {
-  phantom: 'https://phantom.app/download',
+  phantom: 'https://chromewebstore.google.com/detail/phantom/bfnaelmomeimhlpmgjnjophhpkkoljpa',
   metamask: 'https://metamask.io/download/',
 };
 

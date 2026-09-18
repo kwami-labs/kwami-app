@@ -207,8 +207,8 @@ test.describe('phantom wallet', () => {
 
   test('opens the download page when the extension is not installed', async ({ signedOut: page }) => {
     // Context-level so it also catches the pop-up, which is a separate Page and
-    // would otherwise escape this page's routes and hit the real phantom.app.
-    await page.context().route('https://phantom.app/**', (route) =>
+    // would otherwise escape this page's routes and hit the real web store.
+    await page.context().route('https://chromewebstore.google.com/**', (route) =>
       route.fulfill({ status: 200, contentType: 'text/html', body: '<title>Phantom</title>' }),
     );
 
@@ -221,14 +221,16 @@ test.describe('phantom wallet', () => {
       page.getByRole('button', { name: /Continue with Phantom/i }).click(),
     ]);
 
-    expect(popup.url()).toBe('https://phantom.app/download');
+    expect(popup.url()).toBe(
+      'https://chromewebstore.google.com/detail/phantom/bfnaelmomeimhlpmgjnjophhpkkoljpa',
+    );
     await popup.close();
 
     // And the in-page fallback, for when a pop-up blocker wins.
     await expect(page.locator('.provider-error')).toContainText('Phantom is not installed');
     await expect(page.locator('.provider-install')).toHaveAttribute(
       'href',
-      'https://phantom.app/download',
+      'https://chromewebstore.google.com/detail/phantom/bfnaelmomeimhlpmgjnjophhpkkoljpa',
     );
   });
 
