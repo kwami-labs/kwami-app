@@ -13,7 +13,7 @@ const loginOpen = ref(false);
   <div class="page">
     <div class="ambient" aria-hidden="true" />
 
-    <h1 class="hero-title" :class="{ 'hero-title--compact': loginOpen }" aria-label="kwami">
+    <h1 v-if="!loginOpen" class="hero-title" aria-label="kwami">
       <span class="title-main">KWAMI</span>
     </h1>
 
@@ -69,13 +69,6 @@ const loginOpen = ref(false);
   text-align: center;
   white-space: nowrap;
   pointer-events: none;
-  transition: top 300ms ease, transform 300ms ease, z-index 300ms ease;
-}
-
-.hero-title--compact {
-  top: 32%;
-  transform: translate(-50%, -50%) scale(0.31);
-  z-index: 46;
 }
 
 .title-main {
@@ -134,14 +127,8 @@ const loginOpen = ref(false);
 }
 
 @media (max-width: 900px) {
-  .hero-title--compact {
-    top: 31%;
-    transform: translate(-50%, -50%) scale(0.28);
-  }
-
   .title-sub {
     top: 60%;
   }
-
 }
 </style>

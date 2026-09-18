@@ -71,6 +71,9 @@ onUnmounted(() => {
     </button>
 
     <div class="login-panel" :class="{ 'login-panel--open': isOpen }">
+      <h1 v-if="isOpen" class="panel-brand" aria-label="kwami">
+        <span class="title-main">KWAMI</span>
+      </h1>
       <div v-if="hasWeb3Providers" class="tab-shell" role="tablist" :aria-label="t('auth.loginTypeTabs')">
         <div class="tab-indicator" :class="{ 'tab-indicator--web3': activeTab === 'web3' }" />
         <button
@@ -212,7 +215,7 @@ onUnmounted(() => {
   max-height: min(78vh, 620px);
   overflow-y: auto;
   opacity: 1;
-  padding: 2.25rem 1.1rem 1.1rem;
+  padding: 1.25rem 1.1rem 1.1rem;
 }
 
 .login-cta--morphed {
@@ -227,6 +230,21 @@ onUnmounted(() => {
 
 .login-cta--morphed:hover {
   transform: none;
+}
+
+.panel-brand {
+  margin: 0 0 1.1rem;
+  text-align: center;
+  pointer-events: none;
+}
+
+.panel-brand .title-main {
+  display: block;
+  font-size: clamp(1.85rem, 5.4vw, 2.4rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.03em;
+  color: #f6f8ff;
 }
 
 .tab-shell {
