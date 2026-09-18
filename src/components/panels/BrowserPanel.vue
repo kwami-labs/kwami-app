@@ -22,11 +22,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useNavigation } from '@/composables/useNavigation';
-import {
-  MIN_PANEL_HEIGHT,
-  MIN_PANEL_WIDTH,
-  type BrowserPanelLayout,
-} from '@/stores/navigation';
+import { type BrowserPanelLayout } from '@/stores/navigation';
 
 const {
   isActive,
@@ -37,7 +33,6 @@ const {
   layout,
   floatingRect,
   isManipulating,
-  isDocked,
   isFloating,
   isFullscreen,
   setLayout,
