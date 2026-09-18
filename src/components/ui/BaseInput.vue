@@ -15,6 +15,8 @@ const props = defineProps<{
    *  so a fallthrough attribute would land there instead of on the field. */
   name?: string;
   autocomplete?: string;
+  inputmode?: 'none' | 'text' | 'tel' | 'url' | 'email' | 'numeric' | 'decimal' | 'search';
+  maxlength?: number | string;
 }>();
 
 const emit = defineEmits(['update:modelValue', 'focus', 'blur']);
@@ -63,6 +65,8 @@ function onBlur(e: FocusEvent) {
         :disabled="disabled"
         :name="name"
         :autocomplete="autocomplete"
+        :inputmode="inputmode"
+        :maxlength="maxlength"
         :class="{ mono }"
         @input="onInput"
         @focus="onFocus"

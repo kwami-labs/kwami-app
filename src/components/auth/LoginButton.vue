@@ -4,11 +4,14 @@ import { useI18n } from 'vue-i18n';
 import GoogleButton from './GoogleButton.vue';
 import ProviderButton from './ProviderButton.vue';
 import EmailAuthForm from './EmailAuthForm.vue';
+import PhoneAuthForm from './PhoneAuthForm.vue';
 import {
   enabledWeb2Providers,
   enabledWeb3Providers,
   hasWeb3Providers,
 } from './providers';
+
+type LoginTab = 'web2' | 'web3' | 'mobile';
 
 const props = withDefaults(defineProps<{ open?: boolean }>(), {
   open: false,
@@ -16,8 +19,20 @@ const props = withDefaults(defineProps<{ open?: boolean }>(), {
 const emit = defineEmits<{ (e: 'update:open', value: boolean): void }>();
 const isOpen = computed(() => props.open);
 const panelRef = ref<HTMLElement | null>(null);
-const activeTab = ref<'web2' | 'web3'>('web2');
+const activeTab = ref<LoginTab>('web2');
 const { t } = useI18n();
+
+const tabs = computed(() => {
+  const items: { id: LoginTab; label: string }[] = [
+    { id: 'web2', label: t('auth.tabWeb2') },
+  ];
+  if (hasWeb3Providers) items.push({ id: 'web3', label: t('auth.tabWeb3') });
+  items.push({ id: 'mobile', label: t('auth.tabMobile') });
+  return items;
+});
+const tabIndex = computed(() =>
+  Math.max(0, tabs.value.findIndex((tab) => tab.id === activeTab.value)),
+);
 
 // Google keeps its own component: it carries an inline multi-colour SVG that
 // Iconify cannot reproduce faithfully.
@@ -74,27 +89,24 @@ onUnmounted(() => {
       <h1 v-if="isOpen" class="panel-brand" aria-label="kwami">
         <span class="title-main">KWAMI</span>
       </h1>
-      <div v-if="hasWeb3Providers" class="tab-shell" role="tablist" :aria-label="t('auth.loginTypeTabs')">
-        <div class="tab-indicator" :class="{ 'tab-indicator--web3': activeTab === 'web3' }" />
+      <div
+        class="tab-shell"
+        role="tablist"
+        :aria-label="t('auth.loginTypeTabs')"
+        :style="{ '--tab-count': tabs.length, '--tab-index': tabIndex }"
+      >
+        <div class="tab-indicator" />
         <button
+          v-for="tab in tabs"
+          :key="tab.id"
           class="tab-btn"
-          :class="{ 'tab-btn--active': activeTab === 'web2' }"
+          :class="{ 'tab-btn--active': activeTab === tab.id }"
           type="button"
           role="tab"
-          :aria-selected="activeTab === 'web2'"
-          @click="activeTab = 'web2'"
+          :aria-selected="activeTab === tab.id"
+          @click="activeTab = tab.id"
         >
-          {{ t('auth.tabWeb2') }}
-        </button>
-        <button
-          class="tab-btn"
-          :class="{ 'tab-btn--active': activeTab === 'web3' }"
-          type="button"
-          role="tab"
-          :aria-selected="activeTab === 'web3'"
-          @click="activeTab = 'web3'"
-        >
-          {{ t('auth.tabWeb3') }}
+          {{ tab.label }}
         </button>
       </div>
 
@@ -113,12 +125,15 @@ onUnmounted(() => {
 
           <EmailAuthForm />
         </div>
-        <div v-else-if="isOpen" key="web3" class="provider-group">
+        <div v-else-if="isOpen && activeTab === 'web3'" key="web3" class="provider-group">
           <ProviderButton
             v-for="provider in enabledWeb3Providers"
             :key="provider.id"
             :provider="provider"
           />
+        </div>
+        <div v-else-if="isOpen" key="mobile" class="provider-group">
+          <PhoneAuthForm />
         </div>
       </Transition>
     </div>
@@ -134,16 +149,11 @@ onUnmounted(() => {
   z-index: 45;
   width: min(220px, 58vw);
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.24);
-  background: linear-gradient(
-    130deg,
-    rgba(255, 255, 255, 0.26) 0%,
-    rgba(255, 255, 255, 0.12) 46%,
-    rgba(255, 255, 255, 0.08) 100%
-  );
+  border: 1px solid var(--auth-glass-border);
+  background: var(--auth-glass-bg);
   backdrop-filter: blur(18px) saturate(170%);
   -webkit-backdrop-filter: blur(18px) saturate(170%);
-  box-shadow: 0 14px 38px rgba(16, 28, 56, 0.44);
+  box-shadow: var(--auth-glass-shadow);
   transition:
     width 260ms ease,
     top 300ms ease 60ms,
@@ -158,18 +168,11 @@ onUnmounted(() => {
   transform: translate(-50%, -50%);
   width: min(420px, 90vw);
   border-radius: 24px;
-  border-color: rgba(255, 255, 255, 0.2);
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.2) 0%,
-    rgba(255, 255, 255, 0.1) 48%,
-    rgba(255, 255, 255, 0.05) 100%
-  );
+  border-color: var(--auth-glass-border-open);
+  background: var(--auth-glass-bg-open);
   backdrop-filter: blur(28px) saturate(185%);
   -webkit-backdrop-filter: blur(28px) saturate(185%);
-  box-shadow:
-    0 22px 72px rgba(0, 0, 0, 0.44),
-    inset 0 1px 0 rgba(255, 255, 255, 0.26);
+  box-shadow: var(--auth-glass-shadow-open);
 }
 
 .login-cta {
@@ -181,7 +184,7 @@ onUnmounted(() => {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #f7f9ff;
+  color: var(--auth-text);
   cursor: pointer;
   background: transparent;
   transition:
@@ -244,18 +247,20 @@ onUnmounted(() => {
   font-weight: 900;
   line-height: 1;
   letter-spacing: 0.03em;
-  color: #f6f8ff;
+  color: var(--auth-text);
 }
 
 .tab-shell {
+  --tab-count: 2;
+  --tab-index: 0;
   position: relative;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(var(--tab-count), 1fr);
   border-radius: 999px;
   padding: 4px;
   margin-bottom: 0.85rem;
-  background: rgba(7, 11, 20, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: var(--auth-tab-bg);
+  border: 1px solid var(--auth-tab-border);
   overflow: hidden;
 }
 
@@ -263,16 +268,13 @@ onUnmounted(() => {
   position: absolute;
   top: 4px;
   left: 4px;
-  width: calc(50% - 4px);
+  width: calc((100% - 8px) / var(--tab-count));
   height: calc(100% - 8px);
   border-radius: 999px;
   background: linear-gradient(125deg, rgba(53, 158, 238, 0.52), rgba(3, 206, 164, 0.36));
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  transform: translateX(calc(var(--tab-index) * 100%));
   transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.tab-indicator--web3 {
-  transform: translateX(100%);
 }
 
 .tab-btn {
@@ -280,10 +282,10 @@ onUnmounted(() => {
   z-index: 1;
   border: 0;
   background: transparent;
-  color: rgba(194, 203, 227, 0.72);
-  font-size: 0.78rem;
+  color: var(--auth-text-dim);
+  font-size: 0.72rem;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   padding: 0.6rem 0.2rem;
   cursor: pointer;
@@ -305,7 +307,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 0.6rem;
   margin: 0.35rem 0 0.1rem;
-  color: rgba(194, 203, 227, 0.6);
+  color: var(--auth-text-dim);
   font-size: 0.7rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -316,7 +318,7 @@ onUnmounted(() => {
   content: '';
   flex: 1;
   height: 1px;
-  background: rgba(255, 255, 255, 0.14);
+  background: var(--auth-rule);
 }
 
 .provider-btn {
@@ -326,9 +328,9 @@ onUnmounted(() => {
   justify-content: center;
   gap: 0.55rem;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(5, 10, 20, 0.66);
-  color: rgba(250, 253, 255, 0.99);
+  border: 1px solid var(--auth-field-border);
+  background: var(--auth-field-bg);
+  color: var(--auth-field-text);
   font-weight: 600;
   font-size: 0.9rem;
   padding: 0.72rem 0.95rem;
@@ -337,8 +339,8 @@ onUnmounted(() => {
 }
 
 .provider-btn:hover {
-  background: rgba(9, 16, 31, 0.78);
-  border-color: rgba(255, 255, 255, 0.28);
+  background: var(--auth-field-bg-hover);
+  border-color: var(--auth-field-border-hover);
   transform: translateY(-1px);
 }
 

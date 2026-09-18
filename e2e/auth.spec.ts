@@ -100,6 +100,16 @@ async function openLoginPanel(page: import('@playwright/test').Page) {
   await expect(page.locator('.email-auth__switch-btn')).toBeInViewport({ ratio: 1 });
 }
 
+/**
+ * These two blocks drive the login panel, which costs far more wall-clock than
+ * the specs above: AuthGuard holds the welcome rings for MIN_WELCOME_MS, the
+ * avatar boots WebGL through software rasterisation in CI, and only then does
+ * the panel play its open transition. A full pass measures 24-32s on a loaded
+ * machine, so the 30s default is a coin flip — the UI is stable well before
+ * then, it is the fixed boot cost that does not fit.
+ */
+test.describe.configure({ timeout: 60_000 });
+
 test.describe('email and password', () => {
   test('offers the form alongside the OAuth buttons', async ({ signedOut: page }) => {
     await gotoApp(page);
@@ -190,6 +200,76 @@ test.describe('email and password', () => {
     await page.locator('input[name="email"]').fill(TEST_USER.email);
     await page.locator('input[name="password"]').fill('hunter2');
     await page.locator('form.email-auth button[type="submit"]').click();
+
+    await expect(page.locator('.title-main')).toHaveCount(0, { timeout: 15_000 });
+  });
+});
+
+test.describe('phone number', () => {
+  async function openMobileTab(page: import('@playwright/test').Page) {
+    await openLoginPanel(page);
+    await page.getByRole('tab', { name: 'Mobile' }).click();
+    await expect(page.locator('form.phone-auth')).toBeVisible();
+  }
+
+  test('offers a Mobile tab and the phone form', async ({ signedOut: page }) => {
+    await gotoApp(page);
+    await openMobileTab(page);
+
+    await expect(page.locator('input[name="phone"]')).toBeVisible();
+    await expect(page.locator('input[name="otp"]')).toHaveCount(0);
+  });
+
+  test('rejects a malformed number without hitting the network', async ({ signedOut: page }) => {
+    await gotoApp(page);
+    await openMobileTab(page);
+
+    let otpCalls = 0;
+    await page.route('**/auth/v1/otp**', (route) => {
+      otpCalls += 1;
+      return route.fulfill({ status: 400, json: { message: 'should not be reached' } });
+    });
+
+    await page.locator('input[name="phone"]').fill('555-1234');
+    await page.locator('form.phone-auth button[type="submit"]').click();
+
+    await expect(page.locator('.phone-auth__error')).toContainText('valid phone number');
+    expect(otpCalls).toBe(0);
+  });
+
+  test('sends an OTP then verifies it and dismisses the overlay', async ({ signedOut: page }) => {
+    await page.route('**/auth/v1/otp**', (route) => route.fulfill({ status: 200, json: {} }));
+    await page.route('**/auth/v1/verify**', (route) =>
+      route.fulfill({
+        status: 200,
+        json: {
+          access_token: 'test-access-token',
+          refresh_token: 'test-refresh-token',
+          token_type: 'bearer',
+          expires_in: 86_400,
+          expires_at: Math.floor(Date.now() / 1000) + 86_400,
+          user: {
+            id: TEST_USER.id,
+            aud: 'authenticated',
+            role: 'authenticated',
+            phone: '+15551234567',
+            app_metadata: { provider: 'phone' },
+            user_metadata: {},
+            created_at: new Date().toISOString(),
+          },
+        },
+      }),
+    );
+
+    await gotoApp(page);
+    await openMobileTab(page);
+
+    await page.locator('input[name="phone"]').fill('+15551234567');
+    await page.locator('form.phone-auth button[type="submit"]').click();
+
+    await expect(page.locator('input[name="otp"]')).toBeVisible();
+    await page.locator('input[name="otp"]').fill('123456');
+    await page.locator('form.phone-auth button[type="submit"]').click();
 
     await expect(page.locator('.title-main')).toHaveCount(0, { timeout: 15_000 });
   });
