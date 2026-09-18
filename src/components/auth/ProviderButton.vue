@@ -30,6 +30,14 @@ const installUrl = computed(() => (isWeb3.value ? web3.installUrl.value : null))
 const installLabel = computed(() =>
   t('auth.walletInstall', { wallet: t(props.provider.labelKey) }),
 );
+/**
+ * Per-provider brand styling, applied to BaseButton's root via class
+ * fallthrough. Phantom gets the app's blue accent rather than the shared
+ * secondary grey.
+ */
+const brandClass = computed(() =>
+  props.provider.id === 'phantom' ? 'provider-btn--phantom' : null,
+);
 
 function onClick() {
   if (props.provider.oauth) {
@@ -45,6 +53,7 @@ function onClick() {
     <BaseButton
       variant="secondary"
       block
+      :class="brandClass"
       :loading="isLoading"
       :icon="provider.icon"
       :aria-label="label"
@@ -79,6 +88,20 @@ function onClick() {
   color: var(--danger, #ef4444);
   text-align: center;
 }
+/* Two classes so this outranks BaseButton's own single-class `.variant-secondary`,
+   whose scoped stylesheet may be ordered after this one in the bundle. */
+.provider-slot .provider-btn--phantom {
+  background: linear-gradient(135deg, #4aa8f0 0%, #2b7fd4 100%);
+  border-color: rgba(120, 190, 255, 0.55);
+  color: #f7fbff;
+}
+
+.provider-slot .provider-btn--phantom:hover:not(:disabled) {
+  background: linear-gradient(135deg, #5cb3f5 0%, #3a8ede 100%);
+  border-color: rgba(150, 210, 255, 0.72);
+  color: #ffffff;
+}
+
 .provider-install {
   font-size: 12px;
   font-weight: 700;
