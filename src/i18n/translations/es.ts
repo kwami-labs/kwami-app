@@ -327,7 +327,7 @@ export const es = {
   },
   welcomeScreen: {
     clickToSkip: 'Haz clic en cualquier lugar para omitir',
-    randomizeEvery: 'Nuevo aspecto cada {seconds}s. Haz clic para cambiar el ritmo.',
+    randomizeEvery: 'El avatar cambia cada {seconds}s. Haz clic para cambiar el ritmo.',
   },
   browser: {
     loading: 'Cargando…',

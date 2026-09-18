@@ -327,7 +327,7 @@ export const en = {
   },
   welcomeScreen: {
     clickToSkip: 'Click anywhere to skip',
-    randomizeEvery: 'New look every {seconds}s. Click for another rate.',
+    randomizeEvery: 'Avatar shifts every {seconds}s. Click for another rate.',
   },
   browser: {
     loading: 'Loading…',
