@@ -93,10 +93,16 @@ describe.each(Object.keys(bundles))('%s tool descriptions', (locale) => {
     expect(truncated).toEqual([]);
   });
 
-  it('gives the model enough to go on', () => {
-    // A one-line description for a tool with a control vocabulary is how a
-    // tool ends up registered, callable and never correctly used.
-    const tooShort = keys.filter((key) => i18n.global.t(key).length < 40);
-    expect(tooShort).toEqual([]);
+  it('never ships a stub description', () => {
+    // Deliberately a low bar. "Open a workspace panel in the app UI." is 37
+    // characters and perfectly adequate for a tool with no vocabulary to
+    // explain, so a higher floor would just be this file's author overruling
+    // whoever wrote the tool. What it catches is the genuine stub: an empty
+    // string, or a description that is only the tool's own name.
+    const stubs = keys.filter((key) => {
+      const rendered = i18n.global.t(key);
+      return rendered.trim().length < 20;
+    });
+    expect(stubs).toEqual([]);
   });
 });

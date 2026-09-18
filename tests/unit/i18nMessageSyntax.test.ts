@@ -1,18 +1,36 @@
 /**
- * Every message must actually compile.
+ * Every message must compile, and must survive rendering whole.
  *
  * vue-i18n does not treat a message as a plain string: `{name}` is an
- * interpolation placeholder and `|` separates plural forms. Writing either as
- * prose — "position ({x, y})", "layout (docked | floating | fullscreen)" —
- * produces a message that throws `SyntaxError: Message compilation error` the
- * first time it is rendered, not when it is written.
+ * interpolation placeholder and `|` separates plural forms. Both have a prose
+ * spelling that is easy to reach for, and they fail in two different ways —
+ * one loud, one silent. Measured against the installed vue-i18n 11.4.12:
  *
- * That is worse here than in most apps. These strings are not only UI labels:
- * `workspaceAgentTools.toolDesc*` are the tool descriptions handed to the
- * model, so a message that will not compile takes out a tool the agent
- * otherwise has, and does it at runtime in one locale at a time.
+ *     "{'{'}x, y{'}'}"         -> "{x, y}"                    ok
+ *     "\{x, y\}"               -> "{x, y}"                    ok
+ *     "{x, y}"                 -> THROWS, invalid placeholder  LOUD
+ *     "docked {'|'} floating"  -> "docked | floating"         ok
+ *     "docked | floating | fullscreen"  -> "floating"         SILENT
+ *
+ * The silent one is the dangerous half and it is what the second test below
+ * exists for. A bare pipe makes the message a plural, and rendering it without
+ * a count returns one arbitrary branch — not the first: the three-branch case
+ * above yields the *middle* one. Nothing throws, nothing warns, and the string
+ * is simply shorter than it was written.
+ *
+ * That matters more here than in most apps, because these strings are not only
+ * UI labels: every `toolDesc*` is a tool description handed to the model. A
+ * description silently cut to one word leaves the tool registered, described,
+ * green in CI, and the model told a third of its vocabulary — which reads to
+ * the user as the tool half-working for no reason.
  *
  * Compilation is lazy, so this walks every leaf and renders it.
+ *
+ * Credit to kwami-app-53, who found the silent case and proved it by shrinking
+ * a real description from 329 characters to 8 with the whole suite still green.
+ * Their `toolDescriptions.test.ts` catches truncation from any cause by
+ * comparing rendered against raw length; this file catches the syntax itself,
+ * across every message rather than only descriptions. Both are worth having.
  */
 import { describe, expect, it } from 'vitest';
 import { createI18n } from 'vue-i18n';
@@ -24,6 +42,16 @@ type Messages = Record<string, unknown>;
 // added to src/i18n/index.ts and not here would otherwise ship unchecked —
 // which is exactly how the theme-panel message below reached production.
 const bundles: Record<string, Messages> = messages as unknown as Record<string, Messages>;
+
+/** The message as it was written, before vue-i18n compiles anything away. */
+function rawMessage(bundle: Messages, key: string): unknown {
+  let node: unknown = bundle;
+  for (const part of key.split('.')) {
+    if (!node || typeof node !== 'object') return undefined;
+    node = (node as Messages)[part];
+  }
+  return node;
+}
 
 function leafKeys(node: unknown, prefix = ''): string[] {
   if (typeof node === 'string') return [prefix];
@@ -70,9 +98,10 @@ describe.each(Object.keys(bundles))('%s messages', (locale) => {
   it('renders every tool description the model is given', () => {
     // These reach the LLM verbatim. A description that renders as its own key
     // path tells the model nothing, and one that throws removes the tool.
-    const toolDescriptions = keys.filter((key) =>
-      key.startsWith('workspaceAgentTools.toolDesc'),
-    );
+    // Matched on the leaf name, not a section prefix: descriptions now live in
+    // four bundles, and a filter naming one of them passes vacuously over the
+    // rest the moment a fifth appears.
+    const toolDescriptions = keys.filter((key) => /(^|\.)toolDesc[A-Z]/.test(key));
     expect(toolDescriptions.length).toBeGreaterThan(20);
 
     for (const key of toolDescriptions) {
@@ -80,6 +109,47 @@ describe.each(Object.keys(bundles))('%s messages', (locale) => {
       expect(rendered, key).toBeTruthy();
       expect(rendered, key).not.toBe(key);
     }
+  });
+
+  /**
+   * The silent half: a bare `|` is plural syntax, not punctuation.
+   *
+   * Checked against the raw source rather than the rendered output, because
+   * rendering is where the evidence is destroyed — by the time `t()` has
+   * returned one branch, the other two are simply gone.
+   *
+   * The rule needs no allowlist to maintain. Every intentional plural in this
+   * codebase is a three-branch form carrying a count; prose that happens to
+   * contain a pipe is neither. So: descriptions may never contain a bare pipe
+   * at all, and anything else that does must look like the plural it claims to
+   * be.
+   */
+  it('has no message where a prose pipe is silently eating branches', () => {
+    const offenders: string[] = [];
+
+    for (const key of keys) {
+      const raw = rawMessage(bundles[locale], key);
+      if (typeof raw !== 'string') continue;
+
+      // `{'|'}` is the escaped literal and renders as a pipe; ignore it.
+      const bare = raw.replace(/\{'\|'\}/g, '');
+      if (!bare.includes('|')) continue;
+
+      const isDescription = /(^|\.)toolDesc[A-Z]/.test(key);
+      const branches = bare.split('|');
+      const looksLikeAPlural = branches.length === 3 && /\{\s*n\s*\}/.test(bare);
+
+      if (isDescription || !looksLikeAPlural) {
+        offenders.push(
+          `${key}: ${branches.length} branch(es), renders as "${i18n.global.t(key)}"`,
+        );
+      }
+    }
+
+    expect(
+      offenders,
+      "a bare | makes the message a plural; write {'|'} for a literal pipe",
+    ).toEqual([]);
   });
 });
 
