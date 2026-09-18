@@ -6,8 +6,8 @@ import { getBandLevels } from '@/utils/audioBands';
 
 const RANDOMIZE_INTERVAL_MS = 2_000;
 const WELCOME_RENDERER_WEIGHTS = {
-  blobXyz: 8,
-  eyeIris: 2,
+  blobXyz: 19,
+  eyeIris: 1,
 } as const;
 
 const containerRef = ref<HTMLDivElement | null>(null);
@@ -69,6 +69,9 @@ function shuffleColors(): { x: string; y: string; z: string } {
 }
 
 function pickRendererByProbability(): WelcomeRenderer {
+  const totalWeight = WELCOME_RENDERER_WEIGHTS.blobXyz + WELCOME_RENDERER_WEIGHTS.eyeIris;
+  const roll = Math.random() * totalWeight;
+  if (roll < WELCOME_RENDERER_WEIGHTS.blobXyz) return 'blob-xyz';
   return 'eye-iris';
 }
 
