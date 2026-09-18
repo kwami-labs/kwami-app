@@ -531,6 +531,11 @@ export function useWorkspaceAgentTools() {
       responseLength: voiceStore.soulConfig.responseLength,
       hasSearchResults: searchStore.hasSearchData,
       themeMode: themeStore.mode,
+      // `mode` can be 'system' or 'auto', neither of which answers "is the
+      // screen dark right now". Without this the agent asked that question
+      // replies "system", which is true and useless. `resolvedMode` is what
+      // the store actually wrote to data-theme.
+      resolvedThemeMode: themeStore.resolvedMode,
       sidebarPosition: themeStore.sidebarPosition,
       visibleMessages: messages.value.length,
       message: t('workspaceAgentTools.workspaceStatus', {
@@ -539,7 +544,10 @@ export function useWorkspaceAgentTools() {
           : t('workspaceAgentTools.panelStateClosed'),
         activePanel: String(uiStore.activePanel),
         renderer: String(rendererType.value),
-        theme: String(themeStore.mode),
+        theme:
+          themeStore.mode === themeStore.resolvedMode
+            ? String(themeStore.mode)
+            : `${themeStore.mode} (${themeStore.resolvedMode})`,
         sidebar: String(themeStore.sidebarPosition),
       }),
     };

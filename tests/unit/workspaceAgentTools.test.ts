@@ -17,6 +17,7 @@ import { useSceneStore } from '@/stores/scene';
 import { useAvatarStore } from '@/stores/avatar';
 import { useWorkspaceStore } from '@/stores/workspace';
 import { useVoiceStore } from '@/stores/voice';
+import { useThemeStore } from '@/stores/theme';
 import { sceneImagePresets } from '@/presets/scene/image-presets';
 
 type ToolDef = {
@@ -605,5 +606,64 @@ describe('soul presets', () => {
     const result = await call('apply_soul_preset', { name: 'Space Pirate', confirm: true });
     expect(result.success).toBe(false);
     expect(String(result.message)).toContain('Space Pirate');
+  });
+});
+
+/**
+ * Speaking and clicking must reach the same theme state.
+ *
+ * The login screen's light/dark pill and `set_theme_control` are written by
+ * different people in different files, and the risk flagged was that they
+ * write different state under `system`/`auto` — where `mode` and what is
+ * actually on screen genuinely differ. They do not: both go through
+ * `themeStore.setMode`. This pins that, because the day one of them starts
+ * writing `resolvedMode` directly is the day the two diverge silently.
+ */
+describe('theme mode', () => {
+  it.each(['dark', 'light', 'system', 'auto'] as const)('accepts %s', async (mode) => {
+    const result = await call('set_theme_control', { control: 'mode', value: mode });
+    expect(result.success).toBe(true);
+    expect(useThemeStore().mode).toBe(mode);
+  });
+
+  it('rejects a mode that does not exist', async () => {
+    const before = useThemeStore().mode;
+    const result = await call('set_theme_control', { control: 'mode', value: 'sepia' });
+    expect(result.success).toBe(false);
+    expect(useThemeStore().mode).toBe(before);
+  });
+
+  it('writes the same field the light/dark button writes', async () => {
+    const theme = useThemeStore();
+
+    // What AuthPreferencesPill does on click.
+    theme.setMode('light');
+    const clicked = theme.mode;
+
+    await call('set_theme_control', { control: 'mode', value: 'dark' });
+    await call('set_theme_control', { control: 'mode', value: 'light' });
+
+    expect(theme.mode).toBe(clicked);
+  });
+
+  it('tells the agent what is actually on screen, not just the preference', async () => {
+    // "system" is a true answer to "what mode are you in" and a useless answer
+    // to "is it dark right now".
+    await call('set_theme_control', { control: 'mode', value: 'system' });
+
+    const status = await call('show_workspace_status');
+
+    expect(status.themeMode).toBe('system');
+    expect(['dark', 'light']).toContain(status.resolvedThemeMode);
+    expect(String(status.message)).toContain('system');
+  });
+
+  it('does not double-report when the preference is already concrete', async () => {
+    await call('set_theme_control', { control: 'mode', value: 'dark' });
+
+    const status = await call('show_workspace_status');
+
+    expect(status.resolvedThemeMode).toBe('dark');
+    expect(String(status.message)).not.toContain('dark (dark)');
   });
 });
