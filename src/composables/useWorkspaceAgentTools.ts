@@ -28,12 +28,15 @@ import { useCalendarStore, type CalendarEventType } from '@/stores/calendar';
 import { useNavigationStore, BROWSER_PANEL_LAYOUTS, type BrowserPanelLayout } from '@/stores/navigation';
 import { useWorkspaceStore } from '@/stores/workspace';
 import { useKwamiConfigSync } from '@/composables/useKwamiConfigSync';
+import { useSearchPanelAgentTools } from '@/composables/useSearchPanelAgentTools';
+import { soulPresets } from '@/presets/agent/soul-presets';
 import { sceneImagePresets } from '@/presets/scene/image-presets';
 import { sceneVideoPresets } from '@/presets/scene/video-presets';
 import { sceneHdriPresets } from '@/presets/scene/hdri-presets';
 
 const WORKSPACE_PANELS = [
   'avatar',
+  'audio',
   'scene',
   'voice',
   'enhancements',
@@ -57,6 +60,10 @@ type ResponseLength = 'short' | 'medium' | 'long';
 
 const PANEL_ALIASES: Record<string, WorkspacePanel> = {
   account: 'account',
+  audio: 'audio',
+  music: 'audio',
+  soundtrack: 'audio',
+  player: 'audio',
   avatar: 'avatar',
   chat: 'history',
   history: 'history',
@@ -118,6 +125,7 @@ const UI_CONTROL_DOMAINS = [
   'memory',
   'search',
   'browser',
+  'soul',
 ] as const;
 
 type UiControlDomain = (typeof UI_CONTROL_DOMAINS)[number];
@@ -137,6 +145,10 @@ const UI_DOMAIN_ALIASES: Record<string, UiControlDomain> = {
   panels: 'panel',
   scene: 'scene',
   search: 'search',
+  soul: 'soul',
+  personality: 'soul',
+  persona: 'soul',
+  profile: 'soul',
   theme: 'theme',
   ui: 'workspace',
   voice: 'voice',
@@ -245,6 +257,9 @@ export function useWorkspaceAgentTools() {
   const { switchToKwami } = useKwamiConfigSync();
   const { messages } = useTranscriptionState();
   const actionState = useAgentActionState();
+  // The search panel's tools live in their own composable but register through
+  // this one, so there is a single place the agent's tool set is assembled.
+  const searchPanelTools = useSearchPanelAgentTools();
 
   function emitConfigApplied() {
     if (typeof window !== 'undefined') {
@@ -1485,6 +1500,420 @@ export function useWorkspaceAgentTools() {
   }
 
   // ---------------------------------------------------------------------------
+  // Soul (who the companion is)
+  // ---------------------------------------------------------------------------
+
+  /** Sliders in the soul panel run -100..100, not 0..1. */
+  const EMOTIONAL_TRAIT_MIN = -100;
+  const EMOTIONAL_TRAIT_MAX = 100;
+
+  const EMOTIONAL_TRAITS = [
+    'happiness',
+    'energy',
+    'confidence',
+    'calmness',
+    'optimism',
+    'socialness',
+    'patience',
+    'empathy',
+    'curiosity',
+    'creativity',
+  ] as const;
+
+  function clampTrait(value: number): number {
+    return Math.round(Math.min(EMOTIONAL_TRAIT_MAX, Math.max(EMOTIONAL_TRAIT_MIN, value)));
+  }
+
+  /**
+   * Edit who the companion is.
+   *
+   * The soul panel writes six fields; until now the only one any tool could
+   * reach was `emotionalTone`, so "call yourself Atlas and be more direct" was
+   * a change the user could make by hand and not by voice -- in an app whose
+   * whole premise is speaking to it.
+   */
+  async function setSoulControl(control: unknown, value: unknown, confirm: unknown) {
+    if (typeof control !== 'string') {
+      return { success: false, message: t('workspaceAgentTools.soulControlString') };
+    }
+
+    const normalized = normalizeKey(control);
+    const soul = voiceStore.soulConfig;
+
+    function applied(message: string, extra: Record<string, unknown> = {}) {
+      syncSoulToAgent();
+      actionState.recordAction(t('workspaceAgentTools.actionUpdatedSoul'), String(control), {
+        announce: true,
+      });
+      return { success: true, message, ...extra };
+    }
+
+    switch (normalized) {
+      case 'name': {
+        const name = asString(value).trim();
+        if (!name) return { success: false, message: t('workspaceAgentTools.soulNameRequired') };
+        soul.name = name.slice(0, 60);
+        return applied(t('workspaceAgentTools.soulNameSet', { name: soul.name }));
+      }
+
+      case 'personality': {
+        const personality = asString(value).trim();
+        if (!personality) {
+          return { success: false, message: t('workspaceAgentTools.soulPersonalityRequired') };
+        }
+        soul.personality = personality.slice(0, 2000);
+        return applied(t('workspaceAgentTools.soulPersonalitySet'));
+      }
+
+      case 'systemprompt': {
+        // The system prompt is the whole instruction set, not one setting.
+        // Overwriting it by voice on a misheard sentence would replace the
+        // companion wholesale, so it is confirmed like a destructive action.
+        const prompt = asString(value);
+        const approved = await confirmIfNeeded(
+          true,
+          confirm,
+          t('workspaceAgentTools.confirmSystemPromptTitle'),
+          t('workspaceAgentTools.confirmSystemPromptBody'),
+        );
+        if (!approved) {
+          return {
+            success: false,
+            cancelled: true,
+            message: t('workspaceAgentTools.soulSystemPromptCancelled'),
+          };
+        }
+        soul.systemPrompt = prompt.slice(0, 8000);
+        return applied(t('workspaceAgentTools.soulSystemPromptSet'));
+      }
+
+      case 'conversationstyle': {
+        const style = asString(value).trim();
+        if (!style) return { success: false, message: t('workspaceAgentTools.soulStyleRequired') };
+        soul.conversationStyle = style.slice(0, 40);
+        return applied(t('workspaceAgentTools.soulStyleSet', { style: soul.conversationStyle }));
+      }
+
+      case 'language': {
+        const language = asString(value).trim().toLowerCase();
+        if (!language) {
+          return { success: false, message: t('workspaceAgentTools.soulLanguageRequired') };
+        }
+        soul.language = language;
+        return applied(t('workspaceAgentTools.soulLanguageSet', { language }));
+      }
+
+      case 'traits': {
+        if (!Array.isArray(value)) {
+          return { success: false, message: t('workspaceAgentTools.soulTraitsArray') };
+        }
+        const traits = value
+          .map((item) => asString(item).trim())
+          .filter(Boolean)
+          .slice(0, 12);
+        soul.traits = traits;
+        return applied(t('workspaceAgentTools.soulTraitsSet', { count: traits.length }), {
+          traits,
+        });
+      }
+
+      case 'emotionaltraits': {
+        if (!isRecord(value)) {
+          return {
+            success: false,
+            message: t('workspaceAgentTools.soulEmotionalTraitsObject', {
+              list: EMOTIONAL_TRAITS.join(', '),
+            }),
+          };
+        }
+        const unknown: string[] = [];
+        const updated: string[] = [];
+        for (const [key, raw] of Object.entries(value)) {
+          const trait = EMOTIONAL_TRAITS.find((name) => normalizeKey(name) === normalizeKey(key));
+          if (!trait) {
+            unknown.push(key);
+            continue;
+          }
+          if (typeof raw !== 'number' || !Number.isFinite(raw)) continue;
+          soul.emotionalTraits[trait] = clampTrait(raw);
+          updated.push(trait);
+        }
+        if (!updated.length) {
+          return {
+            success: false,
+            message: t('workspaceAgentTools.soulEmotionalTraitsNone', {
+              list: EMOTIONAL_TRAITS.join(', '),
+            }),
+          };
+        }
+        return applied(
+          t('workspaceAgentTools.soulEmotionalTraitsSet', { traits: updated.join(', ') }),
+          { updated, unknown },
+        );
+      }
+
+      case 'emotionaltone':
+      case 'responselength':
+        // Both already have a home in the voice domain; route rather than
+        // duplicate, so the two paths cannot drift apart.
+        return setVoiceControl(control, value, confirm);
+
+      default:
+        return {
+          success: false,
+          message: t('workspaceAgentTools.unknownSoulControl', { control }),
+        };
+    }
+  }
+
+  async function getSoulProfile() {
+    const soul = voiceStore.soulConfig;
+    return {
+      success: true,
+      soul: {
+        name: soul.name,
+        personality: soul.personality,
+        conversationStyle: soul.conversationStyle,
+        responseLength: soul.responseLength,
+        emotionalTone: soul.emotionalTone,
+        language: soul.language,
+        traits: [...soul.traits],
+        emotionalTraits: { ...soul.emotionalTraits },
+        hasCustomSystemPrompt: Boolean(soul.systemPrompt),
+      },
+      message: t('workspaceAgentTools.soulProfile', {
+        name: soul.name,
+        style: soul.conversationStyle,
+        tone: soul.emotionalTone,
+      }),
+    };
+  }
+
+  async function listSoulPresets(category: unknown) {
+    const wanted = normalizeKey(asString(category));
+    const matching = wanted && wanted !== 'all'
+      ? soulPresets.filter((preset) => normalizeKey(preset.category ?? '') === wanted)
+      : soulPresets;
+
+    return {
+      success: true,
+      categories: [...new Set(soulPresets.map((preset) => preset.category).filter(Boolean))],
+      presets: matching.map((preset) => ({ name: preset.name, category: preset.category })),
+      message: t('workspaceAgentTools.soulPresetsListed', { count: matching.length }),
+    };
+  }
+
+  /**
+   * Replace the companion's personality with a bundled preset.
+   *
+   * Confirmed, because it overwrites name, personality, system prompt, traits,
+   * style, length, tone and all ten emotional traits at once -- everything the
+   * user may have tuned by hand.
+   */
+  async function applySoulPreset(name: unknown, confirm: unknown) {
+    const wanted = normalizeKey(asString(name));
+    if (!wanted) {
+      return { success: false, message: t('workspaceAgentTools.soulPresetNameRequired') };
+    }
+
+    const preset =
+      soulPresets.find(
+        (item) => normalizeKey(item.id) === wanted || normalizeKey(item.name) === wanted,
+      ) ?? soulPresets.find((item) => normalizeKey(item.name).includes(wanted));
+
+    if (!preset) {
+      return {
+        success: false,
+        message: t('workspaceAgentTools.soulPresetUnknown', {
+          name: asString(name),
+          list: soulPresets
+            .slice(0, 8)
+            .map((item) => item.name)
+            .join(', '),
+        }),
+      };
+    }
+
+    const approved = await confirmIfNeeded(
+      true,
+      confirm,
+      t('workspaceAgentTools.confirmSoulPresetTitle'),
+      t('workspaceAgentTools.confirmSoulPresetBody', { name: preset.name }),
+    );
+    if (!approved) {
+      return {
+        success: false,
+        cancelled: true,
+        message: t('workspaceAgentTools.soulPresetCancelled', { name: preset.name }),
+      };
+    }
+
+    const soul = voiceStore.soulConfig;
+    soul.name = preset.name;
+    soul.personality = preset.personality ?? soul.personality;
+    soul.systemPrompt = preset.systemPrompt ?? soul.systemPrompt;
+    soul.traits = [...(preset.traits ?? [])];
+    soul.conversationStyle = preset.conversationStyle ?? soul.conversationStyle;
+    if (preset.responseLength) soul.responseLength = preset.responseLength as ResponseLength;
+    if (preset.emotionalTone) {
+      soul.emotionalTone = preset.emotionalTone as typeof soul.emotionalTone;
+    }
+    if (preset.emotionalTraits) {
+      Object.assign(soul.emotionalTraits, preset.emotionalTraits);
+    }
+
+    syncSoulToAgent();
+    actionState.recordAction(t('workspaceAgentTools.actionAppliedSoulPreset'), preset.name, {
+      announce: true,
+    });
+    return {
+      success: true,
+      preset: preset.name,
+      message: t('workspaceAgentTools.soulPresetApplied', { name: preset.name }),
+    };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Soundtrack
+  // ---------------------------------------------------------------------------
+
+  const SOUNDTRACK_ACTIONS = ['play', 'pause', 'toggle', 'next', 'stop', 'status'] as const;
+
+  /**
+   * Playback state does not settle synchronously: `play()` resumes an
+   * AudioContext and starts a fade, so reading `isPlaying` on the next line
+   * reports the state we just left. Poll briefly instead of guessing.
+   */
+  async function settledPlayback(
+    isPlaying: { value: boolean },
+    expected: boolean,
+    timeoutMs = 800,
+  ): Promise<boolean> {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      if (isPlaying.value === expected) return true;
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    return isPlaying.value === expected;
+  }
+
+  /**
+   * Control the built-in music crate.
+   *
+   * Deliberately reports what actually happened rather than that the call was
+   * made. Browsers only let an AudioContext resume from a real user gesture, so
+   * on a cold page "play some music" can silently do nothing -- and a tool that
+   * answers "playing" over silence reads as the agent lying about the world.
+   */
+  async function controlSoundtrack(action: unknown, volume: unknown) {
+    const normalized = normalizeKey(asString(action)) || 'status';
+
+    // Built on first use, and it reaches useKwami(), which needs Pinia
+    // installed -- so resolve it here rather than at module scope.
+    const { useWorkspaceSoundtrack } = await import('@/composables/useSoundtrack');
+    const { soundtrack, level } = useWorkspaceSoundtrack();
+
+    function describe(message: string, extra: Record<string, unknown> = {}) {
+      const track = soundtrack.currentTrack.value;
+      return {
+        success: true,
+        isPlaying: soundtrack.isPlaying.value,
+        track: track ? { title: track.title, artist: track.artist } : null,
+        volume: Number(level.value.toFixed(2)),
+        message,
+        ...extra,
+      };
+    }
+
+    if (typeof volume === 'number' && Number.isFinite(volume)) {
+      // Accept both 0-1 and 0-100, because "turn it up to 40" is as likely as
+      // a normalised value and 40 would otherwise pin the volume at maximum.
+      const normalizedVolume = volume > 1 ? volume / 100 : volume;
+      level.value = Math.min(1, Math.max(0, normalizedVolume));
+      if (normalized === 'status' || normalized === 'volume') {
+        actionState.recordAction(t('workspaceAgentTools.actionSetVolume'), String(level.value), {
+          announce: true,
+        });
+        return describe(t('workspaceAgentTools.soundtrackVolume', { percent: Math.round(level.value * 100) }));
+      }
+    } else if (normalized === 'volume') {
+      return { success: false, message: t('workspaceAgentTools.soundtrackVolumeNumber') };
+    }
+
+    switch (normalized) {
+      case 'play':
+      case 'resume': {
+        if (soundtrack.isPlaying.value) {
+          return describe(t('workspaceAgentTools.soundtrackAlreadyPlaying'));
+        }
+        soundtrack.toggle();
+        const started = await settledPlayback(soundtrack.isPlaying, true);
+        actionState.recordAction(t('workspaceAgentTools.actionPlayedMusic'), undefined, {
+          announce: true,
+        });
+        return started
+          ? describe(t('workspaceAgentTools.soundtrackPlaying'))
+          : {
+              ...describe(t('workspaceAgentTools.soundtrackBlocked')),
+              success: false,
+            };
+      }
+
+      case 'pause': {
+        if (!soundtrack.isPlaying.value) {
+          return describe(t('workspaceAgentTools.soundtrackAlreadyPaused'));
+        }
+        soundtrack.toggle();
+        await settledPlayback(soundtrack.isPlaying, false);
+        return describe(t('workspaceAgentTools.soundtrackPaused'));
+      }
+
+      case 'toggle': {
+        const wasPlaying = soundtrack.isPlaying.value;
+        soundtrack.toggle();
+        await settledPlayback(soundtrack.isPlaying, !wasPlaying);
+        return describe(
+          soundtrack.isPlaying.value
+            ? t('workspaceAgentTools.soundtrackPlaying')
+            : t('workspaceAgentTools.soundtrackPaused'),
+        );
+      }
+
+      case 'next':
+      case 'skip': {
+        soundtrack.next();
+        await settledPlayback(soundtrack.isPlaying, true);
+        actionState.recordAction(t('workspaceAgentTools.actionSkippedTrack'), undefined, {
+          announce: true,
+        });
+        return describe(t('workspaceAgentTools.soundtrackSkipped'));
+      }
+
+      case 'stop': {
+        soundtrack.stop();
+        await settledPlayback(soundtrack.isPlaying, false);
+        return describe(t('workspaceAgentTools.soundtrackStopped'));
+      }
+
+      case 'status':
+        return describe(
+          soundtrack.isPlaying.value
+            ? t('workspaceAgentTools.soundtrackPlaying')
+            : t('workspaceAgentTools.soundtrackIdle'),
+        );
+
+      default:
+        return {
+          success: false,
+          message: t('workspaceAgentTools.unknownSoundtrackAction', {
+            action: asString(action),
+            list: SOUNDTRACK_ACTIONS.join(', '),
+          }),
+        };
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // Scene presets
   // ---------------------------------------------------------------------------
 
@@ -1740,6 +2169,10 @@ export function useWorkspaceAgentTools() {
       return setBrowserPanelControl(control, value);
     }
 
+    if (normalizedDomain === 'soul') {
+      return setSoulControl(control, value, confirm);
+    }
+
     if (normalizedDomain === 'voice') {
       return setVoiceControl(control, value, confirm);
     }
@@ -1769,6 +2202,8 @@ export function useWorkspaceAgentTools() {
   }
 
   function registerTools(instance: Kwami) {
+    searchPanelTools.registerSearchPanelTools(instance);
+
     instance.registerTool({
       name: 'set_ui_control',
       description: t('workspaceAgentTools.toolDescSetUiControl'),
@@ -1899,6 +2334,63 @@ export function useWorkspaceAgentTools() {
         value: {},
       },
       handler: async ({ control, value }) => setBrowserPanelControl(control, value),
+    });
+
+    instance.registerTool({
+      name: 'set_soul_control',
+      description: t('workspaceAgentTools.toolDescSetSoulControl'),
+      parameters: {
+        control: {
+          type: 'string',
+          enum: [
+            'name',
+            'personality',
+            'systemPrompt',
+            'conversationStyle',
+            'language',
+            'traits',
+            'emotionalTraits',
+            'emotionalTone',
+            'responseLength',
+          ],
+        },
+        value: {},
+        confirm: { type: 'boolean' },
+      },
+      handler: async ({ control, value, confirm }) => setSoulControl(control, value, confirm),
+    });
+
+    instance.registerTool({
+      name: 'get_soul_profile',
+      description: t('workspaceAgentTools.toolDescGetSoulProfile'),
+      handler: async () => getSoulProfile(),
+    });
+
+    instance.registerTool({
+      name: 'list_soul_presets',
+      description: t('workspaceAgentTools.toolDescListSoulPresets'),
+      parameters: { category: { type: 'string' } },
+      handler: async ({ category }) => listSoulPresets(category),
+    });
+
+    instance.registerTool({
+      name: 'apply_soul_preset',
+      description: t('workspaceAgentTools.toolDescApplySoulPreset'),
+      parameters: {
+        name: { type: 'string' },
+        confirm: { type: 'boolean' },
+      },
+      handler: async ({ name, confirm }) => applySoulPreset(name, confirm),
+    });
+
+    instance.registerTool({
+      name: 'control_soundtrack',
+      description: t('workspaceAgentTools.toolDescControlSoundtrack'),
+      parameters: {
+        action: { type: 'string', enum: [...SOUNDTRACK_ACTIONS, 'volume'] },
+        volume: { type: 'number' },
+      },
+      handler: async ({ action, volume }) => controlSoundtrack(action, volume),
     });
 
     instance.registerTool({
