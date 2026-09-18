@@ -69,9 +69,6 @@ function shuffleColors(): { x: string; y: string; z: string } {
 }
 
 function pickRendererByProbability(): WelcomeRenderer {
-  const totalWeight = WELCOME_RENDERER_WEIGHTS.blobXyz + WELCOME_RENDERER_WEIGHTS.eyeIris;
-  const roll = Math.random() * totalWeight;
-  if (roll < WELCOME_RENDERER_WEIGHTS.blobXyz) return 'blob-xyz';
   return 'eye-iris';
 }
 
