@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n';
 import WelcomeBlob from './WelcomeBlob.vue';
 import LoginButton from './LoginButton.vue';
 import SoundtrackPill from './SoundtrackPill.vue';
+import AuthPreferencesPill from './AuthPreferencesPill.vue';
 
 const { t } = useI18n();
 const loginOpen = ref(false);
@@ -22,6 +23,8 @@ const loginOpen = ref(false);
     <LoginButton v-model:open="loginOpen" />
 
     <SoundtrackPill :login-open="loginOpen" />
+
+    <AuthPreferencesPill />
 
     <div class="blob-zone">
       <WelcomeBlob />
