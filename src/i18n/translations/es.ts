@@ -279,6 +279,12 @@ export const es = {
     failedSignIn: 'No se pudo iniciar sesion',
     alreadyHaveAccount: 'Ya tienes una cuenta?',
     noAccount: 'No tienes una cuenta?',
+    invalidEmail: 'Introduce un email valido',
+    emailNotConfirmed: 'Confirma tu email primero: busca el enlace en tu bandeja de entrada.',
+    accountExists: 'Ya existe una cuenta con este email. Inicia sesion.',
+    emailFormLabel: 'Inicia sesion con email y contrasena',
+    signingIn: 'Iniciando sesion...',
+    signingUp: 'Creando cuenta...',
   },
   welcomeScreen: {
     clickToSkip: 'Haz clic en cualquier lugar para omitir',

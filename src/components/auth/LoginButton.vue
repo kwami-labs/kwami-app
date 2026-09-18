@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import GoogleButton from './GoogleButton.vue';
 import ProviderButton from './ProviderButton.vue';
+import EmailAuthForm from './EmailAuthForm.vue';
 import {
   enabledWeb2Providers,
   enabledWeb3Providers,
@@ -22,6 +23,9 @@ const { t } = useI18n();
 // Iconify cannot reproduce faithfully.
 const web2Others = computed(() => enabledWeb2Providers.filter((p) => p.id !== 'google'));
 const showGoogle = computed(() => enabledWeb2Providers.some((p) => p.id === 'google'));
+// The divider reads "or continue with email"; with no OAuth button above it,
+// there is no "or".
+const hasOAuthProviders = computed(() => enabledWeb2Providers.length > 0);
 
 function openPanel() {
   activeTab.value = 'web2';
@@ -99,6 +103,12 @@ onUnmounted(() => {
             :key="provider.id"
             :provider="provider"
           />
+
+          <div v-if="hasOAuthProviders" class="divider">
+            <span>{{ t('auth.orContinueWithEmail') }}</span>
+          </div>
+
+          <EmailAuthForm />
         </div>
         <div v-else-if="isOpen" key="web3" class="provider-group">
           <ProviderButton
@@ -197,7 +207,10 @@ onUnmounted(() => {
 }
 
 .login-panel--open {
-  max-height: 520px;
+  /* Tall enough for the sign-up form (three fields) without clipping, capped
+     so the panel never outgrows a short viewport. */
+  max-height: min(78vh, 620px);
+  overflow-y: auto;
   opacity: 1;
   padding: 2.25rem 1.1rem 1.1rem;
 }
@@ -267,6 +280,25 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0.35rem 0 0.1rem;
+  color: rgba(194, 203, 227, 0.6);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.14);
 }
 
 .provider-btn {

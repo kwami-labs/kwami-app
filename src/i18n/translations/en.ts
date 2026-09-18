@@ -279,6 +279,12 @@ export const en = {
     failedSignIn: 'Failed to sign in',
     alreadyHaveAccount: 'Already have an account?',
     noAccount: "Don't have an account?",
+    invalidEmail: 'Enter a valid email address',
+    emailNotConfirmed: 'Confirm your email address first — check your inbox for the link.',
+    accountExists: 'An account with this email already exists. Sign in instead.',
+    emailFormLabel: 'Sign in with email and password',
+    signingIn: 'Signing in...',
+    signingUp: 'Creating account...',
   },
   welcomeScreen: {
     clickToSkip: 'Click anywhere to skip',

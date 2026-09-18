@@ -12,6 +12,7 @@
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { supabase } from '@/lib/supabase';
+import type { SolanaProvider } from '@/types/wallet-providers';
 
 export type Web3Wallet = 'phantom' | 'metamask';
 
@@ -20,10 +21,21 @@ export function useWeb3SignIn() {
   const isLoading = ref(false);
   const error = ref<string | null>(null);
 
+  /**
+   * Phantom's Solana provider, or undefined when it is not installed.
+   *
+   * `window.phantom.solana` first: `window.solana` is claimed by whichever
+   * Solana wallet injects first, so with two extensions installed it can be
+   * Backpack or Solflare while Phantom is present and perfectly usable.
+   */
+  function phantomProvider(): SolanaProvider | undefined {
+    const namespaced = window.phantom?.solana;
+    if (namespaced?.isPhantom) return namespaced;
+    return window.solana?.isPhantom ? window.solana : undefined;
+  }
+
   function isAvailable(wallet: Web3Wallet): boolean {
-    return wallet === 'phantom'
-      ? Boolean(window.solana?.isPhantom)
-      : Boolean(window.ethereum);
+    return wallet === 'phantom' ? Boolean(phantomProvider()) : Boolean(window.ethereum);
   }
 
   async function signIn(wallet: Web3Wallet) {
@@ -41,7 +53,13 @@ export function useWeb3SignIn() {
       const statement = t('auth.web3Statement');
       const { error: authError } =
         wallet === 'phantom'
-          ? await supabase.auth.signInWithWeb3({ chain: 'solana', statement })
+          ? await supabase.auth.signInWithWeb3({
+              chain: 'solana',
+              statement,
+              // Passing the provider explicitly rather than letting auth-js fall
+              // back to window.solana, which may be a different wallet.
+              wallet: phantomProvider(),
+            })
           : await supabase.auth.signInWithWeb3({ chain: 'ethereum', statement });
 
       if (authError) error.value = authError.message;

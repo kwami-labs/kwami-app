@@ -1,4 +1,4 @@
-import { test, expect, gotoApp, stubApi, stubKwamiRuntime, WELCOME_MS } from './fixtures';
+import { test, expect, gotoApp, stubApi, stubKwamiRuntime, TEST_USER, WELCOME_MS } from './fixtures';
 
 test.describe('unauthenticated', () => {
   test('shows the welcome layer, then the auth page', async ({ signedOut: page }) => {
@@ -80,5 +80,162 @@ test.describe('console hygiene', () => {
     await expect(page.locator('.control-bar-container')).toBeVisible({ timeout: WELCOME_MS + 10_000 });
 
     expect(errors).toEqual([]);
+  });
+});
+
+/**
+ * Opens the login panel and waits for it to be usable.
+ *
+ * The CTA only reacts once AuthGuard has released the welcome rings, so this
+ * waits on the wordmark first rather than clicking into a still-hidden panel.
+ */
+async function openLoginPanel(page: import('@playwright/test').Page) {
+  await expect(page.locator('.title-main')).toBeVisible({ timeout: WELCOME_MS + 5_000 });
+  await page.locator('.login-cta').click();
+  await expect(page.locator('.login-entry')).toHaveClass(/login-entry--open/);
+}
+
+test.describe('email and password', () => {
+  test('offers the form alongside the OAuth buttons', async ({ signedOut: page }) => {
+    await gotoApp(page);
+    await openLoginPanel(page);
+
+    await expect(page.locator('form.email-auth')).toBeVisible();
+    await expect(page.locator('input[name="email"]')).toBeVisible();
+    await expect(page.locator('input[name="password"]')).toBeVisible();
+    // Sign-in mode: no confirmation field until the user switches.
+    await expect(page.locator('input[name="confirmPassword"]')).toHaveCount(0);
+  });
+
+  test('switches to sign up and back', async ({ signedOut: page }) => {
+    await gotoApp(page);
+    await openLoginPanel(page);
+
+    await page.locator('.email-auth__switch-btn').click();
+    await expect(page.locator('input[name="confirmPassword"]')).toBeVisible();
+
+    await page.locator('.email-auth__switch-btn').click();
+    await expect(page.locator('input[name="confirmPassword"]')).toHaveCount(0);
+  });
+
+  test('rejects a malformed address without hitting the network', async ({ signedOut: page }) => {
+    await gotoApp(page);
+    await openLoginPanel(page);
+
+    let tokenCalls = 0;
+    await page.route('**/auth/v1/token**', (route) => {
+      tokenCalls += 1;
+      return route.fulfill({ status: 400, json: { message: 'should not be reached' } });
+    });
+
+    await page.locator('input[name="email"]').fill('not-an-email');
+    await page.locator('input[name="password"]').fill('hunter2');
+    await page.locator('form.email-auth button[type="submit"]').click();
+
+    await expect(page.locator('.email-auth__error')).toHaveText('Enter a valid email address');
+    expect(tokenCalls).toBe(0);
+  });
+
+  test('surfaces bad credentials as a sign-up suggestion', async ({ signedOut: page }) => {
+    await page.route('**/auth/v1/token**', (route) =>
+      route.fulfill({
+        status: 400,
+        json: { code: 'invalid_credentials', error_code: 'invalid_credentials', message: 'Invalid login credentials' },
+      }),
+    );
+
+    await gotoApp(page);
+    await openLoginPanel(page);
+
+    await page.locator('input[name="email"]').fill('nobody@kwami.test');
+    await page.locator('input[name="password"]').fill('wrong-password');
+    await page.locator('form.email-auth button[type="submit"]').click();
+
+    await expect(page.locator('.email-auth__error')).toContainText('Invalid credentials');
+    // Still signed out.
+    await expect(page.locator('.title-main')).toBeVisible();
+  });
+
+  test('signs in and dismisses the auth overlay', async ({ signedOut: page }) => {
+    await page.route('**/auth/v1/token**', (route) =>
+      route.fulfill({
+        status: 200,
+        json: {
+          access_token: 'test-access-token',
+          refresh_token: 'test-refresh-token',
+          token_type: 'bearer',
+          expires_in: 86_400,
+          expires_at: Math.floor(Date.now() / 1000) + 86_400,
+          user: {
+            id: TEST_USER.id,
+            aud: 'authenticated',
+            role: 'authenticated',
+            email: TEST_USER.email,
+            app_metadata: { provider: 'email' },
+            user_metadata: {},
+            created_at: new Date().toISOString(),
+          },
+        },
+      }),
+    );
+
+    await gotoApp(page);
+    await openLoginPanel(page);
+
+    await page.locator('input[name="email"]').fill(TEST_USER.email);
+    await page.locator('input[name="password"]').fill('hunter2');
+    await page.locator('form.email-auth button[type="submit"]').click();
+
+    await expect(page.locator('.title-main')).toHaveCount(0, { timeout: 15_000 });
+  });
+});
+
+test.describe('phantom wallet', () => {
+  test('offers Phantom on the web3 tab', async ({ signedOut: page }) => {
+    await gotoApp(page);
+    await openLoginPanel(page);
+
+    await page.getByRole('tab', { name: 'Web3' }).click();
+
+    await expect(page.getByRole('button', { name: /Continue with Phantom/i })).toBeVisible();
+  });
+
+  test('says so when the extension is not installed', async ({ signedOut: page }) => {
+    await gotoApp(page);
+    await openLoginPanel(page);
+
+    await page.getByRole('tab', { name: 'Web3' }).click();
+    await page.getByRole('button', { name: /Continue with Phantom/i }).click();
+
+    await expect(page.locator('.provider-error')).toContainText('Phantom was not detected');
+  });
+
+  test('uses the Phantom-namespaced provider over a foreign window.solana', async ({ signedOut: page }) => {
+    // Another Solana wallet claimed window.solana first — the case that made
+    // `window.solana.isPhantom` the wrong detector.
+    await page.addInitScript(() => {
+      (window as unknown as Record<string, unknown>).solana = { isPhantom: false, connect: () => Promise.resolve({}) };
+      (window as unknown as Record<string, unknown>).phantom = {
+        solana: {
+          isPhantom: true,
+          connect: () => Promise.resolve({}),
+          // Signal the call rather than completing a real SIWS handshake.
+          signIn: () => {
+            (window as unknown as Record<string, unknown>).__PHANTOM_SIGNIN__ = true;
+            return Promise.reject(new Error('user rejected'));
+          },
+        },
+      };
+    });
+
+    await gotoApp(page);
+    await openLoginPanel(page);
+
+    await page.getByRole('tab', { name: 'Web3' }).click();
+    await page.getByRole('button', { name: /Continue with Phantom/i }).click();
+
+    await expect
+      .poll(() => page.evaluate(() => (window as unknown as Record<string, unknown>).__PHANTOM_SIGNIN__))
+      .toBe(true);
   });
 });
