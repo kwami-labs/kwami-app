@@ -282,7 +282,10 @@ test.describe('phantom wallet', () => {
 
     await page.getByRole('tab', { name: 'Web3' }).click();
 
+    await expect(page.getByText(/Approve a message in your wallet/i)).toBeVisible();
     await expect(page.getByRole('button', { name: /Continue with Phantom/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Continue with MetaMask/i })).toBeVisible();
+    await expect(page.getByText(/Your wallet address becomes your account/i)).toBeVisible();
   });
 
   test('opens the download page when the extension is not installed', async ({ signedOut: page }) => {

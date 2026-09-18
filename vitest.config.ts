@@ -22,6 +22,7 @@ export default mergeConfig(
         VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_test',
         VITE_LIVEKIT_URL: 'wss://livekit.test',
         VITE_LIVEKIT_TOKEN_ENDPOINT: 'http://localhost:8080/token',
+        VITE_AUTH_PROVIDERS: 'google,phantom,metamask',
       },
       restoreMocks: true,
       coverage: {

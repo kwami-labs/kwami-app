@@ -5,11 +5,8 @@ import GoogleButton from './GoogleButton.vue';
 import ProviderButton from './ProviderButton.vue';
 import EmailAuthForm from './EmailAuthForm.vue';
 import PhoneAuthForm from './PhoneAuthForm.vue';
-import {
-  enabledWeb2Providers,
-  enabledWeb3Providers,
-  hasWeb3Providers,
-} from './providers';
+import Web3AuthForm from './Web3AuthForm.vue';
+import { enabledWeb2Providers, hasWeb3Providers } from './providers';
 
 type LoginTab = 'web2' | 'web3' | 'mobile';
 
@@ -126,11 +123,7 @@ onUnmounted(() => {
           <EmailAuthForm />
         </div>
         <div v-else-if="isOpen && activeTab === 'web3'" key="web3" class="provider-group">
-          <ProviderButton
-            v-for="provider in enabledWeb3Providers"
-            :key="provider.id"
-            :provider="provider"
-          />
+          <Web3AuthForm />
         </div>
         <div v-else-if="isOpen" key="mobile" class="provider-group">
           <PhoneAuthForm />

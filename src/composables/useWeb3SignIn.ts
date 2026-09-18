@@ -90,10 +90,10 @@ export function useWeb3SignIn() {
             })
           : await supabase.auth.signInWithWeb3({ chain: 'ethereum', statement });
 
-      if (authError) error.value = authError.message;
+      if (authError) error.value = mapError(authError);
     } catch (e: unknown) {
       console.error(`${wallet} sign-in error:`, e);
-      error.value = e instanceof Error ? e.message : 'Wallet sign-in failed.';
+      error.value = e instanceof Error ? mapError(e) : t('auth.web3Failed');
     } finally {
       isLoading.value = false;
     }
@@ -101,6 +101,27 @@ export function useWeb3SignIn() {
 
   function walletLabel(wallet: Web3Wallet): string {
     return wallet === 'phantom' ? 'Phantom' : 'MetaMask';
+  }
+
+  /**
+   * GoTrue's "Web3 provider is disabled" is a dashboard switch, not a wallet
+   * failure. Map that (and a user-cancelled signature) so the panel does not
+   * dump the raw SDK string.
+   */
+  function mapError(err: { message?: string; code?: string }): string {
+    const code = err.code ?? '';
+    const message = (err.message ?? '').toLowerCase();
+    if (code === 'web3_provider_disabled' || message.includes('web3 provider is disabled')) {
+      return t('auth.web3ProviderDisabled');
+    }
+    if (
+      message.includes('user rejected') ||
+      message.includes('rejected the request') ||
+      message.includes('user denied')
+    ) {
+      return t('auth.web3Rejected');
+    }
+    return err.message || t('auth.web3Failed');
   }
 
   return { signIn, isAvailable, isLoading, error, installUrl };

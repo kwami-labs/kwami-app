@@ -138,4 +138,27 @@ describe('useWeb3SignIn when the wallet is present', () => {
     expect(web3.installUrl.value).toBeNull();
     expect(web3.error.value).toBeNull();
   });
+
+  it('maps a disabled Web3 provider to the dashboard copy, not the raw SDK string', async () => {
+    win.phantom = { solana: { isPhantom: true } };
+    signInWithWeb3.mockResolvedValue({
+      data: { user: null, session: null },
+      error: { message: 'Web3 provider is disabled', code: 'web3_provider_disabled' },
+    } as never);
+    const web3 = harness();
+
+    await web3.signIn('phantom');
+
+    expect(web3.error.value).toBe(en.auth.web3ProviderDisabled);
+  });
+
+  it('maps a cancelled wallet signature', async () => {
+    win.phantom = { solana: { isPhantom: true } };
+    signInWithWeb3.mockRejectedValue(new Error('User rejected the request'));
+    const web3 = harness();
+
+    await web3.signIn('phantom');
+
+    expect(web3.error.value).toBe(en.auth.web3Rejected);
+  });
 });
