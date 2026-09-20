@@ -209,6 +209,7 @@ let removeClickProxyHandler: (() => void) | null = null;
 let removePointerMoveHandler: (() => void) | null = null;
 let removeDragHandler: (() => void) | null = null;
 let removeHitTest: (() => void) | null = null;
+let removeResizeHandler: (() => void) | null = null;
 // The pulse detector taps the audio graph, so it has to be released by hand.
 let disposeMusicPulse: (() => void) | null = null;
 
@@ -226,7 +227,7 @@ const ALL_SUBTYPES = [
 ] as const;
 
 type Subtype = typeof ALL_SUBTYPES[number];
-type WelcomeRenderer = 'blob-xyz' | 'eye-iris';
+type WelcomeRenderer = KwamiHeroRenderer;
 
 type EyeColorPalette = {
   base: string;
@@ -351,22 +352,23 @@ onMounted(async () => {
   // first track on every page view, before anyone pressed play.
   registerWelcomeAudio(kwami.avatar.getAudio());
 
-  const isNarrow = window.innerWidth <= 768;
-  const blobHeroScale = isNarrow ? 3.2 : 3.5;
-  // Eye default in the SDK is 5; keep the blob as-is and shrink only the iris.
-  const eyeHeroScale = isNarrow ? 3.9 : 4.2;
+  let liveRenderer: WelcomeRenderer = 'blob-xyz';
 
-  const applyHeroScale = (renderer: WelcomeRenderer) => {
+  /**
+   * Pin the hero in the middle of this canvas and shrink it when the
+   * frustum is too tight — phones, split windows, a rotated tablet.
+   * Scale used to be a one-shot `innerWidth <= 768` read, so rotating the
+   * phone left the blob the size it was born at, and nothing ever called
+   * `position.reset()` so a resize left it sitting off-centre.
+   */
+  const frameKwami = (renderer: WelcomeRenderer = liveRenderer) => {
+    liveRenderer = renderer;
     try {
-      if (renderer === 'eye-iris') {
-        kwami.avatar.getEyeIris()?.setScale(eyeHeroScale);
-      } else {
-        kwami.avatar.setScale(blobHeroScale);
-      }
+      fitKwamiInView(kwami, canvas, { renderer });
     } catch {}
   };
 
-  applyHeroScale('blob-xyz');
+  frameKwami('blob-xyz');
 
   /**
    * The live `audioEffects` object off whichever blob is up.
@@ -866,7 +868,7 @@ onMounted(async () => {
         if (activeBlob) {
           lastBlobSubtype = pickSubtype();
           try { kwami.avatar.setSkin(lastBlobSubtype as Parameters<typeof kwami.avatar.setSkin>[0]); } catch {}
-          try { kwami.avatar.setWireframe(false); } catch {}
+          try { kwami.avatar.setWireframe(pickWelcomeWireframe()); } catch {}
         }
         // A skin swap re-reads the blob's colours, so the tween's current
         // frame has to go back on after it — and unconditionally, since the
@@ -891,7 +893,7 @@ onMounted(async () => {
 
       if (canSwapRenderer) lastRendererSwapAt = now;
 
-      applyHeroScale(nextRenderer);
+      frameKwami(nextRenderer);
 
       if (nextRenderer !== 'eye-iris') {
         pointerTargetX = 0;
@@ -913,6 +915,27 @@ onMounted(async () => {
     // Stopped by hand in `onUnmounted`: this is past an `await`, so the watcher
     // is no longer bound to the component and would outlive it otherwise.
     stopIntervalWatch = watch(randomizeIntervalMs, armRandomizeTimer);
+
+    const onViewportChange = () => {
+      // A recenter writes `mesh.position.y` absolutely. Forget the bob that
+      // was applied against the old origin, or the next frame adds it again
+      // on top of the new centre and the blob sits low until the beat fades.
+      bobApplied = 0;
+      frameKwami();
+    };
+    window.addEventListener('resize', onViewportChange);
+    const visualViewport = window.visualViewport;
+    visualViewport?.addEventListener('resize', onViewportChange);
+    visualViewport?.addEventListener('scroll', onViewportChange);
+    const resizeObserver = new ResizeObserver(onViewportChange);
+    const frameHost = containerRef.value ?? canvas.parentElement;
+    if (frameHost) resizeObserver.observe(frameHost);
+    removeResizeHandler = () => {
+      window.removeEventListener('resize', onViewportChange);
+      visualViewport?.removeEventListener('resize', onViewportChange);
+      visualViewport?.removeEventListener('scroll', onViewportChange);
+      resizeObserver.disconnect();
+    };
   }
 });
 
@@ -925,6 +948,7 @@ onUnmounted(async () => {
   if (removePointerMoveHandler) { removePointerMoveHandler(); removePointerMoveHandler = null; }
   if (removeDragHandler) { removeDragHandler(); removeDragHandler = null; }
   if (removeHitTest) { removeHitTest(); removeHitTest = null; }
+  if (removeResizeHandler) { removeResizeHandler(); removeResizeHandler = null; }
   if (disposeMusicPulse) { disposeMusicPulse(); disposeMusicPulse = null; }
   unregisterWelcomeAudio();
   const k = kwamiRef.value;
