@@ -336,6 +336,7 @@ export const fr = {
     backgroundCurrent: 'Fond : {name}',
     backgroundGradient: 'Dégradé',
     backgroundShuffle: 'Surprenez-moi',
+    backgroundDblclickHint: 'Double-cliquez pour changer la vidéo',
   },
   welcomeScreen: {
     clickToSkip: "Cliquez n'importe où pour passer",

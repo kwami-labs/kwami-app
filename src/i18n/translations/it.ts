@@ -336,6 +336,7 @@ export const it = {
     backgroundCurrent: 'Sfondo: {name}',
     backgroundGradient: 'Gradiente',
     backgroundShuffle: 'Sorprendimi',
+    backgroundDblclickHint: 'Fai doppio clic per cambiare il video',
   },
   welcomeScreen: {
     clickToSkip: 'Clicca in un punto qualsiasi per saltare',
