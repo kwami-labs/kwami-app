@@ -15,14 +15,51 @@
  * Frequencies and amplitudes the login blob re-rolls across every tick.
  *
  * `spikes` are noise frequencies, not spike heights — higher means more
- * lobes on the body. The previous 0.75–3.0 band still read as a handful of
- * big swells. This one starts where that left off, so even a "round"
- * roll has a textured surface, and the top end is enough lobes to read as
- * spikes. Amplitude moves with it or the extra lobes stay invisible.
+ * lobes on the body. The 1.8–5.5 band kept every roll in the same dense
+ * husk, so only the colour appeared to change. The low end sits on the
+ * earlier gelatine look (above the ~0.6 cone floor); the high end is the
+ * spiky husk.
+ *
+ * Amplitude is a *ceiling* rather than a free range — see
+ * `DENSE_AMPLITUDE_CEILING`. The two were rolled independently and the corner
+ * where both came up high is the one that read as shredded rather than as a
+ * blob.
  */
-export const SPIKE_RANGE = [1.8, 5.5] as const;
-export const AMPLITUDE_RANGE = [0.65, 1.55] as const;
-const TIME_RANGE = [0.5, 8] as const;
+export const SPIKE_RANGE = [0.9, 5.5] as const;
+export const AMPLITUDE_RANGE = [0.45, 1.0] as const;
+
+/**
+ * The tallest amplitude the densest roll is allowed.
+ *
+ * Spikes and amplitude are not independent, and rolling them as though they
+ * were is what produced the rolls that looked shredded. `animateBlobXyz` adds
+ * an idle term and an audio term that are both multiplied by the same
+ * amplitude, then clamps the result at 1.45 radii — so amplitude buys spike
+ * height only until the clamp, and past it the tips flatten off against a
+ * ceiling and the surface stops answering the music at all.
+ *
+ * Where that ceiling bites depends on how many lobes there are, because more
+ * lobes means more of the surface near a peak. Driven over the SDK's own
+ * displacement maths against a 120bpm track, with the reactivity `WelcomeBlob`
+ * now pairs it with, a roll at 5.5 spikes and the old ceiling of 1.6 pins 11%
+ * of its vertices against the clamp on the loudest frames; the same roll at the
+ * 0.68 this allows pins 0.1%. The band is therefore a budget rather than a
+ * range: the more lobes a roll asks for, the shorter they are allowed to be,
+ * and every roll costs about the same displacement.
+ *
+ * The low end of the spike band keeps the full ceiling. A couple of big slow
+ * swells at 1.0 is the gelatine drop, and it is the one shape where reaching
+ * the clamp reads as a body rather than as clipping.
+ */
+const DENSE_AMPLITUDE_CEILING = 0.68;
+
+/**
+ * Scroll speed of the surface noise. The old 0.5–8 band is a sixteen-fold
+ * swing: a minute of 1s ticks random-walks `time` to the ceiling, and the
+ * blob reads as vibrating or spinning even in silence. This band stays
+ * alive without ever boiling.
+ */
+export const TIME_RANGE = [0.85, 1.85] as const;
 const SHININESS_RANGE = [10, 180] as const;
 
 export interface BlobShape {
@@ -45,6 +82,74 @@ function between(min: number, max: number, random: () => number): number {
 }
 
 /**
+ * The most amplitude a body with these spike frequencies may have.
+ *
+ * Exported for the tests, and because it is the rule the two shape generators
+ * share: `randomShape` rolls under it and `driftShape` walks under it, so a
+ * shape can no more drift into the shredded corner than it can be rolled there.
+ *
+ * @param spikes - The three noise frequencies. Density is their mean, via
+ *   `shapeDensity`.
+ */
+/**
+ * How husk-like a body is, 0 at the gelatine end of `SPIKE_RANGE` and 1 at the
+ * dense end.
+ *
+ * Averaged across the three axes: a body is as dense as it is on the whole,
+ * and one round axis does not earn the other two any more height — or, below,
+ * any more of the audio spike field.
+ */
+export function shapeDensity(spikes: readonly [number, number, number]): number {
+  const mean = (spikes[0] + spikes[1] + spikes[2]) / 3;
+  const span = SPIKE_RANGE[1] - SPIKE_RANGE[0];
+  return Math.max(0, Math.min(1, (mean - SPIKE_RANGE[0]) / span));
+}
+
+export function amplitudeCeiling(spikes: readonly [number, number, number]): number {
+  return AMPLITUDE_RANGE[1]
+    + (DENSE_AMPLITUDE_CEILING - AMPLITUDE_RANGE[1]) * shapeDensity(spikes);
+}
+
+/**
+ * How much of the audio spike field a body is allowed, given the spikes it
+ * already has.
+ *
+ * `animateBlobXyz` samples a finer noise once sound is in, and a second
+ * octave of it once `audioPush` clears 0.2. On a husk that is the spikes it
+ * already has growing. On a drop it is a coat of lobes the rest pose never
+ * had, which is why every roll looked spiky the moment the music started —
+ * the field did not know the difference.
+ *
+ * `spikeDensity` and `highSpike` follow density with no floor: they are the
+ * frequency scramble, and a rounded body should not get any of it. Bass and
+ * mid keep `AUDIO_SPIKE_WEIGHT_FLOOR` so a drop still swells on the beat
+ * instead of going still. The husk end is 1, so a dense roll keeps the
+ * values `WelcomeBlob` already tuned.
+ */
+export const AUDIO_SPIKE_WEIGHT_FLOOR = 0.4;
+
+export interface AudioSpikeEffects {
+  bassSpike: number;
+  midSpike: number;
+  highSpike: number;
+  spikeDensity: number;
+}
+
+export function scaleAudioSpikeEffects(
+  spikes: readonly [number, number, number],
+  base: AudioSpikeEffects,
+): AudioSpikeEffects {
+  const density = shapeDensity(spikes);
+  const weights = AUDIO_SPIKE_WEIGHT_FLOOR + (1 - AUDIO_SPIKE_WEIGHT_FLOOR) * density;
+  return {
+    bassSpike: base.bassSpike * weights,
+    midSpike: base.midSpike * weights,
+    highSpike: base.highSpike * density,
+    spikeDensity: base.spikeDensity * density,
+  };
+}
+
+/**
  * A fresh destination.
  *
  * @param random - Injected so tests can pin the roll.
@@ -56,9 +161,13 @@ export function randomShape(random: () => number = Math.random): BlobShape {
     between(range[0], range[1], random),
   ];
 
+  // Spikes first: they set the ceiling the amplitudes are then rolled under.
+  const spikes = triple(SPIKE_RANGE);
+  const ceiling = amplitudeCeiling(spikes);
+
   return {
-    spikes: triple(SPIKE_RANGE),
-    amplitude: triple(AMPLITUDE_RANGE),
+    spikes,
+    amplitude: triple([AMPLITUDE_RANGE[0], ceiling] as const),
     time: triple(TIME_RANGE),
     shininess: between(SHININESS_RANGE[0], SHININESS_RANGE[1], random),
     channels: Array.from({ length: 9 }, () => random() * 255),
@@ -199,9 +308,18 @@ export function driftShape(from: BlobShape, random: () => number = Math.random):
     drift(values[2], range, fraction, random),
   ];
 
+  const spikes = triple(from.spikes, SPIKE_RANGE, DRIFT_FRACTIONS.spikes);
+
   return {
-    spikes: triple(from.spikes, SPIKE_RANGE, DRIFT_FRACTIONS.spikes),
-    amplitude: triple(from.amplitude, AMPLITUDE_RANGE, DRIFT_FRACTIONS.amplitude),
+    spikes,
+    // Against the ceiling the *new* spikes earn, so a walk towards a denser
+    // body folds its amplitude back down on the way rather than arriving
+    // somewhere the budget would never have rolled.
+    amplitude: triple(
+      from.amplitude,
+      [AMPLITUDE_RANGE[0], amplitudeCeiling(spikes)] as const,
+      DRIFT_FRACTIONS.amplitude,
+    ),
     time: triple(from.time, TIME_RANGE, DRIFT_FRACTIONS.time),
     shininess: drift(from.shininess, SHININESS_RANGE, DRIFT_FRACTIONS.shininess, random),
     channels: from.channels.map((channel) =>
@@ -222,8 +340,23 @@ export function driftShape(from: BlobShape, random: () => number = Math.random):
  * @param from - Where the blob is now. Not mutated.
  * @param random - Injected so tests can pin the roll.
  */
+function spikeDistance(a: readonly number[], b: readonly number[]): number {
+  let sum = 0;
+  for (let i = 0; i < 3; i += 1) {
+    const delta = (a[i] ?? 0) - (b[i] ?? 0);
+    sum += delta * delta;
+  }
+  return Math.sqrt(sum);
+}
+
+/** About a third of the band — close enough that a tick would read as "the same spikes". */
+const SPIKE_MIN_JUMP = (SPIKE_RANGE[1] - SPIKE_RANGE[0]) * 0.35;
+
 export function remixShape(from: BlobShape, random: () => number = Math.random): BlobShape {
-  const next = randomShape(random);
+  let next = randomShape(random);
+  for (let guard = 0; guard < 8 && spikeDistance(from.spikes, next.spikes) < SPIKE_MIN_JUMP; guard += 1) {
+    next = randomShape(random);
+  }
   next.time = [
     drift(from.time[0]!, TIME_RANGE, DRIFT_FRACTIONS.time, random),
     drift(from.time[1]!, TIME_RANGE, DRIFT_FRACTIONS.time, random),
