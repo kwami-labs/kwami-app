@@ -20,6 +20,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { RANDOMIZE_INTERVALS_MS, useWelcomeRandomizer } from '@/composables/useWelcomeRandomizer';
+import { scaleAudioSpikeEffects } from '@/utils/blobTween';
 
 const BIN_COUNT = 1_024;
 
@@ -350,11 +351,23 @@ describe('the reactivity the blob is driven at', () => {
     await frames(2);
 
     // Spelled out in the component so an SDK default that moves cannot
-    // silently retune the login screen.
-    expect(audioEffects.spikeDensity).toBe(0.2);
-    expect(audioEffects.bassSpike).toBe(0.45);
-    expect(audioEffects.midSpike).toBe(0.58);
+    // silently retune the login screen. The spike field is the exception:
+    // it is the husk-end of those constants, scaled to the live shape so a
+    // drop does not grow a coat of lobes the rest pose never had.
     expect(audioEffects.sensitivity).toBe(0.04);
+    expect(audioEffects.responseSpeed).toBe(0.6);
+    expect(audioEffects.transientBoost).toBe(0.2);
+
+    const last = blob.setSpikes.mock.calls.at(-1);
+    expect(last).toBeDefined();
+    const expected = scaleAudioSpikeEffects(
+      [last![0], last![1], last![2]],
+      { bassSpike: 0.45, midSpike: 0.58, highSpike: 0.22, spikeDensity: 0.2 },
+    );
+    expect(audioEffects.bassSpike).toBeCloseTo(expected.bassSpike);
+    expect(audioEffects.midSpike).toBeCloseTo(expected.midSpike);
+    expect(audioEffects.highSpike).toBeCloseTo(expected.highSpike);
+    expect(audioEffects.spikeDensity).toBeCloseTo(expected.spikeDensity);
   });
 
   it('stops the SDK integrating a rotation of its own', async () => {
