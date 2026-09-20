@@ -31,6 +31,9 @@ import { useKwamiConfigSync } from '@/composables/useKwamiConfigSync';
 import { useSearchPanelAgentTools } from '@/composables/useSearchPanelAgentTools';
 import { useCommsAgentTools } from '@/composables/useCommsAgentTools';
 import { useLocaleAgentTools } from '@/composables/useLocaleAgentTools';
+import { useRecallAgentTools } from '@/composables/useRecallAgentTools';
+import { useKwamiAdminAgentTools } from '@/composables/useKwamiAdminAgentTools';
+import { useWorkspaceExtrasAgentTools } from '@/composables/useWorkspaceExtrasAgentTools';
 import { soulPresets } from '@/presets/agent/soul-presets';
 import { sceneImagePresets } from '@/presets/scene/image-presets';
 import { sceneVideoPresets } from '@/presets/scene/video-presets';
@@ -264,6 +267,9 @@ export function useWorkspaceAgentTools() {
   const searchPanelTools = useSearchPanelAgentTools();
   const commsTools = useCommsAgentTools();
   const localeTools = useLocaleAgentTools();
+  const recallTools = useRecallAgentTools();
+  const kwamiAdminTools = useKwamiAdminAgentTools();
+  const extrasTools = useWorkspaceExtrasAgentTools();
 
   function emitConfigApplied() {
     if (typeof window !== 'undefined') {
@@ -2230,9 +2236,18 @@ export function useWorkspaceAgentTools() {
   }
 
   function registerTools(instance: Kwami) {
+    // Every `use*AgentTools` composable must be registered here, or its tools
+    // are unreachable: they exist, they are translated, their unit tests pass,
+    // and the model is never told they exist. Recall, admin and extras — 19
+    // tools — sat in exactly that state, green in CI and invisible, until this
+    // line was added. `toolRegistrars.test.ts` now fails if a composable is
+    // added without being wired in below.
     searchPanelTools.registerSearchPanelTools(instance);
     commsTools.registerCommsTools(instance);
     localeTools.registerLocaleTools(instance);
+    recallTools.registerRecallTools(instance);
+    kwamiAdminTools.registerKwamiAdminTools(instance);
+    extrasTools.registerWorkspaceExtrasTools(instance);
 
     instance.registerTool({
       name: 'set_ui_control',
