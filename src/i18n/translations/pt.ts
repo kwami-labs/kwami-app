@@ -336,7 +336,8 @@ export const pt = {
     backgroundCurrent: 'Fundo: {name}',
     backgroundGradient: 'Gradiente',
     backgroundShuffle: 'Surpreenda-me',
-    backgroundDblclickHint: 'Clique duas vezes para mudar o vídeo',
+    backgroundDblclickHint: 'Clique duas vezes',
+    backgroundDblclickHintRest: 'para mudar o vídeo',
   },
   welcomeScreen: {
     clickToSkip: 'Clique em qualquer sítio para saltar',

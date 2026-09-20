@@ -51,7 +51,9 @@ describe('AuthPage background double-click', () => {
   it('shows a small hint for the gesture, and hides it once the panel is open', async () => {
     const wrapper = mountPage();
 
-    expect(wrapper.get('.video-hint').text()).toBe('Double-click to change video');
+    const lines = wrapper.get('.video-hint').findAll('span');
+    expect(lines[0]!.text()).toBe('Double-click');
+    expect(lines[1]!.text()).toBe('to change the video');
     expect(wrapper.get('.video-hint').classes()).not.toContain('video-hint--hidden');
 
     await wrapper.get('.login-cta').trigger('click');

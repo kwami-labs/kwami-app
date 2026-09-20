@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import WelcomeBlob from './WelcomeBlob.vue';
 import LoginButton from './LoginButton.vue';
@@ -7,13 +7,16 @@ import SoundtrackPill from './SoundtrackPill.vue';
 import AuthPreferencesPill from './AuthPreferencesPill.vue';
 import WelcomeVideoBackground from './WelcomeVideoBackground.vue';
 import { useWelcomeBackground } from '@/composables/useWelcomeBackground';
+import { useWelcomeSoundtrack } from '@/composables/useSoundtrack';
 import { useWelcomeKwamiHit } from '@/composables/useWelcomeKwamiHit';
 import { isAuthChromeTarget } from '@/utils/blobHitTest';
 
 const { t } = useI18n();
 const loginOpen = ref(false);
 const { video, shuffle } = useWelcomeBackground();
+const { currentTrack } = useWelcomeSoundtrack();
 const { hitsKwami } = useWelcomeKwamiHit();
+const youtubeOn = computed(() => Boolean(currentTrack.value?.youtube));
 
 /**
  * Double-click the empty backdrop to roll another clip. The same shuffle as
@@ -34,7 +37,7 @@ function onBackgroundDblClick(event: MouseEvent) {
 
     <!-- A blue glow tuned for the painted gradient; over a video it only
          muddies whatever is playing. -->
-    <div v-if="!video" class="ambient" aria-hidden="true" />
+    <div v-if="!video && !youtubeOn" class="ambient" aria-hidden="true" />
 
     <h1 v-if="!loginOpen" class="hero-title" aria-label="kwami">
       <span class="title-main">KWAMI</span>
@@ -46,6 +49,10 @@ function onBackgroundDblClick(event: MouseEvent) {
 
     <SoundtrackPill :login-open="loginOpen" />
 
+    <p class="video-hint" :class="{ 'video-hint--hidden': loginOpen }">
+      <span>{{ t('auth.backgroundDblclickHint') }}</span>
+      <span>{{ t('auth.backgroundDblclickHintRest') }}</span>
+    </p>
     <AuthPreferencesPill />
 
     <div class="blob-zone">
@@ -53,9 +60,6 @@ function onBackgroundDblClick(event: MouseEvent) {
     </div>
 
     <div class="auth-footer">
-      <p class="video-hint" :class="{ 'video-hint--hidden': loginOpen }">
-        {{ t('auth.backgroundDblclickHint') }}
-      </p>
       <p>{{ t('auth.footer') }}</p>
     </div>
   </div>
@@ -152,11 +156,27 @@ function onBackgroundDblClick(event: MouseEvent) {
 }
 
 .video-hint {
-  margin-bottom: 6px;
+  /* Same corner as AuthPreferencesPill (right/bottom 20px, ~42px tall). */
+  position: fixed;
+  right: 20px;
+  bottom: 70px;
+  z-index: 47;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  margin: 0;
   font-size: 10px;
+  line-height: 1.35;
   letter-spacing: 0.12em;
   text-transform: lowercase;
+  color: var(--auth-text-faint);
+  text-align: right;
+  pointer-events: none;
   transition: opacity 220ms ease;
+}
+
+.video-hint span {
+  white-space: nowrap;
 }
 
 .video-hint--hidden {
