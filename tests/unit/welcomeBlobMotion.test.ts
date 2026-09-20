@@ -198,9 +198,9 @@ describe('the welcome blob under music', () => {
       widest = Math.max(widest, Math.abs(samples[i]!.z - samples[i - 1]!.z));
     }
 
-    // At 60Hz, 0.02rad a frame is a bit over a degree — about as fast as the
-    // roll ever needs to move to land a beat.
-    expect(widest).toBeLessThan(0.02);
+    // At 60Hz, 0.03rad a frame is still under two degrees — enough to land
+    // a beat, not enough to spin.
+    expect(widest).toBeLessThan(0.03);
   });
 
   it('leaves the blob where it found it once the music stops', async () => {
@@ -234,8 +234,62 @@ describe('the welcome blob under music', () => {
 
     expect(stillest).toBeLessThan(0.01);
     expect(deepest).toBeGreaterThan(0.04);
-    // And bounded: `BOB_DEPTH` is 0.17 against a blob of radius ~3.5.
-    expect(deepest).toBeLessThan(0.2);
+    // And bounded: `BOB_DEPTH` is 0.2 against a blob of radius ~3.5.
+    expect(deepest).toBeLessThan(0.22);
+  });
+
+  it('leans on a clock rather than on the last hit it heard', async () => {
+    await mountBlob();
+    await frames(500);
+
+    // Four seconds of 120bpm: a kick every 30 frames of 16ms, so a beat is
+    // 480ms and the two-beat lean is 960ms — sixty frames.
+    const beating = await frames(250, (i) => {
+      spectrum = i % 30 < 4 ? withKick(0.5, 0.95) : bed(0.5);
+    });
+
+    // Turning points rather than zero crossings: the idle sine underneath is a
+    // slow offset, and what is being counted here is the stroke on top of it.
+    let turns = 0;
+    for (let i = 2; i < beating.length; i += 1) {
+      const before = beating[i - 1]!.z - beating[i - 2]!.z;
+      const after = beating[i]!.z - beating[i - 1]!.z;
+      if (Math.abs(before) > 1e-4 && Math.abs(after) > 1e-4 && Math.sign(before) !== Math.sign(after)) {
+        turns += 1;
+      }
+    }
+
+    // Four seconds at a bar a second is four strokes, and a stroke has two
+    // ends. A body leaning once per beat would be at eight, and one that only
+    // answered hits would be ragged rather than periodic.
+    expect(turns).toBeGreaterThanOrEqual(6);
+    expect(turns).toBeLessThanOrEqual(10);
+  });
+
+  it('keeps the groove through a bar with no percussion in it', async () => {
+    await mountBlob();
+    await frames(500);
+    await frames(250, (i) => {
+      spectrum = i % 30 < 4 ? withKick(0.5, 0.95) : bed(0.5);
+    });
+
+    // The track carries on, but the drums drop out for a bar.
+    spectrum = bed(0.5);
+    const gap = await frames(60);
+
+    const swing = Math.max(...gap.map((s) => s.z)) - Math.min(...gap.map((s) => s.z));
+    // The last frames only. The bar opens with the body still drawing out of
+    // the kick before it, which is the bob doing its job rather than a
+    // leftover, and `BOB_RELEASE_MS` is what says how long that takes.
+    const dip = Math.max(...gap.slice(-10).map((s) => Math.abs(s.posY)));
+
+    // Still swaying: the idle sine alone moves 0.04rad in a second, so
+    // anything past that is the clock still running. This is the difference
+    // between an avatar dancing and an avatar reacting.
+    expect(swing).toBeGreaterThan(0.06);
+    // And the dip is gone, because nothing hit. The lean is on the clock; the
+    // bob is on the beat itself.
+    expect(dip).toBeLessThan(0.02);
   });
 
   it('kills liquid stretch so a beat cannot bake a cone into the body', async () => {
@@ -262,11 +316,11 @@ describe('the welcome blob under music', () => {
 });
 
 describe('the reactivity the blob is driven at', () => {
-  it('rises on a hit and falls back between them', async () => {
+  it('sings the held phrase and accents the beat on top', async () => {
     await mountBlob();
     await frames(500);
 
-    const resting = audioEffects.reactivity!;
+    const phrase = audioEffects.reactivity!;
 
     let loudest = 0;
     await frames(120, (i) => {
@@ -274,15 +328,21 @@ describe('the reactivity the blob is driven at', () => {
       loudest = Math.max(loudest, audioEffects.reactivity ?? 0);
     });
 
-    // The SDK's own bands say how loud; this is the part that says when.
-    // Resting is not exactly `RESTING_REACTIVITY`: the detector's baseline
-    // starts cold, so a track arriving out of silence is genuinely an onset
-    // and a little of it is still draining away.
-    expect(resting).toBeCloseTo(0.55, 2);
-    expect(loudest).toBeGreaterThan(0.9);
+    // A steady mix is a note, not silence: the body has to be holding it
+    // before the kick can read as a syllable.
+    expect(phrase).toBeGreaterThan(0.34);
+
+    // And the syllable has to be most of what is heard. This is the ratio the
+    // whole tuning turns on: the beat used to be worth a tenth more reactivity
+    // than the bed it landed on, which is why the blob looked loud rather than
+    // in time. Driven over the SDK's own displacement, weighting the pulse this
+    // far took the surface from moving 1.3x further on a beat to 1.7-1.9x,
+    // depending on the roll.
+    expect(loudest).toBeGreaterThan(phrase * 1.8);
+
     // And bounded by the constants, so no track can drive it to a number the
     // SDK's `min(3, …)` clamp would have to catch.
-    expect(loudest).toBeLessThanOrEqual(0.55 + 0.85);
+    expect(loudest).toBeLessThanOrEqual(0.34 + 0.42 + 2.35);
   });
 
   it('keeps the rest of the effects the SDK reads, rather than only reactivity', async () => {
@@ -291,9 +351,10 @@ describe('the reactivity the blob is driven at', () => {
 
     // Spelled out in the component so an SDK default that moves cannot
     // silently retune the login screen.
-    expect(audioEffects.spikeDensity).toBe(0.28);
-    expect(audioEffects.bassSpike).toBe(0.38);
-    expect(audioEffects.sensitivity).toBe(0.05);
+    expect(audioEffects.spikeDensity).toBe(0.2);
+    expect(audioEffects.bassSpike).toBe(0.45);
+    expect(audioEffects.midSpike).toBe(0.58);
+    expect(audioEffects.sensitivity).toBe(0.04);
   });
 
   it('stops the SDK integrating a rotation of its own', async () => {

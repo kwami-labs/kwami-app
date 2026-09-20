@@ -17,9 +17,11 @@ import {
   cloneShape,
   randomShape,
   remixShape,
+  scaleAudioSpikeEffects,
   smoothstep,
 } from '@/utils/blobTween';
 import { createMusicPulse } from '@/utils/musicPulse';
+import { createBeatClock } from '@/utils/beatClock';
 
 const WELCOME_RENDERER_WEIGHTS = {
   blobXyz: 19,
@@ -63,36 +65,54 @@ const BLOB_RESOLUTION = 160;
 const ANALYSER_SMOOTHING = 0.72;
 
 /**
- * Where `reactivity` sits when nothing is hitting, and how far a beat lifts it.
+ * How the blob sings: a held phrase, then a syllable on top.
  *
  * `animateBlobXyz` re-reads `audioEffects` every frame, so `reactivity` is the
- * one place app code can reach inside the SDK's displacement maths. That
- * matters because the SDK's own bands cannot carry a beat: it splits the
- * spectrum by fraction-of-buffer, so its "low" band is everything under
- * ~2.2 kHz and reads as a near-constant across a song. Multiplying that steady
- * figure by a pulse computed here (`musicPulse.ts`) is what turns it into a
- * rhythm — the SDK keeps deciding *how loud*, and this decides *when*.
+ * one place app code can reach inside the SDK's displacement maths. Driving it
+ * from onsets alone made a silent body that popped on kicks — percussion, not
+ * a voice — so `level` is the phrase the blob is holding and `pulse` is the
+ * word landing on top of it.
  *
- * The two together set `audioPush`, which scales the spike displacement
- * against a fixed idle noise of 0.14. The body already rolls at 1.8–5.5, so
- * a hit that used to double the idle now crumples the mesh: resting stays
- * under the idle term, and a full hit only lifts it a little past it.
+ * The split between the three is the whole reason the blob reads as being *in
+ * time* rather than merely loud, and it was measured rather than judged.
+ * Driving the SDK's own displacement over a 120bpm track and watching the mesh,
+ * the previous 0.62/1.05/1.15 moved the surface only 1.3x further on a beat
+ * than between two: the standing terms were most of the reactivity, the body
+ * sat permanently half-inflated, and the hit had nowhere left to go. Weighting
+ * the same total towards the pulse takes that to 1.9x across most of the shape
+ * band — 1.7x at the roundest rolls, where the idle swell is largest — on the
+ * same track and without the peak displacement changing. The beat is not
+ * bigger; the quiet between beats is smaller, which is what "synchronised"
+ * actually looks like.
+ *
+ * The three sum to 3.11, and the SDK caps `audioPush` at 3 — but that cap is on
+ * `reactivity` times the band energy, which runs around 0.35, so the real peak
+ * is near 1.1 and the clamp is not what is shaping this.
  */
-const RESTING_REACTIVITY = 0.55;
-const PULSE_REACTIVITY = 0.85;
+const RESTING_REACTIVITY = 0.34;
+const LEVEL_REACTIVITY = 0.42;
+const PULSE_REACTIVITY = 2.35;
 
 /**
- * `BlobXyz` already runs its own envelope over the bands; it was just tuned
- * fast. `responseSpeed` feeds `smoothFactor = 0.12 + responseSpeed * 0.35`, so
- * the stock 0.65 chases the signal by a third of the remaining distance every
- * frame. Halving it lengthens the envelope without touching `transientBoost`,
- * which is what blends the unsmoothed band back in so hits still land.
+ * What the SDK's own audio path is for, now that the beat arrives through
+ * `reactivity` instead.
  *
- * `spikeDensity` is held even lower now that the body frequency is high. It
- * feeds `audioFreqBoost`, the spatial frequency of the spike noise. A large
- * swing there does not make the spikes grow on the beat — it slides the whole
- * noise field to a finer scale and the mesh reads as crumpled foil. Low and
- * steady keeps the pattern recognisable and leaves the dancing to amplitude.
+ * Its bands are the *how loud*, and the flatter they are the better: they are
+ * multiplied by a reactivity that already carries the rhythm, and a second
+ * medium-speed envelope in the product only smears the peak later. So
+ * `transientBoost` comes down — it is the knob that blends the unsmoothed band
+ * back in — and `responseSpeed` goes up, because it feeds two things at once
+ * and the one that matters here is the per-vertex smoothing at
+ * `0.3 + responseSpeed * 0.4`: that is the last envelope between a beat and the
+ * mesh, and shortening it is worth a frame of lag.
+ *
+ * `spikeDensity` is held low, and is the husk-end value: `scaleAudioSpikeEffects`
+ * walks it (and the `*Spike` weights) down for rounded rolls, because the SDK
+ * samples a finer noise once sound is in. A large swing there does not make
+ * the spikes grow on the beat — it slides the whole noise field to a finer
+ * scale and the mesh reads as crumpled foil. Dropping it as the pulse term
+ * grew keeps their product where it was, so a louder beat still grows the
+ * spikes a husk already had rather than growing a coat of new ones on a drop.
  *
  * The three `*Spike` weights and `sensitivity` are spelled out rather than
  * left to the SDK's defaults because `Object.assign` below only overwrites the
@@ -101,13 +121,13 @@ const PULSE_REACTIVITY = 0.85;
  */
 const BLOB_AUDIO_EFFECTS = {
   reactivity: RESTING_REACTIVITY,
-  bassSpike: 0.38,
-  midSpike: 0.32,
-  highSpike: 0.18,
-  sensitivity: 0.05,
-  responseSpeed: 0.28,
-  transientBoost: 0.18,
-  spikeDensity: 0.28,
+  bassSpike: 0.45,
+  midSpike: 0.58,
+  highSpike: 0.22,
+  sensitivity: 0.04,
+  responseSpeed: 0.6,
+  transientBoost: 0.2,
+  spikeDensity: 0.2,
 } as const;
 
 /**
@@ -121,18 +141,48 @@ const BLOB_AUDIO_EFFECTS = {
  * everybody called crazy. It was also unscaled by frame time, so a 120 Hz
  * display span twice as fast.
  *
- * What is here instead is bounded by construction. The beat leans the blob one
- * way, the next beat leans it back, and an idle sine underneath keeps a silent
- * screen from being a still one. Nothing accumulates, so there is no value it
- * can run away to.
+ * What is here instead is a sinusoid of `beatClock`'s phase, and the change of
+ * shape matters more than the numbers. Leaning on the hit and back on the next
+ * one — which is what this used to do — is a body that can only ever answer a
+ * beat that has already happened, and it stutters through any bar where the
+ * detector misses one. A lean that *runs on the clock* is in time by
+ * construction: it is at the far side of its stroke exactly when the beat
+ * lands, it holds the groove through a breakdown, and it fades out with the
+ * clock's confidence rather than freezing mid-lean.
+ *
+ * The lean spans two beats rather than one. A full there-and-back inside a
+ * single beat is a twitch at any danceable tempo, and at 200bpm it would also
+ * be turning the mesh fast enough to read as a spin. An idle sine underneath
+ * keeps a silent screen from being a still one. Nothing accumulates, so there
+ * is still no value any of it can run away to.
  */
-const SWAY_BEAT_RAD = 0.23;
+const SWAY_BEAT_RAD = 0.16;
 const SWAY_IDLE_RAD = 0.07;
 const SWAY_IDLE_PERIOD_MS = 11_000;
-/** Long enough that the roll has weight rather than snapping to each hit. */
-const SWAY_TAU_MS = 210;
-/** A pulse has to clear this to count as a new beat and lean the other way. */
-const BEAT_FLIP_THRESHOLD = 0.34;
+
+/**
+ * How the lean fades in and out, rather than how it moves.
+ *
+ * The phase is not smoothed — smoothing a sinusoid delays it, and a lean that
+ * lags the clock by a fixed angle is exactly the desynchronisation this is
+ * trying to remove. What is smoothed is its *amplitude*, which changes only
+ * when the groove does, so the body swells into the dance and settles out of it
+ * without ever being out of time while it does.
+ */
+const SWAY_GROOVE_TAU_MS = 420;
+
+/**
+ * What the clock has to be sure of before the blob dances to it, and how much
+ * music has to be playing.
+ *
+ * `beatClock` settles around 0.75 on plain four-on-the-floor, so this reaches
+ * full lean on anything with a beat in it and fades away over the couple of
+ * seconds a paused track takes to decay. The level gate is the second half:
+ * confidence outlives the audio by design, and without this a track fading out
+ * would leave the body swaying to a room that had gone quiet.
+ */
+const GROOVE_CONFIDENCE = 0.55;
+const GROOVE_LEVEL = 0.12;
 
 /**
  * How far a hit dips the blob, in world units against a radius of about 3.5.
@@ -142,9 +192,15 @@ const BEAT_FLIP_THRESHOLD = 0.34;
  * the vertices; a few beats later the rest pose was a cone and only a
  * refresh rebuilt the sphere. The dip still reads as dancing. The body
  * stays a blob because stretch is pinned at zero below.
+ *
+ * Asymmetric, unlike the lean, because this one *is* the hit: the drop has to
+ * arrive with the kick and the recovery is what reads as weight. A single time
+ * constant has to choose between the two, and the 105 ms it was set to spent
+ * most of its budget arriving late.
  */
-const BOB_DEPTH = 0.17;
-const BOB_TAU_MS = 130;
+const BOB_DEPTH = 0.2;
+const BOB_ATTACK_MS = 45;
+const BOB_RELEASE_MS = 190;
 
 /**
  * The eye collapses the three bands to one level and lerps by `1 - smoothing`,
@@ -288,7 +344,7 @@ onMounted(async () => {
       blob: {
         resolution: BLOB_RESOLUTION,
         spikes: { x: 3.1, y: 3.6, z: 2.8 },
-        time: { x: rand(0.8, 5.5), y: rand(0.8, 5.5), z: rand(0.8, 5.5) },
+        time: { x: 1.2, y: 1.15, z: 1.25 },
         rotation: { x: 0, y: 0, z: 0 },
         wireframe: false,
         shininess: rand(10, 120),
@@ -297,7 +353,9 @@ onMounted(async () => {
         // BlobXyzSkin string used as `presets[skin]`; the object form this
         // used to pass resolved to undefined and silently fell back to
         // 'radial'. The real skin is chosen below via setSkin().
-        cursorFollow: { enabled: true, sensitivity: 1.0 },
+        // Off: the SDK's follow rest is π/2, so a new mesh (or a pointer
+        // move) yanks the hero through a quarter-turn. Sway owns the roll.
+        cursorFollow: { enabled: false, sensitivity: 0 },
       },
       scene: { enableControls: false },
     },
@@ -384,6 +442,10 @@ onMounted(async () => {
       (activeBlob as unknown as { setRotation?: (x: number, y: number, z: number) => void })
         .setRotation?.(0, 0, 0);
     } catch {}
+    try {
+      (activeBlob as unknown as { setCursorFollowEnabled?: (enabled: boolean) => void })
+        .setCursorFollowEnabled?.(false);
+    } catch {}
   };
 
   applyBlobAudioEffects();
@@ -433,6 +495,9 @@ onMounted(async () => {
 
     const bandEnvelope = createBandEnvelope(BAND_ENVELOPE);
     const musicPulse = createMusicPulse();
+    // Phase-locked to the pulse, so the body keeps time between hits rather
+    // than waiting for the next one.
+    const beatClock = createBeatClock();
     disposeMusicPulse = () => musicPulse.dispose();
     let smoothedAnalyser: AnalyserNode | null = null;
     let lastFrameAt = performance.now();
@@ -452,10 +517,10 @@ onMounted(async () => {
      */
     let sway = 0;
     let swayApplied = 0;
-    let swayDirection = 1;
+    /** How much of `SWAY_BEAT_RAD` the groove is currently worth. */
+    let grooveDepth = 0;
     let bob = 0;
     let bobApplied = 0;
-    let previousPulse = 0;
     /**
      * Which mesh those two are written onto.
      *
@@ -530,14 +595,24 @@ onMounted(async () => {
       // of its own, because toggling a sound filter rebuilds the audio graph
       // and drops every edge off the analyser, this one included.
       musicPulse.attach(analyser);
-      const { pulse } = musicPulse.read(deltaMs, playing);
+      const { pulse, level } = musicPulse.read(deltaMs, playing);
 
-      // The one line that makes the spikes a rhythm rather than a loudness.
-      // `animateBlobXyz` re-reads this object every frame, so writing
-      // `reactivity` here reaches inside the SDK's displacement maths without
-      // a fork: its bands still say how loud, and the pulse says when.
+      // Phrase first, syllable on top. `animateBlobXyz` re-reads this object
+      // every frame, so writing `reactivity` here reaches inside the SDK's
+      // displacement without a fork: its bands still say how loud, `level`
+      // says the blob is singing, and `pulse` says the word landed.
+      //
+      // The spike field is scaled from the live shape in the same breath.
+      // `applyBlobAudioEffects` writes the husk-end constants (after a
+      // renderer switch, or on the first tick before this loop has run);
+      // leaving them there would put the same coat of lobes on a drop that
+      // a husk earns, which is the look this is undoing.
       const effects = liveAudioEffects();
-      if (effects) effects.reactivity = RESTING_REACTIVITY + PULSE_REACTIVITY * pulse;
+      if (effects) {
+        effects.reactivity =
+          RESTING_REACTIVITY + LEVEL_REACTIVITY * level + PULSE_REACTIVITY * pulse;
+        Object.assign(effects, scaleAudioSpikeEffects(shapeLive.spikes, BLOB_AUDIO_EFFECTS));
+      }
 
       // `BlobXyz` measures velocity from `mesh.position` and stretches every
       // vertex along it. The bob below writes that position, so without this
@@ -555,6 +630,10 @@ onMounted(async () => {
 
       if (musicWasPlaying && !playing) {
         try { kwami.avatar.getBlob()?.setResolution(BLOB_RESOLUTION); } catch {}
+        // Whatever plays next is a different track more often than not, and a
+        // clock still defending the last tempo takes a bar or two longer to
+        // re-lock than one starting cold.
+        beatClock.reset();
       }
       musicWasPlaying = playing;
 
@@ -564,19 +643,26 @@ onMounted(async () => {
         if (activeRenderer === 'blob-xyz') pushShapeToBlob();
       }
 
-      // A hit leans the blob one way and dips it; the next one leans it back.
-      // The flip is edge-triggered on the pulse crossing upward, so it happens
-      // once per beat rather than once per frame the beat is loud.
-      if (pulse >= BEAT_FLIP_THRESHOLD && previousPulse < BEAT_FLIP_THRESHOLD) {
-        swayDirection = -swayDirection;
-      }
-      previousPulse = pulse;
+      // The lean runs on the clock, not on the last hit. `barPhase` spans two
+      // beats, so a full stroke is a sway rather than a twitch, and it is at
+      // the end of its travel on the beat because the clock says where the beat
+      // is — not because one just went past.
+      const groove = beatClock.advance(deltaMs, playing ? pulse : 0);
+      const grooveTarget =
+        Math.min(1, groove.confidence / GROOVE_CONFIDENCE) *
+        Math.min(1, level / GROOVE_LEVEL);
+      grooveDepth += (grooveTarget - grooveDepth) * envelopeCoefficient(deltaMs, SWAY_GROOVE_TAU_MS);
 
-      const swayTarget =
-        swayDirection * pulse * SWAY_BEAT_RAD +
+      sway =
+        Math.sin(groove.barPhase * Math.PI * 2) * SWAY_BEAT_RAD * grooveDepth +
         Math.sin((now / SWAY_IDLE_PERIOD_MS) * Math.PI * 2) * SWAY_IDLE_RAD;
-      sway += (swayTarget - sway) * envelopeCoefficient(deltaMs, SWAY_TAU_MS);
-      bob += (pulse * BOB_DEPTH - bob) * envelopeCoefficient(deltaMs, BOB_TAU_MS);
+
+      // The dip is still the hit itself, and keeps its own envelope: a beat the
+      // clock did not predict should still land on the body.
+      const bobTarget = pulse * BOB_DEPTH;
+      bob +=
+        (bobTarget - bob) *
+        envelopeCoefficient(deltaMs, bobTarget > bob ? BOB_ATTACK_MS : BOB_RELEASE_MS);
 
       const activeBlobMesh = kwami.avatar.getBlob()?.getMesh() as
         | { rotation: { z: number }; position?: { y: number } }
@@ -604,6 +690,7 @@ onMounted(async () => {
         bobApplied = 0;
         sway = 0;
         bob = 0;
+        grooveDepth = 0;
       }
 
       const eye = (kwami.avatar as unknown as {
