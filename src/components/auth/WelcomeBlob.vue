@@ -17,6 +17,7 @@ import {
   randomShape,
   smoothstep,
 } from '@/utils/blobTween';
+import { applyRoundedBlobGeometry } from '@/utils/blobGeometry';
 import { createMusicPulse } from '@/utils/musicPulse';
 
 const WELCOME_RENDERER_WEIGHTS = {
@@ -28,16 +29,20 @@ const WELCOME_RENDERER_WEIGHTS = {
  * Held fixed for the life of the screen.
  *
  * `avatar.randomize()` re-rolls the blob's resolution between 120 and 220, and
- * a resolution change rebuilds the geometry: a ~26k-vertex `SphereGeometry`
- * through `mergeVertices`, which is long enough to drop a frame. On top of the
- * hitch, `animateBlobXyz` keys its per-vertex audio smoothing to the vertex
- * count and refills it with 1s whenever that count moves, so every rebuild also
- * threw away the blob's audio envelope. Once a second, that was most of what
- * "not smooth" meant. Nothing else `randomize()` does to a blob survives the
- * explicit setters below — its `dna` is never read again — so the login screen
- * drives the blob itself and leaves `randomize()` to the eye.
+ * a resolution change rebuilds the geometry. The SDK builds a `SphereGeometry`
+ * whose poles pinch into a cone the moment the surface displaces, so this
+ * screen immediately swaps that for an icosahedron and then holds the
+ * resolution still: rebuilding is long enough to drop a frame, and
+ * `animateBlobXyz` keys its per-vertex audio smoothing to the vertex count, so
+ * a rebuild also throws away the blob's audio envelope. Once a second, that
+ * was most of what "not smooth" meant. Nothing else `randomize()` does to a
+ * blob survives the explicit setters below — its `dna` is never read again —
+ * so the login screen drives the blob itself and leaves `randomize()` to the
+ * eye.
  */
 const BLOB_RESOLUTION = 160;
+/** Icosahedron subdivisions for the hero. 6 is ~82k tris, even, no poles. */
+const BLOB_BODY_DETAIL = 6;
 
 /**
  * `KwamiAudio` builds its analyser with `smoothingTimeConstant = 0.35`, well
@@ -189,11 +194,15 @@ let disposeMusicPulse: (() => void) | null = null;
 
 const PALETTE = ['#359EEE', '#FFC43D', '#EF476F', '#03CEA4'] as const;
 
+/**
+ * Smooth, liquid skins only. `flat`, `stepped`, `toon-matcap`, `outlined` and
+ * `halftone` shade in facets or graphic steps, which is the triangle body
+ * this screen is trying not to be.
+ */
 const ALL_SUBTYPES = [
   'radial', 'banded', 'striped', 'marble', 'fresnel', 'iridescent', 'spiral', 'plasma', 'gradient',
   'matte', 'glossy', 'metallic', 'subsurface',
-  'chrome', 'clay', 'jade', 'toon-matcap', 'hologram',
-  'flat', 'stepped', 'halftone', 'outlined',
+  'chrome', 'clay', 'jade', 'hologram',
 ] as const;
 
 type Subtype = typeof ALL_SUBTYPES[number];
@@ -269,7 +278,7 @@ onMounted(async () => {
       renderer: 'blob-xyz',
       blob: {
         resolution: BLOB_RESOLUTION,
-        spikes: { x: rand(0.15, 2.8), y: rand(0.15, 2.8), z: rand(0.15, 2.8) },
+        spikes: { x: 0.95, y: 1.02, z: 0.88 },
         time: { x: rand(0.8, 5.5), y: rand(0.8, 5.5), z: rand(0.8, 5.5) },
         rotation: { x: 0, y: 0, z: 0 },
         wireframe: false,
@@ -362,6 +371,7 @@ onMounted(async () => {
 
   const blob = kwami.avatar.getBlob();
   const blobMesh = blob?.getMesh();
+  applyRoundedBlobGeometry(blobMesh, BLOB_RESOLUTION);
 
   if (blob) {
     try { blob.setTouchStrength(0.7); } catch {}
@@ -677,6 +687,7 @@ onMounted(async () => {
         // a setter.
         applyBlobAudioEffects();
         settleBlobRotation();
+        applyRoundedBlobGeometry(kwami.avatar.getBlob()?.getMesh(), BLOB_RESOLUTION);
 
         // Continuous parameters move on every tick, but as a bounded step from
         // where the blob already is rather than a fresh uniform roll: the rAF
@@ -694,7 +705,7 @@ onMounted(async () => {
           if (activeBlob) {
             lastBlobSubtype = pickSubtype();
             try { kwami.avatar.setSkin(lastBlobSubtype as Parameters<typeof kwami.avatar.setSkin>[0]); } catch {}
-            try { kwami.avatar.setWireframe(Math.random() > 0.85); } catch {}
+            try { kwami.avatar.setWireframe(false); } catch {}
           }
           // A skin swap re-reads the blob's colours, so the tween's current
           // frame has to go back on after it — and unconditionally, since the

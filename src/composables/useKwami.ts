@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/auth';
 import { api, ApiError } from '@/lib/apiClient';
 import { env } from '@/lib/env';
 import { isPersistedKwamiId, useWorkspaceStore } from '@/stores/workspace';
+import { applyRoundedBlobGeometry } from '@/utils/blobGeometry';
 
 declare global {
   interface Window {
@@ -73,7 +74,7 @@ export function useKwami() {
         renderer: renderer,
         blob: {
           colors: { x: '#ff0066', y: '#00ff66', z: '#6600ff' },
-          spikes: { x: 0.3, y: 0.3, z: 0.3 },
+          spikes: { x: 0.95, y: 0.95, z: 0.95 },
           rotation: { x: 0.002, y: 0.003, z: 0.001 },
         },
         scene: {
@@ -109,6 +110,7 @@ export function useKwami() {
     };
 
     kwamiInstance.value = new Kwami(canvas, config);
+    applyRoundedBlobGeometry(kwamiInstance.value.avatar.getBlob()?.getMesh(), 180);
 
     // Web search runs on the LiveKit agent (server-side); results are sent via data channel
     // and displayed when the client receives the 'search_results' message (see useSearchResults).
@@ -393,6 +395,9 @@ export function useKwami() {
     // Use the Avatar's built-in switchRenderer method
     kwamiInstance.value.avatar.switchRenderer(newRenderer);
     rendererType.value = newRenderer;
+    if (newRenderer === 'blob-xyz') {
+      applyRoundedBlobGeometry(kwamiInstance.value.avatar.getBlob()?.getMesh(), 180);
+    }
 
     // Dispatch event for UI sync
     window.dispatchEvent(new CustomEvent('kwami:rendererChanged', { detail: newRenderer }));

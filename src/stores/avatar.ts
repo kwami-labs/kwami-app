@@ -192,8 +192,8 @@ export interface BlackHoleState {
 export function getDefaultBlobState(): BlobState {
   return {
     colors: { x: '#ff0066', y: '#00ff66', z: '#6600ff' },
-    spikes: { x: 0.2, y: 0.2, z: 0.2 },
-    amplitude: { x: 0.8, y: 0.8, z: 0.8 },
+    spikes: { x: 0.95, y: 0.95, z: 0.95 },
+    amplitude: { x: 0.75, y: 0.75, z: 0.75 },
     time: { x: 1, y: 1, z: 1 },
     rotation: { x: 0.002, y: 0.003, z: 0.001 },
     startRotation: { x: 0, y: 0, z: 0 },

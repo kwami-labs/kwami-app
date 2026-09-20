@@ -191,14 +191,14 @@ export function getDefaultShape(): BlobXyzShape {
       z: 0,
     },
     spikes: {
-      x: 0.2,
-      y: 0.2,
-      z: 0.2,
+      x: 0.95,
+      y: 0.95,
+      z: 0.95,
     },
     amplitude: {
-      x: 0.8,
-      y: 0.8,
-      z: 0.8,
+      x: 0.75,
+      y: 0.75,
+      z: 0.75,
     },
   };
 }

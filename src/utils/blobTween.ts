@@ -11,9 +11,17 @@
  * cadence.
  */
 
-/** The ranges `BlobXyz` is happy across, matching the SDK's own randomizer. */
-const SPIKE_RANGE = [0.2, 3.3] as const;
-const AMPLITUDE_RANGE = [0.3, 1.5] as const;
+/**
+ * Frequencies and amplitudes that keep a rounded gelatine body.
+ *
+ * `spikes` are noise frequencies, not spike heights. Below ~0.6 the field is
+ * one lobe and the silhouette becomes a cone; above ~1.8 it reads as spikes.
+ * Amplitude stays even and moderate so the drop squishes instead of stretching
+ * into a pyramid. The SDK randomizer is wider than this on purpose — settings
+ * can still go spiky — but the login walk and the default avatar stay liquid.
+ */
+export const SPIKE_RANGE = [0.78, 1.32] as const;
+export const AMPLITUDE_RANGE = [0.58, 0.92] as const;
 const TIME_RANGE = [0.5, 8] as const;
 const SHININESS_RANGE = [10, 180] as const;
 

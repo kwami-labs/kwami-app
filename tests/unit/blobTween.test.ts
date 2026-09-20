@@ -7,9 +7,12 @@
  */
 import { describe, expect, it } from 'vitest';
 import {
+  AMPLITUDE_RANGE,
+  SPIKE_RANGE,
   blendShape,
   channelsToHex,
   cloneShape,
+  driftShape,
   randomShape,
   smoothstep,
   type BlobShape,
@@ -127,10 +130,10 @@ describe('randomShape', () => {
   it('keeps each parameter inside the range BlobXyz is happy across', () => {
     for (let i = 0; i < 50; i += 1) {
       const s = randomShape();
-      for (const v of s.spikes) expect(v).toBeGreaterThanOrEqual(0.2);
-      for (const v of s.spikes) expect(v).toBeLessThanOrEqual(3.3);
-      for (const v of s.amplitude) expect(v).toBeGreaterThanOrEqual(0.3);
-      for (const v of s.amplitude) expect(v).toBeLessThanOrEqual(1.5);
+      for (const v of s.spikes) expect(v).toBeGreaterThanOrEqual(SPIKE_RANGE[0]);
+      for (const v of s.spikes) expect(v).toBeLessThanOrEqual(SPIKE_RANGE[1]);
+      for (const v of s.amplitude) expect(v).toBeGreaterThanOrEqual(AMPLITUDE_RANGE[0]);
+      for (const v of s.amplitude) expect(v).toBeLessThanOrEqual(AMPLITUDE_RANGE[1]);
       for (const v of s.time) expect(v).toBeGreaterThanOrEqual(0.5);
       for (const v of s.time) expect(v).toBeLessThanOrEqual(8);
       expect(s.shininess).toBeGreaterThanOrEqual(10);
@@ -142,11 +145,35 @@ describe('randomShape', () => {
 
   it('takes the low end of every range from a random that always returns 0', () => {
     const s = randomShape(() => 0);
-    expect(s.spikes).toEqual([0.2, 0.2, 0.2]);
-    expect(s.amplitude).toEqual([0.3, 0.3, 0.3]);
+    expect(s.spikes).toEqual([SPIKE_RANGE[0], SPIKE_RANGE[0], SPIKE_RANGE[0]]);
+    expect(s.amplitude).toEqual([AMPLITUDE_RANGE[0], AMPLITUDE_RANGE[0], AMPLITUDE_RANGE[0]]);
     expect(s.time).toEqual([0.5, 0.5, 0.5]);
     expect(s.shininess).toBe(10);
     expect(s.channels.every((v) => v === 0)).toBe(true);
+  });
+
+  it('stays above the one-lobe frequencies that turn the body into a cone', () => {
+    for (let i = 0; i < 50; i += 1) {
+      const s = randomShape();
+      for (const v of s.spikes) expect(v).toBeGreaterThan(0.6);
+    }
+  });
+});
+
+describe('driftShape', () => {
+  it('keeps a walk inside the gelatine ranges', () => {
+    let live = randomShape(() => 0.5);
+    for (let i = 0; i < 40; i += 1) {
+      live = driftShape(live);
+      for (const v of live.spikes) {
+        expect(v).toBeGreaterThanOrEqual(SPIKE_RANGE[0]);
+        expect(v).toBeLessThanOrEqual(SPIKE_RANGE[1]);
+      }
+      for (const v of live.amplitude) {
+        expect(v).toBeGreaterThanOrEqual(AMPLITUDE_RANGE[0]);
+        expect(v).toBeLessThanOrEqual(AMPLITUDE_RANGE[1]);
+      }
+    }
   });
 });
 
