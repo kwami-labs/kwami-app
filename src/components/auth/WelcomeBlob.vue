@@ -21,7 +21,9 @@ import {
   smoothstep,
 } from '@/utils/blobTween';
 import { createMusicPulse } from '@/utils/musicPulse';
-import { createBeatClock } from '@/utils/beatClock';
+import { useWalletApproval } from '@/composables/useWalletApproval';
+import { fitKwamiInView, type KwamiHeroRenderer } from '@/utils/kwamiViewportFit';
+import { pickWelcomeWireframe } from '@/utils/welcomeBlobLook';
 
 const WELCOME_RENDERER_WEIGHTS = {
   blobXyz: 19,
@@ -131,58 +133,17 @@ const BLOB_AUDIO_EFFECTS = {
 } as const;
 
 /**
- * The blob's own roll, in radians, and how it is driven.
+ * How far the blob turns toward the pointer, in radians.
  *
- * This replaces a spin burst that fired every fifth randomize. That one added
- * to a per-frame yaw delta that was itself decaying at 0.92, so the delta
- * converged on about a third of a radian *per frame* — five revolutions a
- * second — while the SDK's `cursorFollow` lerped the same property back
- * towards centre at 8% a frame. Spin, snap back, spin again: the rotation
- * everybody called crazy. It was also unscaled by frame time, so a 120 Hz
- * display span twice as fast.
- *
- * What is here instead is a sinusoid of `beatClock`'s phase, and the change of
- * shape matters more than the numbers. Leaning on the hit and back on the next
- * one — which is what this used to do — is a body that can only ever answer a
- * beat that has already happened, and it stutters through any bar where the
- * detector misses one. A lean that *runs on the clock* is in time by
- * construction: it is at the far side of its stroke exactly when the beat
- * lands, it holds the groove through a breakdown, and it fades out with the
- * clock's confidence rather than freezing mid-lean.
- *
- * The lean spans two beats rather than one. A full there-and-back inside a
- * single beat is a twitch at any danceable tempo, and at 200bpm it would also
- * be turning the mesh fast enough to read as a spin. An idle sine underneath
- * keeps a silent screen from being a still one. Nothing accumulates, so there
- * is still no value any of it can run away to.
+ * The SDK's own `cursorFollow` rests at π/2, so turning it on yanks a new
+ * mesh through a quarter-turn the first time the pointer moves. This is the
+ * same lean, from a rest of 0, written as a delta so the blob's drag
+ * handler can still turn the same axes. A randomize tick does not write
+ * rotation at all — that was the spin every second.
  */
-const SWAY_BEAT_RAD = 0.16;
-const SWAY_IDLE_RAD = 0.07;
-const SWAY_IDLE_PERIOD_MS = 11_000;
-
-/**
- * How the lean fades in and out, rather than how it moves.
- *
- * The phase is not smoothed — smoothing a sinusoid delays it, and a lean that
- * lags the clock by a fixed angle is exactly the desynchronisation this is
- * trying to remove. What is smoothed is its *amplitude*, which changes only
- * when the groove does, so the body swells into the dance and settles out of it
- * without ever being out of time while it does.
- */
-const SWAY_GROOVE_TAU_MS = 420;
-
-/**
- * What the clock has to be sure of before the blob dances to it, and how much
- * music has to be playing.
- *
- * `beatClock` settles around 0.75 on plain four-on-the-floor, so this reaches
- * full lean on anything with a beat in it and fades away over the couple of
- * seconds a paused track takes to decay. The level gate is the second half:
- * confidence outlives the audio by design, and without this a track fading out
- * would leave the body swaying to a room that had gone quiet.
- */
-const GROOVE_CONFIDENCE = 0.55;
-const GROOVE_LEVEL = 0.12;
+const FOLLOW_YAW_RAD = 0.4;
+const FOLLOW_PITCH_RAD = 0.25;
+const FOLLOW_SMOOTH = 0.1;
 
 /**
  * How far a hit dips the blob, in world units against a radius of about 3.5.
@@ -238,11 +199,15 @@ const containerRef = ref<HTMLDivElement | null>(null);
 const kwamiRef = shallowRef<Kwami | null>(null);
 // `SoundtrackPill` sets the pace; this component keeps the timer.
 const { intervalMs: randomizeIntervalMs } = useWelcomeRandomizer();
+// Raised by `useWeb3SignIn` for as long as a wallet extension has the floor.
+const { isAwaitingWallet } = useWalletApproval();
 let rafId: number | null = null;
 let randomizeTimer: ReturnType<typeof setInterval> | null = null;
 let stopIntervalWatch: (() => void) | null = null;
+let stopWalletWatch: (() => void) | null = null;
 let removeClickProxyHandler: (() => void) | null = null;
 let removePointerMoveHandler: (() => void) | null = null;
+let removeDragHandler: (() => void) | null = null;
 let removeHitTest: (() => void) | null = null;
 // The pulse detector taps the audio graph, so it has to be released by hand.
 let disposeMusicPulse: (() => void) | null = null;
@@ -354,7 +319,9 @@ onMounted(async () => {
         // used to pass resolved to undefined and silently fell back to
         // 'radial'. The real skin is chosen below via setSkin().
         // Off: the SDK's follow rest is π/2, so a new mesh (or a pointer
-        // move) yanks the hero through a quarter-turn. Sway owns the roll.
+        // move) yanks the hero through a quarter-turn. The frame loop
+        // follows the pointer from a rest of 0 instead; drag is the blob's
+        // own handler.
         cursorFollow: { enabled: false, sensitivity: 0 },
       },
       scene: { enableControls: false },
@@ -432,8 +399,9 @@ onMounted(async () => {
    * seconds. On x and y that only biases a `cursorFollow` that pulls back
    * anyway, but nothing corrects z, so the roll accumulated without bound —
    * a blob slowly tumbling, on top of the spin bursts. Zero here leaves the
-   * orientation to `cursorFollow` for pointing and to the sway below for
-   * dancing, both of which are bounded.
+   * orientation to the pointer follow below and to the blob's own drag
+   * handler, both of which are bounded. The SDK's `cursorFollow` stays off
+   * because its rest is π/2.
    */
   const settleBlobRotation = () => {
     const activeBlob = kwami.avatar.getBlob();
@@ -495,30 +463,28 @@ onMounted(async () => {
 
     const bandEnvelope = createBandEnvelope(BAND_ENVELOPE);
     const musicPulse = createMusicPulse();
-    // Phase-locked to the pulse, so the body keeps time between hits rather
-    // than waiting for the next one.
-    const beatClock = createBeatClock();
     disposeMusicPulse = () => musicPulse.dispose();
     let smoothedAnalyser: AnalyserNode | null = null;
     let lastFrameAt = performance.now();
     let musicWasPlaying = false;
+    let dragging = false;
 
     /**
-     * The sway and the bob, and how much of each is currently written onto the
-     * mesh.
+     * The pointer follow and the bob, and how much of each is currently
+     * written onto the mesh.
      *
      * Both are applied as the change since last frame rather than as an
      * assignment. An assignment would be the simpler code and the wrong one:
-     * the SDK's drag handler writes the same `rotation.z`, and
+     * the SDK's drag handler writes the same `rotation`, and
      * `BlobXyzPosition` writes the same `position.y` on a resize, and either
      * would be silently erased sixty times a second. Adding the delta of a
-     * bounded signal composes instead — whatever else moved the blob stays
-     * moved, and this contribution still cannot exceed its own amplitude.
+     * bounded signal composes instead — a drag stays dragged, and this
+     * contribution still cannot exceed its own amplitude.
      */
-    let sway = 0;
-    let swayApplied = 0;
-    /** How much of `SWAY_BEAT_RAD` the groove is currently worth. */
-    let grooveDepth = 0;
+    let followX = 0;
+    let followY = 0;
+    let followAppliedX = 0;
+    let followAppliedY = 0;
     let bob = 0;
     let bobApplied = 0;
     /**
@@ -528,7 +494,7 @@ onMounted(async () => {
      * offsets have to be forgotten rather than unwound from a mesh that never
      * carried them.
      */
-    let swayedMesh: object | null = null;
+    let followedMesh: object | null = null;
 
     /**
      * The last colours actually handed to the SDK.
@@ -630,10 +596,6 @@ onMounted(async () => {
 
       if (musicWasPlaying && !playing) {
         try { kwami.avatar.getBlob()?.setResolution(BLOB_RESOLUTION); } catch {}
-        // Whatever plays next is a different track more often than not, and a
-        // clock still defending the last tempo takes a bar or two longer to
-        // re-lock than one starting cold.
-        beatClock.reset();
       }
       musicWasPlaying = playing;
 
@@ -643,38 +605,36 @@ onMounted(async () => {
         if (activeRenderer === 'blob-xyz') pushShapeToBlob();
       }
 
-      // The lean runs on the clock, not on the last hit. `barPhase` spans two
-      // beats, so a full stroke is a sway rather than a twitch, and it is at
-      // the end of its travel on the beat because the clock says where the beat
-      // is — not because one just went past.
-      const groove = beatClock.advance(deltaMs, playing ? pulse : 0);
-      const grooveTarget =
-        Math.min(1, groove.confidence / GROOVE_CONFIDENCE) *
-        Math.min(1, level / GROOVE_LEVEL);
-      grooveDepth += (grooveTarget - grooveDepth) * envelopeCoefficient(deltaMs, SWAY_GROOVE_TAU_MS);
+      // Pointer only. A randomize tick used to write a lean of its own, and
+      // the beat clock another; both turned the body when nobody asked.
+      // Frozen while a button is down so the SDK's drag handler is not
+      // lerped back toward the pointer on the same axes.
+      if (!dragging) {
+        followX += (lastPointerNormY * FOLLOW_PITCH_RAD - followX) * FOLLOW_SMOOTH;
+        followY += (lastPointerNormX * FOLLOW_YAW_RAD - followY) * FOLLOW_SMOOTH;
+      }
 
-      sway =
-        Math.sin(groove.barPhase * Math.PI * 2) * SWAY_BEAT_RAD * grooveDepth +
-        Math.sin((now / SWAY_IDLE_PERIOD_MS) * Math.PI * 2) * SWAY_IDLE_RAD;
-
-      // The dip is still the hit itself, and keeps its own envelope: a beat the
-      // clock did not predict should still land on the body.
+      // The dip is still the hit itself, and keeps its own envelope: a beat
+      // should still land on the body even though the body no longer leans.
       const bobTarget = pulse * BOB_DEPTH;
       bob +=
         (bobTarget - bob) *
         envelopeCoefficient(deltaMs, bobTarget > bob ? BOB_ATTACK_MS : BOB_RELEASE_MS);
 
       const activeBlobMesh = kwami.avatar.getBlob()?.getMesh() as
-        | { rotation: { z: number }; position?: { y: number } }
+        | { rotation: { x: number; y: number }; position?: { y: number } }
         | undefined;
       if (activeBlobMesh) {
-        if (activeBlobMesh !== swayedMesh) {
-          swayedMesh = activeBlobMesh;
-          swayApplied = 0;
+        if (activeBlobMesh !== followedMesh) {
+          followedMesh = activeBlobMesh;
+          followAppliedX = 0;
+          followAppliedY = 0;
           bobApplied = 0;
         }
-        activeBlobMesh.rotation.z += sway - swayApplied;
-        swayApplied = sway;
+        activeBlobMesh.rotation.x += followX - followAppliedX;
+        activeBlobMesh.rotation.y += followY - followAppliedY;
+        followAppliedX = followX;
+        followAppliedY = followY;
         // Downward: a hit pushes the blob into the beat and it draws back out,
         // which is the shape of a drop landing rather than a ball bouncing.
         if (activeBlobMesh.position) {
@@ -684,13 +644,14 @@ onMounted(async () => {
       } else {
         // The eye is up. Drop the offsets rather than carrying them across, so
         // the blob comes back from rest and eases in instead of arriving
-        // already leaning.
-        swayedMesh = null;
-        swayApplied = 0;
+        // already turned.
+        followedMesh = null;
+        followAppliedX = 0;
+        followAppliedY = 0;
+        followX = 0;
+        followY = 0;
         bobApplied = 0;
-        sway = 0;
         bob = 0;
-        grooveDepth = 0;
       }
 
       const eye = (kwami.avatar as unknown as {
@@ -736,6 +697,65 @@ onMounted(async () => {
     };
     animate();
 
+    /**
+     * Whichever renderer is up, as the loop it owns.
+     *
+     * The expensive frame is not this component's — `BlobXyz` and `EyeIris`
+     * each run a `requestAnimationFrame` loop of their own inside the SDK, and
+     * that is where `animateBlobXyz` walks 25,921 vertices. Stopping the loop
+     * above without this one would suspend the cheap half and leave the costly
+     * half running. `stopAnimation` is typed private on the renderer and is a
+     * plain method at runtime, like the other SDK internals this screen
+     * reaches for.
+     */
+    const rendererLoop = () =>
+      (kwami.avatar.getBlob() ?? kwami.avatar.getEyeIris()) as unknown as {
+        startAnimation?: () => void;
+        stopAnimation?: () => void;
+      } | null;
+
+    let suspended = false;
+
+    /**
+     * Stand down while a wallet is being asked to approve something.
+     *
+     * Phantom and MetaMask relay their requests over `postMessage` and need the
+     * page's main thread to deliver the reply. This screen spends more than a
+     * whole 60 Hz frame per frame on the avatar, so for as long as an approval
+     * was open the thread was never idle long enough to hand the wallet its
+     * answer, and both of them timed the request out and reported it as an
+     * internal error. Nobody is looking at the avatar during an approval
+     * anyway — the wallet's own window is in front of it.
+     */
+    const suspendForWallet = () => {
+      if (suspended) return;
+      suspended = true;
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+      try { rendererLoop()?.stopAnimation?.(); } catch {}
+    };
+
+    const resumeAfterWallet = () => {
+      if (!suspended) return;
+      suspended = false;
+      try { rendererLoop()?.startAnimation?.(); } catch {}
+      // Or the first frame back carries the whole approval as its delta, and
+      // every envelope and tween in the loop jumps to catch up.
+      lastFrameAt = performance.now();
+      if (rafId === null) animate();
+    };
+
+    // Immediate, because this screen can be mounted while a hold is already up
+    // — a renderer switch rebuilds nothing here, but a remount would otherwise
+    // come back at full tilt in the middle of an approval.
+    stopWalletWatch = watch(
+      isAwaitingWallet,
+      (waiting) => (waiting ? suspendForWallet() : resumeAfterWallet()),
+      { immediate: true },
+    );
+
     const proxyClickToCanvas = (event: MouseEvent) => {
       // The forwarded event bubbles, so it reaches this same window listener
       // again; without this guard every click on the screen recursed until the
@@ -779,6 +799,21 @@ onMounted(async () => {
       window.removeEventListener('mousemove', onPointerMove);
     };
 
+    const onPointerDown = (event: PointerEvent) => {
+      if (event.button === 0) dragging = true;
+    };
+    const onPointerUp = () => {
+      dragging = false;
+    };
+    window.addEventListener('pointerdown', onPointerDown, { passive: true });
+    window.addEventListener('pointerup', onPointerUp, { passive: true });
+    window.addEventListener('pointercancel', onPointerUp, { passive: true });
+    removeDragHandler = () => {
+      window.removeEventListener('pointerdown', onPointerDown);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerUp);
+    };
+
     const pickSubtype = (): Subtype => {
       let subtype: Subtype = ALL_SUBTYPES[Math.floor(Math.random() * ALL_SUBTYPES.length)]!;
       if (lastBlobSubtype && ALL_SUBTYPES.length > 1) {
@@ -792,6 +827,11 @@ onMounted(async () => {
     };
 
     const doRandomize = () => {
+      // Not while a wallet is open: a re-roll can switch renderers, and the new
+      // one starts its own loop — which would put the main thread back under
+      // load behind the suspension's back.
+      if (isAwaitingWallet.value) return;
+
       const now = performance.now();
       const canSwapRenderer = now - lastRendererSwapAt >= RENDERER_SWAP_MIN_MS;
       const nextRenderer = canSwapRenderer ? pickRendererByProbability() : activeRenderer;
@@ -878,10 +918,12 @@ onMounted(async () => {
 
 onUnmounted(async () => {
   if (stopIntervalWatch) { stopIntervalWatch(); stopIntervalWatch = null; }
+  if (stopWalletWatch) { stopWalletWatch(); stopWalletWatch = null; }
   if (randomizeTimer !== null) { clearInterval(randomizeTimer); randomizeTimer = null; }
   if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
   if (removeClickProxyHandler) { removeClickProxyHandler(); removeClickProxyHandler = null; }
   if (removePointerMoveHandler) { removePointerMoveHandler(); removePointerMoveHandler = null; }
+  if (removeDragHandler) { removeDragHandler(); removeDragHandler = null; }
   if (removeHitTest) { removeHitTest(); removeHitTest = null; }
   if (disposeMusicPulse) { disposeMusicPulse(); disposeMusicPulse = null; }
   unregisterWelcomeAudio();

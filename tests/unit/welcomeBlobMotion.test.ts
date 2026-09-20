@@ -1,18 +1,11 @@
 /**
- * The login avatar has to stay pointing at the visitor.
+ * The login avatar only turns when the visitor asks it to.
  *
- * It used to fire a spin burst every fifth randomize: a per-frame yaw delta
- * that was *added to* while decaying at 0.92, so it converged on about a third
- * of a radian per frame — five revolutions a second — while the SDK's
- * `cursorFollow` lerped the same property back towards centre at 8% a frame.
- * The result was a blob that periodically went berserk and snapped back, and
- * nothing failed: no exception, no warning, just a number climbing.
- *
- * So what is held here is a bound, not a behaviour. Every rotation the
- * component writes is a bounded offset re-applied as its own delta, which
- * means no sequence of frames and no sequence of randomize ticks can take the
- * blob anywhere it cannot come back from. A rewrite that reintroduces an
- * accumulator fails here on the first burst.
+ * It used to lean on every randomize tick and on the beat clock, so a body
+ * that was supposed to sit still between pointer moves spun on its own. What
+ * is held here is that music and the rate button cannot write rotation, and
+ * that the pointer can — as a bounded offset, frozen while a button is down
+ * so a drag is not fought.
  *
  * `welcomeBlobRandomize.test.ts` covers the timer and the analyser; this
  * covers what the frame loop does to the mesh.
@@ -20,7 +13,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { RANDOMIZE_INTERVALS_MS, useWelcomeRandomizer } from '@/composables/useWelcomeRandomizer';
-import { scaleAudioSpikeEffects } from '@/utils/blobTween';
 
 const BIN_COUNT = 1_024;
 
@@ -167,44 +159,22 @@ afterEach(async () => {
 });
 
 describe('the welcome blob under music', () => {
-  it('never lets the blob wind up a rotation it cannot come back from', async () => {
+  it('does not rotate on its own, through music or randomize ticks', async () => {
     await mountBlob();
 
     // Twenty seconds of music, which is twenty randomize ticks at the default
-    // rate — four times what it took the old spin burst to fire.
+    // rate — the window the old lean used to spend spinning.
     const samples = await frames(1_250, (i) => {
       // A kick every 30 frames: half a second, 120bpm.
       spectrum = i % 30 < 4 ? withKick(0.5, 0.95) : bed(0.5);
     });
 
-    const furthest = Math.max(...samples.map((s) => Math.abs(s.z)));
-
-    // The sway's own amplitude is 0.3rad; anything near a revolution is an
-    // accumulator that got loose.
-    expect(furthest).toBeLessThan(0.4);
-    // The axes `cursorFollow` owns are not written by the component at all.
+    expect(Math.max(...samples.map((s) => Math.abs(s.z)))).toBe(0);
     expect(Math.max(...samples.map((s) => Math.abs(s.y)))).toBe(0);
     expect(Math.max(...samples.map((s) => Math.abs(s.x)))).toBe(0);
   });
 
-  it('turns by degrees a frame, not by revolutions', async () => {
-    await mountBlob();
-
-    const samples = await frames(600, (i) => {
-      spectrum = i % 30 < 4 ? withKick(0.5, 0.95) : bed(0.5);
-    });
-
-    let widest = 0;
-    for (let i = 1; i < samples.length; i += 1) {
-      widest = Math.max(widest, Math.abs(samples[i]!.z - samples[i - 1]!.z));
-    }
-
-    // At 60Hz, 0.03rad a frame is still under two degrees — enough to land
-    // a beat, not enough to spin.
-    expect(widest).toBeLessThan(0.03);
-  });
-
-  it('leaves the blob where it found it once the music stops', async () => {
+  it('leaves the blob facing where it was once the music stops', async () => {
     await mountBlob();
     await frames(300, (i) => {
       spectrum = i % 30 < 4 ? withKick(0.5, 0.95) : bed(0.5);
@@ -214,8 +184,9 @@ describe('the welcome blob under music', () => {
     const samples = await frames(400);
     const settled = samples[samples.length - 1]!;
 
-    // Only the idle sway is left, and the bob is gone entirely.
-    expect(Math.abs(settled.z)).toBeLessThan(0.09);
+    expect(settled.z).toBe(0);
+    expect(settled.y).toBe(0);
+    expect(settled.x).toBe(0);
     expect(Math.abs(settled.posY)).toBeLessThan(0.01);
   });
 
@@ -239,58 +210,67 @@ describe('the welcome blob under music', () => {
     expect(deepest).toBeLessThan(0.22);
   });
 
-  it('leans on a clock rather than on the last hit it heard', async () => {
-    await mountBlob();
-    await frames(500);
-
-    // Four seconds of 120bpm: a kick every 30 frames of 16ms, so a beat is
-    // 480ms and the two-beat lean is 960ms — sixty frames.
-    const beating = await frames(250, (i) => {
-      spectrum = i % 30 < 4 ? withKick(0.5, 0.95) : bed(0.5);
-    });
-
-    // Turning points rather than zero crossings: the idle sine underneath is a
-    // slow offset, and what is being counted here is the stroke on top of it.
-    let turns = 0;
-    for (let i = 2; i < beating.length; i += 1) {
-      const before = beating[i - 1]!.z - beating[i - 2]!.z;
-      const after = beating[i]!.z - beating[i - 1]!.z;
-      if (Math.abs(before) > 1e-4 && Math.abs(after) > 1e-4 && Math.sign(before) !== Math.sign(after)) {
-        turns += 1;
-      }
-    }
-
-    // Four seconds at a bar a second is four strokes, and a stroke has two
-    // ends. A body leaning once per beat would be at eight, and one that only
-    // answered hits would be ragged rather than periodic.
-    expect(turns).toBeGreaterThanOrEqual(6);
-    expect(turns).toBeLessThanOrEqual(10);
-  });
-
-  it('keeps the groove through a bar with no percussion in it', async () => {
+  it('does not lean to the music once the drums drop out', async () => {
     await mountBlob();
     await frames(500);
     await frames(250, (i) => {
       spectrum = i % 30 < 4 ? withKick(0.5, 0.95) : bed(0.5);
     });
 
-    // The track carries on, but the drums drop out for a bar.
     spectrum = bed(0.5);
     const gap = await frames(60);
 
     const swing = Math.max(...gap.map((s) => s.z)) - Math.min(...gap.map((s) => s.z));
-    // The last frames only. The bar opens with the body still drawing out of
-    // the kick before it, which is the bob doing its job rather than a
-    // leftover, and `BOB_RELEASE_MS` is what says how long that takes.
     const dip = Math.max(...gap.slice(-10).map((s) => Math.abs(s.posY)));
 
-    // Still swaying: the idle sine alone moves 0.04rad in a second, so
-    // anything past that is the clock still running. This is the difference
-    // between an avatar dancing and an avatar reacting.
-    expect(swing).toBeGreaterThan(0.06);
-    // And the dip is gone, because nothing hit. The lean is on the clock; the
-    // bob is on the beat itself.
+    expect(swing).toBe(0);
     expect(dip).toBeLessThan(0.02);
+  });
+
+  it('turns toward the pointer and no further', async () => {
+    await mountBlob();
+    await frames(10);
+
+    const samples = await frames(40, () => {
+      window.dispatchEvent(new MouseEvent('mousemove', {
+        clientX: window.innerWidth,
+        clientY: window.innerHeight / 2,
+      }));
+    });
+
+    const last = samples[samples.length - 1]!;
+    // Yaw follows the pointer; pitch stays put because the pointer is on the
+    // horizon, and roll is not a follow axis.
+    expect(last.y).toBeGreaterThan(0.3);
+    expect(last.y).toBeLessThanOrEqual(0.4);
+    expect(Math.abs(last.x)).toBeLessThan(0.02);
+    expect(last.z).toBe(0);
+  });
+
+  it('holds the follow still while a button is down, so a drag is not fought', async () => {
+    await mountBlob();
+    await frames(40, () => {
+      window.dispatchEvent(new MouseEvent('mousemove', {
+        clientX: window.innerWidth,
+        clientY: window.innerHeight / 2,
+      }));
+    });
+    const facing = mesh.rotation.y;
+    expect(facing).toBeGreaterThan(0.3);
+
+    window.dispatchEvent(new MouseEvent('pointerdown', { button: 0 }));
+    await frames(40, () => {
+      window.dispatchEvent(new MouseEvent('mousemove', {
+        clientX: 0,
+        clientY: window.innerHeight / 2,
+      }));
+    });
+
+    // The pointer crossed the screen. If follow had kept chasing it, yaw
+    // would be heading for the other side. Frozen, it stays where the drag
+    // can take it — and this test does not itself drag, so it stays put.
+    expect(mesh.rotation.y).toBeCloseTo(facing, 5);
+    window.dispatchEvent(new MouseEvent('pointerup'));
   });
 
   it('kills liquid stretch so a beat cannot bake a cone into the body', async () => {
@@ -358,16 +338,18 @@ describe('the reactivity the blob is driven at', () => {
     expect(audioEffects.responseSpeed).toBe(0.6);
     expect(audioEffects.transientBoost).toBe(0.2);
 
-    const last = blob.setSpikes.mock.calls.at(-1);
-    expect(last).toBeDefined();
-    const expected = scaleAudioSpikeEffects(
-      [last![0], last![1], last![2]],
-      { bassSpike: 0.45, midSpike: 0.58, highSpike: 0.22, spikeDensity: 0.2 },
-    );
-    expect(audioEffects.bassSpike).toBeCloseTo(expected.bassSpike);
-    expect(audioEffects.midSpike).toBeCloseTo(expected.midSpike);
-    expect(audioEffects.highSpike).toBeCloseTo(expected.highSpike);
-    expect(audioEffects.spikeDensity).toBeCloseTo(expected.spikeDensity);
+    // Scaled to the live shape, so the exact numbers move with the roll.
+    // What is pinned is the band: never above the husk-end constants, never
+    // below the drop's swell floor. `setSpikes` is not the source of truth
+    // here — one tick in twenty is an eye, and that path never calls it.
+    expect(audioEffects.bassSpike).toBeGreaterThanOrEqual(0.45 * 0.4);
+    expect(audioEffects.bassSpike).toBeLessThanOrEqual(0.45);
+    expect(audioEffects.midSpike).toBeGreaterThanOrEqual(0.58 * 0.4);
+    expect(audioEffects.midSpike).toBeLessThanOrEqual(0.58);
+    expect(audioEffects.highSpike).toBeGreaterThanOrEqual(0);
+    expect(audioEffects.highSpike).toBeLessThanOrEqual(0.22);
+    expect(audioEffects.spikeDensity).toBeGreaterThanOrEqual(0);
+    expect(audioEffects.spikeDensity).toBeLessThanOrEqual(0.2);
   });
 
   it('stops the SDK integrating a rotation of its own', async () => {
