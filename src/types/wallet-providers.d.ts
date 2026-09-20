@@ -1,3 +1,5 @@
+import type { SolanaWallet } from '@supabase/auth-js';
+
 /**
  * Injected browser wallet providers.
  *
@@ -15,9 +17,24 @@ export interface SolanaProvider {
   disconnect?(): Promise<void>;
   signAndSendTransaction?(transaction: unknown): Promise<{ signature: string }>;
   /**
+   * Sign-in-with-Solana, which auth-js prefers over `signMessage` whenever a
+   * wallet has it — and which Phantom is the reason to prefer.
+   *
+   * It is connect-and-sign in one approval: the wallet resolves the account
+   * itself and returns the message it actually showed, so nothing has to be
+   * connected beforehand. Declared here because the app branches on it: a
+   * provider with this signs in through SIWS, and only one without it needs
+   * `connect()` first.
+   */
+  signIn?: SolanaWallet['signIn'];
+  /**
    * Sign-in-with-Solana message signing, used by `supabase.auth.signInWithWeb3`.
    * Declared so this type structurally overlaps auth-js's `SolanaWallet` and can
    * be handed to it directly.
+   *
+   * The fallback, not the path Phantom takes: auth-js hand-builds the message
+   * for this one with `Version` before `URI`, which Phantom's own SIWS parser
+   * rejects.
    */
   signMessage?(message: Uint8Array, encoding?: string): Promise<Uint8Array> | undefined;
 }

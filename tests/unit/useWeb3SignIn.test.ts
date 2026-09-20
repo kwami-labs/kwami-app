@@ -44,8 +44,12 @@ function announceWallet(rdns: string, provider: Record<string, unknown>) {
 }
 
 /**
- * A Phantom stand-in. The real provider is connected before it is handed to
- * Supabase, so a stub without `connect` would pass a test the app cannot.
+ * A Solana wallet without SIWS: no `signIn`, so the app has to connect it
+ * before auth-js can fall back to `signMessage`.
+ *
+ * Not what Phantom is any more — see the `signIn` cases below and
+ * `web3SignInIntegration.test.ts` — but still the path an older wallet takes,
+ * and a stub without `connect` would pass a test the app cannot.
  */
 function phantomStub(overrides: Record<string, unknown> = {}) {
   const stub: Record<string, unknown> = {
@@ -215,7 +219,7 @@ describe('useWeb3SignIn when the wallet is present', () => {
     expect(web3.error.value).toBe(en.auth.web3Rejected);
   });
 
-  it('connects Phantom before handing it to Supabase', async () => {
+  it('connects a wallet that cannot sign in before handing it to Supabase', async () => {
     const phantom = phantomStub();
     win.phantom = { solana: phantom };
     const web3 = harness();
@@ -224,6 +228,21 @@ describe('useWeb3SignIn when the wallet is present', () => {
 
     expect(phantom.connect).toHaveBeenCalledOnce();
     expect(phantom.isConnected).toBe(true);
+    expect(signInWithWeb3).toHaveBeenCalledWith(expect.objectContaining({ wallet: phantom }));
+  });
+
+  it('leaves the connecting to SIWS when the wallet can sign in', async () => {
+    // One click is one approval. `signIn` connects and signs together, so
+    // connecting first is a second request to the same extension for the same
+    // click — which is what a wallet reports as an internal error rather than
+    // as anything the page can act on.
+    const phantom = phantomStub({ signIn: vi.fn(), isConnected: false });
+    win.phantom = { solana: phantom };
+    const web3 = harness();
+
+    await web3.signIn('phantom');
+
+    expect(phantom.connect).not.toHaveBeenCalled();
     expect(signInWithWeb3).toHaveBeenCalledWith(expect.objectContaining({ wallet: phantom }));
   });
 

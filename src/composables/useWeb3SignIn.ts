@@ -12,6 +12,7 @@
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { supabase } from '@/lib/supabase';
+import { useWalletApproval } from '@/composables/useWalletApproval';
 import type { EthereumProvider, SolanaProvider } from '@/types/wallet-providers';
 
 export type Web3Wallet = 'phantom' | 'metamask';
@@ -96,6 +97,7 @@ export function resetEthereumProviders(): void {
 
 export function useWeb3SignIn() {
   const { t } = useI18n();
+  const { holdForWallet } = useWalletApproval();
   const isLoading = ref(false);
   /** Which wallet the current attempt is waiting on, so one card can say so. */
   const pendingWallet = ref<Web3Wallet | null>(null);
@@ -198,10 +200,13 @@ export function useWeb3SignIn() {
     try {
       // The statement must not contain newlines; Phantom requires one.
       const statement = t('auth.web3Statement');
-      const { error: authError } =
+      // Held across the whole exchange, not just the signature: the wallet is
+      // relaying over `postMessage` from the first request to the last, and a
+      // page that will not yield is a page it cannot get an answer back to.
+      const { error: authError } = await holdForWallet(() =>
         wallet === 'phantom'
-          ? await signInWithPhantom(statement)
-          : await supabase.auth.signInWithWeb3({
+          ? signInWithPhantom(statement)
+          : supabase.auth.signInWithWeb3({
               chain: 'ethereum',
               statement,
               // Same reason, and the one that matters more: auth-js would reach
@@ -210,11 +215,12 @@ export function useWeb3SignIn() {
               // `address` field and the EIP-1193 event methods that no injected
               // provider actually exposes; it only ever calls `.request()`.
               wallet: metamaskProvider() as never,
-            });
+            }),
+      );
 
       if (authError) error.value = mapError(authError, wallet);
     } catch (e: unknown) {
-      console.error(`${wallet} sign-in error:`, e);
+      reportWalletFailure(wallet, e);
       error.value = e instanceof Error ? mapError(e, wallet) : t('auth.web3Failed');
     } finally {
       isLoading.value = false;
@@ -223,19 +229,45 @@ export function useWeb3SignIn() {
   }
 
   /**
-   * Connect, then hand Phantom to Supabase.
+   * Put the wallet's own reason somewhere it can be read.
    *
-   * `signInWithWeb3` calls the wallet's `signIn`, and Phantom's handler builds
-   * the message it shows from its own state: it fills the address in from the
-   * selected account, and for a site it does not trust yet it also records the
-   * trust grant on the way back out. Connecting first settles both before the
-   * signature, so what the user approves is a plain sign-in rather than a
-   * combined connect-and-sign, and a wallet with no account selected fails here
-   * — with Phantom's own reason — instead of inside the sign-in handler.
+   * A wallet that fails inside its own handler tells the page almost nothing —
+   * Phantom reports every such throw as JSON-RPC -32603 "Unexpected error" and
+   * keeps the reason in its service worker. The fields that do sometimes carry
+   * one (`data`, `cause`) were being dropped by logging the error alone, which
+   * is how this class of failure stayed opaque through two attempts at it.
+   */
+  function reportWalletFailure(wallet: Web3Wallet, e: unknown) {
+    const detail = e as { code?: unknown; data?: unknown; cause?: unknown; message?: unknown };
+    console.error(`${wallet} sign-in error:`, {
+      message: detail?.message,
+      code: detail?.code,
+      data: detail?.data,
+      cause: detail?.cause,
+      error: e,
+    });
+  }
+
+  /**
+   * Hand Phantom to Supabase, connecting first only if it cannot sign in.
+   *
+   * `signInWithWeb3` calls the wallet's `signIn`, and SIWS exists precisely to
+   * *replace* `connect()`: the wallet connects and signs under one approval,
+   * filling the address in from the account the visitor picks in that same
+   * dialog. Connecting first was an attempt to settle the account before the
+   * signature, and it bought a second overlapping request to the same
+   * extension for it — two approvals racing for one popup, which is exactly
+   * the kind of thing a wallet reports as an internal error rather than as
+   * anything a page could act on.
+   *
+   * The fallback still connects, because a wallet without `signIn` has to be
+   * connected before `signMessage` can reach a public key.
    */
   async function signInWithPhantom(statement: string) {
     const provider = phantomProvider();
-    if (provider && !provider.isConnected) await provider.connect();
+    if (provider && typeof provider.signIn !== 'function' && !provider.isConnected) {
+      await provider.connect();
+    }
     return supabase.auth.signInWithWeb3({
       chain: 'solana',
       statement,
