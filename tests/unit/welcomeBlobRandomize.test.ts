@@ -110,6 +110,7 @@ async function mountBlob() {
 beforeEach(() => {
   vi.useFakeTimers();
   avatar.switchRenderer.mockClear();
+  avatar.setSkin.mockClear();
   analyser.smoothingTimeConstant = 0.35;
   useWelcomeRandomizer().intervalMs.value = RANDOMIZE_INTERVALS_MS[0];
 });
@@ -152,6 +153,22 @@ describe('the welcome blob timer', () => {
     // The new 2s one fires on its own schedule.
     await vi.advanceTimersByTimeAsync(900);
     expect(avatar.switchRenderer.mock.calls.length).toBe(baseline + 1);
+  });
+
+  it('re-skins the blob on every tick, matching the rate on the button', async () => {
+    // Stay on blob-xyz: the eye path never calls setSkin, and a 1-in-20 roll
+    // onto it would make this file fail for a reason it is not measuring.
+    const random = vi.spyOn(Math, 'random').mockReturnValue(0);
+    try {
+      await mountBlob();
+      avatar.setSkin.mockClear();
+
+      await vi.advanceTimersByTimeAsync(3_000);
+
+      expect(avatar.setSkin.mock.calls.length).toBe(3);
+    } finally {
+      random.mockRestore();
+    }
   });
 
   it('stops randomizing once the login screen is gone', async () => {
