@@ -28,6 +28,9 @@ import { useBlackHoleSync } from '@/composables/avatar/sync/useBlackHoleSync';
 import { useParticlesFaceSync } from '@/composables/avatar/sync/useParticlesFaceSync';
 import { useEyeIrisSync } from '@/composables/avatar/sync/useEyeIrisSync';
 import { randomizeAvatarPanel } from '@/composables/avatar/randomizeAvatarPanel';
+import { useBlobXyzStore } from '@/stores/avatar.blob-xyz';
+import { useEyeIrisStore } from '@/stores/avatar.eye-iris';
+import { fitKwamiInView } from '@/utils/kwamiViewportFit';
 
 const {
   kwami,
@@ -76,6 +79,8 @@ const workspaceStore = useWorkspaceStore();
 
 const searchResults = useSearchResults();
 const avatarStore = useAvatarStore();
+const blobXyzStore = useBlobXyzStore();
+const eyeIrisStore = useEyeIrisStore();
 
 const splitRatio = ref(50);
 const isDraggingSplitter = ref(false);
@@ -221,6 +226,9 @@ function applySavedAvatarState() {
     case 'particles-face': applyParticlesFaceToKwami(); break;
     case 'eye-iris': applyEyeIrisToKwami(); break;
   }
+
+  // Saved scale can overflow a phone; re-frame after the store values land.
+  handleResize();
 }
 
 // Apply current store soul to the Kwami instance so the live agent matches the active kwami config
@@ -282,19 +290,17 @@ function initializeKwami() {
 
 // Handle window resize - trigger scene resize and recenter avatar
 function handleResize() {
-  if (kwami.value && canvasRef.value) {
-    // Get parent container size (not canvas size, as canvas has inline styles)
-    const parent = canvasRef.value.parentElement;
-    if (!parent) return;
-    
-    const width = parent.clientWidth || window.innerWidth;
-    const height = parent.clientHeight || window.innerHeight;
-    
-    // Resize the scene (renderer and camera)
-    kwami.value.avatar.getScene()?.resize(width, height);
-    // Refresh blob position to recenter after resize
-    kwami.value.avatar.getBlob()?.position.refresh();
-  }
+  if (!kwami.value || !canvasRef.value) return;
+
+  const renderer = kwamiRendererType.value;
+  const hero = renderer === 'eye-iris' ? 'eye-iris' : 'blob-xyz';
+  const desiredScale =
+    renderer === 'eye-iris' ? eyeIrisStore.state.scale : blobXyzStore.shape.scale;
+
+  fitKwamiInView(kwami.value, canvasRef.value, {
+    renderer: hero,
+    desiredScale,
+  });
 }
 
 // Watch for canvas to become available (happens after auth guard shows slot)
@@ -375,6 +381,8 @@ onMounted(() => {
 
   // Add resize listener
   window.addEventListener('resize', handleResize);
+  window.visualViewport?.addEventListener('resize', handleResize);
+  window.visualViewport?.addEventListener('scroll', handleResize);
 
   // Shortcuts
   document.addEventListener('keydown', onGlobalKeydown);
@@ -382,6 +390,8 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize);
+  window.visualViewport?.removeEventListener('resize', handleResize);
+  window.visualViewport?.removeEventListener('scroll', handleResize);
   document.removeEventListener('keydown', onGlobalKeydown);
   if (resizeObserver) {
     resizeObserver.disconnect();
