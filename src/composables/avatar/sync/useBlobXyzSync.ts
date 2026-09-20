@@ -8,7 +8,6 @@
 import { watch as vueWatch, type Ref } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useBlobXyzStore } from '@/stores/avatar.blob-xyz';
-import { applyRoundedBlobGeometry } from '@/utils/blobGeometry';
 
 // Local type for Kwami instance (avoid external dependency)
 type KwamiInstance = ReturnType<typeof import('@/composables/useKwami').useKwami>['kwami']['value'];
@@ -89,12 +88,7 @@ export function useBlobXyzSync(options: UseBlobXyzSyncOptions) {
 
     watch(
         () => skin.value.resolution,
-        (v) => {
-            const b = getBlob();
-            if (!b) return;
-            b.setResolution(v);
-            applyRoundedBlobGeometry(b.getMesh(), v);
-        }
+        (v) => getBlob()?.setResolution(v)
     );
 
     // =====================================================
@@ -256,7 +250,6 @@ export function useBlobXyzSync(options: UseBlobXyzSyncOptions) {
         kwami.value.avatar.setWireframe(skin.value.wireframe);
         b.setGlassMode(skin.value.glassMode);
         b.setResolution(skin.value.resolution);
-        applyRoundedBlobGeometry(b.getMesh(), skin.value.resolution);
 
         // Shape
         kwami.value.avatar.setScale(shape.value.scale);
