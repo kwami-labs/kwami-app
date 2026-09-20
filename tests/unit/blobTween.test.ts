@@ -166,6 +166,58 @@ describe('randomShape', () => {
   });
 });
 
+describe('shapeDensity', () => {
+  it('is 0 at the gelatine end and 1 at the husk end', () => {
+    expect(shapeDensity([SPIKE_RANGE[0], SPIKE_RANGE[0], SPIKE_RANGE[0]])).toBe(0);
+    expect(shapeDensity([SPIKE_RANGE[1], SPIKE_RANGE[1], SPIKE_RANGE[1]])).toBe(1);
+  });
+
+  it('reads a body as dense as its axes are on the whole', () => {
+    const mixed = shapeDensity([SPIKE_RANGE[0], SPIKE_RANGE[1], 3.2]);
+    const even = shapeDensity([3.2, 3.2, 3.2]);
+    expect(mixed).toBeCloseTo(even, 1);
+  });
+});
+
+describe('scaleAudioSpikeEffects', () => {
+  const base = {
+    bassSpike: 0.45,
+    midSpike: 0.58,
+    highSpike: 0.22,
+    spikeDensity: 0.2,
+  };
+  const round: [number, number, number] = [SPIKE_RANGE[0], SPIKE_RANGE[0], SPIKE_RANGE[0]];
+  const husk: [number, number, number] = [SPIKE_RANGE[1], SPIKE_RANGE[1], SPIKE_RANGE[1]];
+
+  it('leaves a husk on the values the login screen already tuned', () => {
+    expect(scaleAudioSpikeEffects(husk, base)).toEqual(base);
+  });
+
+  it('takes the frequency scramble off a drop, so music cannot grow it a husk', () => {
+    const scaled = scaleAudioSpikeEffects(round, base);
+    expect(scaled.spikeDensity).toBe(0);
+    expect(scaled.highSpike).toBe(0);
+  });
+
+  it('still lets a drop swell, rather than going still the moment sound is in', () => {
+    const scaled = scaleAudioSpikeEffects(round, base);
+    expect(scaled.bassSpike).toBeCloseTo(base.bassSpike * AUDIO_SPIKE_WEIGHT_FLOOR);
+    expect(scaled.midSpike).toBeCloseTo(base.midSpike * AUDIO_SPIKE_WEIGHT_FLOOR);
+    expect(scaled.bassSpike).toBeGreaterThan(0);
+  });
+
+  it('gives a mid-band body less of the field than a husk and more than a drop', () => {
+    const mid: [number, number, number] = [3.2, 3.2, 3.2];
+    const scaled = scaleAudioSpikeEffects(mid, base);
+    const rounded = scaleAudioSpikeEffects(round, base);
+
+    expect(scaled.spikeDensity).toBeGreaterThan(rounded.spikeDensity);
+    expect(scaled.spikeDensity).toBeLessThan(base.spikeDensity);
+    expect(scaled.bassSpike).toBeGreaterThan(rounded.bassSpike);
+    expect(scaled.bassSpike).toBeLessThan(base.bassSpike);
+  });
+});
+
 describe('amplitudeCeiling', () => {
   it('gives the roundest bodies the whole range and the densest the least of it', () => {
     const round = amplitudeCeiling([SPIKE_RANGE[0], SPIKE_RANGE[0], SPIKE_RANGE[0]]);
