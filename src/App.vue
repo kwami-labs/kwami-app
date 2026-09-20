@@ -156,6 +156,13 @@ const { applyToKwami: applyEyeIrisToKwami } = useEyeIrisSync({
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 
+// A slider write sets the stored scale on the live mesh. Re-frame so a phone
+// still caps it instead of waiting for the next window resize.
+watch(
+  () => [blobXyzStore.shape.scale, eyeIrisStore.state.scale, kwamiRendererType.value] as const,
+  () => handleResize(),
+);
+
 // Watch for authentication: credits, load kwamis from DB (welcome rings shown only during AuthGuard loading)
 watch(
   () => authStore.isAuthenticated,
