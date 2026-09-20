@@ -1,9 +1,10 @@
 /**
  * Whether the login screen is painted with a video, and which one.
  *
- * `AuthPreferencesPill` owns the button that picks; `WelcomeVideoBackground`
- * owns the element that plays. They are siblings under `AuthPage` with no props
- * between them, so the choice lives here -- module-level state, matching
+ * `AuthPreferencesPill` owns the button that picks; `AuthPage` also shuffles
+ * on a background double-click; `WelcomeVideoBackground` owns the element
+ * that plays. They are siblings under `AuthPage` with no props between them,
+ * so the choice lives here -- module-level state, matching
  * `useWelcomeRandomizer` and the welcome audio registration in `useSoundtrack`.
  *
  * Deliberately NOT the scene store. That drives the signed-in workspace by

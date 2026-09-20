@@ -3,6 +3,8 @@ import { ref, onMounted, onUnmounted, shallowRef, watch } from 'vue';
 import type { Kwami, KwamiConfig } from 'kwami';
 import { registerWelcomeAudio, unregisterWelcomeAudio } from '@/composables/useSoundtrack';
 import { useWelcomeRandomizer } from '@/composables/useWelcomeRandomizer';
+import { useWelcomeKwamiHit } from '@/composables/useWelcomeKwamiHit';
+import { hitsKwamiMesh } from '@/utils/blobHitTest';
 import {
   createBandEnvelope,
   envelopeCoefficient,
@@ -17,7 +19,6 @@ import {
   randomShape,
   smoothstep,
 } from '@/utils/blobTween';
-import { applyRoundedBlobGeometry } from '@/utils/blobGeometry';
 import { createMusicPulse } from '@/utils/musicPulse';
 
 const WELCOME_RENDERER_WEIGHTS = {
@@ -29,20 +30,18 @@ const WELCOME_RENDERER_WEIGHTS = {
  * Held fixed for the life of the screen.
  *
  * `avatar.randomize()` re-rolls the blob's resolution between 120 and 220, and
- * a resolution change rebuilds the geometry. The SDK builds a `SphereGeometry`
- * whose poles pinch into a cone the moment the surface displaces, so this
- * screen immediately swaps that for an icosahedron and then holds the
- * resolution still: rebuilding is long enough to drop a frame, and
- * `animateBlobXyz` keys its per-vertex audio smoothing to the vertex count, so
- * a rebuild also throws away the blob's audio envelope. Once a second, that
- * was most of what "not smooth" meant. Nothing else `randomize()` does to a
- * blob survives the explicit setters below — its `dna` is never read again —
- * so the login screen drives the blob itself and leaves `randomize()` to the
- * eye.
+ * a resolution change rebuilds the geometry: a ~26k-vertex `SphereGeometry`
+ * through `mergeVertices`, which is long enough to drop a frame. On top of the
+ * hitch, `animateBlobXyz` keys its per-vertex audio smoothing to the vertex
+ * count and refills it with 1s whenever that count moves, so every rebuild also
+ * threw away the blob's audio envelope. Once a second, that was most of what
+ * "not smooth" meant. The body stays spherical by holding frequency and
+ * amplitude in a gelatine range, not by rebuilding the mesh. Nothing else
+ * `randomize()` does to a blob survives the explicit setters below — its `dna`
+ * is never read again — so the login screen drives the blob itself and leaves
+ * `randomize()` to the eye.
  */
 const BLOB_RESOLUTION = 160;
-/** Icosahedron subdivisions for the hero. 6 is ~82k tris, even, no poles. */
-const BLOB_BODY_DETAIL = 6;
 
 /**
  * `KwamiAudio` builds its analyser with `smoothingTimeConstant = 0.35`, well
@@ -189,6 +188,7 @@ let randomizeTimer: ReturnType<typeof setInterval> | null = null;
 let stopIntervalWatch: (() => void) | null = null;
 let removeClickProxyHandler: (() => void) | null = null;
 let removePointerMoveHandler: (() => void) | null = null;
+let removeHitTest: (() => void) | null = null;
 // The pulse detector taps the audio graph, so it has to be released by hand.
 let disposeMusicPulse: (() => void) | null = null;
 
@@ -298,6 +298,17 @@ onMounted(async () => {
   const kwami = new Kwami(canvas, kwamiConfig);
   kwamiRef.value = kwami;
 
+  // AuthPage shuffles the video on a backdrop double-click and needs to know
+  // whether that click actually hit the mesh. The canvas is full-bleed, so
+  // only a raycast answers that. Live getters: a renderer switch builds a
+  // new mesh underneath us.
+  removeHitTest = useWelcomeKwamiHit().register((clientX, clientY) => {
+    const camera = kwami.avatar.getScene?.()?.camera;
+    if (!camera) return false;
+    const mesh = kwami.avatar.getBlob()?.getMesh() ?? kwami.avatar.getEyeIris()?.getMesh() ?? null;
+    return hitsKwamiMesh(clientX, clientY, canvas, camera, mesh);
+  });
+
   // `SoundtrackPill` drives this kwami's own audio object. Routing music
   // through it is what makes the avatar move: `KwamiAudio` runs the element
   // through a Web Audio analyser, and `BlobXyz` reads that analyser every
@@ -371,7 +382,6 @@ onMounted(async () => {
 
   const blob = kwami.avatar.getBlob();
   const blobMesh = blob?.getMesh();
-  applyRoundedBlobGeometry(blobMesh, BLOB_RESOLUTION, BLOB_BODY_DETAIL);
 
   if (blob) {
     try { blob.setTouchStrength(0.7); } catch {}
@@ -653,10 +663,8 @@ onMounted(async () => {
       window.removeEventListener('mousemove', onPointerMove);
     };
 
-    const { randomBlobSkinType } = await import('kwami') as { randomBlobSkinType?: () => Subtype };
-
     const pickSubtype = (): Subtype => {
-      let subtype: Subtype = randomBlobSkinType?.() ?? ALL_SUBTYPES[Math.floor(Math.random() * ALL_SUBTYPES.length)]!;
+      let subtype: Subtype = ALL_SUBTYPES[Math.floor(Math.random() * ALL_SUBTYPES.length)]!;
       if (lastBlobSubtype && ALL_SUBTYPES.length > 1) {
         let guard = 0;
         while (subtype === lastBlobSubtype && guard < 8) {
@@ -687,7 +695,6 @@ onMounted(async () => {
         // a setter.
         applyBlobAudioEffects();
         settleBlobRotation();
-        applyRoundedBlobGeometry(kwami.avatar.getBlob()?.getMesh(), BLOB_RESOLUTION, BLOB_BODY_DETAIL);
 
         // Continuous parameters move on every tick, but as a bounded step from
         // where the blob already is rather than a fresh uniform roll: the rAF
@@ -762,6 +769,7 @@ onUnmounted(async () => {
   if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
   if (removeClickProxyHandler) { removeClickProxyHandler(); removeClickProxyHandler = null; }
   if (removePointerMoveHandler) { removePointerMoveHandler(); removePointerMoveHandler = null; }
+  if (removeHitTest) { removeHitTest(); removeHitTest = null; }
   if (disposeMusicPulse) { disposeMusicPulse(); disposeMusicPulse = null; }
   unregisterWelcomeAudio();
   const k = kwamiRef.value;

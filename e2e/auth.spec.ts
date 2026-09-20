@@ -29,6 +29,27 @@ test.describe('unauthenticated', () => {
   });
 });
 
+test.describe('welcome background', () => {
+  test('double-clicking the empty backdrop picks a video', async ({ signedOut: page }) => {
+    // The catalogue is on pexels; without this stub the catch-all treats that
+    // fetch as an escape. An empty body is enough: we assert the choice, not
+    // that the clip decoded.
+    await page.route('https://videos.pexels.com/**', (route) =>
+      route.fulfill({ status: 200, contentType: 'video/mp4', body: '' }),
+    );
+
+    await gotoApp(page);
+    await expect(page.locator('.title-main')).toBeVisible({ timeout: WELCOME_MS + 5_000 });
+
+    // Top-left of the page, well clear of the centred avatar and the pills.
+    await page.locator('.page').dblclick({ position: { x: 16, y: 16 } });
+
+    await expect
+      .poll(async () => page.evaluate(() => window.localStorage.getItem('kwami.welcomeBackground')))
+      .not.toBeNull();
+  });
+});
+
 test.describe('auth bootstrap resilience', () => {
   /**
    * Regression for the splash-hang: auth.ts called

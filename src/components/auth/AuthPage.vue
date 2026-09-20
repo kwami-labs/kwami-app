@@ -7,14 +7,29 @@ import SoundtrackPill from './SoundtrackPill.vue';
 import AuthPreferencesPill from './AuthPreferencesPill.vue';
 import WelcomeVideoBackground from './WelcomeVideoBackground.vue';
 import { useWelcomeBackground } from '@/composables/useWelcomeBackground';
+import { useWelcomeKwamiHit } from '@/composables/useWelcomeKwamiHit';
+import { isAuthChromeTarget } from '@/utils/blobHitTest';
 
 const { t } = useI18n();
 const loginOpen = ref(false);
-const { video } = useWelcomeBackground();
+const { video, shuffle } = useWelcomeBackground();
+const { hitsKwami } = useWelcomeKwamiHit();
+
+/**
+ * Double-click the empty backdrop to roll another clip. The same shuffle as
+ * the preferences pill — this is just a shorter reach. Clicks on the avatar,
+ * the login chrome, or an open panel are someone else's gesture.
+ */
+function onBackgroundDblClick(event: MouseEvent) {
+  if (loginOpen.value) return;
+  if (isAuthChromeTarget(event.target)) return;
+  if (hitsKwami(event.clientX, event.clientY)) return;
+  shuffle();
+}
 </script>
 
 <template>
-  <div class="page">
+  <div class="page" @dblclick="onBackgroundDblClick">
     <WelcomeVideoBackground />
 
     <!-- A blue glow tuned for the painted gradient; over a video it only
@@ -38,6 +53,9 @@ const { video } = useWelcomeBackground();
     </div>
 
     <div class="auth-footer">
+      <p class="video-hint" :class="{ 'video-hint--hidden': loginOpen }">
+        {{ t('auth.backgroundDblclickHint') }}
+      </p>
       <p>{{ t('auth.footer') }}</p>
     </div>
   </div>
@@ -131,6 +149,18 @@ const { video } = useWelcomeBackground();
   color: var(--auth-text-faint);
   margin: 0;
   letter-spacing: 0.5px;
+}
+
+.video-hint {
+  margin-bottom: 6px;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: lowercase;
+  transition: opacity 220ms ease;
+}
+
+.video-hint--hidden {
+  opacity: 0;
 }
 
 @media (max-width: 900px) {
