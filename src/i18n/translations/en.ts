@@ -274,6 +274,8 @@ export const en = {
     web3ProviderDisabled: 'Wallet sign-in is not enabled on this project yet. Use email or phone, or turn on Authentication → Providers → Web3.',
     web3Rejected: 'The signature was cancelled in the wallet.',
     web3Failed: 'Wallet sign-in failed.',
+    web3WalletError: '{wallet} could not finish signing. Try again, and reopen the extension if it keeps failing.',
+    web3NetworkFailed: 'The sign-in server could not be reached. Check your connection and try again.',
     configError: 'Configuration error',
     configErrorHint: 'This build is missing required environment variables: {vars}. Copy .env.sample to .env and fill them in.',
     welcome: 'Welcome',

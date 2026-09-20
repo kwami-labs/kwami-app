@@ -274,6 +274,8 @@ export const es = {
     web3ProviderDisabled: 'El inicio con monedero no esta activo en este proyecto. Usa email o telefono, o activa Authentication → Providers → Web3.',
     web3Rejected: 'La firma se cancelo en el monedero.',
     web3Failed: 'No se pudo iniciar sesion con el monedero.',
+    web3WalletError: '{wallet} no pudo terminar de firmar. Intentalo otra vez y reabre la extension si sigue fallando.',
+    web3NetworkFailed: 'No se pudo contactar con el servidor de inicio de sesion. Revisa tu conexion e intentalo otra vez.',
     configError: 'Error de configuracion',
     configErrorHint: 'A esta compilacion le faltan variables de entorno necesarias: {vars}. Copia .env.sample a .env y completalas.',
     welcome: 'Bienvenido',

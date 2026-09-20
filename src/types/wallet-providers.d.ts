@@ -9,6 +9,8 @@
  */
 export interface SolanaProvider {
   isPhantom?: boolean;
+  /** True once the site has an approved connection to the selected account. */
+  isConnected?: boolean;
   connect(): Promise<{ publicKey?: { toString(): string } }>;
   disconnect?(): Promise<void>;
   signAndSendTransaction?(transaction: unknown): Promise<{ signature: string }>;

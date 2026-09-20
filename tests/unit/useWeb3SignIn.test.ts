@@ -43,6 +43,23 @@ function announceWallet(rdns: string, provider: Record<string, unknown>) {
   announcers.push(() => window.removeEventListener('eip6963:requestProvider', reply));
 }
 
+/**
+ * A Phantom stand-in. The real provider is connected before it is handed to
+ * Supabase, so a stub without `connect` would pass a test the app cannot.
+ */
+function phantomStub(overrides: Record<string, unknown> = {}) {
+  const stub: Record<string, unknown> = {
+    isPhantom: true,
+    isConnected: false,
+    connect: vi.fn(async () => {
+      stub.isConnected = true;
+      return { publicKey: { toString: () => 'stub' } };
+    }),
+    ...overrides,
+  };
+  return stub;
+}
+
 /** Pretend to be a phone: no hover, coarse pointer, therefore no extensions. */
 function pretendHandheld(handheld: boolean) {
   window.matchMedia = vi.fn().mockImplementation((query: string) => ({
@@ -111,7 +128,7 @@ describe('useWeb3SignIn when the wallet is missing', () => {
 
   it('treats a foreign window.solana as Phantom being absent', async () => {
     // Backpack or Solflare injected first; Phantom really is not installed.
-    win.solana = { isPhantom: false };
+    win.solana = phantomStub({ isPhantom: false });
     const web3 = harness();
 
     await web3.signIn('phantom');
@@ -123,7 +140,7 @@ describe('useWeb3SignIn when the wallet is missing', () => {
 
 describe('useWeb3SignIn when the wallet is present', () => {
   it('signs in through the Phantom namespace and opens nothing', async () => {
-    const phantom = { isPhantom: true };
+    const phantom = phantomStub();
     win.phantom = { solana: phantom };
     const web3 = harness();
 
@@ -139,8 +156,8 @@ describe('useWeb3SignIn when the wallet is present', () => {
   });
 
   it('prefers window.phantom.solana over a foreign window.solana', async () => {
-    const phantom = { isPhantom: true };
-    win.solana = { isPhantom: false };
+    const phantom = phantomStub();
+    win.solana = phantomStub({ isPhantom: false });
     win.phantom = { solana: phantom };
     const web3 = harness();
 
@@ -152,7 +169,7 @@ describe('useWeb3SignIn when the wallet is present', () => {
   });
 
   it('falls back to window.solana when it is Phantom itself', async () => {
-    const phantom = { isPhantom: true };
+    const phantom = phantomStub();
     win.solana = phantom;
     const web3 = harness();
 
@@ -168,7 +185,7 @@ describe('useWeb3SignIn when the wallet is present', () => {
     await web3.signIn('phantom');
     expect(web3.installUrl.value).not.toBeNull();
 
-    win.phantom = { solana: { isPhantom: true } };
+    win.phantom = { solana: phantomStub() };
     await web3.signIn('phantom');
 
     expect(web3.installUrl.value).toBeNull();
@@ -176,7 +193,7 @@ describe('useWeb3SignIn when the wallet is present', () => {
   });
 
   it('maps a disabled Web3 provider to the dashboard copy, not the raw SDK string', async () => {
-    win.phantom = { solana: { isPhantom: true } };
+    win.phantom = { solana: phantomStub() };
     signInWithWeb3.mockResolvedValue({
       data: { user: null, session: null },
       error: { message: 'Web3 provider is disabled', code: 'web3_provider_disabled' },
@@ -189,13 +206,60 @@ describe('useWeb3SignIn when the wallet is present', () => {
   });
 
   it('maps a cancelled wallet signature', async () => {
-    win.phantom = { solana: { isPhantom: true } };
+    win.phantom = { solana: phantomStub() };
     signInWithWeb3.mockRejectedValue(new Error('User rejected the request'));
     const web3 = harness();
 
     await web3.signIn('phantom');
 
     expect(web3.error.value).toBe(en.auth.web3Rejected);
+  });
+
+  it('connects Phantom before handing it to Supabase', async () => {
+    const phantom = phantomStub();
+    win.phantom = { solana: phantom };
+    const web3 = harness();
+
+    await web3.signIn('phantom');
+
+    expect(phantom.connect).toHaveBeenCalledOnce();
+    expect(phantom.isConnected).toBe(true);
+    expect(signInWithWeb3).toHaveBeenCalledWith(expect.objectContaining({ wallet: phantom }));
+  });
+
+  it('does not reconnect a wallet that is already connected', async () => {
+    const phantom = phantomStub({ isConnected: true });
+    win.phantom = { solana: phantom };
+    const web3 = harness();
+
+    await web3.signIn('phantom');
+
+    expect(phantom.connect).not.toHaveBeenCalled();
+    expect(signInWithWeb3).toHaveBeenCalledOnce();
+  });
+
+  it('names the wallet when its own handler throws instead of echoing "Unexpected error"', async () => {
+    win.phantom = { solana: phantomStub() };
+    signInWithWeb3.mockRejectedValue(
+      Object.assign(new Error('Unexpected error'), { code: -32603 }),
+    );
+    const web3 = harness();
+
+    await web3.signIn('phantom');
+
+    expect(web3.error.value).toBe(
+      en.auth.web3WalletError.replace('{wallet}', 'Phantom'),
+    );
+  });
+
+  it('maps a fetch that never reached the auth server', async () => {
+    win.ethereum = { isMetaMask: true, request: vi.fn() };
+    signInWithWeb3.mockRejectedValue(new TypeError('Failed to fetch'));
+    const web3 = harness();
+
+    await web3.signIn('metamask');
+
+    expect(web3.error.value).toBe(en.auth.web3NetworkFailed);
   });
 });
 

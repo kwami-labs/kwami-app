@@ -14,6 +14,19 @@ const signInWithWeb3 = vi.mocked(supabase.auth.signInWithWeb3);
 
 const win = window as unknown as Record<string, unknown>;
 
+/** Phantom as the app meets it: connected on request, then handed to Supabase. */
+function phantomStub() {
+  const stub: Record<string, unknown> = {
+    isPhantom: true,
+    isConnected: false,
+    connect: vi.fn(async () => {
+      stub.isConnected = true;
+      return { publicKey: { toString: () => 'stub' } };
+    }),
+  };
+  return stub;
+}
+
 const realMatchMedia = window.matchMedia;
 
 /** Pretend to be a phone: no hover, coarse pointer, therefore no extensions. */
@@ -54,7 +67,7 @@ describe('Web3AuthForm', () => {
   });
 
   it('marks Phantom as detected when the namespaced provider is present', async () => {
-    win.phantom = { solana: { isPhantom: true } };
+    win.phantom = { solana: phantomStub() };
     const wrapper = mount(Web3AuthForm);
     await wrapper.vm.$nextTick();
 
@@ -81,7 +94,7 @@ describe('Web3AuthForm', () => {
 
 describe('Web3AuthForm while a wallet is deciding', () => {
   it('names the wallet it is waiting on and leaves that card lit', async () => {
-    win.phantom = { solana: { isPhantom: true } };
+    win.phantom = { solana: phantomStub() };
     // Never settles: the panel has to say something for as long as the wallet
     // pop-up is open, which is the whole point of the pending state.
     signInWithWeb3.mockReturnValue(new Promise(() => {}) as never);
@@ -104,7 +117,7 @@ describe('Web3AuthForm while a wallet is deciding', () => {
   });
 
   it('drops the pending state once the attempt settles', async () => {
-    win.phantom = { solana: { isPhantom: true } };
+    win.phantom = { solana: phantomStub() };
     const wrapper = mount(Web3AuthForm);
 
     await wrapper.get('.wallet-card--phantom').trigger('click');
@@ -185,7 +198,7 @@ describe('Web3AuthForm card labelling', () => {
 
     expect(wrapper.get('.wallet-card--phantom').attributes('aria-label')).toBe('Install Phantom');
 
-    win.phantom = { solana: { isPhantom: true } };
+    win.phantom = { solana: phantomStub() };
     await wrapper.vm.$nextTick();
     // The poll is what re-reads window; nudge it the way a returning tab does.
     window.dispatchEvent(new Event('focus'));

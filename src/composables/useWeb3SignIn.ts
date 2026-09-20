@@ -200,13 +200,7 @@ export function useWeb3SignIn() {
       const statement = t('auth.web3Statement');
       const { error: authError } =
         wallet === 'phantom'
-          ? await supabase.auth.signInWithWeb3({
-              chain: 'solana',
-              statement,
-              // Passing the provider explicitly rather than letting auth-js fall
-              // back to window.solana, which may be a different wallet.
-              wallet: phantomProvider(),
-            })
+          ? await signInWithPhantom(statement)
           : await supabase.auth.signInWithWeb3({
               chain: 'ethereum',
               statement,
@@ -218,14 +212,37 @@ export function useWeb3SignIn() {
               wallet: metamaskProvider() as never,
             });
 
-      if (authError) error.value = mapError(authError);
+      if (authError) error.value = mapError(authError, wallet);
     } catch (e: unknown) {
       console.error(`${wallet} sign-in error:`, e);
-      error.value = e instanceof Error ? mapError(e) : t('auth.web3Failed');
+      error.value = e instanceof Error ? mapError(e, wallet) : t('auth.web3Failed');
     } finally {
       isLoading.value = false;
       pendingWallet.value = null;
     }
+  }
+
+  /**
+   * Connect, then hand Phantom to Supabase.
+   *
+   * `signInWithWeb3` calls the wallet's `signIn`, and Phantom's handler builds
+   * the message it shows from its own state: it fills the address in from the
+   * selected account, and for a site it does not trust yet it also records the
+   * trust grant on the way back out. Connecting first settles both before the
+   * signature, so what the user approves is a plain sign-in rather than a
+   * combined connect-and-sign, and a wallet with no account selected fails here
+   * — with Phantom's own reason — instead of inside the sign-in handler.
+   */
+  async function signInWithPhantom(statement: string) {
+    const provider = phantomProvider();
+    if (provider && !provider.isConnected) await provider.connect();
+    return supabase.auth.signInWithWeb3({
+      chain: 'solana',
+      statement,
+      // Passing the provider explicitly rather than letting auth-js fall back
+      // to window.solana, which may be a different wallet.
+      wallet: provider,
+    });
   }
 
   function walletLabel(wallet: Web3Wallet): string {
@@ -237,8 +254,8 @@ export function useWeb3SignIn() {
    * failure. Map that (and a user-cancelled signature) so the panel does not
    * dump the raw SDK string.
    */
-  function mapError(err: { message?: string; code?: string }): string {
-    const code = err.code ?? '';
+  function mapError(err: { message?: string; code?: string | number }, wallet: Web3Wallet): string {
+    const code = String(err.code ?? '');
     const message = (err.message ?? '').toLowerCase();
     if (code === 'web3_provider_disabled' || message.includes('web3 provider is disabled')) {
       return t('auth.web3ProviderDisabled');
@@ -249,6 +266,19 @@ export function useWeb3SignIn() {
       message.includes('user denied')
     ) {
       return t('auth.web3Rejected');
+    }
+    // The wallet's own handler threw. Everything the page is given is the
+    // JSON-RPC internal-error code and the word "Unexpected", so say which
+    // side failed rather than repeating a string that names no cause; the
+    // wallet logs the real reason in its own service worker.
+    if (code === '-32603' || message === 'unexpected error') {
+      return t('auth.web3WalletError', { wallet: walletLabel(wallet) });
+    }
+    // `fetch` rejects with a bare TypeError for anything that never reached
+    // the server: offline, a blocked request, or the tab reloading mid-flight.
+    // The signature is already spent by then, so the retry has to be explicit.
+    if (message.includes('failed to fetch') || message.includes('networkerror')) {
+      return t('auth.web3NetworkFailed');
     }
     return err.message || t('auth.web3Failed');
   }
