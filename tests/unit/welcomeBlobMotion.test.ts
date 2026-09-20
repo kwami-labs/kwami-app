@@ -62,9 +62,13 @@ const analyser = {
   disconnect: vi.fn(),
 };
 
+const liquidPhysics = { stretch: 0.6, velocityX: 0, velocityY: 0 };
+
 const blob = {
   audioEffects,
+  liquidPhysics,
   getMesh: () => mesh,
+  setResolution: vi.fn(),
   setRotation: vi.fn(),
   setTouchStrength: vi.fn(),
   setTouchDuration: vi.fn(),
@@ -148,6 +152,10 @@ beforeEach(() => {
   spectrum = bed(0.5);
   paused = false;
   analyser.connect.mockClear();
+  blob.setResolution.mockClear();
+  liquidPhysics.stretch = 0.6;
+  liquidPhysics.velocityX = 0;
+  liquidPhysics.velocityY = 0;
   useWelcomeRandomizer().intervalMs.value = RANDOMIZE_INTERVALS_MS[0];
 });
 
@@ -229,6 +237,28 @@ describe('the welcome blob under music', () => {
     // And bounded: `BOB_DEPTH` is 0.17 against a blob of radius ~3.5.
     expect(deepest).toBeLessThan(0.2);
   });
+
+  it('kills liquid stretch so a beat cannot bake a cone into the body', async () => {
+    await mountBlob();
+    await frames(30, (i) => {
+      spectrum = i % 30 < 4 ? withKick(0.5, 0.95) : bed(0.5);
+    });
+
+    expect(liquidPhysics.stretch).toBe(0);
+    expect(liquidPhysics.velocityY).toBe(0);
+  });
+
+  it('rebuilds the sphere when the music stops, so a cone does not need a refresh', async () => {
+    await mountBlob();
+    await frames(40, (i) => {
+      spectrum = i % 30 < 4 ? withKick(0.5, 0.95) : bed(0.5);
+    });
+
+    paused = true;
+    await frames(2);
+
+    expect(blob.setResolution).toHaveBeenCalled();
+  });
 });
 
 describe('the reactivity the blob is driven at', () => {
@@ -248,11 +278,11 @@ describe('the reactivity the blob is driven at', () => {
     // Resting is not exactly `RESTING_REACTIVITY`: the detector's baseline
     // starts cold, so a track arriving out of silence is genuinely an onset
     // and a little of it is still draining away.
-    expect(resting).toBeCloseTo(1.05, 2);
-    expect(loudest).toBeGreaterThan(1.9);
+    expect(resting).toBeCloseTo(0.55, 2);
+    expect(loudest).toBeGreaterThan(0.9);
     // And bounded by the constants, so no track can drive it to a number the
     // SDK's `min(3, …)` clamp would have to catch.
-    expect(loudest).toBeLessThanOrEqual(1.05 + 2.3);
+    expect(loudest).toBeLessThanOrEqual(0.55 + 0.85);
   });
 
   it('keeps the rest of the effects the SDK reads, rather than only reactivity', async () => {
@@ -261,8 +291,8 @@ describe('the reactivity the blob is driven at', () => {
 
     // Spelled out in the component so an SDK default that moves cannot
     // silently retune the login screen.
-    expect(audioEffects.spikeDensity).toBe(0.55);
-    expect(audioEffects.bassSpike).toBe(0.62);
+    expect(audioEffects.spikeDensity).toBe(0.28);
+    expect(audioEffects.bassSpike).toBe(0.38);
     expect(audioEffects.sensitivity).toBe(0.05);
   });
 

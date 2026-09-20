@@ -14,6 +14,7 @@ import {
   cloneShape,
   driftShape,
   randomShape,
+  remixShape,
   smoothstep,
   type BlobShape,
 } from '../../src/utils/blobTween';
@@ -161,7 +162,7 @@ describe('randomShape', () => {
 });
 
 describe('driftShape', () => {
-  it('keeps a walk inside the gelatine ranges', () => {
+  it('keeps a walk inside the rounded-spike ranges', () => {
     let live = randomShape(() => 0.5);
     for (let i = 0; i < 40; i += 1) {
       live = driftShape(live);
@@ -173,6 +174,34 @@ describe('driftShape', () => {
         expect(v).toBeGreaterThanOrEqual(AMPLITUDE_RANGE[0]);
         expect(v).toBeLessThanOrEqual(AMPLITUDE_RANGE[1]);
       }
+    }
+  });
+});
+
+describe('remixShape', () => {
+  it('re-rolls spikes anywhere in the band, not a nudge from where it was', () => {
+    const from = randomShape(() => 0.5);
+    const lows: number[] = [];
+    const highs: number[] = [];
+    for (let i = 0; i < 80; i += 1) {
+      const next = remixShape(from);
+      for (const v of next.spikes) {
+        expect(v).toBeGreaterThanOrEqual(SPIKE_RANGE[0]);
+        expect(v).toBeLessThanOrEqual(SPIKE_RANGE[1]);
+        lows.push(v);
+        highs.push(v);
+      }
+    }
+    expect(Math.min(...lows)).toBeLessThan(2.6);
+    expect(Math.max(...highs)).toBeGreaterThan(4.4);
+  });
+
+  it('drifts time instead of re-rolling it, so the surface does not boil', () => {
+    const from = randomShape(() => 0.5);
+    const next = remixShape(from, () => 0.5);
+    const span = 8 - 0.5;
+    for (let i = 0; i < 3; i += 1) {
+      expect(Math.abs(next.time[i]! - from.time[i]!)).toBeLessThan(span * 0.1);
     }
   });
 });

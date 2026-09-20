@@ -15,8 +15,8 @@ import {
   blendShape,
   channelsToHex,
   cloneShape,
-  driftShape,
   randomShape,
+  remixShape,
   smoothstep,
 } from '@/utils/blobTween';
 import { createMusicPulse } from '@/utils/musicPulse';
@@ -74,12 +74,12 @@ const ANALYSER_SMOOTHING = 0.72;
  * rhythm — the SDK keeps deciding *how loud*, and this decides *when*.
  *
  * The two together set `audioPush`, which scales the spike displacement
- * against a fixed idle noise of 0.14. Resting lands the audio term a little
- * under the idle noise, so a held chord still breathes; a full hit puts it at
- * roughly twice the idle, which is the swing that reads as dancing.
+ * against a fixed idle noise of 0.14. The body already rolls at 1.8–5.5, so
+ * a hit that used to double the idle now crumples the mesh: resting stays
+ * under the idle term, and a full hit only lifts it a little past it.
  */
-const RESTING_REACTIVITY = 1.05;
-const PULSE_REACTIVITY = 2.3;
+const RESTING_REACTIVITY = 0.55;
+const PULSE_REACTIVITY = 0.85;
 
 /**
  * `BlobXyz` already runs its own envelope over the bands; it was just tuned
@@ -88,12 +88,11 @@ const PULSE_REACTIVITY = 2.3;
  * frame. Halving it lengthens the envelope without touching `transientBoost`,
  * which is what blends the unsmoothed band back in so hits still land.
  *
- * `spikeDensity` is held well under the stock 1.18 on purpose. It feeds
- * `audioFreqBoost`, the spatial frequency of the spike noise, and a large
+ * `spikeDensity` is held even lower now that the body frequency is high. It
+ * feeds `audioFreqBoost`, the spatial frequency of the spike noise. A large
  * swing there does not make the spikes grow on the beat — it slides the whole
- * noise field to a different scale, so the spikes appear somewhere else
- * instead. Low and steady keeps the pattern recognisable and leaves the
- * dancing to the amplitude, which is what "liquid" means here.
+ * noise field to a finer scale and the mesh reads as crumpled foil. Low and
+ * steady keeps the pattern recognisable and leaves the dancing to amplitude.
  *
  * The three `*Spike` weights and `sensitivity` are spelled out rather than
  * left to the SDK's defaults because `Object.assign` below only overwrites the
@@ -102,13 +101,13 @@ const PULSE_REACTIVITY = 2.3;
  */
 const BLOB_AUDIO_EFFECTS = {
   reactivity: RESTING_REACTIVITY,
-  bassSpike: 0.62,
-  midSpike: 0.5,
-  highSpike: 0.3,
+  bassSpike: 0.38,
+  midSpike: 0.32,
+  highSpike: 0.18,
   sensitivity: 0.05,
-  responseSpeed: 0.32,
-  transientBoost: 0.3,
-  spikeDensity: 0.55,
+  responseSpeed: 0.28,
+  transientBoost: 0.18,
+  spikeDensity: 0.28,
 } as const;
 
 /**
@@ -138,11 +137,11 @@ const BEAT_FLIP_THRESHOLD = 0.34;
 /**
  * How far a hit dips the blob, in world units against a radius of about 3.5.
  *
- * Small, and worth more than it looks: `BlobXyz` derives `liquidPhysics` from
- * the frame-to-frame movement of its own mesh position and stretches the
- * geometry along that velocity. So a dip on the beat is not just a dip — the
- * blob squashes into it and draws back out, which is the surface tension read
- * of a drop landing rather than a ball bouncing.
+ * Small, and applied to the mesh position only. `BlobXyz` used to derive
+ * `liquidPhysics` from that same motion and bake a non-radial stretch into
+ * the vertices; a few beats later the rest pose was a cone and only a
+ * refresh rebuilt the sphere. The dip still reads as dancing. The body
+ * stays a blob because stretch is pinned at zero below.
  */
 const BOB_DEPTH = 0.17;
 const BOB_TAU_MS = 130;
@@ -158,21 +157,21 @@ const EYE_AUDIO_SMOOTHING = 0.88;
 const BAND_ENVELOPE = { attackMs: 45, releaseMs: 320 } as const;
 
 /**
- * The floor under anything that cannot be tweened.
+ * How long a renderer has to stay up before the next roll may replace it.
  *
- * A skin is a different shader and a renderer is a different object, so both
- * arrive as cuts however slowly the rest morphs. At the 1s default those cuts
- * were the jitter. Gating them on elapsed time rather than a tick count means a
- * slow rate still swaps on every tick, and only a fast one thins them out.
+ * A skin is a shader swap and can land on every tick — that is what the rate
+ * button is promising. A renderer is a different object: flashing the eye for
+ * one second at the 1s default reads as a glitch, not a new look. Skin follows
+ * the pill; this floor is only for blob ↔ eye.
  */
-const DISCRETE_SWAP_MIN_MS = 6_000;
+const RENDERER_SWAP_MIN_MS = 6_000;
 
 /**
  * A tween now fills its whole interval rather than 85% of it.
  *
- * With `driftShape` the destination is a short step from where the blob
- * already is, so there is no longer a reason to arrive early and hold: holding
- * is a stillness between two moves, and running the morph edge to edge is what
+ * With `remixShape` the destination is a fresh roll of spikes and amplitude,
+ * so there is no longer a reason to arrive early and hold: holding is a
+ * stillness between two moves, and running the morph edge to edge is what
  * makes the shape one continuous motion. The cap only bites at the slow rates
  * the pill offers, where a ten-minute tween would be indistinguishable from a
  * frozen blob anyway.
@@ -243,6 +242,16 @@ function shuffleColors(): { x: string; y: string; z: string } {
   return { x: a[0]!, y: a[1]!, z: a[2]! };
 }
 
+/** Three `#rrggbb` colours as the nine channels a tween walks. */
+function paletteToChannels(colors: { x: string; y: string; z: string }): number[] {
+  const rgb = (hex: string): [number, number, number] => {
+    const n = Number.parseInt(hex.slice(1), 16);
+    if (!Number.isFinite(n)) return [0, 0, 0];
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  };
+  return [...rgb(colors.x), ...rgb(colors.y), ...rgb(colors.z)];
+}
+
 function pickRendererByProbability(): WelcomeRenderer {
   const totalWeight = WELCOME_RENDERER_WEIGHTS.blobXyz + WELCOME_RENDERER_WEIGHTS.eyeIris;
   const roll = Math.random() * totalWeight;
@@ -278,7 +287,7 @@ onMounted(async () => {
       renderer: 'blob-xyz',
       blob: {
         resolution: BLOB_RESOLUTION,
-        spikes: { x: 0.95, y: 1.02, z: 0.88 },
+        spikes: { x: 3.1, y: 3.6, z: 2.8 },
         time: { x: rand(0.8, 5.5), y: rand(0.8, 5.5), z: rand(0.8, 5.5) },
         rotation: { x: 0, y: 0, z: 0 },
         wireframe: false,
@@ -410,8 +419,8 @@ onMounted(async () => {
     let activeRenderer: WelcomeRenderer = 'blob-xyz';
     // Negative infinity, not 0: `performance.now()` is time since the page
     // loaded, so a login screen that mounted inside the first six seconds would
-    // otherwise open without ever picking a skin.
-    let lastDiscreteSwapAt = Number.NEGATIVE_INFINITY;
+    // otherwise open without ever being allowed to roll the eye.
+    let lastRendererSwapAt = Number.NEGATIVE_INFINITY;
 
     // The shape the component believes in, independent of which renderer is up.
     // Carrying it across an eye-iris round trip is what stops the blob snapping
@@ -427,6 +436,7 @@ onMounted(async () => {
     disposeMusicPulse = () => musicPulse.dispose();
     let smoothedAnalyser: AnalyserNode | null = null;
     let lastFrameAt = performance.now();
+    let musicWasPlaying = false;
 
     /**
      * The sway and the bob, and how much of each is currently written onto the
@@ -528,6 +538,25 @@ onMounted(async () => {
       // a fork: its bands still say how loud, and the pulse says when.
       const effects = liveAudioEffects();
       if (effects) effects.reactivity = RESTING_REACTIVITY + PULSE_REACTIVITY * pulse;
+
+      // `BlobXyz` measures velocity from `mesh.position` and stretches every
+      // vertex along it. The bob below writes that position, so without this
+      // the beat permanently leans the body into a cone. Stretch and the
+      // leftover velocity have to be killed every frame: a renderer switch
+      // builds a new instance with the SDK default of 0.6.
+      const liquid = (kwami.avatar.getBlob() as unknown as {
+        liquidPhysics?: { stretch: number; velocityX: number; velocityY: number };
+      } | null)?.liquidPhysics;
+      if (liquid) {
+        liquid.stretch = 0;
+        liquid.velocityX = 0;
+        liquid.velocityY = 0;
+      }
+
+      if (musicWasPlaying && !playing) {
+        try { kwami.avatar.getBlob()?.setResolution(BLOB_RESOLUTION); } catch {}
+      }
+      musicWasPlaying = playing;
 
       if (tweenElapsedMs < tweenDurationMs) {
         tweenElapsedMs = Math.min(tweenDurationMs, tweenElapsedMs + deltaMs);
@@ -677,8 +706,8 @@ onMounted(async () => {
 
     const doRandomize = () => {
       const now = performance.now();
-      const canSwapDiscrete = now - lastDiscreteSwapAt >= DISCRETE_SWAP_MIN_MS;
-      const nextRenderer = canSwapDiscrete ? pickRendererByProbability() : activeRenderer;
+      const canSwapRenderer = now - lastRendererSwapAt >= RENDERER_SWAP_MIN_MS;
+      const nextRenderer = canSwapRenderer ? pickRendererByProbability() : activeRenderer;
 
       // Called even when the renderer is unchanged: the SDK returns early on a
       // no-op switch, and keeping the call unconditional means one line marks
@@ -696,30 +725,27 @@ onMounted(async () => {
         applyBlobAudioEffects();
         settleBlobRotation();
 
-        // Continuous parameters move on every tick, but as a bounded step from
-        // where the blob already is rather than a fresh uniform roll: the rAF
-        // loop walks it there across the whole interval. A re-roll made the
-        // randomiser the fastest thing on screen, which is what buried the
-        // music — this is the difference between an avatar that dances and one
-        // that is replaced once a second.
+        // Spikes, amplitude and the palette re-roll every tick — that is the
+        // look the rate button is selling — and the rAF loop walks there
+        // across the interval. Time still drifts, so the surface does not boil
+        // when the destination is a stranger.
         shapeFrom = cloneShape(shapeLive);
-        shapeTo = driftShape(shapeLive);
+        shapeTo = remixShape(shapeLive);
+        shapeTo.channels = paletteToChannels(shuffleColors());
         tweenElapsedMs = 0;
         tweenDurationMs = Math.min(MAX_TWEEN_MS, randomizeIntervalMs.value);
 
-        if (canSwapDiscrete) {
-          const activeBlob = kwami.avatar.getBlob();
-          if (activeBlob) {
-            lastBlobSubtype = pickSubtype();
-            try { kwami.avatar.setSkin(lastBlobSubtype as Parameters<typeof kwami.avatar.setSkin>[0]); } catch {}
-            try { kwami.avatar.setWireframe(false); } catch {}
-          }
-          // A skin swap re-reads the blob's colours, so the tween's current
-          // frame has to go back on after it — and unconditionally, since the
-          // colours it just reset are the ones the change check below would
-          // otherwise call unchanged.
-          pushShapeToBlob(true);
+        const activeBlob = kwami.avatar.getBlob();
+        if (activeBlob) {
+          lastBlobSubtype = pickSubtype();
+          try { kwami.avatar.setSkin(lastBlobSubtype as Parameters<typeof kwami.avatar.setSkin>[0]); } catch {}
+          try { kwami.avatar.setWireframe(false); } catch {}
         }
+        // A skin swap re-reads the blob's colours, so the tween's current
+        // frame has to go back on after it — and unconditionally, since the
+        // colours it just reset are the ones the change check below would
+        // otherwise call unchanged.
+        pushShapeToBlob(true);
       } else {
         // The eye has no geometry to rebuild, so `randomize()` is cheap here:
         // it is palette and fibre uniforms and nothing else.
@@ -736,7 +762,7 @@ onMounted(async () => {
         if (switched) bandEnvelope.reset();
       }
 
-      if (canSwapDiscrete) lastDiscreteSwapAt = now;
+      if (canSwapRenderer) lastRendererSwapAt = now;
 
       applyHeroScale(nextRenderer);
 

@@ -12,16 +12,16 @@
  */
 
 /**
- * Frequencies and amplitudes that keep a rounded gelatine body.
+ * Frequencies and amplitudes the login blob re-rolls across every tick.
  *
- * `spikes` are noise frequencies, not spike heights. Below ~0.6 the field is
- * one lobe and the silhouette becomes a cone; above ~1.8 it reads as spikes.
- * Amplitude stays even and moderate so the drop squishes instead of stretching
- * into a pyramid. The SDK randomizer is wider than this on purpose — settings
- * can still go spiky — but the login walk and the default avatar stay liquid.
+ * `spikes` are noise frequencies, not spike heights — higher means more
+ * lobes on the body. The previous 0.75–3.0 band still read as a handful of
+ * big swells. This one starts where that left off, so even a "round"
+ * roll has a textured surface, and the top end is enough lobes to read as
+ * spikes. Amplitude moves with it or the extra lobes stay invisible.
  */
-export const SPIKE_RANGE = [0.78, 1.32] as const;
-export const AMPLITUDE_RANGE = [0.58, 0.92] as const;
+export const SPIKE_RANGE = [1.8, 5.5] as const;
+export const AMPLITUDE_RANGE = [0.65, 1.55] as const;
 const TIME_RANGE = [0.5, 8] as const;
 const SHININESS_RANGE = [10, 180] as const;
 
@@ -137,8 +137,8 @@ export function blendShape(live: BlobShape, from: BlobShape, to: BlobShape, t: n
  * that a minute of watching does not land where it started.
  */
 const DRIFT_FRACTIONS = {
-  spikes: 0.1,
-  amplitude: 0.12,
+  spikes: 0.14,
+  amplitude: 0.14,
   /** Tightest of the four: this one sets the speed of everything else. */
   time: 0.06,
   shininess: 0.16,
@@ -208,4 +208,30 @@ export function driftShape(from: BlobShape, random: () => number = Math.random):
       reflect(channel + (random() * 2 - 1) * CHANNEL_DRIFT, 0, 255),
     ),
   };
+}
+
+/**
+ * The next destination: a new body, anywhere in the range.
+ *
+ * Spikes and amplitude re-roll across the whole band every tick — that is
+ * the difference between a blob that is sometimes a drop and sometimes a
+ * husk, and one that sits on the same spike setting. Time, shininess and
+ * colour still drift: a sixteen-fold jump in scroll speed reads as boiling,
+ * and a full palette cut every second is a strobe, not a new shape.
+ *
+ * @param from - Where the blob is now. Not mutated.
+ * @param random - Injected so tests can pin the roll.
+ */
+export function remixShape(from: BlobShape, random: () => number = Math.random): BlobShape {
+  const next = randomShape(random);
+  next.time = [
+    drift(from.time[0]!, TIME_RANGE, DRIFT_FRACTIONS.time, random),
+    drift(from.time[1]!, TIME_RANGE, DRIFT_FRACTIONS.time, random),
+    drift(from.time[2]!, TIME_RANGE, DRIFT_FRACTIONS.time, random),
+  ];
+  next.shininess = drift(from.shininess, SHININESS_RANGE, DRIFT_FRACTIONS.shininess, random);
+  next.channels = from.channels.map((channel) =>
+    reflect(channel + (random() * 2 - 1) * CHANNEL_DRIFT, 0, 255),
+  );
+  return next;
 }
