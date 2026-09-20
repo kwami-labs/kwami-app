@@ -371,7 +371,7 @@ onMounted(async () => {
 
   const blob = kwami.avatar.getBlob();
   const blobMesh = blob?.getMesh();
-  applyRoundedBlobGeometry(blobMesh, BLOB_RESOLUTION);
+  applyRoundedBlobGeometry(blobMesh, BLOB_RESOLUTION, BLOB_BODY_DETAIL);
 
   if (blob) {
     try { blob.setTouchStrength(0.7); } catch {}
@@ -687,7 +687,7 @@ onMounted(async () => {
         // a setter.
         applyBlobAudioEffects();
         settleBlobRotation();
-        applyRoundedBlobGeometry(kwami.avatar.getBlob()?.getMesh(), BLOB_RESOLUTION);
+        applyRoundedBlobGeometry(kwami.avatar.getBlob()?.getMesh(), BLOB_RESOLUTION, BLOB_BODY_DETAIL);
 
         // Continuous parameters move on every tick, but as a bounded step from
         // where the blob already is rather than a fresh uniform roll: the rAF

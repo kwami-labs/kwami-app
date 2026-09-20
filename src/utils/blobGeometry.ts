@@ -17,8 +17,11 @@ export function icosahedronDetailForResolution(resolution: number): number {
   return 4;
 }
 
-export function createRoundedBlobGeometry(resolution = 180): BufferGeometry {
-  return new IcosahedronGeometry(1, icosahedronDetailForResolution(resolution));
+export function createRoundedBlobGeometry(
+  resolution = 180,
+  detail = icosahedronDetailForResolution(resolution),
+): BufferGeometry {
+  return new IcosahedronGeometry(1, detail);
 }
 
 type BlobMesh = Pick<Mesh, 'geometry'>;
@@ -38,7 +41,7 @@ export function applyRoundedBlobGeometry(
     return;
   }
 
-  const next = createRoundedBlobGeometry(resolution);
+  const next = createRoundedBlobGeometry(resolution, detail);
   current.dispose();
   mesh.geometry = next;
 }

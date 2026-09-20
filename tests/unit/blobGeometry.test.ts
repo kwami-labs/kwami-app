@@ -21,6 +21,12 @@ describe('createRoundedBlobGeometry', () => {
     expect((geometry as IcosahedronGeometry).parameters.detail).toBe(5);
     geometry.dispose();
   });
+
+  it('accepts an explicit subdivision for the fullscreen hero', () => {
+    const geometry = createRoundedBlobGeometry(160, 6);
+    expect((geometry as IcosahedronGeometry).parameters.detail).toBe(6);
+    geometry.dispose();
+  });
 });
 
 describe('applyRoundedBlobGeometry', () => {
