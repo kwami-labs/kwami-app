@@ -9,21 +9,26 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import SoundtrackPill from '@/components/auth/SoundtrackPill.vue';
+import { useWelcomeBackground } from '@/composables/useWelcomeBackground';
+import { useWelcomeSoundtrack } from '@/composables/useSoundtrack';
 import { RANDOMIZE_INTERVALS_MS, useWelcomeRandomizer } from '@/composables/useWelcomeRandomizer';
+import type { Track } from '@/lib/soundtrack';
 
 // The pill also drives the crate; that half has its own tests.
 vi.mock('@/composables/useSoundtrack', async (importOriginal) => {
   const { ref, shallowRef } = await import('vue');
   const actual = await importOriginal<Record<string, unknown>>();
+  const currentTrack = shallowRef(null);
+  const isPlaying = ref(false);
   return {
     ...actual,
     useWelcomeSoundtrack: () => ({
-      currentTrack: shallowRef(null),
-      isPlaying: ref(false),
+      currentTrack,
+      isPlaying,
       toggle: vi.fn(),
       next: vi.fn(),
       stop: vi.fn(),
-      owns: () => false,
+      owns: () => currentTrack.value !== null,
       release: vi.fn(),
       dispose: vi.fn(),
     }),
@@ -51,6 +56,7 @@ function mountPill() {
 beforeEach(() => {
   // Module state: put it back on the default between tests.
   useWelcomeRandomizer().intervalMs.value = RANDOMIZE_INTERVALS_MS[0];
+  useWelcomeBackground().setVideo(null);
 });
 
 /**
@@ -66,6 +72,9 @@ beforeEach(() => {
 afterEach(() => {
   while (mounted.length) mounted.pop()?.unmount();
   useWelcomeRandomizer().intervalMs.value = RANDOMIZE_INTERVALS_MS[0];
+  useWelcomeBackground().setVideo(null);
+  useWelcomeSoundtrack().currentTrack.value = null;
+  useWelcomeSoundtrack().isPlaying.value = false;
 });
 
 describe('the randomize rate', () => {
@@ -101,6 +110,18 @@ describe('the randomize rate', () => {
     expect(elsewhere.intervalSeconds.value).toBe(2);
   });
 
+  it('sits after the track, not where a player would put elapsed time', () => {
+    useWelcomeSoundtrack().currentTrack.value = {
+      title: 'Posterity',
+      artist: 'Ludwig Göransson',
+    } as Track;
+    const wrapper = mountPill();
+    const buttons = wrapper.findAll('.pill-btn');
+
+    expect(buttons[0]!.classes()).toContain('pill-btn--main');
+    expect(buttons[buttons.length - 1]!.classes()).toContain('pill-btn--rate');
+  });
+
   it('names the current rate for screen readers', async () => {
     const wrapper = mountPill();
 
@@ -116,5 +137,38 @@ describe('the randomize rate', () => {
     cycleInterval();
 
     expect(intervalMs.value).toBe(1_000);
+  });
+});
+
+describe('the play button', () => {
+  it('rolls a backdrop clip when play is pressed on the gradient', async () => {
+    const wrapper = mountPill();
+    const bg = useWelcomeBackground();
+
+    await wrapper.get('.pill-btn--main').trigger('click');
+
+    expect(bg.video.value).not.toBeNull();
+  });
+
+  it('leaves a chosen clip alone when play is pressed', async () => {
+    const bg = useWelcomeBackground();
+    bg.setVideo(bg.presets[0]!.id);
+    const wrapper = mountPill();
+
+    await wrapper.get('.pill-btn--main').trigger('click');
+
+    expect(bg.videoId.value).toBe(bg.presets[0]!.id);
+  });
+
+  it('does not roll a stock clip when the record has a youtube video', async () => {
+    useWelcomeSoundtrack().currentTrack.value = {
+      title: 'Road To Zion',
+      youtube: 'https://www.youtube.com/watch?v=Jq2IfkMr_x0',
+    } as Track;
+    const wrapper = mountPill();
+
+    await wrapper.get('.pill-btn--main').trigger('click');
+
+    expect(useWelcomeBackground().video.value).toBeNull();
   });
 });

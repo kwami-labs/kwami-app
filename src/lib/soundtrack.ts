@@ -8,9 +8,11 @@
  * Every record is a file under `public/audio/tour`. They are Mixkit stock cuts
  * (Stock Music Free License — commercial use, no attribution:
  * https://mixkit.co/license/#musicFree), which carry a `source` URL, and guest
- * cuts, which carry a `youtube` watch URL for the now-playing credit link. All
- * of them are re-encoded and loudness-matched to −18 LUFS; neither `source` nor
- * `youtube` is fetched at runtime, and nothing streams from YouTube.
+ * cuts, which carry a `youtube` watch URL. All of them are re-encoded and
+ * loudness-matched to −18 LUFS. Audio never streams from YouTube — the file
+ * still goes through `KwamiAudio`'s analyser — but the watch URL is also the
+ * login backdrop: the video is embedded muted so the picture matches the
+ * record.
  *
  * Same-origin is load-bearing, not incidental: `KwamiAudio` runs the element
  * through a Web Audio `AnalyserNode`, and that is what makes the kwami move to
@@ -51,6 +53,27 @@ export const FIRST_PLAY_KEY = 'kwami.soundtrack.firstPlay';
 const file = (id: string) => `${TRACK_DIR}/${id}.mp3`;
 const mixkit = (n: number) => `https://assets.mixkit.co/music/${n}/${n}.mp3`;
 const youtube = (id: string) => `https://www.youtube.com/watch?v=${id}`;
+
+const YOUTUBE_ID = /^[A-Za-z0-9_-]{11}$/;
+
+/**
+ * The watch id inside a crate `youtube` URL, or `null` if it is missing or
+ * not one of ours. The backdrop player only ever loads an id this function
+ * accepted, so a stray string on a track cannot point the iframe elsewhere.
+ */
+export function youtubeVideoId(url: string | undefined | null): string | null {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname !== 'www.youtube.com' && parsed.hostname !== 'youtube.com') {
+      return null;
+    }
+    const id = parsed.searchParams.get('v');
+    return id && YOUTUBE_ID.test(id) ? id : null;
+  } catch {
+    return null;
+  }
+}
 
 export const TRACKS: readonly Track[] = [
   {

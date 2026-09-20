@@ -1,7 +1,8 @@
 <script setup lang="ts">
 /**
- * The login screen's transport: play/pause, what is on, a way to change it, and
- * how fast the avatar behind it reinvents itself.
+ * The login screen's transport: play/pause, what is on, a way to change it,
+ * the backdrop clip that plays with it, and how fast the avatar behind it
+ * reinvents itself.
  *
  * Styled against `AuthPage`'s own glass idiom -- the `--auth-*` tokens in
  * `variables.css` -- rather than the `--surface-*` / `--accent-*` theme tokens,
@@ -11,6 +12,7 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useWelcomeSoundtrack } from '@/composables/useSoundtrack';
+import { useWelcomeBackground } from '@/composables/useWelcomeBackground';
 import { useWelcomeRandomizer } from '@/composables/useWelcomeRandomizer';
 
 /**
@@ -23,7 +25,23 @@ const props = withDefaults(defineProps<{ loginOpen?: boolean }>(), { loginOpen: 
 
 const { t } = useI18n();
 const { currentTrack, isPlaying, toggle, next } = useWelcomeSoundtrack();
+const { video, shuffle } = useWelcomeBackground();
 const { intervalSeconds, cycleInterval } = useWelcomeRandomizer();
+
+/**
+ * The pill is the transport for the whole scene, not just the record. A press
+ * that starts playback on the painted gradient also rolls a clip, in the same
+ * click — waiting for the `play` event is too late: the crate names the track
+ * before the element actually starts, and a blocked `play()` would leave the
+ * screen still.
+ */
+function togglePlayback() {
+  const starting = !isPlaying.value;
+  toggle();
+  // A youtube record paints its own watch video. Only Mixkit cuts — no
+  // watch URL — still roll a stock clip so play is never a still gradient.
+  if (starting && !video.value && !currentTrack.value?.youtube) shuffle();
+}
 
 const toggleLabel = computed(() =>
   isPlaying.value ? t('musicPlayer.pauseTrack') : t('musicPlayer.playTrack'),
@@ -48,19 +66,9 @@ const randomizeLabel = computed(() =>
       :aria-pressed="isPlaying"
       :title="toggleLabel"
       :aria-label="toggleLabel"
-      @click="toggle"
+      @click="togglePlayback"
     >
       <iconify-icon :icon="isPlaying ? 'ph:pause-fill' : 'ph:play-fill'"></iconify-icon>
-    </button>
-
-    <button
-      class="pill-btn pill-btn--rate"
-      type="button"
-      :title="randomizeLabel"
-      :aria-label="randomizeLabel"
-      @click="cycleInterval"
-    >
-      <span aria-hidden="true">{{ intervalSeconds }}s</span>
     </button>
 
     <template v-if="currentTrack">
@@ -93,6 +101,17 @@ const randomizeLabel = computed(() =>
         <iconify-icon icon="ph:skip-forward-fill"></iconify-icon>
       </button>
     </template>
+
+    <button
+      class="pill-btn pill-btn--rate"
+      type="button"
+      :title="randomizeLabel"
+      :aria-label="randomizeLabel"
+      @click="cycleInterval"
+    >
+      <iconify-icon icon="ph:dice-five-fill" aria-hidden="true"></iconify-icon>
+      <span aria-hidden="true">{{ intervalSeconds }}s</span>
+    </button>
   </div>
 </template>
 
@@ -174,11 +193,19 @@ const randomizeLabel = computed(() =>
 }
 
 .pill-btn--rate {
+  width: auto;
+  min-width: 34px;
+  padding: 0 9px;
+  gap: 3px;
   font-size: 11px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.01em;
   color: var(--auth-icon-dim);
+}
+
+.pill-btn--rate iconify-icon {
+  font-size: 13px;
 }
 
 .pill-track {

@@ -9,6 +9,7 @@ import {
   pickFirstTrack,
   pickTrack,
   playedBefore,
+  youtubeVideoId,
 } from '../../src/lib/soundtrack';
 
 beforeEach(() => {
@@ -42,6 +43,14 @@ describe('the crate', () => {
       if (!track.youtube) continue;
       expect(track.youtube, track.id).toMatch(/^https:\/\/www\.youtube\.com\/watch\?v=.+/);
     }
+  });
+
+  it('hands the backdrop player a watch id, and nothing else', () => {
+    expect(youtubeVideoId('https://www.youtube.com/watch?v=Jq2IfkMr_x0')).toBe('Jq2IfkMr_x0');
+    expect(youtubeVideoId('https://youtube.com/watch?v=ZE5zXLOyEOQ')).toBe('ZE5zXLOyEOQ');
+    expect(youtubeVideoId('https://example.com/watch?v=Jq2IfkMr_x0')).toBeNull();
+    expect(youtubeVideoId('https://www.youtube.com/watch?v=nope')).toBeNull();
+    expect(youtubeVideoId(undefined)).toBeNull();
   });
 
   it('holds the intro record', () => {

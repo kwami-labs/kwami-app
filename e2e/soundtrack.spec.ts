@@ -42,6 +42,40 @@ test.describe('login soundtrack', () => {
       if (r.url().includes('/audio/tour/')) requested.push(r.url());
     });
     await stubTrackFiles(page);
+    // Posterity paints its YouTube watch video. The IFrame API and the
+    // embed would otherwise trip the un-stubbed-host guard. Register the
+    // catch-all first: Playwright prefers the most recently added route.
+    await page.route('https://www.youtube.com/**', (route) =>
+      route.fulfill({ status: 200, contentType: 'text/html', body: '' }),
+    );
+    await page.route('https://www.youtube.com/iframe_api', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/javascript',
+        body: `
+          window.YT = { Player: function Player(el, opts) {
+            this.playVideo = function () {};
+            this.pauseVideo = function () {};
+            this.mute = function () {};
+            this.destroy = function () {};
+            var self = this;
+            setTimeout(function () {
+              if (opts && opts.events && opts.events.onReady) opts.events.onReady({ target: self });
+            }, 0);
+          } };
+          if (typeof window.onYouTubeIframeAPIReady === 'function') window.onYouTubeIframeAPIReady();
+        `,
+      }),
+    );
+    await page.route('https://www.youtube-nocookie.com/**', (route) =>
+      route.fulfill({ status: 200, contentType: 'text/html', body: '' }),
+    );
+    await page.route('https://i.ytimg.com/**', (route) =>
+      route.fulfill({ status: 200, contentType: 'image/jpeg', body: '' }),
+    );
+    await page.route('https://videos.pexels.com/**', (route) =>
+      route.fulfill({ status: 200, contentType: 'video/mp4', body: '' }),
+    );
     await gotoApp(page);
 
     // Addressed by class, not by position: the pill has grown a control before
@@ -59,6 +93,7 @@ test.describe('login soundtrack', () => {
     await toggle.click();
     await expect(page.locator('.soundtrack-pill .pill-title')).toHaveText('Posterity');
     await expect(page.locator('.soundtrack-pill .pill-artist')).toHaveText('Ludwig Göransson');
+    await expect(page.locator('.video-bg--youtube')).toBeAttached();
     await expect(page.locator('.soundtrack-pill a')).toHaveAttribute(
       'href',
       'https://www.youtube.com/watch?v=ZE5zXLOyEOQ',

@@ -6,12 +6,57 @@
  * half the screen; switching clips has to clear that failure or one dead URL
  * strands the screen for the session; and a full-bleed moving backdrop is the
  * clearest case there is for honouring `prefers-reduced-motion`.
+ *
+ * A fourth is the crate. A youtube record paints its own watch video. Mixkit
+ * cuts have no watch URL, so play on a gradient still rolls a stock clip
+ * for those. Once a record is on the deck, play/pause is one transport.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { nextTick } from 'vue';
 import { mount } from '@vue/test-utils';
 import WelcomeVideoBackground from '../../src/components/auth/WelcomeVideoBackground.vue';
 import { useWelcomeBackground } from '../../src/composables/useWelcomeBackground';
+import { useWelcomeSoundtrack } from '@/composables/useSoundtrack';
 import { sceneVideoPresets } from '../../src/presets/scene/video-presets';
+import type { Track } from '../../src/lib/soundtrack';
+
+const ytPlayer = vi.hoisted(() => ({
+  playVideo: vi.fn(),
+  pauseVideo: vi.fn(),
+  mute: vi.fn(),
+  destroy: vi.fn(),
+}));
+
+vi.mock('@/utils/youtubeIframe', () => ({
+  createYoutubePlayer: vi.fn(async () => ytPlayer),
+  loadYoutubeIframeApi: vi.fn(),
+}));
+
+vi.mock('@/composables/useSoundtrack', async (importOriginal) => {
+  const { ref, shallowRef } = await import('vue');
+  const actual = await importOriginal<typeof import('@/composables/useSoundtrack')>();
+  const isPlaying = ref(false);
+  const currentTrack = shallowRef<Track | null>(null);
+  return {
+    ...actual,
+    useWelcomeSoundtrack: () => ({
+      currentTrack,
+      isPlaying,
+      toggle: vi.fn(),
+      next: vi.fn(),
+      stop: vi.fn(),
+      owns: () => currentTrack.value !== null,
+      release: vi.fn(),
+      dispose: vi.fn(),
+    }),
+  };
+});
+
+const ON_DECK = { title: 'Posterity' } as Track;
+const ON_YOUTUBE = {
+  title: 'Road To Zion',
+  youtube: 'https://www.youtube.com/watch?v=Jq2IfkMr_x0',
+} as Track;
 
 const FIRST = sceneVideoPresets[0]!;
 const SECOND = sceneVideoPresets[1]!;
@@ -38,15 +83,26 @@ function prefersReducedMotion(reduce: boolean) {
   })) as unknown as typeof window.matchMedia;
 }
 
+function crate() {
+  return useWelcomeSoundtrack();
+}
+
 beforeEach(() => {
   stubMediaElement();
   prefersReducedMotion(false);
   useWelcomeBackground().setVideo(null);
+  crate().isPlaying.value = false;
+  crate().currentTrack.value = null;
+  ytPlayer.playVideo.mockClear();
+  ytPlayer.pauseVideo.mockClear();
+  ytPlayer.destroy.mockClear();
 });
 
 afterEach(() => {
   window.matchMedia = realMatchMedia;
   useWelcomeBackground().setVideo(null);
+  crate().isPlaying.value = false;
+  crate().currentTrack.value = null;
 });
 
 describe('WelcomeVideoBackground', () => {
@@ -128,6 +184,98 @@ describe('WelcomeVideoBackground', () => {
 
     await video.trigger('loadeddata');
     expect(HTMLMediaElement.prototype.pause).not.toHaveBeenCalled();
+  });
+
+  it('holds the picture when the crate is on the deck and paused', async () => {
+    crate().currentTrack.value = ON_DECK;
+    crate().isPlaying.value = false;
+    useWelcomeBackground().setVideo(FIRST.id);
+    const wrapper = mount(WelcomeVideoBackground);
+    await wrapper.vm.$nextTick();
+
+    const video = wrapper.find('video');
+    expect(video.attributes('autoplay')).toBeUndefined();
+
+    await video.trigger('loadeddata');
+    expect(HTMLMediaElement.prototype.pause).toHaveBeenCalled();
+  });
+
+  it('plays the clip once the crate is playing', async () => {
+    crate().currentTrack.value = ON_DECK;
+    crate().isPlaying.value = true;
+    useWelcomeBackground().setVideo(FIRST.id);
+    const wrapper = mount(WelcomeVideoBackground);
+    await wrapper.vm.$nextTick();
+
+    await wrapper.find('video').trigger('loadeddata');
+    expect(HTMLMediaElement.prototype.play).toHaveBeenCalled();
+  });
+
+  it('pauses the clip when the crate pauses, and plays it again on resume', async () => {
+    crate().currentTrack.value = ON_DECK;
+    crate().isPlaying.value = true;
+    useWelcomeBackground().setVideo(FIRST.id);
+    const wrapper = mount(WelcomeVideoBackground);
+    await wrapper.vm.$nextTick();
+    await wrapper.find('video').trigger('loadeddata');
+    vi.mocked(HTMLMediaElement.prototype.play).mockClear();
+    vi.mocked(HTMLMediaElement.prototype.pause).mockClear();
+
+    crate().isPlaying.value = false;
+    await nextTick();
+    expect(HTMLMediaElement.prototype.pause).toHaveBeenCalled();
+
+    crate().isPlaying.value = true;
+    await nextTick();
+    expect(HTMLMediaElement.prototype.play).toHaveBeenCalled();
+  });
+
+  it('rolls a clip when play is pressed on the gradient', async () => {
+    const wrapper = mount(WelcomeVideoBackground);
+    await wrapper.vm.$nextTick();
+    expect(wrapper.find('video').exists()).toBe(false);
+
+    crate().currentTrack.value = ON_DECK;
+    crate().isPlaying.value = true;
+    await nextTick();
+
+    expect(useWelcomeBackground().video.value).not.toBeNull();
+    expect(wrapper.find('video').exists()).toBe(true);
+  });
+
+  it('rolls a clip as soon as a record is on the deck, before play fires', async () => {
+    const wrapper = mount(WelcomeVideoBackground);
+    await wrapper.vm.$nextTick();
+
+    crate().currentTrack.value = ON_DECK;
+    await nextTick();
+
+    expect(useWelcomeBackground().video.value).not.toBeNull();
+    expect(wrapper.find('video').exists()).toBe(true);
+  });
+
+  it('paints the track\'s youtube video instead of rolling a stock clip', async () => {
+    crate().currentTrack.value = ON_YOUTUBE;
+    crate().isPlaying.value = true;
+    const wrapper = mount(WelcomeVideoBackground);
+    await nextTick();
+
+    expect(wrapper.find('.video-bg--youtube').exists()).toBe(true);
+    expect(wrapper.find('video').exists()).toBe(false);
+    expect(useWelcomeBackground().video.value).toBeNull();
+  });
+
+  it('holds a youtube thumbnail when the viewer asked for less motion', async () => {
+    prefersReducedMotion(true);
+    crate().currentTrack.value = ON_YOUTUBE;
+    crate().isPlaying.value = true;
+    const wrapper = mount(WelcomeVideoBackground);
+    await nextTick();
+
+    expect(wrapper.find('.video-bg--youtube').exists()).toBe(false);
+    expect(wrapper.find('.video-bg--thumb img').attributes('src')).toBe(
+      'https://i.ytimg.com/vi/Jq2IfkMr_x0/hqdefault.jpg',
+    );
   });
 });
 
