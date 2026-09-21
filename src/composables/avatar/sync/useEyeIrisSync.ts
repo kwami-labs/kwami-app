@@ -27,32 +27,110 @@ export function useEyeIrisSync(options: UseEyeIrisSyncOptions) {
   const { getEyeIris } = options;
   const eyeIrisStore = useEyeIrisStore();
 
-  watch(() => eyeIrisStore.state.palettePreset, (v) => getEyeIris()?.setPalettePreset(v));
-  watch(() => eyeIrisStore.state.geometry.irisRadius, (v) => getEyeIris()?.setIrisRadius(v));
-  watch(() => eyeIrisStore.state.geometry.pupilRadius, (v) => getEyeIris()?.setPupilRadius(v));
-  watch(() => eyeIrisStore.state.geometry.limbalRingWidth, (v) => getEyeIris()?.setLimbalRingWidth(v));
-  watch(() => eyeIrisStore.state.detail.fiberDensity, (v) => getEyeIris()?.setFiberDensity(v));
-  watch(() => eyeIrisStore.state.detail.fiberSharpness, (v) => getEyeIris()?.setFiberSharpness(v));
-  watch(() => eyeIrisStore.state.detail.radialStreakStrength, (v) => getEyeIris()?.setRadialStreakStrength(v));
-  watch(() => eyeIrisStore.state.detail.collaretteStrength, (v) => getEyeIris()?.setCollaretteStrength(v));
-  watch(() => eyeIrisStore.state.detail.limbalIntensity, (v) => getEyeIris()?.setLimbalIntensity(v));
-  watch(() => eyeIrisStore.state.detail.noiseStrength, (v) => getEyeIris()?.setNoiseStrength(v));
-  watch(() => eyeIrisStore.state.detail.cryptStrength, (v) => getEyeIris()?.setCryptStrength(v));
-  watch(() => eyeIrisStore.state.detail.furrowStrength, (v) => getEyeIris()?.setFurrowStrength(v));
-  watch(() => eyeIrisStore.state.detail.ringContrast, (v) => getEyeIris()?.setRingContrast(v));
-  watch(() => eyeIrisStore.state.detail.sectorMix, (v) => getEyeIris()?.setSectorMix(v));
-  watch(() => eyeIrisStore.state.detail.pigmentMottleStrength, (v) => getEyeIris()?.setPigmentMottleStrength(v));
-  watch(() => eyeIrisStore.state.detail.spokesStrength, (v) => getEyeIris()?.setSpokesStrength(v));
-  watch(() => eyeIrisStore.state.detail.innerRingStrength, (v) => getEyeIris()?.setInnerRingStrength(v));
-  watch(() => eyeIrisStore.state.animation.shimmerSpeed, (v) => getEyeIris()?.setShimmerSpeed(v));
-  watch(() => eyeIrisStore.state.animation.shimmerStrength, (v) => getEyeIris()?.setShimmerStrength(v));
-  watch(() => eyeIrisStore.state.animation.patternFlow, (v) => getEyeIris()?.setPatternFlow(v));
-  watch(() => eyeIrisStore.state.animation.patternRotation, (v) => getEyeIris()?.setPatternRotation(v));
-  watch(() => eyeIrisStore.state.follow.enabled, (v) => getEyeIris()?.setFollowEnabled(v));
-  watch(() => eyeIrisStore.state.follow.sensitivity, (v) => getEyeIris()?.setFollowSensitivity(v));
-  watch(() => eyeIrisStore.state.follow.pupilMotion, (v) => getEyeIris()?.setFollowPupilMotion(v));
-  watch(() => eyeIrisStore.state.follow.pupilMotionStrength, (v) => getEyeIris()?.setFollowPupilMotionStrength(v));
-  watch(() => eyeIrisStore.state.scale, (v) => getEyeIris()?.setScale(v));
+  watch(
+    () => eyeIrisStore.state.palettePreset,
+    (v) => getEyeIris()?.setPalettePreset(v),
+  );
+  watch(
+    () => eyeIrisStore.state.geometry.irisRadius,
+    (v) => getEyeIris()?.setIrisRadius(v),
+  );
+  watch(
+    () => eyeIrisStore.state.geometry.pupilRadius,
+    (v) => getEyeIris()?.setPupilRadius(v),
+  );
+  watch(
+    () => eyeIrisStore.state.geometry.limbalRingWidth,
+    (v) => getEyeIris()?.setLimbalRingWidth(v),
+  );
+  watch(
+    () => eyeIrisStore.state.detail.fiberDensity,
+    (v) => getEyeIris()?.setFiberDensity(v),
+  );
+  watch(
+    () => eyeIrisStore.state.detail.fiberSharpness,
+    (v) => getEyeIris()?.setFiberSharpness(v),
+  );
+  watch(
+    () => eyeIrisStore.state.detail.radialStreakStrength,
+    (v) => getEyeIris()?.setRadialStreakStrength(v),
+  );
+  watch(
+    () => eyeIrisStore.state.detail.collaretteStrength,
+    (v) => getEyeIris()?.setCollaretteStrength(v),
+  );
+  watch(
+    () => eyeIrisStore.state.detail.limbalIntensity,
+    (v) => getEyeIris()?.setLimbalIntensity(v),
+  );
+  watch(
+    () => eyeIrisStore.state.detail.noiseStrength,
+    (v) => getEyeIris()?.setNoiseStrength(v),
+  );
+  watch(
+    () => eyeIrisStore.state.detail.cryptStrength,
+    (v) => getEyeIris()?.setCryptStrength(v),
+  );
+  watch(
+    () => eyeIrisStore.state.detail.furrowStrength,
+    (v) => getEyeIris()?.setFurrowStrength(v),
+  );
+  watch(
+    () => eyeIrisStore.state.detail.ringContrast,
+    (v) => getEyeIris()?.setRingContrast(v),
+  );
+  watch(
+    () => eyeIrisStore.state.detail.sectorMix,
+    (v) => getEyeIris()?.setSectorMix(v),
+  );
+  watch(
+    () => eyeIrisStore.state.detail.pigmentMottleStrength,
+    (v) => getEyeIris()?.setPigmentMottleStrength(v),
+  );
+  watch(
+    () => eyeIrisStore.state.detail.spokesStrength,
+    (v) => getEyeIris()?.setSpokesStrength(v),
+  );
+  watch(
+    () => eyeIrisStore.state.detail.innerRingStrength,
+    (v) => getEyeIris()?.setInnerRingStrength(v),
+  );
+  watch(
+    () => eyeIrisStore.state.animation.shimmerSpeed,
+    (v) => getEyeIris()?.setShimmerSpeed(v),
+  );
+  watch(
+    () => eyeIrisStore.state.animation.shimmerStrength,
+    (v) => getEyeIris()?.setShimmerStrength(v),
+  );
+  watch(
+    () => eyeIrisStore.state.animation.patternFlow,
+    (v) => getEyeIris()?.setPatternFlow(v),
+  );
+  watch(
+    () => eyeIrisStore.state.animation.patternRotation,
+    (v) => getEyeIris()?.setPatternRotation(v),
+  );
+  watch(
+    () => eyeIrisStore.state.follow.enabled,
+    (v) => getEyeIris()?.setFollowEnabled(v),
+  );
+  watch(
+    () => eyeIrisStore.state.follow.sensitivity,
+    (v) => getEyeIris()?.setFollowSensitivity(v),
+  );
+  watch(
+    () => eyeIrisStore.state.follow.pupilMotion,
+    (v) => getEyeIris()?.setFollowPupilMotion(v),
+  );
+  watch(
+    () => eyeIrisStore.state.follow.pupilMotionStrength,
+    (v) => getEyeIris()?.setFollowPupilMotionStrength(v),
+  );
+  watch(
+    () => eyeIrisStore.state.scale,
+    (v) => getEyeIris()?.setScale(v),
+  );
 
   watch(
     () => eyeIrisStore.state.color,

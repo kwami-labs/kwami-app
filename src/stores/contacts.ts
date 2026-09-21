@@ -17,7 +17,6 @@ export interface ContactRecord {
   updated_at: string;
 }
 
-
 export const useContactsStore = defineStore('contacts', () => {
   const contacts = ref<ContactRecord[]>([]);
   const loading = ref(false);

@@ -331,9 +331,13 @@ function onSeekEnd() {
   isDraggingSeek.value = false;
 }
 
-watch(kwami, () => {
-  bindAudioElement();
-}, { immediate: true });
+watch(
+  kwami,
+  () => {
+    bindAudioElement();
+  },
+  { immediate: true },
+);
 
 function drawVisualizerFrame() {
   const canvas = visualizerCanvas.value;
@@ -486,12 +490,7 @@ onUnmounted(() => {
           </div>
 
           <div class="band-pills">
-            <span
-              v-for="band in bandLevels"
-              :key="band.key"
-              class="band-pill"
-              :class="band.key"
-            >
+            <span v-for="band in bandLevels" :key="band.key" class="band-pill" :class="band.key">
               <span>{{ band.label }}</span>
               <strong>{{ band.value }}%</strong>
             </span>
@@ -857,8 +856,13 @@ onUnmounted(() => {
 .range-input::-webkit-slider-runnable-track {
   height: 6px;
   border-radius: 999px;
-  background:
-    linear-gradient(90deg, var(--accent-primary) 0%, var(--accent-secondary) var(--range-fill), var(--surface-2) var(--range-fill), var(--surface-2) 100%);
+  background: linear-gradient(
+    90deg,
+    var(--accent-primary) 0%,
+    var(--accent-secondary) var(--range-fill),
+    var(--surface-2) var(--range-fill),
+    var(--surface-2) 100%
+  );
 }
 
 .range-input::-moz-range-track {

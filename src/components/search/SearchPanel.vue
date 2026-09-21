@@ -84,9 +84,7 @@ function hostOf(url: string): string {
 function openInBrowser(url: string, index: number) {
   if (!url) return;
   focusResult(index);
-  const payload = new TextEncoder().encode(
-    JSON.stringify({ type: 'browser_open_request', url }),
-  );
+  const payload = new TextEncoder().encode(JSON.stringify({ type: 'browser_open_request', url }));
   window.dispatchEvent(new CustomEvent('kwami:send_data', { detail: payload }));
 }
 

@@ -57,7 +57,9 @@ onMounted(() => {
       </BaseButton>
       <div class="mic-status">
         <span class="status-indicator" :class="{ active: micActive }"></span>
-        <span class="status-text">{{ micActive ? t('audioPanel.active') : t('audioPanel.inactive') }}</span>
+        <span class="status-text">{{
+          micActive ? t('audioPanel.active') : t('audioPanel.inactive')
+        }}</span>
       </div>
     </div>
   </PanelSection>
@@ -100,7 +102,12 @@ onMounted(() => {
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 </style>

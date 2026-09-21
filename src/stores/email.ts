@@ -3,7 +3,6 @@ import { ref, computed } from 'vue';
 import { api, createRequestGuard, isAbortError } from '@/lib/apiClient';
 import { useWorkspaceStore } from '@/stores/workspace';
 
-
 export type EmailCategory =
   | 'all'
   | 'travel'
@@ -50,7 +49,6 @@ export interface EmailConversation {
   messageCount: number;
   category: EmailCategory;
 }
-
 
 /** Bare email for grouping and sending; handles `Name <a@b.com>`, mailto:, etc. */
 export function normalizeEmail(raw: string): string {
@@ -103,17 +101,13 @@ export const useEmailStore = defineStore('email', () => {
   const selectedConversationAddress = ref<string | null>(null);
 
   const isActivated = computed(() => !!account.value?.is_active);
-  const totalUnread = computed(() =>
-    Object.values(unreadCounts.value).reduce((a, b) => a + b, 0),
-  );
-  const selectedMessage = computed(() =>
-    messages.value.find((m) => m.id === selectedMessageId.value) ?? null,
+  const totalUnread = computed(() => Object.values(unreadCounts.value).reduce((a, b) => a + b, 0));
+  const selectedMessage = computed(
+    () => messages.value.find((m) => m.id === selectedMessageId.value) ?? null,
   );
 
   function _counterparty(msg: EmailMessage): string {
-    const own = account.value?.email_address
-      ? normalizeEmail(account.value.email_address)
-      : '';
+    const own = account.value?.email_address ? normalizeEmail(account.value.email_address) : '';
     if (msg.direction === 'inbound') return normalizeEmail(msg.from_address);
     for (const raw of msg.to_addresses) {
       const c = normalizeEmail(raw);
@@ -148,8 +142,10 @@ export const useEmailStore = defineStore('email', () => {
       });
     }
 
-    result.sort((a, b) =>
-      new Date(b.lastMessage.received_at).getTime() - new Date(a.lastMessage.received_at).getTime(),
+    result.sort(
+      (a, b) =>
+        new Date(b.lastMessage.received_at).getTime() -
+        new Date(a.lastMessage.received_at).getTime(),
     );
     return result;
   });
@@ -197,10 +193,9 @@ export const useEmailStore = defineStore('email', () => {
   async function checkUsername(username: string): Promise<{ available: boolean; error?: string }> {
     isCheckingUsername.value = true;
     try {
-      return await api.post<{ available: boolean; error?: string }>(
-        '/email/check-username',
-        { username },
-      );
+      return await api.post<{ available: boolean; error?: string }>('/email/check-username', {
+        username,
+      });
     } finally {
       isCheckingUsername.value = false;
     }
@@ -326,10 +321,7 @@ export const useEmailStore = defineStore('email', () => {
   }
 
   async function _patchMessage(messageId: string, fields: Record<string, boolean>) {
-    const data = await api.patch<{ message: EmailMessage }>(
-      `/email/messages/${messageId}`,
-      fields,
-    );
+    const data = await api.patch<{ message: EmailMessage }>(`/email/messages/${messageId}`, fields);
     const idx = messages.value.findIndex((m) => m.id === messageId);
     if (idx !== -1) messages.value[idx] = data.message;
     if (fields.is_archived) {

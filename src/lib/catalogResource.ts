@@ -30,8 +30,12 @@ function createLoadingCounter(): LoadingCounter {
   const pending = ref(0);
   return {
     flag: computed(() => pending.value > 0),
-    begin: () => { pending.value += 1; },
-    end: () => { pending.value = Math.max(0, pending.value - 1); },
+    begin: () => {
+      pending.value += 1;
+    },
+    end: () => {
+      pending.value = Math.max(0, pending.value - 1);
+    },
   };
 }
 

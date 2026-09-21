@@ -15,14 +15,14 @@ interface CategoryMeta {
 const UNCATEGORIZED_META: CategoryMeta = { icon: 'ph:envelope-duotone', color: '#94a3b8' };
 
 const CATEGORY_META: Record<string, CategoryMeta> = {
-  travel:        { icon: 'ph:airplane-duotone',       color: '#3b82f6' },
-  bills:         { icon: 'ph:receipt-duotone',         color: '#f59e0b' },
-  events:        { icon: 'ph:calendar-check-duotone',  color: '#8b5cf6' },
-  newsletters:   { icon: 'ph:newspaper-duotone',       color: '#6366f1' },
-  personal:      { icon: 'ph:user-circle-duotone',     color: '#22c55e' },
-  notifications: { icon: 'ph:bell-ringing-duotone',    color: '#ef4444' },
-  shopping:      { icon: 'ph:shopping-bag-duotone',    color: '#ec4899' },
-  work:          { icon: 'ph:briefcase-duotone',       color: '#0ea5e9' },
+  travel: { icon: 'ph:airplane-duotone', color: '#3b82f6' },
+  bills: { icon: 'ph:receipt-duotone', color: '#f59e0b' },
+  events: { icon: 'ph:calendar-check-duotone', color: '#8b5cf6' },
+  newsletters: { icon: 'ph:newspaper-duotone', color: '#6366f1' },
+  personal: { icon: 'ph:user-circle-duotone', color: '#22c55e' },
+  notifications: { icon: 'ph:bell-ringing-duotone', color: '#ef4444' },
+  shopping: { icon: 'ph:shopping-bag-duotone', color: '#ec4899' },
+  work: { icon: 'ph:briefcase-duotone', color: '#0ea5e9' },
   uncategorized: UNCATEGORIZED_META,
 };
 

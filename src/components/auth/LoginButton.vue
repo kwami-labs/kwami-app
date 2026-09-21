@@ -20,15 +20,16 @@ const activeTab = ref<LoginTab>('web2');
 const { t } = useI18n();
 
 const tabs = computed(() => {
-  const items: { id: LoginTab; label: string }[] = [
-    { id: 'web2', label: t('auth.tabWeb2') },
-  ];
+  const items: { id: LoginTab; label: string }[] = [{ id: 'web2', label: t('auth.tabWeb2') }];
   if (hasWeb3Providers) items.push({ id: 'web3', label: t('auth.tabWeb3') });
   items.push({ id: 'mobile', label: t('auth.tabMobile') });
   return items;
 });
 const tabIndex = computed(() =>
-  Math.max(0, tabs.value.findIndex((tab) => tab.id === activeTab.value)),
+  Math.max(
+    0,
+    tabs.value.findIndex((tab) => tab.id === activeTab.value),
+  ),
 );
 
 // Google keeps its own component: it carries an inline multi-colour SVG that
@@ -110,11 +111,7 @@ onUnmounted(() => {
       <Transition name="tab-swap" mode="out-in">
         <div v-if="isOpen && activeTab === 'web2'" key="web2" class="provider-group">
           <GoogleButton v-if="showGoogle" />
-          <ProviderButton
-            v-for="provider in web2Others"
-            :key="provider.id"
-            :provider="provider"
-          />
+          <ProviderButton v-for="provider in web2Others" :key="provider.id" :provider="provider" />
 
           <div v-if="hasOAuthProviders" class="divider">
             <span>{{ t('auth.orContinueWithEmail') }}</span>
@@ -328,7 +325,10 @@ onUnmounted(() => {
   font-size: 0.9rem;
   padding: 0.72rem 0.95rem;
   cursor: pointer;
-  transition: background 180ms ease, border-color 180ms ease, transform 180ms ease;
+  transition:
+    background 180ms ease,
+    border-color 180ms ease,
+    transform 180ms ease;
 }
 
 .provider-btn:hover {
@@ -343,7 +343,9 @@ onUnmounted(() => {
 
 .tab-swap-enter-active,
 .tab-swap-leave-active {
-  transition: opacity 220ms ease, transform 220ms ease;
+  transition:
+    opacity 220ms ease,
+    transform 220ms ease;
 }
 
 .tab-swap-enter-from {

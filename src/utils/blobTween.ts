@@ -103,8 +103,7 @@ export function shapeDensity(spikes: readonly [number, number, number]): number 
  * shape can no more drift into the shredded corner than it can be rolled there.
  */
 export function amplitudeCeiling(spikes: readonly [number, number, number]): number {
-  return AMPLITUDE_RANGE[1]
-    + (DENSE_AMPLITUDE_CEILING - AMPLITUDE_RANGE[1]) * shapeDensity(spikes);
+  return AMPLITUDE_RANGE[1] + (DENSE_AMPLITUDE_CEILING - AMPLITUDE_RANGE[1]) * shapeDensity(spikes);
 }
 
 /**

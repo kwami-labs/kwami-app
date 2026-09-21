@@ -5,19 +5,26 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog.vue';
 import BaseInput from '@/components/ui/BaseInput.vue';
 import BaseToggle from '@/components/ui/BaseToggle.vue';
 import BaseColorPicker from '@/components/ui/BaseColorPicker.vue';
-import { defaultGradient, getGradient, randomizeGradientColors } from '@/composables/useKwamiGradient';
+import {
+  defaultGradient,
+  getGradient,
+  randomizeGradientColors,
+} from '@/composables/useKwamiGradient';
 
 const props = withDefaults(
   defineProps<{
     open: boolean;
     initialColors?: { x: string; y: string; z: string };
   }>(),
-  { initialColors: () => ({ ...defaultGradient }) }
+  { initialColors: () => ({ ...defaultGradient }) },
 );
 
 const emit = defineEmits<{
   (e: 'close'): void;
-  (e: 'confirm', payload: { name: string; randomize: boolean; colors: { x: string; y: string; z: string } }): void;
+  (
+    e: 'confirm',
+    payload: { name: string; randomize: boolean; colors: { x: string; y: string; z: string } },
+  ): void;
 }>();
 const { t } = useI18n();
 
@@ -33,7 +40,7 @@ watch(
       randomize.value = false;
       colors.value = props.initialColors ? { ...props.initialColors } : { ...defaultGradient };
     }
-  }
+  },
 );
 
 function onConfirm() {
@@ -79,7 +86,12 @@ function onRandomize() {
     <div class="kwami-gradient-section">
       <div class="gradient-section-header">
         <span class="gradient-label">{{ t('sidebarModals.avatarGradient') }}</span>
-        <button type="button" class="gradient-dice-btn" :title="t('sidebarModals.randomizeColors')" @click="onRandomize">
+        <button
+          type="button"
+          class="gradient-dice-btn"
+          :title="t('sidebarModals.randomizeColors')"
+          @click="onRandomize"
+        >
           <iconify-icon icon="ph:dice-five-duotone"></iconify-icon>
           <span>{{ t('sidebarModals.random') }}</span>
         </button>

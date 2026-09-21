@@ -1,6 +1,6 @@
 /**
  * Black Hole Avatar Store
- * 
+ *
  * Dedicated store for black hole renderer state with organized sections:
  * - COLOR SCHEME: Visual preset schemes (classic, fire, ice, nebula, void)
  * - CORE: Event horizon radius, glow, pulse
@@ -48,9 +48,9 @@ export interface BlackHoleColorSchemeSection {
 
 /** CORE: Event horizon configuration */
 export interface BlackHoleCore {
-  radius: number;              // Combined radius (convenience)
-  blackHoleRadius: number;     // Dark center sphere radius
-  eventHorizonRadius: number;  // Glowing event horizon shell radius
+  radius: number; // Combined radius (convenience)
+  blackHoleRadius: number; // Dark center sphere radius
+  eventHorizonRadius: number; // Glowing event horizon shell radius
   glowIntensity: number;
   pulseSpeed: number;
 }
@@ -181,8 +181,8 @@ export function getDefaultColorScheme(): BlackHoleColorSchemeSection {
 export function getDefaultCore(): BlackHoleCore {
   return {
     radius: 1.3,
-    blackHoleRadius: 1.3,            // Dark center sphere
-    eventHorizonRadius: 1.3 * 1.05,  // Glowing shell (slightly larger)
+    blackHoleRadius: 1.3, // Dark center sphere
+    eventHorizonRadius: 1.3 * 1.05, // Glowing shell (slightly larger)
     glowIntensity: 1.0,
     pulseSpeed: 2.5,
   };
@@ -521,7 +521,7 @@ export const useBlackHoleStore = defineStore('blackHole', () => {
     // Sync color scheme
     const schemeData = blackHole.getColorScheme();
     colorScheme.preset = schemeData.scheme as BlackHoleColorScheme;
-    
+
     // Sync colors
     const bhColors = blackHole.getColors();
     colors.hot = bhColors.hot;
@@ -529,7 +529,7 @@ export const useBlackHoleStore = defineStore('blackHole', () => {
     colors.mid2 = bhColors.mid2;
     colors.mid3 = bhColors.mid3;
     colors.outer = bhColors.outer;
-    
+
     // Sync scale
     scale.value = blackHole.getScale();
 
@@ -538,9 +538,12 @@ export const useBlackHoleStore = defineStore('blackHole', () => {
       audio.enabled = blackHole.audioEffects.enabled ?? audio.enabled;
       audio.reactivity = blackHole.audioEffects.reactivity ?? audio.reactivity;
       audio.smoothing = blackHole.audioEffects.smoothing ?? audio.smoothing;
-      audio.frequencyEffects.bassDiskGlow = blackHole.audioEffects.bassDiskGlow ?? audio.frequencyEffects.bassDiskGlow;
-      audio.frequencyEffects.midDiskSpeed = blackHole.audioEffects.midDiskSpeed ?? audio.frequencyEffects.midDiskSpeed;
-      audio.frequencyEffects.highStarTwinkle = blackHole.audioEffects.highStarTwinkle ?? audio.frequencyEffects.highStarTwinkle;
+      audio.frequencyEffects.bassDiskGlow =
+        blackHole.audioEffects.bassDiskGlow ?? audio.frequencyEffects.bassDiskGlow;
+      audio.frequencyEffects.midDiskSpeed =
+        blackHole.audioEffects.midDiskSpeed ?? audio.frequencyEffects.midDiskSpeed;
+      audio.frequencyEffects.highStarTwinkle =
+        blackHole.audioEffects.highStarTwinkle ?? audio.frequencyEffects.highStarTwinkle;
     }
   }
 
@@ -574,7 +577,7 @@ export const useBlackHoleStore = defineStore('blackHole', () => {
       if (Object.prototype.hasOwnProperty.call(source, key)) {
         const sourceValue = source[key];
         const targetValue = target[key];
-        
+
         if (
           sourceValue !== null &&
           typeof sourceValue === 'object' &&

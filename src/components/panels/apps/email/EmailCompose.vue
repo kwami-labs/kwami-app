@@ -33,7 +33,10 @@ async function send() {
   }
 
   const ccList = cc.value
-    ? cc.value.split(/[,;]\s*/).map((a) => a.trim()).filter(Boolean)
+    ? cc.value
+        .split(/[,;]\s*/)
+        .map((a) => a.trim())
+        .filter(Boolean)
     : [];
 
   try {
@@ -46,8 +49,7 @@ async function send() {
     toast.success(t('email.compose.sent'));
     emit('back');
   } catch (e: unknown) {
-    sendError.value =
-      e instanceof Error && e.message ? e.message : t('email.compose.sendError');
+    sendError.value = e instanceof Error && e.message ? e.message : t('email.compose.sendError');
   }
 }
 </script>

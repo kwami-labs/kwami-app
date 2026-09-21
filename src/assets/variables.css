@@ -10,9 +10,7 @@
   --glass-bg: rgba(8, 10, 18, 0.88);
   --glass-border: rgba(255, 255, 255, 0.06);
   --glass-highlight: rgba(255, 255, 255, 0.03);
-  --glass-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.5),
-    0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
   --glass-blur: 24px;
 
   /* Colors - refined palette with cyan accent */
@@ -41,7 +39,12 @@
   --error-glow: rgba(248, 113, 113, 0.15);
 
   /* Typography - DM Sans for modern, friendly feel */
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family:
+    'DM Sans',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
   line-height: 1.5;
   font-weight: 400;
   color: var(--text-primary);
@@ -88,8 +91,7 @@
   --auth-bg:
     radial-gradient(ellipse 120% 82% at 50% -20%, rgba(53, 158, 238, 0.1), transparent 55%),
     radial-gradient(ellipse 76% 55% at 82% 32%, rgba(239, 71, 111, 0.08), transparent 52%),
-    radial-gradient(ellipse 76% 55% at 10% 70%, rgba(3, 206, 164, 0.08), transparent 50%),
-    #06070a;
+    radial-gradient(ellipse 76% 55% at 10% 70%, rgba(3, 206, 164, 0.08), transparent 50%), #06070a;
   --auth-ambient: radial-gradient(ellipse at center, rgba(53, 158, 238, 0.1) 0%, transparent 72%);
 
   /* Text */
@@ -122,8 +124,7 @@
   --auth-glass-border-open: rgba(255, 255, 255, 0.2);
   --auth-glass-shadow: 0 14px 38px rgba(16, 28, 56, 0.44);
   --auth-glass-shadow-open:
-    0 22px 72px rgba(0, 0, 0, 0.44),
-    inset 0 1px 0 rgba(255, 255, 255, 0.26);
+    0 22px 72px rgba(0, 0, 0, 0.44), inset 0 1px 0 rgba(255, 255, 255, 0.26);
   --auth-hover-fill: rgba(255, 255, 255, 0.16);
   --auth-active-fill: rgba(255, 255, 255, 0.14);
   --auth-rule: rgba(255, 255, 255, 0.14);
@@ -184,8 +185,7 @@
   --auth-bg:
     radial-gradient(ellipse 120% 82% at 50% -20%, rgba(53, 158, 238, 0.18), transparent 55%),
     radial-gradient(ellipse 76% 55% at 82% 32%, rgba(239, 71, 111, 0.14), transparent 52%),
-    radial-gradient(ellipse 76% 55% at 10% 70%, rgba(3, 206, 164, 0.14), transparent 50%),
-    #eef1f8;
+    radial-gradient(ellipse 76% 55% at 10% 70%, rgba(3, 206, 164, 0.14), transparent 50%), #eef1f8;
   --auth-ambient: radial-gradient(ellipse at center, rgba(53, 158, 238, 0.14) 0%, transparent 72%);
 
   --auth-text: #10142a;
@@ -218,8 +218,7 @@
   --auth-glass-border-open: rgba(16, 24, 48, 0.1);
   --auth-glass-shadow: 0 14px 38px rgba(22, 34, 64, 0.16);
   --auth-glass-shadow-open:
-    0 22px 72px rgba(22, 34, 64, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    0 22px 72px rgba(22, 34, 64, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.9);
   --auth-hover-fill: rgba(16, 24, 48, 0.08);
   --auth-active-fill: rgba(16, 24, 48, 0.07);
   --auth-rule: rgba(16, 24, 48, 0.14);

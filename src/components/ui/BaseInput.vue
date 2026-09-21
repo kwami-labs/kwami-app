@@ -42,21 +42,21 @@ function onBlur(e: FocusEvent) {
 </script>
 
 <template>
-  <div 
-    class="base-input" 
-    :class="{ 
-      block, 
-      'has-error': !!error, 
+  <div
+    class="base-input"
+    :class="{
+      block,
+      'has-error': !!error,
       focused: isFocused,
       disabled,
-      mono
+      mono,
     }"
   >
     <label v-if="label" class="label">
       <iconify-icon v-if="icon" :icon="icon"></iconify-icon>
       {{ label }}
     </label>
-    
+
     <div class="input-wrapper">
       <input
         :type="inputType"
@@ -75,7 +75,7 @@ function onBlur(e: FocusEvent) {
       <div class="input-border"></div>
       <div class="input-glow"></div>
     </div>
-    
+
     <Transition name="error">
       <span v-if="error" class="error-msg">
         <iconify-icon icon="ph:warning-circle-fill"></iconify-icon>

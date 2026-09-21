@@ -103,9 +103,11 @@ export const commsAgentToolsEn = {
 
 export const commsAgentToolsEs = {
   comms: {
-    recipientRequired: 'Di a quien contactar, con un nombre de los contactos o un numero de telefono.',
+    recipientRequired:
+      'Di a quien contactar, con un nombre de los contactos o un numero de telefono.',
     recipientLabel: '{name} en el numero terminado en {tail}',
-    contactNotFound: 'No hay ningun contacto llamado "{name}". Revisa el nombre o da el numero directamente.',
+    contactNotFound:
+      'No hay ningun contacto llamado "{name}". Revisa el nombre o da el numero directamente.',
     contactAmbiguous:
       'Hay mas de un contacto que coincide con "{name}": {list}. Pregunta a cual se refiere antes de enviar nada.',
     contactHasNoNumber: 'El contacto {name} no tiene numero guardado para {channel}.',
@@ -193,7 +195,8 @@ export const commsAgentToolsFr = {
   comms: {
     recipientRequired: 'Dis qui contacter, soit un nom des contacts, soit un numéro de téléphone.',
     recipientLabel: '{name} au numéro se terminant par {tail}',
-    contactNotFound: 'Aucun contact appelé "{name}". Vérifie le nom, ou donne le numéro directement.',
+    contactNotFound:
+      'Aucun contact appelé "{name}". Vérifie le nom, ou donne le numéro directement.',
     contactAmbiguous:
       'Plusieurs contacts correspondent à "{name}" : {list}. Demande lequel avant d envoyer quoi que ce soit.',
     contactHasNoNumber: 'Le contact {name} n a pas de numéro enregistré pour {channel}.',
@@ -281,7 +284,8 @@ export const commsAgentToolsPt = {
   comms: {
     recipientRequired: 'Diz quem contactar, com um nome dos contactos ou um número de telefone.',
     recipientLabel: '{name} no número terminado em {tail}',
-    contactNotFound: 'Não há nenhum contacto chamado "{name}". Verifica o nome, ou dá o número diretamente.',
+    contactNotFound:
+      'Não há nenhum contacto chamado "{name}". Verifica o nome, ou dá o número diretamente.',
     contactAmbiguous:
       'Há mais do que um contacto que corresponde a "{name}": {list}. Pergunta qual antes de enviar seja o que for.',
     contactHasNoNumber: 'O contacto {name} não tem número guardado para {channel}.',
@@ -369,7 +373,8 @@ export const commsAgentToolsIt = {
   comms: {
     recipientRequired: 'Di chi contattare, con un nome dai contatti o un numero di telefono.',
     recipientLabel: '{name} al numero che finisce con {tail}',
-    contactNotFound: 'Nessun contatto chiamato "{name}". Controlla il nome, o dai direttamente il numero.',
+    contactNotFound:
+      'Nessun contatto chiamato "{name}". Controlla il nome, o dai direttamente il numero.',
     contactAmbiguous:
       'Più di un contatto corrisponde a "{name}": {list}. Chiedi quale prima di inviare qualsiasi cosa.',
     contactHasNoNumber: 'Il contatto {name} non ha un numero salvato per {channel}.',

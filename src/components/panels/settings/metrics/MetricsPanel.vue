@@ -14,13 +14,7 @@ const { kwami } = useKwami();
 const { t } = useI18n();
 const themeStore = useThemeStore();
 const isRightSidebar = computed(() => themeStore.sidebarPosition === 'right');
-const {
-  latency,
-  stats,
-  isLive,
-  latencyHistory,
-  resetMetrics,
-} = useMetricsState();
+const { latency, stats, isLive, latencyHistory, resetMetrics } = useMetricsState();
 
 // Config display state (derived from kwami, re-synced on mount)
 const config = reactive({
@@ -117,22 +111,26 @@ onUnmounted(() => {
             <span class="label">STT</span> <span class="val">{{ config.stt.provider }}</span>
           </div>
           <div class="config-row sub">
-            <span class="label">{{ t('metrics.model') }}</span> <span class="val normal">{{ config.stt.model }}</span>
+            <span class="label">{{ t('metrics.model') }}</span>
+            <span class="val normal">{{ config.stt.model }}</span>
           </div>
           <div class="config-row">
             <span class="label">LLM</span> <span class="val">{{ config.llm.provider }}</span>
           </div>
           <div class="config-row sub">
-            <span class="label">{{ t('metrics.model') }}</span> <span class="val normal">{{ config.llm.model }}</span>
+            <span class="label">{{ t('metrics.model') }}</span>
+            <span class="val normal">{{ config.llm.model }}</span>
           </div>
           <div class="config-row">
             <span class="label">TTS</span> <span class="val">{{ config.tts.provider }}</span>
           </div>
           <div class="config-row sub">
-            <span class="label">{{ t('metrics.model') }}</span> <span class="val normal">{{ config.tts.model }}</span>
+            <span class="label">{{ t('metrics.model') }}</span>
+            <span class="val normal">{{ config.tts.model }}</span>
           </div>
           <div class="config-row sub">
-            <span class="label">{{ t('metrics.voice') }}</span> <span class="val normal">{{ config.tts.voice }}</span>
+            <span class="label">{{ t('metrics.voice') }}</span>
+            <span class="val normal">{{ config.tts.voice }}</span>
           </div>
         </div>
       </PanelSection>
@@ -225,20 +223,15 @@ onUnmounted(() => {
       <!-- Actions -->
       <PanelSection :title="t('metrics.actions')" icon="ph:wrench-duotone">
         <div class="action-buttons">
-          <BaseButton 
-            variant="secondary" 
-            size="sm" 
+          <BaseButton
+            variant="secondary"
+            size="sm"
             icon="ph:arrow-counter-clockwise-duotone"
             @click="resetMetrics"
           >
             {{ t('metrics.resetMetrics') }}
           </BaseButton>
-          <BaseButton 
-            variant="secondary" 
-            size="sm" 
-            icon="ph:export-duotone"
-            @click="exportMetrics"
-          >
+          <BaseButton variant="secondary" size="sm" icon="ph:export-duotone" @click="exportMetrics">
             {{ t('metrics.exportJson') }}
           </BaseButton>
         </div>
@@ -281,8 +274,15 @@ onUnmounted(() => {
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.6; transform: scale(0.9); }
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(0.9);
+  }
 }
 
 /* Config Summary */

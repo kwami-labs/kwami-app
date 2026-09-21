@@ -30,7 +30,10 @@ import { sceneHdriPresets } from '@/presets/scene/hdri-presets';
 const RANDOMIZE_TARGETS = ['avatar', 'scene', 'both'] as const;
 
 function normalizeKey(value: string): string {
-  return value.trim().toLowerCase().replace(/[\s_-]+/g, '');
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, '');
 }
 
 function asString(value: unknown, fallback = ''): string {
@@ -84,9 +87,7 @@ export function useKwamiAdminAgentTools() {
    */
   function resolveKwami(
     nameOrId: unknown,
-  ):
-    | { ok: true; workspace: { id: string; name: string } }
-    | { ok: false; message: string } {
+  ): { ok: true; workspace: { id: string; name: string } } | { ok: false; message: string } {
     const target = asString(nameOrId).trim();
     if (!target) return { ok: false, message: t('kwamiAdmin.targetRequired') };
 
@@ -94,9 +95,7 @@ export function useKwamiAdminAgentTools() {
     if (byId) return { ok: true, workspace: { id: byId.id, name: byId.name } };
 
     const needle = normalizeKey(target);
-    const matches = workspaceStore.workspaces.filter((w) =>
-      normalizeKey(w.name).includes(needle),
-    );
+    const matches = workspaceStore.workspaces.filter((w) => normalizeKey(w.name).includes(needle));
     if (!matches.length) return { ok: false, message: t('kwamiAdmin.notFound', { name: target }) };
 
     // An exact name match settles what would otherwise be ambiguous.
@@ -107,7 +106,10 @@ export function useKwamiAdminAgentTools() {
         ok: false,
         message: t('kwamiAdmin.ambiguous', {
           name: target,
-          list: shortlist.slice(0, 5).map((w) => w.name).join('; '),
+          list: shortlist
+            .slice(0, 5)
+            .map((w) => w.name)
+            .join('; '),
         }),
       };
     }
@@ -141,7 +143,10 @@ export function useKwamiAdminAgentTools() {
         message: t('kwamiAdmin.created', { name: created.name }),
       };
     } catch (error) {
-      return { success: false, message: t('kwamiAdmin.createFailed', { error: getErrorMessage(error) }) };
+      return {
+        success: false,
+        message: t('kwamiAdmin.createFailed', { error: getErrorMessage(error) }),
+      };
     }
   }
 
@@ -166,7 +171,10 @@ export function useKwamiAdminAgentTools() {
         message: t('kwamiAdmin.renamed', { previous, name: next }),
       };
     } catch (error) {
-      return { success: false, message: t('kwamiAdmin.renameFailed', { error: getErrorMessage(error) }) };
+      return {
+        success: false,
+        message: t('kwamiAdmin.renameFailed', { error: getErrorMessage(error) }),
+      };
     }
   }
 
@@ -177,7 +185,10 @@ export function useKwamiAdminAgentTools() {
     // Deleting the only Kwami leaves the app with nothing to show; the store
     // recreates a blank local one, which is almost never what was meant.
     if (workspaceStore.workspaces.length <= 1) {
-      return { success: false, message: t('kwamiAdmin.deleteLast', { name: resolved.workspace.name }) };
+      return {
+        success: false,
+        message: t('kwamiAdmin.deleteLast', { name: resolved.workspace.name }),
+      };
     }
 
     const approved = await confirmDestructive(
@@ -215,7 +226,11 @@ export function useKwamiAdminAgentTools() {
         message: t('kwamiAdmin.deleted', { name: resolved.workspace.name }),
       };
     } catch (error) {
-      return { success: false, deleted: false, message: t('kwamiAdmin.deleteFailed', { error: getErrorMessage(error) }) };
+      return {
+        success: false,
+        deleted: false,
+        message: t('kwamiAdmin.deleteFailed', { error: getErrorMessage(error) }),
+      };
     }
   }
 
@@ -227,7 +242,10 @@ export function useKwamiAdminAgentTools() {
     try {
       await creditsStore.loadBalance();
     } catch (error) {
-      return { success: false, message: t('kwamiAdmin.creditsFailed', { error: getErrorMessage(error) }) };
+      return {
+        success: false,
+        message: t('kwamiAdmin.creditsFailed', { error: getErrorMessage(error) }),
+      };
     }
     const credits = creditsStore.balanceCredits;
     return {
@@ -257,14 +275,23 @@ export function useKwamiAdminAgentTools() {
       t('kwamiAdmin.confirmSignOutBody'),
     );
     if (!approved) {
-      return { success: false, cancelled: true, signedOut: false, message: t('kwamiAdmin.signOutCancelled') };
+      return {
+        success: false,
+        cancelled: true,
+        signedOut: false,
+        message: t('kwamiAdmin.signOutCancelled'),
+      };
     }
 
     try {
       await authStore.signOut();
       return { success: true, signedOut: true, message: t('kwamiAdmin.signedOut') };
     } catch (error) {
-      return { success: false, signedOut: false, message: t('kwamiAdmin.signOutFailed', { error: getErrorMessage(error) }) };
+      return {
+        success: false,
+        signedOut: false,
+        message: t('kwamiAdmin.signOutFailed', { error: getErrorMessage(error) }),
+      };
     }
   }
 

@@ -4,15 +4,18 @@ import { useI18n } from 'vue-i18n';
 import { useUIStore } from '@/stores/ui';
 import { useThemeStore } from '@/stores/theme';
 
-withDefaults(defineProps<{
-  showSizeButtons?: boolean;
-  showCloseButton?: boolean;
-  showDivider?: boolean;
-}>(), {
-  showSizeButtons: true,
-  showCloseButton: true,
-  showDivider: false,
-});
+withDefaults(
+  defineProps<{
+    showSizeButtons?: boolean;
+    showCloseButton?: boolean;
+    showDivider?: boolean;
+  }>(),
+  {
+    showSizeButtons: true,
+    showCloseButton: true,
+    showDivider: false,
+  },
+);
 
 const uiStore = useUIStore();
 const themeStore = useThemeStore();
@@ -62,17 +65,14 @@ function closePanel() {
 
 <template>
   <div class="panel-header-controls">
-    <div v-if="showDivider && !isRightSidebar" class="header-controls-divider" aria-hidden="true"></div>
-
     <div
-      v-if="showCloseButton && !isRightSidebar"
-      class="header-control-group close-group"
-    >
-      <button
-        class="close-btn"
-        :title="t('ui.closePanel')"
-        @click="closePanel"
-      >
+      v-if="showDivider && !isRightSidebar"
+      class="header-controls-divider"
+      aria-hidden="true"
+    ></div>
+
+    <div v-if="showCloseButton && !isRightSidebar" class="header-control-group close-group">
+      <button class="close-btn" :title="t('ui.closePanel')" @click="closePanel">
         <iconify-icon icon="ph:x"></iconify-icon>
       </button>
     </div>
@@ -90,20 +90,17 @@ function closePanel() {
       </button>
     </div>
 
-    <div
-      v-if="showCloseButton && isRightSidebar"
-      class="header-control-group close-group"
-    >
-      <button
-        class="close-btn"
-        :title="t('ui.closePanel')"
-        @click="closePanel"
-      >
+    <div v-if="showCloseButton && isRightSidebar" class="header-control-group close-group">
+      <button class="close-btn" :title="t('ui.closePanel')" @click="closePanel">
         <iconify-icon icon="ph:x"></iconify-icon>
       </button>
     </div>
 
-    <div v-if="showDivider && isRightSidebar" class="header-controls-divider" aria-hidden="true"></div>
+    <div
+      v-if="showDivider && isRightSidebar"
+      class="header-controls-divider"
+      aria-hidden="true"
+    ></div>
   </div>
 </template>
 

@@ -44,7 +44,8 @@ const props = withDefaults(defineProps<WelcomeRingsProps>(), {
 });
 
 // KWAMI wordmark path (centered version)
-const WORDMARK_PATH = 'M 200.8 70 L 200.8 67.1 L 240.2 67.1 L 240.2 7.2 L 217.7 55.4 L 195.2 7.1 L 195.2 70.1 L 192.2 70 L 192.2 0 L 195.2 0 L 217.7 48.3 L 240.2 0.1 L 243.2 0 L 243.2 70.1 L 200.8 70 Z M 121.7 3.1 L 59.1 3.1 L 59.1 0.1 L 126 0.1 L 100.5 70.2 L 87.5 34.6 L 74.6 70.2 L 49.1 0.1 L 52.3 0.1 L 74.6 61.4 L 87.5 25.8 L 100.5 61.4 L 121.7 3.1 Z M 139.4 70.1 L 139.4 67.1 L 176.2 67.1 L 155 8.8 L 132.7 70.1 L 129.5 70.1 L 155 0 L 180.5 70.1 L 139.4 70.1 Z M 39.8 0.1 L 44.1 0.1 L 10.5 33.5 L 47.3 70.1 L 43 70.1 L 6.2 33.5 L 39.8 0.1 Z M 0 0.1 L 3 0.1 L 3 70.1 L 0 70.1 L 0 0.1 Z M 266 0.1 L 266 70.1 L 263 70.1 L 263 0.1 L 266 0.1 Z';
+const WORDMARK_PATH =
+  'M 200.8 70 L 200.8 67.1 L 240.2 67.1 L 240.2 7.2 L 217.7 55.4 L 195.2 7.1 L 195.2 70.1 L 192.2 70 L 192.2 0 L 195.2 0 L 217.7 48.3 L 240.2 0.1 L 243.2 0 L 243.2 70.1 L 200.8 70 Z M 121.7 3.1 L 59.1 3.1 L 59.1 0.1 L 126 0.1 L 100.5 70.2 L 87.5 34.6 L 74.6 70.2 L 49.1 0.1 L 52.3 0.1 L 74.6 61.4 L 87.5 25.8 L 100.5 61.4 L 121.7 3.1 Z M 139.4 70.1 L 139.4 67.1 L 176.2 67.1 L 155 8.8 L 132.7 70.1 L 129.5 70.1 L 155 0 L 180.5 70.1 L 139.4 70.1 Z M 39.8 0.1 L 44.1 0.1 L 10.5 33.5 L 47.3 70.1 L 43 70.1 L 6.2 33.5 L 39.8 0.1 Z M 0 0.1 L 3 0.1 L 3 70.1 L 0 70.1 L 0 0.1 Z M 266 0.1 L 266 70.1 L 263 70.1 L 263 0.1 L 266 0.1 Z';
 
 // Gradient base coordinates
 const GRADIENT_BASE = { x1: 213.98, y1: 290, x2: 179.72, y2: 320 };
@@ -73,7 +74,7 @@ function parseHex(input: string): { r: number; g: number; b: number } | null {
   const hex = input.trim();
   if (!hex.startsWith('#')) return null;
   const raw = hex.slice(1);
-  
+
   if (raw.length === 3) {
     const r = parseInt((raw[0] || '0') + (raw[0] || '0'), 16);
     const g = parseInt((raw[1] || '0') + (raw[1] || '0'), 16);
@@ -81,7 +82,7 @@ function parseHex(input: string): { r: number; g: number; b: number } | null {
     if (Number.isNaN(r) || Number.isNaN(g) || Number.isNaN(b)) return null;
     return { r, g, b };
   }
-  
+
   if (raw.length === 6) {
     const r = parseInt(raw.slice(0, 2), 16);
     const g = parseInt(raw.slice(2, 4), 16);
@@ -89,7 +90,7 @@ function parseHex(input: string): { r: number; g: number; b: number } | null {
     if (Number.isNaN(r) || Number.isNaN(g) || Number.isNaN(b)) return null;
     return { r, g, b };
   }
-  
+
   return null;
 }
 
@@ -124,16 +125,16 @@ function interpolatePalette(palette: string[], t: number): string {
 function resizeSvg() {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-  
+
   if (vw <= 0 || vh <= 0) return;
   if (!svgRef.value) return;
-  
+
   svgRef.value.setAttribute('viewBox', `0 0 ${vw} ${vh}`);
-  
+
   cx = vw / 2;
   cy = vh / 2;
   baseRadius = Math.min(vw, vh) * props.baseRadiusRatio;
-  
+
   // Update all ellipses
   for (let i = 0; i < ellipseRefs.length; i++) {
     const count = i + 1;
@@ -142,18 +143,18 @@ function resizeSvg() {
     e.setAttribute('cy', String(cy));
     e.setAttribute('rx', String(baseRadius));
     e.setAttribute('ry', String(baseRadius));
-    
+
     const t = count / ellipseRefs.length;
     e.style.opacity = String(1 - t);
     e.setAttribute('stroke', interpolatePalette(props.colors, t));
   }
-  
+
   // Update wordmark transform
   if (wordmarkRef.value && props.includeWordmark) {
     const textScale = Math.min(vw, vh) / 500;
     wordmarkRef.value.setAttribute(
       'transform',
-      `translate(${cx - 133 * textScale}, ${cy - 35 * textScale}) scale(${textScale})`
+      `translate(${cx - 133 * textScale}, ${cy - 35 * textScale}) scale(${textScale})`,
     );
   }
 }
@@ -163,15 +164,15 @@ function tick(ts: number) {
     rafId = null;
     return;
   }
-  
+
   if (startTs === null) startTs = ts;
-  
+
   const elapsed = (ts - startTs) / 1000;
   const phase = (elapsed % props.cycleSeconds) / props.cycleSeconds; // 0..1
-  
+
   // Pulse in [0..1] using cosine
   const pulse = 0.5 - 0.5 * Math.cos(phase * Math.PI * 2);
-  
+
   // Animate rings expansion
   for (let i = 0; i < ellipseRefs.length; i++) {
     const count = i + 1;
@@ -180,20 +181,20 @@ function tick(ts: number) {
     e.setAttribute('rx', String(baseRadius + delta));
     e.setAttribute('ry', String(baseRadius + delta));
   }
-  
+
   // Rotate the whole ring group around the center
   if (props.rotationDegreesPerSecond !== 0 && ringsGroupRef.value) {
     const angle = elapsed * props.rotationDegreesPerSecond;
     ringsGroupRef.value.setAttribute('transform', `rotate(${angle} ${cx} ${cy})`);
   }
-  
+
   // Animate gradient vector
   if (props.animateGradient) {
     const shift = pulse;
     gradientX1.value = GRADIENT_BASE.x1 + 380 * shift;
     gradientX2.value = GRADIENT_BASE.x2 + 300 * shift;
   }
-  
+
   rafId = requestAnimationFrame(tick);
 }
 
@@ -213,11 +214,11 @@ function stopAnimation() {
 
 function createEllipses() {
   if (!ringsGroupRef.value) return;
-  
+
   // Clear existing
   ellipseRefs.length = 0;
   ringsGroupRef.value.innerHTML = '';
-  
+
   // Create new ellipses
   for (let i = 0; i < props.ringCount; i++) {
     const e = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
@@ -227,7 +228,7 @@ function createEllipses() {
     ellipseRefs.push(e);
     ringsGroupRef.value.appendChild(e);
   }
-  
+
   // Apply initial sizing
   resizeSvg();
 }
@@ -235,7 +236,7 @@ function createEllipses() {
 onMounted(() => {
   createEllipses();
   window.addEventListener('resize', resizeSvg, { passive: true });
-  
+
   if (props.running) {
     startAnimation();
   }
@@ -246,17 +247,23 @@ onUnmounted(() => {
   window.removeEventListener('resize', resizeSvg);
 });
 
-watch(() => props.running, (running) => {
-  if (running) {
-    startAnimation();
-  } else {
-    stopAnimation();
-  }
-});
+watch(
+  () => props.running,
+  (running) => {
+    if (running) {
+      startAnimation();
+    } else {
+      stopAnimation();
+    }
+  },
+);
 
-watch(() => props.ringCount, () => {
-  createEllipses();
-});
+watch(
+  () => props.ringCount,
+  () => {
+    createEllipses();
+  },
+);
 
 const gradientId = `kwami-welcome-grad-${Math.random().toString(36).slice(2, 8)}`;
 </script>
@@ -269,11 +276,7 @@ const gradientId = `kwami-welcome-grad-${Math.random().toString(36).slice(2, 8)}
       opacity: opacity,
     }"
   >
-    <svg
-      ref="svgRef"
-      preserveAspectRatio="xMidYMid slice"
-      class="rings-svg"
-    >
+    <svg ref="svgRef" preserveAspectRatio="xMidYMid slice" class="rings-svg">
       <defs>
         <linearGradient
           :id="gradientId"
@@ -291,10 +294,10 @@ const gradientId = `kwami-welcome-grad-${Math.random().toString(36).slice(2, 8)}
           <stop offset="1" stop-color="#000" stop-opacity="0" />
         </linearGradient>
       </defs>
-      
+
       <!-- Rings group with rotation -->
       <g ref="ringsGroupRef" id="kwami-welcome-rings-group"></g>
-      
+
       <!-- Wordmark -->
       <path
         v-if="includeWordmark"

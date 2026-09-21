@@ -8,15 +8,44 @@ const { t } = useI18n();
 
 // Language name mapping
 const LANGUAGE_NAMES: Record<string, string> = {
-  en: 'English', 'en-US': 'English (US)', 'en-GB': 'English (UK)', 'en-AU': 'English (AU)',
-  es: 'Spanish', 'es-419': 'Spanish (LATAM)', 'es-ES': 'Spanish (Spain)',
-  fr: 'French', 'fr-CA': 'French (CA)', de: 'German', it: 'Italian',
-  pt: 'Portuguese', 'pt-BR': 'Portuguese (BR)', nl: 'Dutch', pl: 'Polish',
-  ru: 'Russian', zh: 'Chinese', 'zh-CN': 'Chinese (Simplified)', 'zh-TW': 'Chinese (Traditional)',
-  ja: 'Japanese', ko: 'Korean', ar: 'Arabic', hi: 'Hindi', tr: 'Turkish',
-  vi: 'Vietnamese', th: 'Thai', id: 'Indonesian', sv: 'Swedish', da: 'Danish',
-  no: 'Norwegian', fi: 'Finnish', cs: 'Czech', el: 'Greek', he: 'Hebrew',
-  hu: 'Hungarian', ro: 'Romanian', uk: 'Ukrainian', multi: 'Multi-language',
+  en: 'English',
+  'en-US': 'English (US)',
+  'en-GB': 'English (UK)',
+  'en-AU': 'English (AU)',
+  es: 'Spanish',
+  'es-419': 'Spanish (LATAM)',
+  'es-ES': 'Spanish (Spain)',
+  fr: 'French',
+  'fr-CA': 'French (CA)',
+  de: 'German',
+  it: 'Italian',
+  pt: 'Portuguese',
+  'pt-BR': 'Portuguese (BR)',
+  nl: 'Dutch',
+  pl: 'Polish',
+  ru: 'Russian',
+  zh: 'Chinese',
+  'zh-CN': 'Chinese (Simplified)',
+  'zh-TW': 'Chinese (Traditional)',
+  ja: 'Japanese',
+  ko: 'Korean',
+  ar: 'Arabic',
+  hi: 'Hindi',
+  tr: 'Turkish',
+  vi: 'Vietnamese',
+  th: 'Thai',
+  id: 'Indonesian',
+  sv: 'Swedish',
+  da: 'Danish',
+  no: 'Norwegian',
+  fi: 'Finnish',
+  cs: 'Czech',
+  el: 'Greek',
+  he: 'Hebrew',
+  hu: 'Hungarian',
+  ro: 'Romanian',
+  uk: 'Ukrainian',
+  multi: 'Multi-language',
   multilingual: 'Multilingual',
 };
 
@@ -96,7 +125,7 @@ const speedDisplay = computed(() => {
 // Features count and display
 const advancedFeatures = computed(() => {
   const advanced = ['voice_cloning', 'emotion_control', 'ultra_low_latency'];
-  return props.model.features.filter(f => advanced.includes(f));
+  return props.model.features.filter((f) => advanced.includes(f));
 });
 
 const featuresPercent = computed(() => {
@@ -121,7 +150,7 @@ const isMultilingual = computed(() => {
 
 // Formatted languages for tooltip
 const formattedLanguages = computed(() => {
-  return props.model.languages.map(code => ({
+  return props.model.languages.map((code) => ({
     code,
     name: LANGUAGE_NAMES[code] || code.toUpperCase(),
   }));
@@ -148,12 +177,12 @@ function handleClick() {
       <iconify-icon :icon="providerIcon" class="provider-icon"></iconify-icon>
       <span class="model-name">{{ model.display_name }}</span>
     </div>
-    
+
     <!-- Range Bars -->
     <div class="card-ranges">
       <div v-if="priceDisplay" class="range-row">
-        <RangeBar 
-          :value="pricePercent" 
+        <RangeBar
+          :value="pricePercent"
           icon="ph:currency-dollar-duotone"
           :label="t('sttModelCard.price')"
           :title="t('ttsModelCard.priceTitle', { price: priceDisplay })"
@@ -161,8 +190,8 @@ function handleClick() {
         <span class="range-value">{{ priceDisplay }}</span>
       </div>
       <div class="range-row">
-        <RangeBar 
-          :value="featuresPercent" 
+        <RangeBar
+          :value="featuresPercent"
           icon="ph:sparkle-duotone"
           :label="t('ttsModelCard.features')"
           :title="t('ttsModelCard.featuresTitle', { summary: featuresDisplay })"
@@ -170,8 +199,8 @@ function handleClick() {
         <span class="range-value">{{ featuresDisplay }}</span>
       </div>
       <div class="range-row">
-        <RangeBar 
-          :value="speedPercent" 
+        <RangeBar
+          :value="speedPercent"
           icon="ph:lightning-duotone"
           :label="t('sttModelCard.speed')"
           :title="t('sttModelCard.speedTitle', { speed: speedDisplay })"
@@ -179,7 +208,7 @@ function handleClick() {
         <span class="range-value">{{ speedDisplay }}</span>
       </div>
     </div>
-    
+
     <div v-if="advancedFeatures.length || model.languages.length > 0" class="card-features">
       <span
         v-if="advancedFeatures.includes('voice_cloning')"
@@ -197,8 +226,8 @@ function handleClick() {
         <iconify-icon icon="ph:smiley-duotone"></iconify-icon>
         <span class="feature-label">{{ t('ttsModelCard.featureEmotion') }}</span>
       </span>
-      <span 
-        v-if="model.languages.length > 0" 
+      <span
+        v-if="model.languages.length > 0"
         class="feature-badge multilingual lang-trigger"
         :title="
           t('sttModelCard.languagesHeading', { n: model.languages.length }, model.languages.length)
@@ -210,20 +239,28 @@ function handleClick() {
         <span class="feature-label">{{
           isMultilingual ? t('sttModelCard.multiShort') : model.languages.length
         }}</span>
-        
+
         <!-- Languages Popover -->
         <Transition name="fade">
-          <div v-if="showLanguages && model.languages.length > 1" class="languages-popover" @click.stop>
+          <div
+            v-if="showLanguages && model.languages.length > 1"
+            class="languages-popover"
+            @click.stop
+          >
             <div class="popover-header">
               <iconify-icon icon="ph:globe-duotone"></iconify-icon>
               <span>{{
-                t('sttModelCard.languagesHeading', { n: model.languages.length }, model.languages.length)
+                t(
+                  'sttModelCard.languagesHeading',
+                  { n: model.languages.length },
+                  model.languages.length,
+                )
               }}</span>
             </div>
             <div class="languages-grid">
-              <span 
-                v-for="lang in formattedLanguages" 
-                :key="lang.code" 
+              <span
+                v-for="lang in formattedLanguages"
+                :key="lang.code"
                 class="lang-badge"
                 :title="lang.name"
               >
@@ -234,7 +271,7 @@ function handleClick() {
         </Transition>
       </span>
     </div>
-    
+
     <div class="selected-indicator">
       <iconify-icon icon="ph:check-circle-duotone"></iconify-icon>
     </div>

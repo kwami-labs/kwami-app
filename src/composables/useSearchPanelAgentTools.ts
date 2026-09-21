@@ -16,17 +16,13 @@ import { useAgentActionState } from '@/composables/useAgentActionState';
  * lets the agent describe both with one capability block.
  */
 
-const SEARCH_PANEL_CONTROLS = [
-  'layout',
-  'expand',
-  'position',
-  'size',
-  'center',
-  'reset',
-] as const;
+const SEARCH_PANEL_CONTROLS = ['layout', 'expand', 'position', 'size', 'center', 'reset'] as const;
 
 function normalizeKey(value: string): string {
-  return value.trim().toLowerCase().replace(/[\s_-]+/g, '');
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, '');
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

@@ -7,7 +7,7 @@ import {
   accentPresets,
   themePresets,
   type ThemeMode,
-  type SidebarPosition
+  type SidebarPosition,
 } from '@/stores/theme';
 import { useUIStore, type PanelSizePreset } from '@/stores/ui';
 import BasePanel from '@/components/ui/BasePanel.vue';
@@ -63,7 +63,7 @@ onUnmounted(() => {
   if (timeInterval) clearInterval(timeInterval);
 });
 
-function selectAccent(preset: typeof accentPresets[0]) {
+function selectAccent(preset: (typeof accentPresets)[0]) {
   themeStore.setAccentPreset(preset);
 }
 
@@ -111,444 +111,437 @@ function handleFileImport(event: Event) {
   <BasePanel :icon="panelIcon" :title="t('theme.title')">
     <template #actions>
       <BaseTooltip :text="t('theme.undo')" position="bottom">
-        <button
-          class="icon-btn"
-          :disabled="!themeStore.canUndo"
-          @click="themeStore.undo"
-        >
+        <button class="icon-btn" :disabled="!themeStore.canUndo" @click="themeStore.undo">
           <iconify-icon icon="ph:arrow-counter-clockwise-duotone"></iconify-icon>
         </button>
       </BaseTooltip>
       <BaseTooltip :text="t('theme.redo')" position="bottom">
-        <button
-          class="icon-btn"
-          :disabled="!themeStore.canRedo"
-          @click="themeStore.redo"
-        >
+        <button class="icon-btn" :disabled="!themeStore.canRedo" @click="themeStore.redo">
           <iconify-icon icon="ph:arrow-clockwise-duotone"></iconify-icon>
         </button>
       </BaseTooltip>
     </template>
-      <!-- Theme Presets -->
-      <PanelSection :title="t('theme.presets')" icon="ph:stack-duotone" collapsible>
-        <div class="preset-grid">
-          <BaseTooltip
-            v-for="preset in themePresets"
-            :key="preset.name"
-            :text="preset.description"
-            position="top"
-          >
-            <button
-              class="preset-card"
-              @click="themeStore.applyPreset(preset)"
-            >
-              <iconify-icon :icon="preset.icon" class="preset-icon"></iconify-icon>
-              <span class="preset-name">{{ preset.name }}</span>
-            </button>
-          </BaseTooltip>
-        </div>
-      </PanelSection>
-
-      <!-- Theme Mode -->
-      <PanelSection :title="t('theme.mode')" icon="ph:circles-four-duotone" collapsible>
-        <div class="theme-modes">
-          <button
-            v-for="mode in themeModes"
-            :key="mode.value"
-            class="theme-mode-btn"
-            :class="{ active: themeStore.mode === mode.value }"
-            @click="themeStore.setMode(mode.value)"
-          >
-            <iconify-icon :icon="mode.icon"></iconify-icon>
-            <span>{{ mode.label }}</span>
+    <!-- Theme Presets -->
+    <PanelSection :title="t('theme.presets')" icon="ph:stack-duotone" collapsible>
+      <div class="preset-grid">
+        <BaseTooltip
+          v-for="preset in themePresets"
+          :key="preset.name"
+          :text="preset.description"
+          position="top"
+        >
+          <button class="preset-card" @click="themeStore.applyPreset(preset)">
+            <iconify-icon :icon="preset.icon" class="preset-icon"></iconify-icon>
+            <span class="preset-name">{{ preset.name }}</span>
           </button>
-        </div>
-      </PanelSection>
+        </BaseTooltip>
+      </div>
+    </PanelSection>
 
-      <!-- Auto Mode Schedule -->
-      <PanelSection v-if="themeStore.mode === 'auto'" :title="t('theme.autoSchedule')" icon="ph:timer-duotone" collapsible>
-        <div class="time-row">
-          <div class="time-input">
-            <label class="time-label">
-              <iconify-icon icon="ph:sun-duotone"></iconify-icon>
-              {{ t('theme.light') }}
-            </label>
-            <input
-              type="time"
-              :value="themeStore.autoStartTime"
-              @input="themeStore.setAutoStartTime(($event.target as HTMLInputElement).value)"
-            />
-          </div>
-          <div class="time-input">
-            <label class="time-label">
-              <iconify-icon icon="ph:moon-duotone"></iconify-icon>
-              {{ t('theme.dark') }}
-            </label>
-            <input
-              type="time"
-              :value="themeStore.autoEndTime"
-              @input="themeStore.setAutoEndTime(($event.target as HTMLInputElement).value)"
-            />
-          </div>
-        </div>
-        <div class="current-time">
-          <iconify-icon icon="ph:clock-duotone"></iconify-icon>
-          <span class="current-time-label">{{ t('theme.currentTime') }}</span>
-          <span class="current-time-value">{{ currentTime }}</span>
-        </div>
-      </PanelSection>
+    <!-- Theme Mode -->
+    <PanelSection :title="t('theme.mode')" icon="ph:circles-four-duotone" collapsible>
+      <div class="theme-modes">
+        <button
+          v-for="mode in themeModes"
+          :key="mode.value"
+          class="theme-mode-btn"
+          :class="{ active: themeStore.mode === mode.value }"
+          @click="themeStore.setMode(mode.value)"
+        >
+          <iconify-icon :icon="mode.icon"></iconify-icon>
+          <span>{{ mode.label }}</span>
+        </button>
+      </div>
+    </PanelSection>
 
-      <!-- Accent Color Presets -->
-      <PanelSection :title="t('theme.accentPresets')" icon="ph:paint-brush-duotone" collapsible>
-        <div class="accent-grid">
-          <BaseTooltip
-            v-for="preset in accentPresets"
-            :key="preset.name"
-            :text="preset.name"
-            position="top"
+    <!-- Auto Mode Schedule -->
+    <PanelSection
+      v-if="themeStore.mode === 'auto'"
+      :title="t('theme.autoSchedule')"
+      icon="ph:timer-duotone"
+      collapsible
+    >
+      <div class="time-row">
+        <div class="time-input">
+          <label class="time-label">
+            <iconify-icon icon="ph:sun-duotone"></iconify-icon>
+            {{ t('theme.light') }}
+          </label>
+          <input
+            type="time"
+            :value="themeStore.autoStartTime"
+            @input="themeStore.setAutoStartTime(($event.target as HTMLInputElement).value)"
+          />
+        </div>
+        <div class="time-input">
+          <label class="time-label">
+            <iconify-icon icon="ph:moon-duotone"></iconify-icon>
+            {{ t('theme.dark') }}
+          </label>
+          <input
+            type="time"
+            :value="themeStore.autoEndTime"
+            @input="themeStore.setAutoEndTime(($event.target as HTMLInputElement).value)"
+          />
+        </div>
+      </div>
+      <div class="current-time">
+        <iconify-icon icon="ph:clock-duotone"></iconify-icon>
+        <span class="current-time-label">{{ t('theme.currentTime') }}</span>
+        <span class="current-time-value">{{ currentTime }}</span>
+      </div>
+    </PanelSection>
+
+    <!-- Accent Color Presets -->
+    <PanelSection :title="t('theme.accentPresets')" icon="ph:paint-brush-duotone" collapsible>
+      <div class="accent-grid">
+        <BaseTooltip
+          v-for="preset in accentPresets"
+          :key="preset.name"
+          :text="preset.name"
+          position="top"
+        >
+          <button
+            class="accent-btn"
+            :class="{ active: themeStore.accentPrimary === preset.primary }"
+            @click="selectAccent(preset)"
           >
-            <button
-              class="accent-btn"
-              :class="{ active: themeStore.accentPrimary === preset.primary }"
-              @click="selectAccent(preset)"
-            >
-              <span 
-                class="accent-preview" 
-                :style="{ background: `linear-gradient(var(--gradient-direction, 135deg), ${preset.primary} 0%, ${preset.secondary} 100%)` }"
-              ></span>
-            </button>
-          </BaseTooltip>
-        </div>
-      </PanelSection>
+            <span
+              class="accent-preview"
+              :style="{
+                background: `linear-gradient(var(--gradient-direction, 135deg), ${preset.primary} 0%, ${preset.secondary} 100%)`,
+              }"
+            ></span>
+          </button>
+        </BaseTooltip>
+      </div>
+    </PanelSection>
 
-      <!-- Custom Accent Color -->
-      <PanelSection :title="t('theme.customColors')" icon="ph:eyedropper-duotone" collapsible>
-        <div class="color-pickers">
-          <BaseColorPicker
-            variant="inline"
-            :label="t('theme.primary')"
-            :modelValue="themeStore.accentPrimary"
-            @update:modelValue="themeStore.setAccentPrimary($event)"
-          />
-          <BaseColorPicker
-            variant="inline"
-            :label="t('theme.secondary')"
-            :modelValue="themeStore.accentSecondary"
-            @update:modelValue="themeStore.setAccentSecondary($event)"
-          />
-        </div>
+    <!-- Custom Accent Color -->
+    <PanelSection :title="t('theme.customColors')" icon="ph:eyedropper-duotone" collapsible>
+      <div class="color-pickers">
+        <BaseColorPicker
+          variant="inline"
+          :label="t('theme.primary')"
+          :modelValue="themeStore.accentPrimary"
+          @update:modelValue="themeStore.setAccentPrimary($event)"
+        />
+        <BaseColorPicker
+          variant="inline"
+          :label="t('theme.secondary')"
+          :modelValue="themeStore.accentSecondary"
+          @update:modelValue="themeStore.setAccentSecondary($event)"
+        />
+      </div>
+      <BaseSlider
+        :label="t('theme.gradientAngle')"
+        :modelValue="themeStore.gradientDirection"
+        @update:modelValue="themeStore.setGradientDirection($event)"
+        :min="0"
+        :max="360"
+        :step="15"
+        unit="°"
+      />
+      <BaseSlider
+        :label="t('theme.saturation')"
+        :modelValue="themeStore.saturation"
+        @update:modelValue="themeStore.setSaturation($event)"
+        :min="0"
+        :max="200"
+        :step="10"
+        unit="%"
+      />
+    </PanelSection>
+
+    <!-- Glass Settings -->
+    <PanelSection :title="t('theme.glassEffect')" icon="ph:drop-duotone" collapsible>
+      <div class="settings-group">
         <BaseSlider
-          :label="t('theme.gradientAngle')"
-          :modelValue="themeStore.gradientDirection"
-          @update:modelValue="themeStore.setGradientDirection($event)"
+          :label="t('theme.blur')"
+          :modelValue="themeStore.glassBlur"
+          @update:modelValue="themeStore.setGlassBlur($event)"
           :min="0"
-          :max="360"
-          :step="15"
-          unit="°"
+          :max="48"
+          :step="4"
+          unit="px"
         />
         <BaseSlider
-          :label="t('theme.saturation')"
-          :modelValue="themeStore.saturation"
-          @update:modelValue="themeStore.setSaturation($event)"
-          :min="0"
-          :max="200"
-          :step="10"
+          :label="t('theme.opacity')"
+          :modelValue="themeStore.glassOpacity"
+          @update:modelValue="themeStore.setGlassOpacity($event)"
+          :min="50"
+          :max="100"
+          :step="2"
           unit="%"
         />
-      </PanelSection>
+        <BaseSlider
+          :label="t('theme.tint')"
+          :modelValue="themeStore.glassTint"
+          @update:modelValue="themeStore.setGlassTint($event)"
+          :min="0"
+          :max="100"
+          :step="5"
+          unit="%"
+        />
+        <BaseSlider
+          :label="t('theme.noise')"
+          :modelValue="themeStore.noiseTexture"
+          @update:modelValue="themeStore.setNoiseTexture($event)"
+          :min="0"
+          :max="100"
+          :step="5"
+          unit="%"
+        />
+        <BaseSlider
+          :label="t('theme.shadow')"
+          :modelValue="themeStore.shadowIntensity"
+          @update:modelValue="themeStore.setShadowIntensity($event)"
+          :min="0"
+          :max="100"
+          :step="5"
+          unit="%"
+        />
+      </div>
+    </PanelSection>
 
-      <!-- Glass Settings -->
-      <PanelSection :title="t('theme.glassEffect')" icon="ph:drop-duotone" collapsible>
-        <div class="settings-group">
-          <BaseSlider
-            :label="t('theme.blur')"
-            :modelValue="themeStore.glassBlur"
-            @update:modelValue="themeStore.setGlassBlur($event)"
-            :min="0"
-            :max="48"
-            :step="4"
-            unit="px"
-          />
-          <BaseSlider
-            :label="t('theme.opacity')"
-            :modelValue="themeStore.glassOpacity"
-            @update:modelValue="themeStore.setGlassOpacity($event)"
-            :min="50"
-            :max="100"
-            :step="2"
-            unit="%"
-          />
-          <BaseSlider
-            :label="t('theme.tint')"
-            :modelValue="themeStore.glassTint"
-            @update:modelValue="themeStore.setGlassTint($event)"
-            :min="0"
-            :max="100"
-            :step="5"
-            unit="%"
-          />
-          <BaseSlider
-            :label="t('theme.noise')"
-            :modelValue="themeStore.noiseTexture"
-            @update:modelValue="themeStore.setNoiseTexture($event)"
-            :min="0"
-            :max="100"
-            :step="5"
-            unit="%"
-          />
-          <BaseSlider
-            :label="t('theme.shadow')"
-            :modelValue="themeStore.shadowIntensity"
-            @update:modelValue="themeStore.setShadowIntensity($event)"
-            :min="0"
-            :max="100"
-            :step="5"
-            unit="%"
-          />
-        </div>
-      </PanelSection>
-
-      <!-- Layout -->
-      <PanelSection :title="t('theme.layout')" icon="ph:layout-duotone" collapsible>
-        <div class="layout-preview">
-          <div class="layout-preview-screen">
-            <div 
-              class="layout-preview-sidebar" 
-              :class="{ right: themeStore.sidebarPosition === 'right' }"
-            >
-              <div class="layout-preview-nav"></div>
-              <div class="layout-preview-panel"></div>
-            </div>
-            <div class="layout-preview-canvas"></div>
+    <!-- Layout -->
+    <PanelSection :title="t('theme.layout')" icon="ph:layout-duotone" collapsible>
+      <div class="layout-preview">
+        <div class="layout-preview-screen">
+          <div
+            class="layout-preview-sidebar"
+            :class="{ right: themeStore.sidebarPosition === 'right' }"
+          >
+            <div class="layout-preview-nav"></div>
+            <div class="layout-preview-panel"></div>
           </div>
+          <div class="layout-preview-canvas"></div>
         </div>
-        <div class="option-group">
-          <span class="option-label">{{ t('theme.sidebarPosition') }}</span>
-          <div class="option-buttons">
-            <button
-              v-for="pos in sidebarPositions"
-              :key="pos.value"
-              class="option-btn"
-              :class="{ active: themeStore.sidebarPosition === pos.value }"
-              @click="themeStore.setSidebarPosition(pos.value)"
-            >
-              <iconify-icon :icon="pos.icon"></iconify-icon>
-              {{ pos.label }}
-            </button>
-          </div>
+      </div>
+      <div class="option-group">
+        <span class="option-label">{{ t('theme.sidebarPosition') }}</span>
+        <div class="option-buttons">
+          <button
+            v-for="pos in sidebarPositions"
+            :key="pos.value"
+            class="option-btn"
+            :class="{ active: themeStore.sidebarPosition === pos.value }"
+            @click="themeStore.setSidebarPosition(pos.value)"
+          >
+            <iconify-icon :icon="pos.icon"></iconify-icon>
+            {{ pos.label }}
+          </button>
         </div>
+      </div>
 
-        <!-- Panel Size Presets -->
-        <div class="option-group" style="margin-top: 14px;">
-          <span class="option-label">{{ t('theme.panelSize') }}</span>
-          <div class="size-tabs">
-            <button
-              v-for="tab in sizeTabs"
-              :key="tab.value"
-              class="size-tab"
-              :class="{ active: uiStore.activeSizePreset === tab.value }"
-              @click="uiStore.setSizePreset(tab.value)"
-            >
-              <iconify-icon :icon="tab.icon"></iconify-icon>
-              {{ tab.label }}
-            </button>
-          </div>
-        </div>
-
-        <!-- Size preset configuration -->
-        <div class="size-preset-config">
-          <div 
-            v-for="tab in sizeTabs" 
+      <!-- Panel Size Presets -->
+      <div class="option-group" style="margin-top: 14px">
+        <span class="option-label">{{ t('theme.panelSize') }}</span>
+        <div class="size-tabs">
+          <button
+            v-for="tab in sizeTabs"
             :key="tab.value"
-            class="size-preset-row"
+            class="size-tab"
             :class="{ active: uiStore.activeSizePreset === tab.value }"
+            @click="uiStore.setSizePreset(tab.value)"
           >
-            <div class="preset-info">
-              <iconify-icon :icon="tab.icon" class="preset-icon-small"></iconify-icon>
-              <span class="preset-label">{{ tab.label }}</span>
+            <iconify-icon :icon="tab.icon"></iconify-icon>
+            {{ tab.label }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Size preset configuration -->
+      <div class="size-preset-config">
+        <div
+          v-for="tab in sizeTabs"
+          :key="tab.value"
+          class="size-preset-row"
+          :class="{ active: uiStore.activeSizePreset === tab.value }"
+        >
+          <div class="preset-info">
+            <iconify-icon :icon="tab.icon" class="preset-icon-small"></iconify-icon>
+            <span class="preset-label">{{ tab.label }}</span>
+          </div>
+          <div class="preset-controls">
+            <div class="width-input-group">
+              <input
+                type="number"
+                class="width-input"
+                :value="uiStore.sizePresets[tab.value].width"
+                :min="uiStore.MIN_PANEL_WIDTH"
+                :max="uiStore.MAX_PANEL_WIDTH"
+                @input="
+                  uiStore.setPresetWidth(
+                    tab.value,
+                    parseInt(($event.target as HTMLInputElement).value) || uiStore.MIN_PANEL_WIDTH,
+                  )
+                "
+              />
+              <span class="width-unit">px</span>
             </div>
-            <div class="preset-controls">
-              <div class="width-input-group">
-                <input
-                  type="number"
-                  class="width-input"
-                  :value="uiStore.sizePresets[tab.value].width"
-                  :min="uiStore.MIN_PANEL_WIDTH"
-                  :max="uiStore.MAX_PANEL_WIDTH"
-                  @input="uiStore.setPresetWidth(tab.value, parseInt(($event.target as HTMLInputElement).value) || uiStore.MIN_PANEL_WIDTH)"
-                />
-                <span class="width-unit">px</span>
-              </div>
-              <span class="shortcut-badge">{{ uiStore.sizePresets[tab.value].shortcut }}</span>
-            </div>
+            <span class="shortcut-badge">{{ uiStore.sizePresets[tab.value].shortcut }}</span>
           </div>
         </div>
+      </div>
 
-        <!-- Custom Resize Toggle -->
-        <div 
-          class="toggle-group" 
-          style="margin-top: 14px;"
-          :title="themeStore.compactMode ? t('theme.disableCompactForResize') : ''"
-        >
-          <BaseToggle
-            :label="t('theme.allowCustomResize')"
-            :modelValue="uiStore.allowCustomResize"
-            :disabled="themeStore.compactMode"
-            @update:modelValue="uiStore.setAllowCustomResize($event)"
-          />
-        </div>
+      <!-- Custom Resize Toggle -->
+      <div
+        class="toggle-group"
+        style="margin-top: 14px"
+        :title="themeStore.compactMode ? t('theme.disableCompactForResize') : ''"
+      >
+        <BaseToggle
+          :label="t('theme.allowCustomResize')"
+          :modelValue="uiStore.allowCustomResize"
+          :disabled="themeStore.compactMode"
+          @update:modelValue="uiStore.setAllowCustomResize($event)"
+        />
+      </div>
 
-        <p class="layout-hint">
-          <iconify-icon icon="ph:info-duotone"></iconify-icon>
-          <template v-if="themeStore.compactMode">
-            {{ t('theme.disableCompactForResize') }}
-          </template>
-          <template v-else-if="uiStore.allowCustomResize">
-            {{ t('theme.dragEdgeToResize') }}
-          </template>
-          <template v-else>
-            {{ t('theme.customResizeDisabled') }}
-          </template>
-        </p>
-      </PanelSection>
+      <p class="layout-hint">
+        <iconify-icon icon="ph:info-duotone"></iconify-icon>
+        <template v-if="themeStore.compactMode">
+          {{ t('theme.disableCompactForResize') }}
+        </template>
+        <template v-else-if="uiStore.allowCustomResize">
+          {{ t('theme.dragEdgeToResize') }}
+        </template>
+        <template v-else>
+          {{ t('theme.customResizeDisabled') }}
+        </template>
+      </p>
+    </PanelSection>
 
-      <!-- UI Settings -->
-      <PanelSection :title="t('theme.interface')" icon="ph:sliders-horizontal-duotone" collapsible>
-        <div class="settings-group">
+    <!-- UI Settings -->
+    <PanelSection :title="t('theme.interface')" icon="ph:sliders-horizontal-duotone" collapsible>
+      <div class="settings-group">
+        <BaseSlider
+          :label="t('theme.roundness')"
+          :modelValue="themeStore.borderRadius"
+          @update:modelValue="themeStore.setBorderRadius($event)"
+          :min="0"
+          :max="20"
+          :step="2"
+          unit="px"
+        />
+        <BaseSlider
+          :label="t('theme.contrast')"
+          :modelValue="themeStore.surfaceContrast"
+          @update:modelValue="themeStore.setSurfaceContrast($event)"
+          :min="0"
+          :max="100"
+          :step="5"
+          unit="%"
+        />
+        <BaseSlider
+          :label="t('theme.animation')"
+          :modelValue="themeStore.animationSpeed"
+          @update:modelValue="themeStore.setAnimationSpeed($event)"
+          :min="0.5"
+          :max="2"
+          :step="0.1"
+          unit="x"
+        />
+      </div>
+    </PanelSection>
+
+    <!-- Toggles -->
+    <PanelSection :title="t('theme.effects')" icon="ph:sparkle-duotone" collapsible>
+      <div class="toggle-group">
+        <BaseToggle
+          :label="t('theme.panelBorders')"
+          :modelValue="themeStore.panelBorder"
+          @update:modelValue="themeStore.setPanelBorder($event)"
+        />
+        <BaseToggle
+          :label="t('theme.glowEffects')"
+          :modelValue="themeStore.glowEffects"
+          @update:modelValue="themeStore.setGlowEffects($event)"
+        />
+        <BaseToggle
+          :label="t('theme.compactMode')"
+          :modelValue="themeStore.compactMode"
+          @update:modelValue="themeStore.setCompactMode($event)"
+        />
+      </div>
+    </PanelSection>
+
+    <!-- Accessibility -->
+    <PanelSection :title="t('theme.accessibility')" icon="ph:eye-duotone" collapsible>
+      <div class="toggle-group">
+        <BaseToggle
+          :label="t('theme.highContrast')"
+          :modelValue="themeStore.highContrast"
+          @update:modelValue="themeStore.setHighContrast($event)"
+        />
+        <BaseToggle
+          :label="t('theme.focusIndicators')"
+          :modelValue="themeStore.focusIndicators"
+          @update:modelValue="themeStore.setFocusIndicators($event)"
+        />
+      </div>
+    </PanelSection>
+
+    <!-- Cursor Flashlight -->
+    <PanelSection :title="t('theme.cursorFlashlight')" icon="ph:flashlight-duotone" collapsible>
+      <div class="toggle-group">
+        <BaseToggle
+          :label="t('theme.enableFlashlight')"
+          :modelValue="themeStore.cursorFlashlight"
+          @update:modelValue="themeStore.setCursorFlashlight($event)"
+        />
+      </div>
+      <template v-if="themeStore.cursorFlashlight">
+        <div class="settings-group" style="margin-top: 12px">
           <BaseSlider
-            :label="t('theme.roundness')"
-            :modelValue="themeStore.borderRadius"
-            @update:modelValue="themeStore.setBorderRadius($event)"
-            :min="0"
-            :max="20"
-            :step="2"
+            :label="t('theme.size')"
+            :modelValue="themeStore.flashlightSize"
+            @update:modelValue="themeStore.setFlashlightSize($event)"
+            :min="100"
+            :max="500"
+            :step="25"
             unit="px"
           />
           <BaseSlider
-            :label="t('theme.contrast')"
-            :modelValue="themeStore.surfaceContrast"
-            @update:modelValue="themeStore.setSurfaceContrast($event)"
-            :min="0"
-            :max="100"
+            :label="t('theme.intensity')"
+            :modelValue="themeStore.flashlightIntensity"
+            @update:modelValue="themeStore.setFlashlightIntensity($event)"
+            :min="10"
+            :max="80"
             :step="5"
             unit="%"
           />
-          <BaseSlider
-            :label="t('theme.animation')"
-            :modelValue="themeStore.animationSpeed"
-            @update:modelValue="themeStore.setAnimationSpeed($event)"
-            :min="0.5"
-            :max="2"
-            :step="0.1"
-            unit="x"
+          <BaseColorPicker
+            variant="inline"
+            :label="t('theme.color')"
+            :modelValue="themeStore.flashlightColor"
+            @update:modelValue="themeStore.setFlashlightColor($event)"
           />
         </div>
-      </PanelSection>
+      </template>
+    </PanelSection>
 
-      <!-- Toggles -->
-      <PanelSection :title="t('theme.effects')" icon="ph:sparkle-duotone" collapsible>
-        <div class="toggle-group">
-          <BaseToggle
-            :label="t('theme.panelBorders')"
-            :modelValue="themeStore.panelBorder"
-            @update:modelValue="themeStore.setPanelBorder($event)"
-          />
-          <BaseToggle
-            :label="t('theme.glowEffects')"
-            :modelValue="themeStore.glowEffects"
-            @update:modelValue="themeStore.setGlowEffects($event)"
-          />
-          <BaseToggle
-            :label="t('theme.compactMode')"
-            :modelValue="themeStore.compactMode"
-            @update:modelValue="themeStore.setCompactMode($event)"
-          />
-        </div>
-      </PanelSection>
-
-      <!-- Accessibility -->
-      <PanelSection :title="t('theme.accessibility')" icon="ph:eye-duotone" collapsible>
-        <div class="toggle-group">
-          <BaseToggle
-            :label="t('theme.highContrast')"
-            :modelValue="themeStore.highContrast"
-            @update:modelValue="themeStore.setHighContrast($event)"
-          />
-          <BaseToggle
-            :label="t('theme.focusIndicators')"
-            :modelValue="themeStore.focusIndicators"
-            @update:modelValue="themeStore.setFocusIndicators($event)"
-          />
-        </div>
-      </PanelSection>
-
-      <!-- Cursor Flashlight -->
-      <PanelSection :title="t('theme.cursorFlashlight')" icon="ph:flashlight-duotone" collapsible>
-        <div class="toggle-group">
-          <BaseToggle
-            :label="t('theme.enableFlashlight')"
-            :modelValue="themeStore.cursorFlashlight"
-            @update:modelValue="themeStore.setCursorFlashlight($event)"
-          />
-        </div>
-        <template v-if="themeStore.cursorFlashlight">
-          <div class="settings-group" style="margin-top: 12px;">
-            <BaseSlider
-              :label="t('theme.size')"
-              :modelValue="themeStore.flashlightSize"
-              @update:modelValue="themeStore.setFlashlightSize($event)"
-              :min="100"
-              :max="500"
-              :step="25"
-              unit="px"
-            />
-            <BaseSlider
-              :label="t('theme.intensity')"
-              :modelValue="themeStore.flashlightIntensity"
-              @update:modelValue="themeStore.setFlashlightIntensity($event)"
-              :min="10"
-              :max="80"
-              :step="5"
-              unit="%"
-            />
-            <BaseColorPicker
-              variant="inline"
-              :label="t('theme.color')"
-              :modelValue="themeStore.flashlightColor"
-              @update:modelValue="themeStore.setFlashlightColor($event)"
-            />
-          </div>
-        </template>
-      </PanelSection>
-
-      <!-- Actions -->
-      <PanelSection :title="t('theme.actions')" icon="ph:gear-six-duotone" collapsible>
-        <div class="action-buttons">
-          <BaseButton
-            variant="secondary"
-            icon="ph:download-duotone"
-            @click="handleExport"
-          >
-            {{ t('theme.export') }}
-          </BaseButton>
-          <BaseButton
-            variant="secondary"
-            icon="ph:upload-duotone"
-            @click="showImportDialog = true"
-          >
-            {{ t('theme.import') }}
-          </BaseButton>
-        </div>
-        <BaseButton
-          variant="secondary"
-          icon="ph:arrow-counter-clockwise-duotone"
-          block
-          style="margin-top: 10px;"
-          @click="themeStore.resetToDefaults"
-        >
-          {{ t('theme.resetToDefault') }}
+    <!-- Actions -->
+    <PanelSection :title="t('theme.actions')" icon="ph:gear-six-duotone" collapsible>
+      <div class="action-buttons">
+        <BaseButton variant="secondary" icon="ph:download-duotone" @click="handleExport">
+          {{ t('theme.export') }}
         </BaseButton>
-      </PanelSection>
+        <BaseButton variant="secondary" icon="ph:upload-duotone" @click="showImportDialog = true">
+          {{ t('theme.import') }}
+        </BaseButton>
+      </div>
+      <BaseButton
+        variant="secondary"
+        icon="ph:arrow-counter-clockwise-duotone"
+        block
+        style="margin-top: 10px"
+        @click="themeStore.resetToDefaults"
+      >
+        {{ t('theme.resetToDefault') }}
+      </BaseButton>
+    </PanelSection>
 
     <!-- Import Dialog -->
     <Teleport to="body">
@@ -566,11 +559,7 @@ function handleFileImport(event: Event) {
                 <label class="file-input-label">
                   <iconify-icon icon="ph:file-duotone"></iconify-icon>
                   {{ t('theme.chooseFile') }}
-                  <input
-                    type="file"
-                    accept=".json"
-                    @change="handleFileImport"
-                  />
+                  <input type="file" accept=".json" @change="handleFileImport" />
                 </label>
               </div>
               <div class="or-divider">{{ t('theme.orPasteJson') }}</div>
@@ -582,8 +571,12 @@ function handleFileImport(event: Event) {
               <p v-if="importError" class="import-error">{{ importError }}</p>
             </div>
             <div class="modal-footer">
-              <BaseButton variant="ghost" @click="showImportDialog = false">{{ t('theme.cancel') }}</BaseButton>
-              <BaseButton variant="primary" @click="handleImport">{{ t('theme.import') }}</BaseButton>
+              <BaseButton variant="ghost" @click="showImportDialog = false">{{
+                t('theme.cancel')
+              }}</BaseButton>
+              <BaseButton variant="primary" @click="handleImport">{{
+                t('theme.import')
+              }}</BaseButton>
             </div>
           </div>
         </div>
@@ -842,7 +835,7 @@ function handleFileImport(event: Event) {
   color: var(--text-muted);
 }
 
-.time-input input[type="time"] {
+.time-input input[type='time'] {
   width: 100%;
   padding: 10px 12px;
   background: var(--surface-1);
@@ -854,13 +847,13 @@ function handleFileImport(event: Event) {
   transition: all var(--duration-fast) ease;
 }
 
-.time-input input[type="time"]:focus {
+.time-input input[type='time']:focus {
   outline: none;
   border-color: var(--accent-primary);
   background: var(--surface-2);
 }
 
-.time-input input[type="time"]::-webkit-calendar-picker-indicator {
+.time-input input[type='time']::-webkit-calendar-picker-indicator {
   filter: invert(0.7);
   cursor: pointer;
 }
@@ -1098,7 +1091,7 @@ function handleFileImport(event: Event) {
   margin: 0;
 }
 
-.width-input[type="number"] {
+.width-input[type='number'] {
   -moz-appearance: textfield;
 }
 

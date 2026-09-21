@@ -245,7 +245,9 @@ onMounted(refreshTools);
                 :title="t('tools.removeTool')"
                 :aria-label="t('tools.removeTool')"
                 @click="removeTool(tool.name)"
-              >×</button>
+              >
+                ×
+              </button>
             </div>
             <p class="desc">{{ tool.description }}</p>
             <details v-if="tool.parameters" class="params">
@@ -279,15 +281,16 @@ onMounted(refreshTools);
           />
           <p class="hint">{{ t('tools.webhookHint') }}</p>
           <div class="group">
-            <label>{{ t('tools.description') }}</label><textarea v-model="newTool.description" rows="2"></textarea>
+            <label>{{ t('tools.description') }}</label
+            ><textarea v-model="newTool.description" rows="2"></textarea>
           </div>
           <div class="group">
             <label>{{ t('tools.parametersJson') }}</label
             ><textarea v-model="newTool.parameters" rows="3" placeholder="{}"></textarea>
           </div>
-          <BaseButton variant="primary" icon="ph:plus-duotone" @click="addTool"
-            >{{ t('tools.addTool') }}</BaseButton
-          >
+          <BaseButton variant="primary" icon="ph:plus-duotone" @click="addTool">{{
+            t('tools.addTool')
+          }}</BaseButton>
         </div>
         <div class="tmpls">
           <span class="tmpl-label">{{ t('tools.templates') }}</span>
@@ -312,9 +315,15 @@ onMounted(refreshTools);
         </div>
         <div class="form" style="margin-top: 12px">
           <BaseInput :label="t('tools.name')" v-model="mcp.name" placeholder="my-mcp" />
-          <BaseInput :label="t('tools.url')" v-model="mcp.url" placeholder="http://localhost:3001" />
+          <BaseInput
+            :label="t('tools.url')"
+            v-model="mcp.url"
+            placeholder="http://localhost:3001"
+          />
           <BaseInput :label="t('tools.apiKey')" v-model="mcp.apiKey" type="password" />
-          <BaseButton icon="ph:plugs-connected-duotone" @click="connectMCP">{{ t('tools.connectMcp') }}</BaseButton>
+          <BaseButton icon="ph:plugs-connected-duotone" @click="connectMCP">{{
+            t('tools.connectMcp')
+          }}</BaseButton>
         </div>
       </PanelSection>
 

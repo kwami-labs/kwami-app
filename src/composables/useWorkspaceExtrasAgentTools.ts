@@ -97,9 +97,10 @@ export function useWorkspaceExtrasAgentTools() {
       // An em dash is what the panel shows before any turn has completed;
       // saying "the latency is dash" would be worse than saying nothing yet.
       hasData: metrics.latency.overall !== '—',
-      message: metrics.latency.overall === '—'
-        ? t('extras.metricsNotYet')
-        : t('extras.metricsOverall', { overall: metrics.latency.overall }),
+      message:
+        metrics.latency.overall === '—'
+          ? t('extras.metricsNotYet')
+          : t('extras.metricsOverall', { overall: metrics.latency.overall }),
     };
   }
 

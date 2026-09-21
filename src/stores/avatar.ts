@@ -19,10 +19,28 @@ export type { AvatarPreset };
 
 // Types
 export type SkinType =
-  | 'radial' | 'banded' | 'striped' | 'marble' | 'fresnel' | 'iridescent' | 'spiral' | 'plasma' | 'gradient'
-  | 'matte' | 'glossy' | 'metallic' | 'subsurface'
-  | 'chrome' | 'clay' | 'jade' | 'toon-matcap' | 'hologram'
-  | 'flat' | 'stepped' | 'halftone' | 'outlined';
+  | 'radial'
+  | 'banded'
+  | 'striped'
+  | 'marble'
+  | 'fresnel'
+  | 'iridescent'
+  | 'spiral'
+  | 'plasma'
+  | 'gradient'
+  | 'matte'
+  | 'glossy'
+  | 'metallic'
+  | 'subsurface'
+  | 'chrome'
+  | 'clay'
+  | 'jade'
+  | 'toon-matcap'
+  | 'hologram'
+  | 'flat'
+  | 'stepped'
+  | 'halftone'
+  | 'outlined';
 export type AvatarState = 'idle' | 'listening' | 'thinking' | 'speaking';
 export type RendererType = AvatarRendererType;
 
@@ -224,7 +242,7 @@ export function getDefaultBlobState(): BlobState {
       highSpike: 0.35,
       spikeDensity: 1.5,
       rotateWhilePlaying: true,
-    }
+    },
   };
 }
 
@@ -363,9 +381,13 @@ export const useAvatarStore = defineStore('avatar', () => {
     } else if (preset.renderer === 'black-hole' && preset.blackHole) {
       // Use the new black hole store for presets
       const blackHoleStore = useBlackHoleStore();
-      blackHoleStore.importState(preset.blackHole as Parameters<typeof blackHoleStore.importState>[0]);
+      blackHoleStore.importState(
+        preset.blackHole as Parameters<typeof blackHoleStore.importState>[0],
+      );
     } else if (preset.renderer === 'eye-iris' && preset.eyeIris) {
-      useEyeIrisStore().importState(preset.eyeIris as Parameters<ReturnType<typeof useEyeIrisStore>['importState']>[0]);
+      useEyeIrisStore().importState(
+        preset.eyeIris as Parameters<ReturnType<typeof useEyeIrisStore>['importState']>[0],
+      );
     }
 
     return true;
@@ -472,10 +494,18 @@ export const useAvatarStore = defineStore('avatar', () => {
       const blackHoleStore = useBlackHoleStore();
       const pfStore = useParticlesFaceStore();
       const eyeIrisStore = useEyeIrisStore();
-      if (settings.blobXyz) blobStore.importState(settings.blobXyz as Parameters<typeof blobStore.importState>[0]);
-      if (settings.blackHole) blackHoleStore.importState(settings.blackHole as Parameters<typeof blackHoleStore.importState>[0]);
-      if (settings.particlesFace) pfStore.importState(settings.particlesFace as Parameters<typeof pfStore.importState>[0]);
-      if (settings.eyeIris) eyeIrisStore.importState(settings.eyeIris as Parameters<typeof eyeIrisStore.importState>[0]);
+      if (settings.blobXyz)
+        blobStore.importState(settings.blobXyz as Parameters<typeof blobStore.importState>[0]);
+      if (settings.blackHole)
+        blackHoleStore.importState(
+          settings.blackHole as Parameters<typeof blackHoleStore.importState>[0],
+        );
+      if (settings.particlesFace)
+        pfStore.importState(settings.particlesFace as Parameters<typeof pfStore.importState>[0]);
+      if (settings.eyeIris)
+        eyeIrisStore.importState(
+          settings.eyeIris as Parameters<typeof eyeIrisStore.importState>[0],
+        );
     } catch (e) {
       console.warn('Failed to apply avatar snapshot:', e);
     }

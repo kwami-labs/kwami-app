@@ -66,7 +66,11 @@ export function useKwamiConfigSync() {
   function applyConfig(config: KwamiConfig) {
     if (!config) return;
     try {
-      if (config.theme && typeof config.theme === 'object' && Object.keys(config.theme as object).length > 0) {
+      if (
+        config.theme &&
+        typeof config.theme === 'object' &&
+        Object.keys(config.theme as object).length > 0
+      ) {
         themeStore.applySnapshot(config.theme as Parameters<typeof themeStore.applySnapshot>[0]);
         nextTick(() => themeStore.applyTheme());
       }
@@ -152,11 +156,7 @@ export function useKwamiConfigWatchers() {
   );
 
   // Explicit watch on theme so theme changes always sync the local draft.
-  watch(
-    () => JSON.stringify(themeStore.getSnapshot()),
-    syncDraftConfig,
-    { flush: 'post' },
-  );
+  watch(() => JSON.stringify(themeStore.getSnapshot()), syncDraftConfig, { flush: 'post' });
 
   return { applyConfig, getConfig, switchToKwami };
 }

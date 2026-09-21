@@ -93,8 +93,7 @@ export function fitKwamiInView(
 
   const renderer = options.renderer ?? 'blob-xyz';
   const fitted = heroScaleForViewport(width, height, renderer);
-  const scale =
-    options.desiredScale == null ? fitted : Math.min(options.desiredScale, fitted);
+  const scale = options.desiredScale == null ? fitted : Math.min(options.desiredScale, fitted);
 
   if (renderer === 'eye-iris') {
     kwami.avatar.getEyeIris?.()?.setScale?.(scale);

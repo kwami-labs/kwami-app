@@ -49,28 +49,72 @@ import { loadUserLocaleFromDb } from '@/lib/userAppSettings';
 // importing all 23 put MemoryPanel (2.2k lines), SceneBackground (1.8k) and
 // ThemePanel (1.3k) into the entry chunk. defineAsyncComponent splits each
 // into its own chunk, fetched the first time the panel is opened.
-const AvatarPanel = defineAsyncComponent(() => import('@/components/panels/settings/avatar/AvatarPanel.vue'));
-const AudioPanel = defineAsyncComponent(() => import('@/components/panels/settings/audio/AudioPanel.vue'));
-const ScenePanel = defineAsyncComponent(() => import('@/components/panels/settings/scene/ScenePanel.vue'));
-const VoicePanel = defineAsyncComponent(() => import('@/components/panels/settings/voice/VoicePanel.vue'));
-const EnhancementsPanel = defineAsyncComponent(() => import('@/components/panels/settings/enhancements/EnhancementsPanel.vue'));
-const HistoryPanel = defineAsyncComponent(() => import('@/components/panels/settings/transcription/TranscriptionPanel.vue'));
-const PhonePanelSettings = defineAsyncComponent(() => import('@/components/panels/settings/communications/PhonePanel.vue'));
-const SoulPanel = defineAsyncComponent(() => import('@/components/panels/settings/soul/SoulPanel.vue'));
-const MemoryPanel = defineAsyncComponent(() => import('@/components/panels/settings/memory/MemoryPanel.vue'));
-const ToolsPanel = defineAsyncComponent(() => import('@/components/panels/settings/tools/ToolsPanel.vue'));
-const InfoPanel = defineAsyncComponent(() => import('@/components/panels/settings/info/InfoPanel.vue'));
-const MetricsPanel = defineAsyncComponent(() => import('@/components/panels/settings/metrics/MetricsPanel.vue'));
-const AccountPanel = defineAsyncComponent(() => import('@/components/panels/settings/account/AccountPanel.vue'));
-const ThemePanel = defineAsyncComponent(() => import('@/components/panels/settings/theme/ThemePanel.vue'));
-const ModelsPanel = defineAsyncComponent(() => import('@/components/panels/settings/models/ModelsPanel.vue'));
-const EnergyPanel = defineAsyncComponent(() => import('@/components/panels/settings/energy/EnergyPanel.vue'));
-const ContactsPanel = defineAsyncComponent(() => import('@/components/panels/apps/contacts/ContactsPanel.vue'));
-const EmailPanel = defineAsyncComponent(() => import('@/components/panels/apps/email/EmailPanel.vue'));
-const WalletPanel = defineAsyncComponent(() => import('@/components/panels/apps/wallet/WalletPanel.vue'));
-const CalendarPanel = defineAsyncComponent(() => import('@/components/panels/apps/calendar/CalendarPanel.vue'));
-const PhonePanel = defineAsyncComponent(() => import('@/components/panels/apps/phone/PhonePanel.vue'));
-const WhatsappPanel = defineAsyncComponent(() => import('@/components/panels/apps/whatsapp/WhatsappPanel.vue'));
+const AvatarPanel = defineAsyncComponent(
+  () => import('@/components/panels/settings/avatar/AvatarPanel.vue'),
+);
+const AudioPanel = defineAsyncComponent(
+  () => import('@/components/panels/settings/audio/AudioPanel.vue'),
+);
+const ScenePanel = defineAsyncComponent(
+  () => import('@/components/panels/settings/scene/ScenePanel.vue'),
+);
+const VoicePanel = defineAsyncComponent(
+  () => import('@/components/panels/settings/voice/VoicePanel.vue'),
+);
+const EnhancementsPanel = defineAsyncComponent(
+  () => import('@/components/panels/settings/enhancements/EnhancementsPanel.vue'),
+);
+const HistoryPanel = defineAsyncComponent(
+  () => import('@/components/panels/settings/transcription/TranscriptionPanel.vue'),
+);
+const PhonePanelSettings = defineAsyncComponent(
+  () => import('@/components/panels/settings/communications/PhonePanel.vue'),
+);
+const SoulPanel = defineAsyncComponent(
+  () => import('@/components/panels/settings/soul/SoulPanel.vue'),
+);
+const MemoryPanel = defineAsyncComponent(
+  () => import('@/components/panels/settings/memory/MemoryPanel.vue'),
+);
+const ToolsPanel = defineAsyncComponent(
+  () => import('@/components/panels/settings/tools/ToolsPanel.vue'),
+);
+const InfoPanel = defineAsyncComponent(
+  () => import('@/components/panels/settings/info/InfoPanel.vue'),
+);
+const MetricsPanel = defineAsyncComponent(
+  () => import('@/components/panels/settings/metrics/MetricsPanel.vue'),
+);
+const AccountPanel = defineAsyncComponent(
+  () => import('@/components/panels/settings/account/AccountPanel.vue'),
+);
+const ThemePanel = defineAsyncComponent(
+  () => import('@/components/panels/settings/theme/ThemePanel.vue'),
+);
+const ModelsPanel = defineAsyncComponent(
+  () => import('@/components/panels/settings/models/ModelsPanel.vue'),
+);
+const EnergyPanel = defineAsyncComponent(
+  () => import('@/components/panels/settings/energy/EnergyPanel.vue'),
+);
+const ContactsPanel = defineAsyncComponent(
+  () => import('@/components/panels/apps/contacts/ContactsPanel.vue'),
+);
+const EmailPanel = defineAsyncComponent(
+  () => import('@/components/panels/apps/email/EmailPanel.vue'),
+);
+const WalletPanel = defineAsyncComponent(
+  () => import('@/components/panels/apps/wallet/WalletPanel.vue'),
+);
+const CalendarPanel = defineAsyncComponent(
+  () => import('@/components/panels/apps/calendar/CalendarPanel.vue'),
+);
+const PhonePanel = defineAsyncComponent(
+  () => import('@/components/panels/apps/phone/PhonePanel.vue'),
+);
+const WhatsappPanel = defineAsyncComponent(
+  () => import('@/components/panels/apps/whatsapp/WhatsappPanel.vue'),
+);
 const SmsPanel = defineAsyncComponent(() => import('@/components/panels/apps/sms/SmsPanel.vue'));
 
 const uiStore = useUIStore();
@@ -213,7 +257,6 @@ onUnmounted(() => {
   window.removeEventListener('kwami:insufficient-credits', onInsufficientCredits);
 });
 
-
 // Track if Kwami has been initialized
 const isInitialized = ref(false);
 
@@ -228,10 +271,18 @@ function applySavedAvatarState() {
 
   // Apply the saved state for the active renderer
   switch (savedRenderer) {
-    case 'blob-xyz': applyBlobToKwami(); break;
-    case 'black-hole': applyBlackHoleToKwami(); break;
-    case 'particles-face': applyParticlesFaceToKwami(); break;
-    case 'eye-iris': applyEyeIrisToKwami(); break;
+    case 'blob-xyz':
+      applyBlobToKwami();
+      break;
+    case 'black-hole':
+      applyBlackHoleToKwami();
+      break;
+    case 'particles-face':
+      applyParticlesFaceToKwami();
+      break;
+    case 'eye-iris':
+      applyEyeIrisToKwami();
+      break;
   }
 
   // Saved scale can overflow a phone; re-frame after the store values land.
@@ -303,8 +354,7 @@ function handleResize() {
   if (renderer === 'blob-xyz' || renderer === 'eye-iris') {
     fitKwamiInView(kwami.value, canvasRef.value, {
       renderer,
-      desiredScale:
-        renderer === 'eye-iris' ? eyeIrisStore.state.scale : blobXyzStore.shape.scale,
+      desiredScale: renderer === 'eye-iris' ? eyeIrisStore.state.scale : blobXyzStore.shape.scale,
     });
     return;
   }
@@ -415,20 +465,17 @@ onUnmounted(() => {
 
 <template>
   <AuthGuard>
-    <div 
-      id="kwami-root" 
+    <div
+      id="kwami-root"
       class="root-layout"
       :class="{
         'split-layout': isSplitWithBrowser,
         'sidebar-right': themeStore.sidebarPosition === 'right',
-        'is-dragging': isDraggingSplitter
+        'is-dragging': isDraggingSplitter,
       }"
     >
       <!-- Main area: canvas + overlays (no nav sidebar) -->
-      <div 
-        class="main-area"
-        :style="isSplitWithBrowser ? { flex: `0 0 ${splitRatio}%` } : {}"
-      >
+      <div class="main-area" :style="isSplitWithBrowser ? { flex: `0 0 ${splitRatio}%` } : {}">
         <canvas id="kwami-canvas" ref="canvasRef"></canvas>
 
         <!-- UI controls only shown when authenticated and welcome complete -->
@@ -447,11 +494,7 @@ onUnmounted(() => {
         </template>
       </div>
 
-      <div 
-        v-if="isSplitWithBrowser" 
-        class="layout-splitter" 
-        @mousedown="startDrag"
-      >
+      <div v-if="isSplitWithBrowser" class="layout-splitter" @mousedown="startDrag">
         <div class="splitter-handle"></div>
       </div>
 
@@ -495,8 +538,14 @@ onUnmounted(() => {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Root layout: flex row for main area + nav sidebar */

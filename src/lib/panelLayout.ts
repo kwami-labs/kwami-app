@@ -131,7 +131,7 @@ function readNumber(value: unknown, fallback: number): number {
 export function createPanelLayout<L extends string = PanelLayout>(
   options: CreatePanelLayoutOptions<L>,
 ): PanelLayoutState<L> {
-  const layouts = (options.layouts ?? (PANEL_LAYOUTS as readonly string[] as readonly L[]));
+  const layouts = options.layouts ?? (PANEL_LAYOUTS as readonly string[] as readonly L[]);
   // `layouts` is never empty in practice; the cast is what lets `L` stay a
   // closed union at the call site instead of widening to `L | undefined`.
   const defaultLayout = (options.defaultLayout ?? layouts[0]) as L;
@@ -216,7 +216,9 @@ export function createPanelLayout<L extends string = PanelLayout>(
   function collapseFullscreen() {
     if (!fullscreenLayout || layout.value !== fullscreenLayout) return;
     setLayout(
-      layoutBeforeFullscreen.value === fullscreenLayout ? defaultLayout : layoutBeforeFullscreen.value,
+      layoutBeforeFullscreen.value === fullscreenLayout
+        ? defaultLayout
+        : layoutBeforeFullscreen.value,
     );
   }
 

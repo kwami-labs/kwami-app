@@ -77,10 +77,7 @@ export function useNavigation() {
       };
       if (!detail?.action) return;
 
-      window.postMessage(
-        { source: 'kwami-app', type: 'kwami:nav_command', detail },
-        '*'
-      );
+      window.postMessage({ source: 'kwami-app', type: 'kwami:nav_command', detail }, '*');
 
       switch (detail.action) {
         case 'navigate':
@@ -105,7 +102,9 @@ export function useNavigation() {
         store.end();
       }
       if (type === 'kwami:ext_disconnected') {
-        console.warn('[Kwami] Extension bridge disconnected. Reload this page after reloading the extension.');
+        console.warn(
+          '[Kwami] Extension bridge disconnected. Reload this page after reloading the extension.',
+        );
       }
       if (type === 'kwami:ext_page_content') {
         const msg = {
@@ -123,7 +122,13 @@ export function useNavigation() {
         const payload = new TextEncoder().encode(JSON.stringify(msg));
         window.dispatchEvent(new CustomEvent('kwami:send_data', { detail: payload }));
         if (rest.title != null || rest.text != null || rest.elements != null || rest.html != null) {
-          const contentMsg = { type: 'nav_page_content', title: rest.title, text: rest.text, elements: rest.elements, html: rest.html };
+          const contentMsg = {
+            type: 'nav_page_content',
+            title: rest.title,
+            text: rest.text,
+            elements: rest.elements,
+            html: rest.html,
+          };
           const contentPayload = new TextEncoder().encode(JSON.stringify(contentMsg));
           window.dispatchEvent(new CustomEvent('kwami:send_data', { detail: contentPayload }));
         }

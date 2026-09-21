@@ -231,12 +231,26 @@ const PALETTE = ['#359EEE', '#FFC43D', '#EF476F', '#03CEA4'] as const;
  * this screen is trying not to be.
  */
 const ALL_SUBTYPES = [
-  'radial', 'banded', 'striped', 'marble', 'fresnel', 'iridescent', 'spiral', 'plasma', 'gradient',
-  'matte', 'glossy', 'metallic', 'subsurface',
-  'chrome', 'clay', 'jade', 'hologram',
+  'radial',
+  'banded',
+  'striped',
+  'marble',
+  'fresnel',
+  'iridescent',
+  'spiral',
+  'plasma',
+  'gradient',
+  'matte',
+  'glossy',
+  'metallic',
+  'subsurface',
+  'chrome',
+  'clay',
+  'jade',
+  'hologram',
 ] as const;
 
-type Subtype = typeof ALL_SUBTYPES[number];
+type Subtype = (typeof ALL_SUBTYPES)[number];
 type WelcomeRenderer = KwamiHeroRenderer;
 
 type EyeColorPalette = {
@@ -251,18 +265,114 @@ type EyeColorPalette = {
 
 /** SDK palettes are mostly brown. These cover the hues the welcome eye should cycle through. */
 const EYE_COLOR_PALETTES: readonly EyeColorPalette[] = [
-  { base: '#3d6ea8', secondary: '#6ea3d4', accent: '#c8e4ff', limbal: '#122033', collarette: '#8aa8c4', crypt: '#0c1624', streak: '#e8f4ff' },
-  { base: '#1e4d8c', secondary: '#3d7cc9', accent: '#7eb6f0', limbal: '#0a1a30', collarette: '#4a6fa0', crypt: '#07101c', streak: '#b8d8f8' },
-  { base: '#1f7a78', secondary: '#3dbeb4', accent: '#8ef0d8', limbal: '#0d3332', collarette: '#3a9a90', crypt: '#082422', streak: '#c4fff0' },
-  { base: '#2d6b3a', secondary: '#4fa05a', accent: '#9de07a', limbal: '#122814', collarette: '#3d7a44', crypt: '#0a180c', streak: '#c8f0a8' },
-  { base: '#2f8f84', secondary: '#4ac1aa', accent: '#a1e75c', limbal: '#12483e', collarette: '#3ea892', crypt: '#0d3129', streak: '#9fe5b2' },
-  { base: '#5a3d8c', secondary: '#8a64c4', accent: '#c9a4f0', limbal: '#1c1230', collarette: '#7a5aa0', crypt: '#100a1c', streak: '#e8d4ff' },
-  { base: '#6b2d7a', secondary: '#a04eb8', accent: '#e0a0f0', limbal: '#241028', collarette: '#8a4a98', crypt: '#160818', streak: '#f4d0ff' },
-  { base: '#5a6570', secondary: '#8a96a0', accent: '#c8d0d6', limbal: '#1c2228', collarette: '#6e7880', crypt: '#101418', streak: '#e4e8ec' },
-  { base: '#4a5560', secondary: '#708090', accent: '#b0c0cc', limbal: '#161c22', collarette: '#5a6874', crypt: '#0c1014', streak: '#d4dde4' },
-  { base: '#5f7692', secondary: '#9bb6cc', accent: '#dceaf7', limbal: '#1a2533', collarette: '#9a8673', crypt: '#132338', streak: '#e8f3ff' },
-  { base: '#8f4b24', secondary: '#b06a34', accent: '#e2a24d', limbal: '#3b1d10', collarette: '#a35a2c', crypt: '#2a160d', streak: '#f0b265' },
-  { base: '#6b4b23', secondary: '#a37229', accent: '#d0a73c', limbal: '#2b190a', collarette: '#845223', crypt: '#1d1208', streak: '#d6b45b' },
+  {
+    base: '#3d6ea8',
+    secondary: '#6ea3d4',
+    accent: '#c8e4ff',
+    limbal: '#122033',
+    collarette: '#8aa8c4',
+    crypt: '#0c1624',
+    streak: '#e8f4ff',
+  },
+  {
+    base: '#1e4d8c',
+    secondary: '#3d7cc9',
+    accent: '#7eb6f0',
+    limbal: '#0a1a30',
+    collarette: '#4a6fa0',
+    crypt: '#07101c',
+    streak: '#b8d8f8',
+  },
+  {
+    base: '#1f7a78',
+    secondary: '#3dbeb4',
+    accent: '#8ef0d8',
+    limbal: '#0d3332',
+    collarette: '#3a9a90',
+    crypt: '#082422',
+    streak: '#c4fff0',
+  },
+  {
+    base: '#2d6b3a',
+    secondary: '#4fa05a',
+    accent: '#9de07a',
+    limbal: '#122814',
+    collarette: '#3d7a44',
+    crypt: '#0a180c',
+    streak: '#c8f0a8',
+  },
+  {
+    base: '#2f8f84',
+    secondary: '#4ac1aa',
+    accent: '#a1e75c',
+    limbal: '#12483e',
+    collarette: '#3ea892',
+    crypt: '#0d3129',
+    streak: '#9fe5b2',
+  },
+  {
+    base: '#5a3d8c',
+    secondary: '#8a64c4',
+    accent: '#c9a4f0',
+    limbal: '#1c1230',
+    collarette: '#7a5aa0',
+    crypt: '#100a1c',
+    streak: '#e8d4ff',
+  },
+  {
+    base: '#6b2d7a',
+    secondary: '#a04eb8',
+    accent: '#e0a0f0',
+    limbal: '#241028',
+    collarette: '#8a4a98',
+    crypt: '#160818',
+    streak: '#f4d0ff',
+  },
+  {
+    base: '#5a6570',
+    secondary: '#8a96a0',
+    accent: '#c8d0d6',
+    limbal: '#1c2228',
+    collarette: '#6e7880',
+    crypt: '#101418',
+    streak: '#e4e8ec',
+  },
+  {
+    base: '#4a5560',
+    secondary: '#708090',
+    accent: '#b0c0cc',
+    limbal: '#161c22',
+    collarette: '#5a6874',
+    crypt: '#0c1014',
+    streak: '#d4dde4',
+  },
+  {
+    base: '#5f7692',
+    secondary: '#9bb6cc',
+    accent: '#dceaf7',
+    limbal: '#1a2533',
+    collarette: '#9a8673',
+    crypt: '#132338',
+    streak: '#e8f3ff',
+  },
+  {
+    base: '#8f4b24',
+    secondary: '#b06a34',
+    accent: '#e2a24d',
+    limbal: '#3b1d10',
+    collarette: '#a35a2c',
+    crypt: '#2a160d',
+    streak: '#f0b265',
+  },
+  {
+    base: '#6b4b23',
+    secondary: '#a37229',
+    accent: '#d0a73c',
+    limbal: '#2b190a',
+    collarette: '#845223',
+    crypt: '#1d1208',
+    streak: '#d6b45b',
+  },
 ] as const;
 
 function rand(min: number, max: number) {
@@ -388,9 +498,11 @@ onMounted(async () => {
    * once a frame while the blob on screen ignored it.
    */
   const liveAudioEffects = () =>
-    (kwami.avatar.getBlob() as unknown as {
-      audioEffects?: Record<string, number>;
-    } | null)?.audioEffects ?? null;
+    (
+      kwami.avatar.getBlob() as unknown as {
+        audioEffects?: Record<string, number>;
+      } | null
+    )?.audioEffects ?? null;
 
   /**
    * The blob's own band envelope is a field on the instance, so it resets
@@ -426,10 +538,18 @@ onMounted(async () => {
    * — 1.0 / 0.22 / 0.35 / 0.82 — which is the look this is undoing.
    */
   const applyEyeAudioLook = (eye: WelcomeEye) => {
-    try { eye.setAudioEnabled?.(true); } catch {}
-    try { eye.setAudioSmoothing?.(EYE_AUDIO_SMOOTHING); } catch {}
-    try { eye.setPupilResponse?.(EYE_PUPIL_RESPONSE); } catch {}
-    try { eye.setShimmerResponse?.(EYE_SHIMMER_RESPONSE); } catch {}
+    try {
+      eye.setAudioEnabled?.(true);
+    } catch {}
+    try {
+      eye.setAudioSmoothing?.(EYE_AUDIO_SMOOTHING);
+    } catch {}
+    try {
+      eye.setPupilResponse?.(EYE_PUPIL_RESPONSE);
+    } catch {}
+    try {
+      eye.setShimmerResponse?.(EYE_SHIMMER_RESPONSE);
+    } catch {}
   };
 
   /**
@@ -448,12 +568,14 @@ onMounted(async () => {
     const activeBlob = kwami.avatar.getBlob();
     if (!activeBlob) return;
     try {
-      (activeBlob as unknown as { setRotation?: (x: number, y: number, z: number) => void })
-        .setRotation?.(0, 0, 0);
+      (
+        activeBlob as unknown as { setRotation?: (x: number, y: number, z: number) => void }
+      ).setRotation?.(0, 0, 0);
     } catch {}
     try {
-      (activeBlob as unknown as { setCursorFollowEnabled?: (enabled: boolean) => void })
-        .setCursorFollowEnabled?.(false);
+      (
+        activeBlob as unknown as { setCursorFollowEnabled?: (enabled: boolean) => void }
+      ).setCursorFollowEnabled?.(false);
     } catch {}
   };
 
@@ -464,9 +586,15 @@ onMounted(async () => {
   const blobMesh = blob?.getMesh();
 
   if (blob) {
-    try { blob.setTouchStrength(0.7); } catch {}
-    try { blob.setTouchDuration(800); } catch {}
-    try { blob.setMaxTouchPoints(8); } catch {}
+    try {
+      blob.setTouchStrength(0.7);
+    } catch {}
+    try {
+      blob.setTouchDuration(800);
+    } catch {}
+    try {
+      blob.setMaxTouchPoints(8);
+    } catch {}
   }
 
   if (blobMesh) {
@@ -552,10 +680,22 @@ onMounted(async () => {
     const pushShapeToBlob = (force = false) => {
       const activeBlob = kwami.avatar.getBlob();
       if (!activeBlob) return;
-      try { activeBlob.setSpikes(shapeLive.spikes[0], shapeLive.spikes[1], shapeLive.spikes[2]); } catch {}
-      try { activeBlob.setAmplitude(shapeLive.amplitude[0], shapeLive.amplitude[1], shapeLive.amplitude[2]); } catch {}
-      try { activeBlob.setTime(shapeLive.time[0], shapeLive.time[1], shapeLive.time[2]); } catch {}
-      try { kwami.avatar.setShininess(shapeLive.shininess); } catch {}
+      try {
+        activeBlob.setSpikes(shapeLive.spikes[0], shapeLive.spikes[1], shapeLive.spikes[2]);
+      } catch {}
+      try {
+        activeBlob.setAmplitude(
+          shapeLive.amplitude[0],
+          shapeLive.amplitude[1],
+          shapeLive.amplitude[2],
+        );
+      } catch {}
+      try {
+        activeBlob.setTime(shapeLive.time[0], shapeLive.time[1], shapeLive.time[2]);
+      } catch {}
+      try {
+        kwami.avatar.setShininess(shapeLive.shininess);
+      } catch {}
 
       const colors: [string, string, string] = [
         channelsToHex(shapeLive.channels, 0),
@@ -569,7 +709,9 @@ onMounted(async () => {
         pushedColors[1] === colors[1] &&
         pushedColors[2] === colors[2];
       if (!unchanged) {
-        try { activeBlob.setColors(colors[0], colors[1], colors[2]); } catch {}
+        try {
+          activeBlob.setColors(colors[0], colors[1], colors[2]);
+        } catch {}
         pushedColors = colors;
       }
     };
@@ -584,9 +726,12 @@ onMounted(async () => {
       // identity rather than once. The blob reads this analyser inside the SDK,
       // which is why the setting lives here and not beside `setAudioLevels`.
       const audio = kwami.avatar.getAudio();
-      const analyser = (audio as unknown as {
-        getAnalyser?: () => AnalyserNode | null;
-      }).getAnalyser?.() ?? null;
+      const analyser =
+        (
+          audio as unknown as {
+            getAnalyser?: () => AnalyserNode | null;
+          }
+        ).getAnalyser?.() ?? null;
       if (analyser && analyser !== smoothedAnalyser) {
         analyser.smoothingTimeConstant = ANALYSER_SMOOTHING;
         smoothedAnalyser = analyser;
@@ -594,9 +739,11 @@ onMounted(async () => {
 
       // Silence is followed rather than skipped, here and in the eye's own
       // envelope below: a pause has to fall away, not freeze where it stood.
-      const audioElement = (audio as unknown as {
-        getAudioElement?: () => HTMLAudioElement | null;
-      }).getAudioElement?.();
+      const audioElement = (
+        audio as unknown as {
+          getAudioElement?: () => HTMLAudioElement | null;
+        }
+      ).getAudioElement?.();
       const playing = !!audioElement && !audioElement.paused;
 
       // Every frame, not on identity: `attach` re-asserts its tap on a cadence
@@ -627,9 +774,11 @@ onMounted(async () => {
       // the beat permanently leans the body into a cone. Stretch and the
       // leftover velocity have to be killed every frame: a renderer switch
       // builds a new instance with the SDK default of 0.6.
-      const liquid = (kwami.avatar.getBlob() as unknown as {
-        liquidPhysics?: { stretch: number; velocityX: number; velocityY: number };
-      } | null)?.liquidPhysics;
+      const liquid = (
+        kwami.avatar.getBlob() as unknown as {
+          liquidPhysics?: { stretch: number; velocityX: number; velocityY: number };
+        } | null
+      )?.liquidPhysics;
       if (liquid) {
         liquid.stretch = 0;
         liquid.velocityX = 0;
@@ -637,7 +786,9 @@ onMounted(async () => {
       }
 
       if (musicWasPlaying && !playing) {
-        try { kwami.avatar.getBlob()?.setResolution(BLOB_RESOLUTION); } catch {}
+        try {
+          kwami.avatar.getBlob()?.setResolution(BLOB_RESOLUTION);
+        } catch {}
       }
       musicWasPlaying = playing;
 
@@ -664,8 +815,7 @@ onMounted(async () => {
         envelopeCoefficient(deltaMs, bobTarget > bob ? BOB_ATTACK_MS : BOB_RELEASE_MS);
 
       const activeBlobMesh = kwami.avatar.getBlob()?.getMesh() as
-        | { rotation: { x: number; y: number }; position?: { y: number } }
-        | undefined;
+        { rotation: { x: number; y: number }; position?: { y: number } } | undefined;
       if (activeBlobMesh) {
         if (activeBlobMesh !== followedMesh) {
           followedMesh = activeBlobMesh;
@@ -696,9 +846,11 @@ onMounted(async () => {
         bob = 0;
       }
 
-      const eye = (kwami.avatar as unknown as {
-        getEyeIris?: () => WelcomeEye | null;
-      }).getEyeIris?.();
+      const eye = (
+        kwami.avatar as unknown as {
+          getEyeIris?: () => WelcomeEye | null;
+        }
+      ).getEyeIris?.();
       if (eye) {
         const eyeMesh = eye.getMesh();
 
@@ -738,11 +890,7 @@ onMounted(async () => {
         // pulse has to be in *this* write, or a later pointer-only radius
         // would erase the hit the visitor just heard.
         eye.setPupilRadius?.(
-          eyePupilRadius(
-            eyeBasePupilRadius ?? 0.26,
-            pupilMotionCurrent * pupilMaxBoost,
-            pulse,
-          ),
+          eyePupilRadius(eyeBasePupilRadius ?? 0.26, pupilMotionCurrent * pupilMaxBoost, pulse),
         );
       } else {
         eyeBasePupilRadius = null;
@@ -790,13 +938,17 @@ onMounted(async () => {
         cancelAnimationFrame(rafId);
         rafId = null;
       }
-      try { rendererLoop()?.stopAnimation?.(); } catch {}
+      try {
+        rendererLoop()?.stopAnimation?.();
+      } catch {}
     };
 
     const resumeAfterWallet = () => {
       if (!suspended) return;
       suspended = false;
-      try { rendererLoop()?.startAnimation?.(); } catch {}
+      try {
+        rendererLoop()?.startAnimation?.();
+      } catch {}
       // Or the first frame back carries the whole approval as its delta, and
       // every envelope and tween in the loop jumps to catch up.
       lastFrameAt = performance.now();
@@ -895,7 +1047,11 @@ onMounted(async () => {
       // Called even when the renderer is unchanged: the SDK returns early on a
       // no-op switch, and keeping the call unconditional means one line marks
       // every tick of the timer.
-      try { kwami.avatar.switchRenderer(nextRenderer as unknown as Parameters<typeof kwami.avatar.switchRenderer>[0]); } catch {}
+      try {
+        kwami.avatar.switchRenderer(
+          nextRenderer as unknown as Parameters<typeof kwami.avatar.switchRenderer>[0],
+        );
+      } catch {}
 
       const switched = nextRenderer !== activeRenderer;
       activeRenderer = nextRenderer;
@@ -921,8 +1077,12 @@ onMounted(async () => {
         const activeBlob = kwami.avatar.getBlob();
         if (activeBlob) {
           lastBlobSubtype = pickSubtype();
-          try { kwami.avatar.setSkin(lastBlobSubtype as Parameters<typeof kwami.avatar.setSkin>[0]); } catch {}
-          try { kwami.avatar.setWireframe(pickWelcomeWireframe()); } catch {}
+          try {
+            kwami.avatar.setSkin(lastBlobSubtype as Parameters<typeof kwami.avatar.setSkin>[0]);
+          } catch {}
+          try {
+            kwami.avatar.setWireframe(pickWelcomeWireframe());
+          } catch {}
         }
         // A skin swap re-reads the blob's colours, so the tween's current
         // frame has to go back on after it — and unconditionally, since the
@@ -932,11 +1092,15 @@ onMounted(async () => {
       } else {
         // The eye has no geometry to rebuild, so `randomize()` is cheap here:
         // it is palette and fibre uniforms and nothing else.
-        try { kwami.avatar.randomize(); } catch {}
+        try {
+          kwami.avatar.randomize();
+        } catch {}
         const eye = kwami.avatar.getEyeIris() as WelcomeEye | null;
         if (eye) {
           lastEyePalette = pickEyeColors(lastEyePalette);
-          try { eye.setColors?.(lastEyePalette); } catch {}
+          try {
+            eye.setColors?.(lastEyePalette);
+          } catch {}
           applyEyeAudioLook(eye);
           eyeAudioApplied = true;
         }
@@ -992,19 +1156,52 @@ onMounted(async () => {
 });
 
 onUnmounted(async () => {
-  if (stopIntervalWatch) { stopIntervalWatch(); stopIntervalWatch = null; }
-  if (stopWalletWatch) { stopWalletWatch(); stopWalletWatch = null; }
-  if (randomizeTimer !== null) { clearInterval(randomizeTimer); randomizeTimer = null; }
-  if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
-  if (removeClickProxyHandler) { removeClickProxyHandler(); removeClickProxyHandler = null; }
-  if (removePointerMoveHandler) { removePointerMoveHandler(); removePointerMoveHandler = null; }
-  if (removeDragHandler) { removeDragHandler(); removeDragHandler = null; }
-  if (removeHitTest) { removeHitTest(); removeHitTest = null; }
-  if (removeResizeHandler) { removeResizeHandler(); removeResizeHandler = null; }
-  if (disposeMusicPulse) { disposeMusicPulse(); disposeMusicPulse = null; }
+  if (stopIntervalWatch) {
+    stopIntervalWatch();
+    stopIntervalWatch = null;
+  }
+  if (stopWalletWatch) {
+    stopWalletWatch();
+    stopWalletWatch = null;
+  }
+  if (randomizeTimer !== null) {
+    clearInterval(randomizeTimer);
+    randomizeTimer = null;
+  }
+  if (rafId !== null) {
+    cancelAnimationFrame(rafId);
+    rafId = null;
+  }
+  if (removeClickProxyHandler) {
+    removeClickProxyHandler();
+    removeClickProxyHandler = null;
+  }
+  if (removePointerMoveHandler) {
+    removePointerMoveHandler();
+    removePointerMoveHandler = null;
+  }
+  if (removeDragHandler) {
+    removeDragHandler();
+    removeDragHandler = null;
+  }
+  if (removeHitTest) {
+    removeHitTest();
+    removeHitTest = null;
+  }
+  if (removeResizeHandler) {
+    removeResizeHandler();
+    removeResizeHandler = null;
+  }
+  if (disposeMusicPulse) {
+    disposeMusicPulse();
+    disposeMusicPulse = null;
+  }
   unregisterWelcomeAudio();
   const k = kwamiRef.value;
-  if (k) { await k.dispose(); kwamiRef.value = null; }
+  if (k) {
+    await k.dispose();
+    kwamiRef.value = null;
+  }
 });
 </script>
 

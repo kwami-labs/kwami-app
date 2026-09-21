@@ -64,12 +64,7 @@ const {
         :placeholder="t('auth.otpPlaceholder')"
         :disabled="isLoading"
       />
-      <button
-        type="button"
-        class="phone-auth__change"
-        :disabled="isLoading"
-        @click="changePhone"
-      >
+      <button type="button" class="phone-auth__change" :disabled="isLoading" @click="changePhone">
         {{ t('auth.changePhone') }}
       </button>
     </template>
@@ -82,12 +77,7 @@ const {
     </BaseButton>
 
     <p v-if="step === 'otp'" class="phone-auth__resend">
-      <button
-        v-if="canResend"
-        type="button"
-        class="phone-auth__resend-btn"
-        @click="resend"
-      >
+      <button v-if="canResend" type="button" class="phone-auth__resend-btn" @click="resend">
         {{ t('auth.resendCode') }}
       </button>
       <span v-else>{{ t('auth.resendCodeIn', { seconds: resendIn }) }}</span>

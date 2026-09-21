@@ -179,7 +179,9 @@ watch(messages, () => scrollToBottom(), { deep: true });
       >
         <div class="mail-meta">
           <span class="mail-meta-line" :title="metaLine(msg)">{{ metaLine(msg) }}</span>
-          <time class="mail-time" :datetime="msg.received_at">{{ formatTime(msg.received_at) }}</time>
+          <time class="mail-time" :datetime="msg.received_at">{{
+            formatTime(msg.received_at)
+          }}</time>
         </div>
         <div class="mail-subject">{{ msg.subject || t('email.inbox.noSubject') }}</div>
         <div class="mail-body">{{ msg.body_text || '…' }}</div>

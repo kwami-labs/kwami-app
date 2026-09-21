@@ -85,7 +85,12 @@ const {
 
     <p class="email-auth__switch">
       {{ isSignUp ? t('auth.alreadyHaveAccount') : t('auth.noAccount') }}
-      <button type="button" class="email-auth__switch-btn" :disabled="isLoading" @click="toggleMode">
+      <button
+        type="button"
+        class="email-auth__switch-btn"
+        :disabled="isLoading"
+        @click="toggleMode"
+      >
         {{ isSignUp ? t('auth.signIn') : t('auth.signUp') }}
       </button>
     </p>

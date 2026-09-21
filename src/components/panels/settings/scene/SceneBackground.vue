@@ -115,7 +115,10 @@ function normalizeColorToHex(raw: string): string | null {
     if (r && g && b) return `#${r}${r}${g}${g}${b}${b}`;
   }
 
-  const hsl = /^hsla?\(\s*(-?\d+(?:\.\d+)?)\s*(?:deg)?\s*,\s*(\d+(?:\.\d+)?)%\s*,\s*(\d+(?:\.\d+)?)%/i.exec(value);
+  const hsl =
+    /^hsla?\(\s*(-?\d+(?:\.\d+)?)\s*(?:deg)?\s*,\s*(\d+(?:\.\d+)?)%\s*,\s*(\d+(?:\.\d+)?)%/i.exec(
+      value,
+    );
   if (hsl) {
     const h = ((Number(hsl[1]) % 360) + 360) % 360;
     const s = clamp(Number(hsl[2]), 0, 100);
@@ -138,13 +141,9 @@ function remapForBrightnessStable(hex: string, brightness: PaletteBrightness): s
   const hsl = hexToHsl(hex);
   if (!hsl) return hex;
   const s =
-    brightness === 'dark'
-      ? clamp(hsl.s * 0.92 + 6, 12, 100)
-      : clamp(hsl.s * 0.96 + 4, 10, 100);
+    brightness === 'dark' ? clamp(hsl.s * 0.92 + 6, 12, 100) : clamp(hsl.s * 0.96 + 4, 10, 100);
   const l =
-    brightness === 'dark'
-      ? clamp(hsl.l * 0.46 + 6, 10, 38)
-      : clamp(hsl.l * 0.5 + 45, 56, 90);
+    brightness === 'dark' ? clamp(hsl.l * 0.46 + 6, 10, 38) : clamp(hsl.l * 0.5 + 45, 56, 90);
   return hslToHex(hsl.h, s, l);
 }
 
@@ -166,11 +165,7 @@ function getAvatarColors(): string[] {
       .map(normalizeColorToHex)
       .filter((c): c is string => Boolean(c));
   }
-  return [
-    blobStore.skin.colors.x,
-    blobStore.skin.colors.y,
-    blobStore.skin.colors.z,
-  ]
+  return [blobStore.skin.colors.x, blobStore.skin.colors.y, blobStore.skin.colors.z]
     .map(normalizeColorToHex)
     .filter((c): c is string => Boolean(c));
 }
@@ -346,7 +341,7 @@ function addGradientStop() {
   const lastPos = stops[stops.length - 1]?.position ?? 100;
   const secondLastPos = stops[stops.length - 2]?.position ?? 0;
   const newPos = Math.min(100, Math.round((lastPos + secondLastPos) / 2));
-  
+
   // Insert at appropriate position
   const newStop: GradientStop = {
     color: nextPaletteColor(stops.map((s) => s.color)),
@@ -406,7 +401,7 @@ function randomizeColors() {
 function randomizePositions() {
   if (!background.value?.gradient) return;
   const { type } = background.value.gradient;
-  
+
   if (type === 'linear') {
     background.value.gradient.angle = randomInRange(0, 360, 15);
   } else if (type === 'radial') {
@@ -491,11 +486,11 @@ const gradientPreviewStyle = computed(() => {
       backgroundBlendMode: orbs.map(() => 'screen').join(', '),
     };
   }
-  
+
   const colorStops = stops
     .slice()
     .sort((a, b) => a.position - b.position)
-    .map(s => {
+    .map((s) => {
       const r = parseInt(s.color.slice(1, 3), 16);
       const g = parseInt(s.color.slice(3, 5), 16);
       const b = parseInt(s.color.slice(5, 7), 16);
@@ -552,13 +547,17 @@ const gradientPreviewStyle = computed(() => {
       />
 
       <div class="media-gallery-header">
-        <span class="gallery-label">{{ customMediaPanels.image ? t('scene.uploadCustomImage') : t('scene.selectImage') }}</span>
-        <button 
+        <span class="gallery-label">{{
+          customMediaPanels.image ? t('scene.uploadCustomImage') : t('scene.selectImage')
+        }}</span>
+        <button
           class="toggle-view-btn"
           @click="customMediaPanels.image = !customMediaPanels.image"
           :title="customMediaPanels.image ? t('scene.backToGallery') : t('scene.uploadCustom')"
         >
-          <iconify-icon :icon="customMediaPanels.image ? 'ph:images-duotone' : 'ph:upload-duotone'"></iconify-icon>
+          <iconify-icon
+            :icon="customMediaPanels.image ? 'ph:images-duotone' : 'ph:upload-duotone'"
+          ></iconify-icon>
           <span>{{ customMediaPanels.image ? t('scene.gallery') : t('scene.upload') }}</span>
         </button>
       </div>
@@ -620,13 +619,17 @@ const gradientPreviewStyle = computed(() => {
       />
 
       <div class="media-gallery-header">
-        <span class="gallery-label">{{ customMediaPanels.video ? t('scene.uploadCustomVideo') : t('scene.selectVideo') }}</span>
-        <button 
+        <span class="gallery-label">{{
+          customMediaPanels.video ? t('scene.uploadCustomVideo') : t('scene.selectVideo')
+        }}</span>
+        <button
           class="toggle-view-btn"
           @click="customMediaPanels.video = !customMediaPanels.video"
           :title="customMediaPanels.video ? t('scene.backToGallery') : t('scene.uploadCustom')"
         >
-          <iconify-icon :icon="customMediaPanels.video ? 'ph:video-duotone' : 'ph:upload-duotone'"></iconify-icon>
+          <iconify-icon
+            :icon="customMediaPanels.video ? 'ph:video-duotone' : 'ph:upload-duotone'"
+          ></iconify-icon>
           <span>{{ customMediaPanels.video ? t('scene.gallery') : t('scene.upload') }}</span>
         </button>
       </div>
@@ -655,7 +658,14 @@ const gradientPreviewStyle = computed(() => {
           @click="selectVideoPreset(preset)"
           :title="preset.name"
         >
-          <video :src="preset.url" muted loop preload="metadata" @mouseenter="($event.target as HTMLVideoElement).play()" @mouseleave="($event.target as HTMLVideoElement).pause()"></video>
+          <video
+            :src="preset.url"
+            muted
+            loop
+            preload="metadata"
+            @mouseenter="($event.target as HTMLVideoElement).play()"
+            @mouseleave="($event.target as HTMLVideoElement).pause()"
+          ></video>
           <span class="preset-name">{{ preset.name }}</span>
         </div>
       </div>
@@ -690,13 +700,17 @@ const gradientPreviewStyle = computed(() => {
     <!-- HDRI Gallery & Settings -->
     <template v-if="background.media.type === 'hdri'">
       <div class="media-gallery-header">
-        <span class="gallery-label">{{ customMediaPanels.hdri ? t('scene.enterHdriUrl') : t('scene.select3dEnvironment') }}</span>
-        <button 
+        <span class="gallery-label">{{
+          customMediaPanels.hdri ? t('scene.enterHdriUrl') : t('scene.select3dEnvironment')
+        }}</span>
+        <button
           class="toggle-view-btn"
           @click="customMediaPanels.hdri = !customMediaPanels.hdri"
           :title="customMediaPanels.hdri ? t('scene.backToGallery') : t('scene.customUrl')"
         >
-          <iconify-icon :icon="customMediaPanels.hdri ? 'ph:globe-duotone' : 'ph:link-duotone'"></iconify-icon>
+          <iconify-icon
+            :icon="customMediaPanels.hdri ? 'ph:globe-duotone' : 'ph:link-duotone'"
+          ></iconify-icon>
           <span>{{ customMediaPanels.hdri ? t('scene.gallery') : t('scene.custom') }}</span>
         </button>
       </div>
@@ -754,256 +768,323 @@ const gradientPreviewStyle = computed(() => {
     </template>
   </PanelSection>
 
-    <!-- OVERLAY BACKGROUND (single section: type, preview, stops, orbs, blend) -->
-    <PanelSection :title="t('scene.overlayBackground')" icon="ph:gradient-duotone" collapsible>
-      <div class="overlay-header-bar">
-        <div class="gradient-toggle">
-          <label class="toggle-switch">
-            <input type="checkbox" v-model="background.gradient.enabled" />
-            <span class="slider"></span>
-          </label>
-          <span class="toggle-label">{{ background.gradient.enabled ? t('scene.enabled') : t('scene.disabled') }}</span>
-        </div>
-        <div v-if="background.gradient.enabled" class="overlay-dice-group">
-          <button type="button" class="dice-btn" @click="randomizeAll" :title="t('scene.randomizeAll')">
-            <iconify-icon icon="ph:dice-five-duotone"></iconify-icon>
-          </button>
-        </div>
+  <!-- OVERLAY BACKGROUND (single section: type, preview, stops, orbs, blend) -->
+  <PanelSection :title="t('scene.overlayBackground')" icon="ph:gradient-duotone" collapsible>
+    <div class="overlay-header-bar">
+      <div class="gradient-toggle">
+        <label class="toggle-switch">
+          <input type="checkbox" v-model="background.gradient.enabled" />
+          <span class="slider"></span>
+        </label>
+        <span class="toggle-label">{{
+          background.gradient.enabled ? t('scene.enabled') : t('scene.disabled')
+        }}</span>
+      </div>
+      <div v-if="background.gradient.enabled" class="overlay-dice-group">
+        <button
+          type="button"
+          class="dice-btn"
+          @click="randomizeAll"
+          :title="t('scene.randomizeAll')"
+        >
+          <iconify-icon icon="ph:dice-five-duotone"></iconify-icon>
+        </button>
+      </div>
+    </div>
+
+    <template v-if="background.gradient.enabled">
+      <div class="gradient-preview-box">
+        <div class="gradient-preview" :style="gradientPreviewStyle"></div>
       </div>
 
-      <template v-if="background.gradient.enabled">
-        <div class="gradient-preview-box">
-          <div class="gradient-preview" :style="gradientPreviewStyle"></div>
-        </div>
-
-        <div class="randomize-toolbar">
-          <p class="palette-toolbar-label">{{ t('scene.brightness') }}</p>
-          <div class="overlay-palette-grid" role="radiogroup" :aria-label="t('scene.paletteBrightnessAria')">
-            <label
-              class="gradient-type-option"
-              :class="{ active: background.gradient.paletteBrightness === 'dark' }"
-            >
-              <input type="radio" value="dark" v-model="background.gradient.paletteBrightness" />
-              <iconify-icon icon="ph:moon-stars-duotone"></iconify-icon>
-              <span>{{ t('scene.dark') }}</span>
-            </label>
-            <label
-              class="gradient-type-option"
-              :class="{ active: background.gradient.paletteBrightness === 'light' }"
-            >
-              <input type="radio" value="light" v-model="background.gradient.paletteBrightness" />
-              <iconify-icon icon="ph:sun-duotone"></iconify-icon>
-              <span>{{ t('scene.light') }}</span>
-            </label>
-          </div>
-          <div class="scene-color-palettes">
-            <span class="scene-palette-label">{{ t('scene.quickPalettes') }}</span>
-            <div class="scene-palette-grid">
-              <button
-                v-for="(palette, key) in palettes"
-                :key="key"
-                type="button"
-                class="scene-palette-btn"
-                :class="{ active: background.gradient.paletteType === key }"
-                :title="palette.label"
-                @click="applyQuickPalette(key as PaletteType)"
-              >
-                <iconify-icon :icon="palette.icon"></iconify-icon>
-              </button>
-            </div>
-          </div>
-          <button type="button" class="overlay-action-btn" @click="syncColorsFromAvatar">
-            <iconify-icon icon="ph:palette-duotone"></iconify-icon>
-            <span>{{ t('scene.syncAvatarColors') }}</span>
-          </button>
-          <p class="randomize-hint">
-            {{ t('scene.randomizeHint') }}
-          </p>
-        </div>
-
-        <p class="overlay-sublabel">{{ t('scene.type') }}</p>
-        <div class="overlay-type-grid" role="tablist" :aria-label="t('scene.overlayTypeAria')">
-          <label class="gradient-type-option" :class="{ active: background.gradient.type === 'solid' }">
-            <input type="radio" value="solid" v-model="background.gradient.type" />
-            <iconify-icon icon="ph:square-duotone"></iconify-icon>
-            <span>{{ t('scene.solid') }}</span>
-          </label>
-          <label class="gradient-type-option" :class="{ active: background.gradient.type === 'linear' }">
-            <input type="radio" value="linear" v-model="background.gradient.type" />
-            <iconify-icon icon="ph:arrows-out-line-horizontal-duotone"></iconify-icon>
-            <span>{{ t('scene.linear') }}</span>
-          </label>
-          <label class="gradient-type-option" :class="{ active: background.gradient.type === 'radial' }">
-            <input type="radio" value="radial" v-model="background.gradient.type" />
-            <iconify-icon icon="ph:circle-duotone"></iconify-icon>
-            <span>{{ t('scene.radial') }}</span>
-          </label>
-          <label class="gradient-type-option" :class="{ active: background.gradient.type === 'orbs' }">
-            <input type="radio" value="orbs" v-model="background.gradient.type" />
-            <iconify-icon icon="ph:circles-three-duotone"></iconify-icon>
-            <span>{{ t('scene.orbs') }}</span>
-          </label>
-        </div>
-
-        <div v-if="background.gradient.type !== 'solid'" class="overlay-secondary-actions">
-          <button
-            v-if="background.gradient.type === 'orbs'"
-            type="button"
-            class="overlay-action-btn"
-            @click="randomizeOrbs"
+      <div class="randomize-toolbar">
+        <p class="palette-toolbar-label">{{ t('scene.brightness') }}</p>
+        <div
+          class="overlay-palette-grid"
+          role="radiogroup"
+          :aria-label="t('scene.paletteBrightnessAria')"
+        >
+          <label
+            class="gradient-type-option"
+            :class="{ active: background.gradient.paletteBrightness === 'dark' }"
           >
-            <iconify-icon icon="ph:dice-four-duotone"></iconify-icon>
-            <span>{{ t('scene.randomizeOrbs') }}</span>
-          </button>
-          <button
-            v-else
-            type="button"
-            class="overlay-action-btn"
-            @click="randomizePositions"
+            <input type="radio" value="dark" v-model="background.gradient.paletteBrightness" />
+            <iconify-icon icon="ph:moon-stars-duotone"></iconify-icon>
+            <span>{{ t('scene.dark') }}</span>
+          </label>
+          <label
+            class="gradient-type-option"
+            :class="{ active: background.gradient.paletteBrightness === 'light' }"
           >
-            <iconify-icon icon="ph:dice-three-duotone"></iconify-icon>
-            <span>{{ t('scene.randomizePositions') }}</span>
-          </button>
+            <input type="radio" value="light" v-model="background.gradient.paletteBrightness" />
+            <iconify-icon icon="ph:sun-duotone"></iconify-icon>
+            <span>{{ t('scene.light') }}</span>
+          </label>
         </div>
-
-        <div v-if="background.gradient.type === 'solid'" class="gradient-position-controls">
-          <BaseColorPicker :label="t('scene.color')" v-model="background.gradient.solidColor" />
+        <div class="scene-color-palettes">
+          <span class="scene-palette-label">{{ t('scene.quickPalettes') }}</span>
+          <div class="scene-palette-grid">
+            <button
+              v-for="(palette, key) in palettes"
+              :key="key"
+              type="button"
+              class="scene-palette-btn"
+              :class="{ active: background.gradient.paletteType === key }"
+              :title="palette.label"
+              @click="applyQuickPalette(key as PaletteType)"
+            >
+              <iconify-icon :icon="palette.icon"></iconify-icon>
+            </button>
+          </div>
         </div>
+        <button type="button" class="overlay-action-btn" @click="syncColorsFromAvatar">
+          <iconify-icon icon="ph:palette-duotone"></iconify-icon>
+          <span>{{ t('scene.syncAvatarColors') }}</span>
+        </button>
+        <p class="randomize-hint">
+          {{ t('scene.randomizeHint') }}
+        </p>
+      </div>
 
-        <div v-if="background.gradient.type === 'linear'" class="gradient-position-controls">
+      <p class="overlay-sublabel">{{ t('scene.type') }}</p>
+      <div class="overlay-type-grid" role="tablist" :aria-label="t('scene.overlayTypeAria')">
+        <label
+          class="gradient-type-option"
+          :class="{ active: background.gradient.type === 'solid' }"
+        >
+          <input type="radio" value="solid" v-model="background.gradient.type" />
+          <iconify-icon icon="ph:square-duotone"></iconify-icon>
+          <span>{{ t('scene.solid') }}</span>
+        </label>
+        <label
+          class="gradient-type-option"
+          :class="{ active: background.gradient.type === 'linear' }"
+        >
+          <input type="radio" value="linear" v-model="background.gradient.type" />
+          <iconify-icon icon="ph:arrows-out-line-horizontal-duotone"></iconify-icon>
+          <span>{{ t('scene.linear') }}</span>
+        </label>
+        <label
+          class="gradient-type-option"
+          :class="{ active: background.gradient.type === 'radial' }"
+        >
+          <input type="radio" value="radial" v-model="background.gradient.type" />
+          <iconify-icon icon="ph:circle-duotone"></iconify-icon>
+          <span>{{ t('scene.radial') }}</span>
+        </label>
+        <label
+          class="gradient-type-option"
+          :class="{ active: background.gradient.type === 'orbs' }"
+        >
+          <input type="radio" value="orbs" v-model="background.gradient.type" />
+          <iconify-icon icon="ph:circles-three-duotone"></iconify-icon>
+          <span>{{ t('scene.orbs') }}</span>
+        </label>
+      </div>
+
+      <div v-if="background.gradient.type !== 'solid'" class="overlay-secondary-actions">
+        <button
+          v-if="background.gradient.type === 'orbs'"
+          type="button"
+          class="overlay-action-btn"
+          @click="randomizeOrbs"
+        >
+          <iconify-icon icon="ph:dice-four-duotone"></iconify-icon>
+          <span>{{ t('scene.randomizeOrbs') }}</span>
+        </button>
+        <button v-else type="button" class="overlay-action-btn" @click="randomizePositions">
+          <iconify-icon icon="ph:dice-three-duotone"></iconify-icon>
+          <span>{{ t('scene.randomizePositions') }}</span>
+        </button>
+      </div>
+
+      <div v-if="background.gradient.type === 'solid'" class="gradient-position-controls">
+        <BaseColorPicker :label="t('scene.color')" v-model="background.gradient.solidColor" />
+      </div>
+
+      <div v-if="background.gradient.type === 'linear'" class="gradient-position-controls">
+        <BaseSlider
+          :label="t('scene.angle')"
+          v-model="background.gradient.angle"
+          :min="0"
+          :max="360"
+          :step="5"
+          unit="°"
+        />
+      </div>
+
+      <div v-if="background.gradient.type === 'radial'" class="gradient-position-controls">
+        <div class="position-grid">
           <BaseSlider
-            :label="t('scene.angle')"
-            v-model="background.gradient.angle"
+            :label="t('scene.centerX')"
+            v-model="background.gradient.radialCenter.x"
             :min="0"
-            :max="360"
-            :step="5"
-            unit="°"
+            :max="100"
+            :step="1"
+            unit="%"
           />
-        </div>
-
-        <div v-if="background.gradient.type === 'radial'" class="gradient-position-controls">
-          <div class="position-grid">
-            <BaseSlider
-              :label="t('scene.centerX')"
-              v-model="background.gradient.radialCenter.x"
-              :min="0"
-              :max="100"
-              :step="1"
-              unit="%"
-            />
-            <BaseSlider
-              :label="t('scene.centerY')"
-              v-model="background.gradient.radialCenter.y"
-              :min="0"
-              :max="100"
-              :step="1"
-              unit="%"
-            />
-          </div>
           <BaseSlider
-            :label="t('scene.size')"
-            v-model="background.gradient.radialSize"
-            :min="10"
-            :max="200"
-            :step="5"
+            :label="t('scene.centerY')"
+            v-model="background.gradient.radialCenter.y"
+            :min="0"
+            :max="100"
+            :step="1"
             unit="%"
           />
         </div>
+        <BaseSlider
+          :label="t('scene.size')"
+          v-model="background.gradient.radialSize"
+          :min="10"
+          :max="200"
+          :step="5"
+          unit="%"
+        />
+      </div>
 
-        <template v-if="background.gradient.type === 'orbs'">
-          <p class="overlay-sublabel">{{ t('scene.orbs') }}</p>
-          <div class="orbs-list">
-            <div
-              v-for="(orb, index) in background.gradient.orbs"
-              :key="orb.id"
-              class="orb-row"
-            >
-              <div class="orb-header">
-                <span class="orb-label">{{ t('scene.orbs') }} {{ index + 1 }}</span>
-                <div class="orb-preview" :style="getOrbPreviewStyle(orb)"></div>
-                <button
-                  v-if="background.gradient.orbs.length > 1"
-                  type="button"
-                  class="remove-orb-btn"
-                  @click="removeOrb(index)"
-                  :title="t('scene.removeOrb')"
-                >
-                  <iconify-icon icon="ph:x"></iconify-icon>
-                </button>
-              </div>
-              <div class="orb-controls">
-                <BaseColorPicker :label="t('scene.color')" v-model="orb.color" />
-                <div class="orb-position-grid">
-                  <BaseSlider :label="t('scene.x')" v-model="orb.x" :min="0" :max="100" :step="1" unit="%" />
-                  <BaseSlider :label="t('scene.y')" v-model="orb.y" :min="0" :max="100" :step="1" unit="%" />
-                </div>
-                <div class="orb-size-grid">
-                  <BaseSlider :label="t('scene.size')" v-model="orb.size" :min="10" :max="100" :step="5" unit="%" />
-                  <BaseSlider :label="t('scene.softness')" v-model="orb.softness" :min="0" :max="100" :step="5" unit="%" />
-                </div>
-                <BaseSlider :label="t('scene.opacity')" v-model="orb.opacity" :min="0" :max="1" :step="0.05" />
-              </div>
-            </div>
-          </div>
-          <button type="button" class="add-orb-btn" @click="addOrb">
-            <iconify-icon icon="ph:plus"></iconify-icon>
-            <span>{{ t('scene.addOrb') }}</span>
-          </button>
-        </template>
-
-        <template v-if="background.gradient.type === 'radial' || background.gradient.type === 'linear'">
-          <div class="overlay-stops-header">
-            <p class="overlay-sublabel">{{ t('scene.colorStops') }}</p>
-            <button type="button" class="dice-btn" @click="randomizeColors" :title="t('scene.randomizeColors')">
-              <iconify-icon icon="ph:dice-four-duotone"></iconify-icon>
-            </button>
-          </div>
-          <div class="color-stops-list">
-            <div
-              v-for="(stop, index) in background.gradient.stops"
-              :key="index"
-              class="color-stop-row"
-            >
-              <BaseColorPicker :label="`${t('scene.stop')} ${index + 1}`" v-model="stop.color" />
-              <BaseSlider :label="t('scene.pos')" v-model="stop.position" :min="0" :max="100" :step="1" unit="%" />
-              <BaseSlider :label="t('scene.alpha')" v-model="stop.opacity" :min="0" :max="1" :step="0.05" />
+      <template v-if="background.gradient.type === 'orbs'">
+        <p class="overlay-sublabel">{{ t('scene.orbs') }}</p>
+        <div class="orbs-list">
+          <div v-for="(orb, index) in background.gradient.orbs" :key="orb.id" class="orb-row">
+            <div class="orb-header">
+              <span class="orb-label">{{ t('scene.orbs') }} {{ index + 1 }}</span>
+              <div class="orb-preview" :style="getOrbPreviewStyle(orb)"></div>
               <button
-                v-if="background.gradient.stops.length > 2"
+                v-if="background.gradient.orbs.length > 1"
                 type="button"
-                class="remove-stop-btn"
-                @click="removeGradientStop(index)"
-                :title="t('scene.removeStop')"
+                class="remove-orb-btn"
+                @click="removeOrb(index)"
+                :title="t('scene.removeOrb')"
               >
                 <iconify-icon icon="ph:x"></iconify-icon>
               </button>
             </div>
+            <div class="orb-controls">
+              <BaseColorPicker :label="t('scene.color')" v-model="orb.color" />
+              <div class="orb-position-grid">
+                <BaseSlider
+                  :label="t('scene.x')"
+                  v-model="orb.x"
+                  :min="0"
+                  :max="100"
+                  :step="1"
+                  unit="%"
+                />
+                <BaseSlider
+                  :label="t('scene.y')"
+                  v-model="orb.y"
+                  :min="0"
+                  :max="100"
+                  :step="1"
+                  unit="%"
+                />
+              </div>
+              <div class="orb-size-grid">
+                <BaseSlider
+                  :label="t('scene.size')"
+                  v-model="orb.size"
+                  :min="10"
+                  :max="100"
+                  :step="5"
+                  unit="%"
+                />
+                <BaseSlider
+                  :label="t('scene.softness')"
+                  v-model="orb.softness"
+                  :min="0"
+                  :max="100"
+                  :step="5"
+                  unit="%"
+                />
+              </div>
+              <BaseSlider
+                :label="t('scene.opacity')"
+                v-model="orb.opacity"
+                :min="0"
+                :max="1"
+                :step="0.05"
+              />
+            </div>
           </div>
-          <button type="button" class="add-stop-btn" @click="addGradientStop">
-            <iconify-icon icon="ph:plus"></iconify-icon>
-            <span>{{ t('scene.addColorStop') }}</span>
-          </button>
-        </template>
-
-        <p class="overlay-sublabel">{{ t('scene.blend') }}</p>
-        <div class="overlay-blend-block">
-          <BaseSlider
-            :label="t('scene.overallOpacity')"
-            v-model="background.gradient.opacity"
-            :min="0"
-            :max="1"
-            :step="0.05"
-          />
-          <BaseSelect
-            :label="t('scene.blendMode')"
-            v-model="background.gradient.blendMode"
-            :options="blendModeOptions"
-          />
         </div>
+        <button type="button" class="add-orb-btn" @click="addOrb">
+          <iconify-icon icon="ph:plus"></iconify-icon>
+          <span>{{ t('scene.addOrb') }}</span>
+        </button>
       </template>
-    </PanelSection>
 
-    <SceneEffects v-model:effects="background.effects" />
+      <template
+        v-if="background.gradient.type === 'radial' || background.gradient.type === 'linear'"
+      >
+        <div class="overlay-stops-header">
+          <p class="overlay-sublabel">{{ t('scene.colorStops') }}</p>
+          <button
+            type="button"
+            class="dice-btn"
+            @click="randomizeColors"
+            :title="t('scene.randomizeColors')"
+          >
+            <iconify-icon icon="ph:dice-four-duotone"></iconify-icon>
+          </button>
+        </div>
+        <div class="color-stops-list">
+          <div
+            v-for="(stop, index) in background.gradient.stops"
+            :key="index"
+            class="color-stop-row"
+          >
+            <BaseColorPicker :label="`${t('scene.stop')} ${index + 1}`" v-model="stop.color" />
+            <BaseSlider
+              :label="t('scene.pos')"
+              v-model="stop.position"
+              :min="0"
+              :max="100"
+              :step="1"
+              unit="%"
+            />
+            <BaseSlider
+              :label="t('scene.alpha')"
+              v-model="stop.opacity"
+              :min="0"
+              :max="1"
+              :step="0.05"
+            />
+            <button
+              v-if="background.gradient.stops.length > 2"
+              type="button"
+              class="remove-stop-btn"
+              @click="removeGradientStop(index)"
+              :title="t('scene.removeStop')"
+            >
+              <iconify-icon icon="ph:x"></iconify-icon>
+            </button>
+          </div>
+        </div>
+        <button type="button" class="add-stop-btn" @click="addGradientStop">
+          <iconify-icon icon="ph:plus"></iconify-icon>
+          <span>{{ t('scene.addColorStop') }}</span>
+        </button>
+      </template>
 
+      <p class="overlay-sublabel">{{ t('scene.blend') }}</p>
+      <div class="overlay-blend-block">
+        <BaseSlider
+          :label="t('scene.overallOpacity')"
+          v-model="background.gradient.opacity"
+          :min="0"
+          :max="1"
+          :step="0.05"
+        />
+        <BaseSelect
+          :label="t('scene.blendMode')"
+          v-model="background.gradient.blendMode"
+          :options="blendModeOptions"
+        />
+      </div>
+    </template>
+  </PanelSection>
+
+  <SceneEffects v-model:effects="background.effects" />
 </template>
 
 <style scoped>
@@ -1137,7 +1218,7 @@ const gradientPreviewStyle = computed(() => {
   font-size: 10px;
   font-weight: 500;
   color: white;
-  background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
   text-overflow: ellipsis;
   white-space: nowrap;
   overflow: hidden;
@@ -1359,7 +1440,7 @@ const gradientPreviewStyle = computed(() => {
 
 .toggle-switch .slider:before {
   position: absolute;
-  content: "";
+  content: '';
   height: 18px;
   width: 18px;
   left: 3px;
@@ -1781,7 +1862,7 @@ const gradientPreviewStyle = computed(() => {
   cursor: pointer;
 }
 
-.toggle-option input[type="checkbox"] {
+.toggle-option input[type='checkbox'] {
   width: 16px;
   height: 16px;
   accent-color: var(--accent-primary);

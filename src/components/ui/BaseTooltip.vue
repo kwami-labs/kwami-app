@@ -29,7 +29,7 @@ function hideTooltip() {
 </script>
 
 <template>
-  <div 
+  <div
     class="tooltip-wrapper"
     @mouseenter="showTooltip"
     @mouseleave="hideTooltip"
@@ -38,11 +38,7 @@ function hideTooltip() {
   >
     <slot></slot>
     <Transition name="tooltip">
-      <div 
-        v-if="isVisible && text" 
-        class="tooltip"
-        :class="[`tooltip-${tooltipPosition}`]"
-      >
+      <div v-if="isVisible && text" class="tooltip" :class="[`tooltip-${tooltipPosition}`]">
         <span class="tooltip-text">{{ text }}</span>
         <div class="tooltip-arrow"></div>
       </div>
@@ -154,7 +150,9 @@ function hideTooltip() {
 /* Transition */
 .tooltip-enter-active,
 .tooltip-leave-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
 }
 
 .tooltip-enter-from,

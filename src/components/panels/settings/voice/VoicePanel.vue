@@ -19,16 +19,13 @@ const { pipelineMode, tts, realtime, voiceUI } = storeToRefs(voiceStore);
 const { kwami, isConnected } = useKwami();
 const panelIcon = panelIcons.voice ?? 'mdi:account-voice';
 
-const { 
-  fetchTTSVoicesByProvider, 
+const {
+  fetchTTSVoicesByProvider,
   fetchRealtimeVoicesByProvider,
-  isLoading: voicesLoading 
+  isLoading: voicesLoading,
 } = useVoicesApi();
 
-const {
-  fetchTTSLanguagesByProvider,
-  fetchRealtimeLanguagesByProvider,
-} = useLanguagesApi();
+const { fetchTTSLanguagesByProvider, fetchRealtimeLanguagesByProvider } = useLanguagesApi();
 
 // Local state (fetched data — composables already cache these)
 const ttsVoices = ref<Voice[]>([]);
@@ -39,15 +36,21 @@ const realtimeLanguages = ref<Language[]>([]);
 // Persisted filter state via store
 const languageFilter = computed({
   get: () => voiceUI.value.languageFilter,
-  set: (v) => { voiceUI.value.languageFilter = v; }
+  set: (v) => {
+    voiceUI.value.languageFilter = v;
+  },
 });
 const genderFilter = computed({
   get: () => voiceUI.value.genderFilter,
-  set: (v) => { voiceUI.value.genderFilter = v; }
+  set: (v) => {
+    voiceUI.value.genderFilter = v;
+  },
 });
 const searchQuery = computed({
   get: () => voiceUI.value.searchQuery,
-  set: (v) => { voiceUI.value.searchQuery = v; }
+  set: (v) => {
+    voiceUI.value.searchQuery = v;
+  },
 });
 
 import { getFlagIcon } from '@/constants/language-flags';
@@ -115,27 +118,27 @@ const languageOptions = computed(() => {
     // Fallback to extracting from voices if languages not loaded
     const voices = currentVoices.value;
     const langSet = new Set<string>();
-    voices.forEach(v => {
+    voices.forEach((v) => {
       if (v.language) langSet.add(v.language);
     });
     const voiceLangs = Array.from(langSet).sort();
     return [
       { label: t('voice.allLanguages'), value: 'all', icon: 'ph:globe-duotone' },
-      ...voiceLangs.map(lang => ({ 
-        label: lang, 
-        value: lang, 
-        icon: getFlagIcon(lang) 
-      }))
+      ...voiceLangs.map((lang) => ({
+        label: lang,
+        value: lang,
+        icon: getFlagIcon(lang),
+      })),
     ];
   }
-  
+
   return [
     { label: t('voice.allLanguages'), value: 'all', icon: 'ph:globe-duotone' },
-    ...langs.map(lang => ({ 
-      label: lang.name + (lang.region ? ` (${lang.region})` : ''), 
-      value: lang.code, 
-      icon: getFlagIcon(lang.code) 
-    }))
+    ...langs.map((lang) => ({
+      label: lang.name + (lang.region ? ` (${lang.region})` : ''),
+      value: lang.code,
+      icon: getFlagIcon(lang.code),
+    })),
   ];
 });
 
@@ -143,69 +146,75 @@ const languageOptions = computed(() => {
 const genderOptions = computed(() => {
   const voices = currentVoices.value;
   const genderSet = new Set<string>();
-  voices.forEach(v => {
+  voices.forEach((v) => {
     if (v.gender) genderSet.add(v.gender);
   });
   const genders = Array.from(genderSet).sort();
   return [
     { label: t('voice.allGenders'), value: 'all', icon: 'ph:users-duotone' },
-    ...genders.map(gender => ({ 
-      label: gender.charAt(0).toUpperCase() + gender.slice(1), 
+    ...genders.map((gender) => ({
+      label: gender.charAt(0).toUpperCase() + gender.slice(1),
       value: gender,
-      icon: gender === 'male' ? 'ph:gender-male-duotone' : gender === 'female' ? 'ph:gender-female-duotone' : 'ph:gender-nonbinary-duotone'
-    }))
+      icon:
+        gender === 'male'
+          ? 'ph:gender-male-duotone'
+          : gender === 'female'
+            ? 'ph:gender-female-duotone'
+            : 'ph:gender-nonbinary-duotone',
+    })),
   ];
 });
 
 // Check if provider supports the selected language (multilingual voices)
 const providerSupportsLanguage = computed(() => {
   if (languageFilter.value === 'all') return true;
-  return currentLanguages.value.some(l => l.code === languageFilter.value);
+  return currentLanguages.value.some((l) => l.code === languageFilter.value);
 });
 
 // Filtered voices
 const filteredVoices = computed(() => {
   let voices = currentVoices.value;
-  
+
   // Filter by language
   // For multilingual providers (like OpenAI), if the provider supports the language,
   // show all voices since any voice can speak any supported language
   if (languageFilter.value !== 'all') {
     // Check if any voice has this specific language tagged
-    const hasVoicesWithLanguage = voices.some(v => v.language === languageFilter.value);
-    
+    const hasVoicesWithLanguage = voices.some((v) => v.language === languageFilter.value);
+
     if (hasVoicesWithLanguage) {
       // Filter to only voices tagged with this language
-      voices = voices.filter(v => v.language === languageFilter.value);
+      voices = voices.filter((v) => v.language === languageFilter.value);
     } else if (!providerSupportsLanguage.value) {
       // Provider doesn't support this language at all
       voices = [];
     }
     // Otherwise, provider supports language but voices aren't tagged - show all voices
   }
-  
+
   // Filter by gender
   if (genderFilter.value !== 'all') {
-    voices = voices.filter(v => v.gender === genderFilter.value);
+    voices = voices.filter((v) => v.gender === genderFilter.value);
   }
-  
+
   // Filter by search query
   if (searchQuery.value.trim()) {
     const query = searchQuery.value.toLowerCase();
-    voices = voices.filter(v => 
-      v.name.toLowerCase().includes(query) ||
-      v.id.toLowerCase().includes(query) ||
-      (v.category && v.category.toLowerCase().includes(query))
+    voices = voices.filter(
+      (v) =>
+        v.name.toLowerCase().includes(query) ||
+        v.id.toLowerCase().includes(query) ||
+        (v.category && v.category.toLowerCase().includes(query)),
     );
   }
-  
+
   return voices;
 });
 
 // Group voices by category
 const groupedVoices = computed(() => {
   const groups: Record<string, Voice[]> = {};
-  
+
   for (const voice of filteredVoices.value) {
     const category = voice.category || t('voice.categoryOther');
     if (!groups[category]) {
@@ -213,7 +222,7 @@ const groupedVoices = computed(() => {
     }
     groups[category].push(voice);
   }
-  
+
   return groups;
 });
 
@@ -234,20 +243,26 @@ const currentModel = computed(() => {
 
 // Select a voice
 function selectVoice(voiceId: string) {
-  console.log(`🎙️ Voice selected: ${voiceId}, mode: ${pipelineMode.value}, connected: ${isConnected.value}`);
-  
+  console.log(
+    `🎙️ Voice selected: ${voiceId}, mode: ${pipelineMode.value}, connected: ${isConnected.value}`,
+  );
+
   if (pipelineMode.value === 'realtime') {
     voiceStore.updateRealtime({ voice: voiceId });
   } else {
     voiceStore.updateTTS({ voice: voiceId });
   }
-  
+
   // Live update if connected
   if (isConnected.value && kwami.value) {
     const agent = kwami.value.agent;
     if (pipelineMode.value === 'realtime') {
       // Update realtime voice live
-      if (agent && 'updateRealtimeLive' in agent && typeof agent.updateRealtimeLive === 'function') {
+      if (
+        agent &&
+        'updateRealtimeLive' in agent &&
+        typeof agent.updateRealtimeLive === 'function'
+      ) {
         console.log('⚡ Calling updateRealtimeLive with voice:', voiceId);
         agent.updateRealtimeLive({
           voice: voiceId,
@@ -284,23 +299,31 @@ let prevTtsProvider = tts.value.provider;
 let prevRealtimeProvider = realtime.value.provider;
 
 // Watch provider changes (immediate loads data; only resets filters on actual change)
-watch(() => tts.value.provider, (newProvider) => {
-  loadTTSVoices();
-  loadTTSLanguages();
-  if (newProvider !== prevTtsProvider) {
-    resetFilters();
-    prevTtsProvider = newProvider;
-  }
-}, { immediate: true });
+watch(
+  () => tts.value.provider,
+  (newProvider) => {
+    loadTTSVoices();
+    loadTTSLanguages();
+    if (newProvider !== prevTtsProvider) {
+      resetFilters();
+      prevTtsProvider = newProvider;
+    }
+  },
+  { immediate: true },
+);
 
-watch(() => realtime.value.provider, (newProvider) => {
-  loadRealtimeVoices();
-  loadRealtimeLanguages();
-  if (newProvider !== prevRealtimeProvider) {
-    resetFilters();
-    prevRealtimeProvider = newProvider;
-  }
-}, { immediate: true });
+watch(
+  () => realtime.value.provider,
+  (newProvider) => {
+    loadRealtimeVoices();
+    loadRealtimeLanguages();
+    if (newProvider !== prevRealtimeProvider) {
+      resetFilters();
+      prevRealtimeProvider = newProvider;
+    }
+  },
+  { immediate: true },
+);
 
 // Watch pipeline mode changes — only reset if mode actually changed since last visit
 let prevPipelineMode = pipelineMode.value;
@@ -312,17 +335,20 @@ watch(pipelineMode, (newMode) => {
 });
 
 // Watch TTS speed changes for live updates
-watch(() => tts.value.speed, (newSpeed) => {
-  if (isConnected.value && kwami.value && pipelineMode.value !== 'realtime') {
-    const agent = kwami.value.agent;
-    if (agent && 'updateTtsLive' in agent && typeof agent.updateTtsLive === 'function') {
-      agent.updateTtsLive({
-        voice: tts.value.voice,
-        speed: newSpeed,
-      });
+watch(
+  () => tts.value.speed,
+  (newSpeed) => {
+    if (isConnected.value && kwami.value && pipelineMode.value !== 'realtime') {
+      const agent = kwami.value.agent;
+      if (agent && 'updateTtsLive' in agent && typeof agent.updateTtsLive === 'function') {
+        agent.updateTtsLive({
+          voice: tts.value.voice,
+          speed: newSpeed,
+        });
+      }
     }
-  }
-});
+  },
+);
 </script>
 
 <template>
@@ -331,12 +357,19 @@ watch(() => tts.value.speed, (newSpeed) => {
     <PanelSection>
       <div class="model-context">
         <div class="context-badge" :class="pipelineMode">
-          <iconify-icon :icon="pipelineMode === 'realtime' ? 'ph:lightning-duotone' : 'ph:speaker-high-duotone'"></iconify-icon>
-          <span>{{ pipelineMode === 'realtime' ? t('voice.modeRealtime') : t('voice.modeTts') }}</span>
+          <iconify-icon
+            :icon="pipelineMode === 'realtime' ? 'ph:lightning-duotone' : 'ph:speaker-high-duotone'"
+          ></iconify-icon>
+          <span>{{
+            pipelineMode === 'realtime' ? t('voice.modeRealtime') : t('voice.modeTts')
+          }}</span>
         </div>
         <div class="context-info">
           <div class="provider-row">
-            <iconify-icon :icon="getProviderIcon(currentProvider)" class="provider-icon"></iconify-icon>
+            <iconify-icon
+              :icon="getProviderIcon(currentProvider)"
+              class="provider-icon"
+            ></iconify-icon>
             <span class="provider-name">{{ currentProvider }}</span>
           </div>
           <span class="model-name">{{ currentModel }}</span>
@@ -353,7 +386,7 @@ watch(() => tts.value.speed, (newSpeed) => {
           icon="ph:magnifying-glass-duotone"
           :placeholder="t('voice.searchPlaceholder')"
         />
-        
+
         <BaseSelect
           v-if="languageOptions.length > 1"
           v-model="languageFilter"
@@ -361,7 +394,7 @@ watch(() => tts.value.speed, (newSpeed) => {
           icon="ph:globe-duotone"
           :options="languageOptions"
         />
-        
+
         <BaseSelect
           v-if="genderOptions.length > 1"
           v-model="genderFilter"
@@ -373,22 +406,40 @@ watch(() => tts.value.speed, (newSpeed) => {
     </PanelSection>
 
     <!-- Multilingual Info Banner -->
-    <PanelSection v-if="languageFilter !== 'all' && providerSupportsLanguage && !currentVoices.some(v => v.language === languageFilter)">
+    <PanelSection
+      v-if="
+        languageFilter !== 'all' &&
+        providerSupportsLanguage &&
+        !currentVoices.some((v) => v.language === languageFilter)
+      "
+    >
       <div class="multilingual-banner">
         <iconify-icon icon="ph:translate-duotone"></iconify-icon>
         <div class="banner-content">
           <span class="banner-title">{{ t('voice.multilingualVoices') }}</span>
-          <span class="banner-text">{{ t('voice.multilingualSupport', { provider: currentProvider, language: languageOptions.find(l => l.value === languageFilter)?.label || languageFilter }) }}</span>
+          <span class="banner-text">{{
+            t('voice.multilingualSupport', {
+              provider: currentProvider,
+              language:
+                languageOptions.find((l) => l.value === languageFilter)?.label || languageFilter,
+            })
+          }}</span>
         </div>
       </div>
     </PanelSection>
 
     <!-- Voice Selection -->
-    <PanelSection 
-      v-for="(voices, category) in groupedVoices" 
+    <PanelSection
+      v-for="(voices, category) in groupedVoices"
       :key="category"
       :title="String(category)"
-      :icon="category === 'Male' ? 'ph:gender-male-duotone' : category === 'Female' ? 'ph:gender-female-duotone' : 'ph:user-duotone'"
+      :icon="
+        category === 'Male'
+          ? 'ph:gender-male-duotone'
+          : category === 'Female'
+            ? 'ph:gender-female-duotone'
+            : 'ph:user-duotone'
+      "
       collapsible
     >
       <div class="voices-grid">
@@ -407,7 +458,15 @@ watch(() => tts.value.speed, (newSpeed) => {
           </div>
           <div class="voice-meta">
             <span v-if="voice.gender" class="voice-tag gender">
-              <iconify-icon :icon="voice.gender === 'male' ? 'ph:gender-male' : voice.gender === 'female' ? 'ph:gender-female' : 'ph:gender-nonbinary'"></iconify-icon>
+              <iconify-icon
+                :icon="
+                  voice.gender === 'male'
+                    ? 'ph:gender-male'
+                    : voice.gender === 'female'
+                      ? 'ph:gender-female'
+                      : 'ph:gender-nonbinary'
+                "
+              ></iconify-icon>
             </span>
             <span v-if="voice.language" class="voice-tag lang">
               <iconify-icon :icon="getFlagIcon(voice.language)" class="flag-icon"></iconify-icon>
@@ -439,17 +498,17 @@ watch(() => tts.value.speed, (newSpeed) => {
     </PanelSection>
 
     <!-- TTS Speed Control (only for standard pipeline) -->
-    <PanelSection 
-      v-if="pipelineMode !== 'realtime'" 
-      :title="t('voice.voiceSettings')" 
+    <PanelSection
+      v-if="pipelineMode !== 'realtime'"
+      :title="t('voice.voiceSettings')"
       icon="ph:sliders-duotone"
     >
       <div class="settings-form">
-        <BaseSlider 
-          :label="t('voice.speed')" 
-          :min="0.5" 
-          :max="2" 
-          :step="0.1" 
+        <BaseSlider
+          :label="t('voice.speed')"
+          :min="0.5"
+          :max="2"
+          :step="0.1"
           v-model="tts.speed"
           :showValue="true"
         />
@@ -682,8 +741,12 @@ watch(() => tts.value.speed, (newSpeed) => {
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .reset-btn {

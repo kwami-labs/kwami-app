@@ -63,9 +63,7 @@ export function useSearchResults() {
     });
   }
 
-  const hasResults = computed(
-    () => results.value.length > 0 || (answer.value?.length ?? 0) > 0,
-  );
+  const hasResults = computed(() => results.value.length > 0 || (answer.value?.length ?? 0) > 0);
 
   return {
     query,

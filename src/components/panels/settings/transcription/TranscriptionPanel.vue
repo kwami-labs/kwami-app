@@ -116,12 +116,18 @@ onUnmounted(() => {
       <template v-if="isRightSidebar">
         <PanelHeaderControls :show-divider="true" />
         <span class="message-count"
-          >{{ messages.length }} {{ messages.length === 1 ? t('transcription.message') : t('transcription.messages') }}</span
+          >{{ messages.length }}
+          {{
+            messages.length === 1 ? t('transcription.message') : t('transcription.messages')
+          }}</span
         >
       </template>
       <template v-else>
         <span class="message-count"
-          >{{ messages.length }} {{ messages.length === 1 ? t('transcription.message') : t('transcription.messages') }}</span
+          >{{ messages.length }}
+          {{
+            messages.length === 1 ? t('transcription.message') : t('transcription.messages')
+          }}</span
         >
         <PanelHeaderControls :show-divider="true" />
       </template>
@@ -151,7 +157,9 @@ onUnmounted(() => {
           @click="openHistorySession(s.id)"
         >
           {{ sessionTitle(s.createdAt) }}
-          <span v-if="s.id === liveSessionId && isConnected" class="session-live">{{ t('transcription.live') }}</span>
+          <span v-if="s.id === liveSessionId && isConnected" class="session-live">{{
+            t('transcription.live')
+          }}</span>
           <span
             v-if="s.id !== liveSessionId || !isConnected"
             class="session-delete"
@@ -167,7 +175,9 @@ onUnmounted(() => {
     <div v-if="isViewingHistory" class="history-banner">
       <iconify-icon icon="ph:eye-duotone"></iconify-icon>
       <span>{{ t('transcription.readOnlyPast') }}</span>
-      <button type="button" class="history-banner-btn" @click="returnToLiveView">{{ t('transcription.backToCurrent') }}</button>
+      <button type="button" class="history-banner-btn" @click="returnToLiveView">
+        {{ t('transcription.backToCurrent') }}
+      </button>
     </div>
 
     <div class="panel-body transcription-body">
@@ -196,7 +206,12 @@ onUnmounted(() => {
         <div class="search-results-header">
           <iconify-icon icon="ph:magnifying-glass-duotone"></iconify-icon>
           <span>{{ t('transcription.webSearch') }}</span>
-          <button v-if="hasSearchData || searchError" class="search-clear" @click="clearSearch" :title="t('transcription.clearResults')">
+          <button
+            v-if="hasSearchData || searchError"
+            class="search-clear"
+            @click="clearSearch"
+            :title="t('transcription.clearResults')"
+          >
             <iconify-icon icon="ph:x"></iconify-icon>
           </button>
         </div>
@@ -218,7 +233,9 @@ onUnmounted(() => {
               class="search-item"
             >
               <span class="search-item-title">{{ r.title }}</span>
-              <span class="search-item-content">{{ r.content.slice(0, 160) }}{{ r.content.length > 160 ? '…' : '' }}</span>
+              <span class="search-item-content"
+                >{{ r.content.slice(0, 160) }}{{ r.content.length > 160 ? '…' : '' }}</span
+              >
             </a>
           </div>
         </div>
@@ -247,7 +264,11 @@ onUnmounted(() => {
           <div class="message-content">
             <div class="message-header">
               <span class="message-role">{{
-                msg.role === 'user' ? t('transcription.you') : msg.role === 'assistant' ? t('transcription.kwami') : t('transcription.system')
+                msg.role === 'user'
+                  ? t('transcription.you')
+                  : msg.role === 'assistant'
+                    ? t('transcription.kwami')
+                    : t('transcription.system')
               }}</span>
               <span class="message-time">{{ formatTime(msg.timestamp) }}</span>
             </div>
@@ -334,7 +355,9 @@ onUnmounted(() => {
   font-size: 11px;
   cursor: pointer;
   max-width: 100%;
-  transition: border-color 0.15s, background 0.15s;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
 }
 
 .session-chip:hover {

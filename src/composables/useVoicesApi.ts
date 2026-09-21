@@ -77,9 +77,7 @@ export function useVoicesApi() {
     isLoading: computed(
       () => ttsVoicesResource.isLoading.value || realtimeVoicesResource.isLoading.value,
     ),
-    error: computed(
-      () => ttsVoicesResource.error.value ?? realtimeVoicesResource.error.value,
-    ),
+    error: computed(() => ttsVoicesResource.error.value ?? realtimeVoicesResource.error.value),
 
     // Methods
     fetchTTSVoices: ttsVoicesResource.fetchAll,

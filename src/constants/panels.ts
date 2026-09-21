@@ -58,9 +58,5 @@ export const APPS_TAIL_PANELS = ['history', 'wallet', 'calendar'] as const;
  * keyboard and the sidebar disagree about which panel a digit maps to.
  */
 export function appsPanelOrder(phoneActivated: boolean): string[] {
-  return [
-    ...APPS_BASE_PANELS,
-    ...(phoneActivated ? APPS_PHONE_PANELS : []),
-    ...APPS_TAIL_PANELS,
-  ];
+  return [...APPS_BASE_PANELS, ...(phoneActivated ? APPS_PHONE_PANELS : []), ...APPS_TAIL_PANELS];
 }

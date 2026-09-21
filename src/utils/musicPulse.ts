@@ -254,7 +254,9 @@ export function createMusicPulse(): MusicPulse {
   }
 
   function step(value: number, target: number, ms: number, attackMs: number, releaseMs: number) {
-    return value + (target - value) * envelopeCoefficient(ms, target > value ? attackMs : releaseMs);
+    return (
+      value + (target - value) * envelopeCoefficient(ms, target > value ? attackMs : releaseMs)
+    );
   }
 
   return {
@@ -309,9 +311,7 @@ export function createMusicPulse(): MusicPulse {
           // baseline contributes nothing, which is what keeps a sustained note
           // from reading as a continuous beat.
           const lift =
-            raw >= BAND_FLOOR
-              ? clamp01((band.fast - band.slow - LIFT_DEADBAND) * LIFT_GAIN)
-              : 0;
+            raw >= BAND_FLOOR ? clamp01((band.fast - band.slow - LIFT_DEADBAND) * LIFT_GAIN) : 0;
           weighted += lift * band.weight;
           loudness += raw * band.weight;
         }

@@ -17,49 +17,52 @@ const isRight = computed(() => themeStore.sidebarPosition === 'right');
 const sidebarStyle = computed(() => ({}));
 
 // FLIP animation for position changes
-watch(() => themeStore.sidebarPosition, async (_newPos, oldPos) => {
-  if (!sidebarRef.value || oldPos === undefined) return;
-  
-  const sidebar = sidebarRef.value;
-  
-  // FIRST: Capture current position
-  const firstRect = sidebar.getBoundingClientRect();
-  
-  // Wait for Vue to update the DOM (class change)
-  await nextTick();
-  
-  // LAST: Get the new position after class change
-  const lastRect = sidebar.getBoundingClientRect();
-  
-  // INVERT: Calculate the difference
-  const deltaX = firstRect.left - lastRect.left;
-  
-  if (deltaX === 0) return;
-  
-  // Disable transition temporarily
-  sidebar.style.transition = 'none';
-  // Apply inverse transform to make it appear at the old position
-  sidebar.style.transform = `translateX(${deltaX}px)`;
-  
-  // Force browser reflow
-  void sidebar.offsetHeight;
-  
-  // PLAY: Re-enable transition and animate to final position
-  sidebar.style.transition = '';
-  sidebar.style.transform = '';
-});
+watch(
+  () => themeStore.sidebarPosition,
+  async (_newPos, oldPos) => {
+    if (!sidebarRef.value || oldPos === undefined) return;
+
+    const sidebar = sidebarRef.value;
+
+    // FIRST: Capture current position
+    const firstRect = sidebar.getBoundingClientRect();
+
+    // Wait for Vue to update the DOM (class change)
+    await nextTick();
+
+    // LAST: Get the new position after class change
+    const lastRect = sidebar.getBoundingClientRect();
+
+    // INVERT: Calculate the difference
+    const deltaX = firstRect.left - lastRect.left;
+
+    if (deltaX === 0) return;
+
+    // Disable transition temporarily
+    sidebar.style.transition = 'none';
+    // Apply inverse transform to make it appear at the old position
+    sidebar.style.transform = `translateX(${deltaX}px)`;
+
+    // Force browser reflow
+    void sidebar.offsetHeight;
+
+    // PLAY: Re-enable transition and animate to final position
+    sidebar.style.transition = '';
+    sidebar.style.transform = '';
+  },
+);
 
 onMounted(() => {});
 onUnmounted(() => {});
 </script>
 
 <template>
-  <div 
+  <div
     ref="sidebarRef"
-    class="sidebar" 
-    :class="{ 
+    class="sidebar"
+    :class="{
       collapsed: !uiStore.isPanelOpen,
-      'sidebar-right': isRight
+      'sidebar-right': isRight,
     }"
     :style="sidebarStyle"
   >
@@ -81,7 +84,9 @@ onUnmounted(() => {});
   z-index: 1000;
   pointer-events: none;
   /* Smooth transform animation for position changes */
-  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), gap var(--duration-slow) var(--ease-out);
+  transition:
+    transform 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+    gap var(--duration-slow) var(--ease-out);
   will-change: transform;
 }
 
@@ -99,5 +104,3 @@ onUnmounted(() => {});
 
 /* Panel collapse animation is handled by SidebarContent dynamic styles */
 </style>
-
-

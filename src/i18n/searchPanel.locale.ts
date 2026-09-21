@@ -42,14 +42,12 @@ export const searchPanelEn = {
     sizeObject: 'Provide size as an object with width and height numbers.',
     notFloating:
       'The search panel is not in its floating layout, so there is nothing to move. Set layout to floating first.',
-    unknownControl:
-      'Unknown search panel control "{control}". Use one of: {list}.',
+    unknownControl: 'Unknown search panel control "{control}". Use one of: {list}.',
     controlString: 'Provide the search panel control as a string.',
 
     focusedResult: 'Focused result {position}: {title}',
     focusIndexNumber: 'Provide the result number as a number, counting from 1.',
-    focusOutOfRange:
-      'There is no result number {position}. There are {count} results right now.',
+    focusOutOfRange: 'There is no result number {position}. There are {count} results right now.',
     noResultsToFocus: 'There are no search results on screen to point at.',
     openedResult: 'Asked the browser to open result {position}: {title}',
     openNoUrl: 'That result has no link to open.',
@@ -98,8 +96,7 @@ export const searchPanelEs = {
     sizeObject: 'Indica el tamano como un objeto con width y height numericos.',
     notFloating:
       'El panel de busqueda no esta en su disposicion flotante, asi que no hay nada que mover. Cambia layout a floating primero.',
-    unknownControl:
-      'Control del panel de busqueda desconocido "{control}". Usa uno de: {list}.',
+    unknownControl: 'Control del panel de busqueda desconocido "{control}". Usa uno de: {list}.',
     controlString: 'Indica el control del panel de busqueda como texto.',
 
     focusedResult: 'Resultado {position} destacado: {title}',
@@ -210,8 +207,7 @@ export const searchPanelPt = {
     sizeObject: 'Indica o tamanho como um objeto com números width e height.',
     notFloating:
       'O painel de pesquisa não está na sua disposição flutuante, por isso não há nada para mover. Põe primeiro layout em floating.',
-    unknownControl:
-      'Controlo do painel de pesquisa desconhecido "{control}". Usa um de: {list}.',
+    unknownControl: 'Controlo do painel de pesquisa desconhecido "{control}". Usa um de: {list}.',
     controlString: 'Indica o controlo do painel de pesquisa como texto.',
 
     focusedResult: 'Resultado {position} destacado: {title}',

@@ -1,23 +1,11 @@
 import { createI18n } from 'vue-i18n';
-import {
-  workspaceAgentToolsEn,
-  workspaceAgentToolsEs,
-} from './workspaceAgentTools.locale';
+import { workspaceAgentToolsEn, workspaceAgentToolsEs } from './workspaceAgentTools.locale';
 import { appLocaleEn, appLocaleEs } from './appLocale.locale';
-import {
-  commsAgentToolsEn,
-  commsAgentToolsEs,
-} from './commsAgentTools.locale';
-import {
-  kwamiAdminEn,
-  kwamiAdminEs,
-} from './kwamiAdmin.locale';
+import { commsAgentToolsEn, commsAgentToolsEs } from './commsAgentTools.locale';
+import { kwamiAdminEn, kwamiAdminEs } from './kwamiAdmin.locale';
 import { extrasEn, extrasEs } from './extras.locale';
 import { recallEn, recallEs } from './recall.locale';
-import {
-  searchPanelEn,
-  searchPanelEs,
-} from './searchPanel.locale';
+import { searchPanelEn, searchPanelEs } from './searchPanel.locale';
 import { en } from './translations/en';
 import { es } from './translations/es';
 
@@ -55,8 +43,26 @@ export const LOCALE_ENDONYMS: Record<SupportedLocale, string> = {
  * were the ones nobody had checked.
  */
 export const messages = {
-  en: { ...en, ...workspaceAgentToolsEn, ...searchPanelEn, ...commsAgentToolsEn, ...appLocaleEn, ...kwamiAdminEn, ...recallEn, ...extrasEn },
-  es: { ...es, ...workspaceAgentToolsEs, ...searchPanelEs, ...commsAgentToolsEs, ...appLocaleEs, ...kwamiAdminEs, ...recallEs, ...extrasEs },
+  en: {
+    ...en,
+    ...workspaceAgentToolsEn,
+    ...searchPanelEn,
+    ...commsAgentToolsEn,
+    ...appLocaleEn,
+    ...kwamiAdminEn,
+    ...recallEn,
+    ...extrasEn,
+  },
+  es: {
+    ...es,
+    ...workspaceAgentToolsEs,
+    ...searchPanelEs,
+    ...commsAgentToolsEs,
+    ...appLocaleEs,
+    ...kwamiAdminEs,
+    ...recallEs,
+    ...extrasEs,
+  },
 } as const;
 
 export function normalizeLocale(locale: string | null | undefined): SupportedLocale {

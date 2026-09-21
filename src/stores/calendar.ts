@@ -33,7 +33,6 @@ export interface CalendarEventInput {
   metadata?: Record<string, unknown>;
 }
 
-
 export const useCalendarStore = defineStore('calendar', () => {
   const events = ref<CalendarEvent[]>([]);
   const isLoading = ref(false);
@@ -81,8 +80,8 @@ export const useCalendarStore = defineStore('calendar', () => {
         kwami_id: activeKwamiId.value,
         ...input,
       });
-      events.value = [...events.value, data.event].sort((a, b) =>
-        new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime(),
+      events.value = [...events.value, data.event].sort(
+        (a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime(),
       );
       return data.event;
     } catch (err) {
@@ -97,10 +96,7 @@ export const useCalendarStore = defineStore('calendar', () => {
     isMutating.value = true;
     error.value = null;
     try {
-      const data = await api.patch<{ event: CalendarEvent }>(
-        `/calendar/events/${eventId}`,
-        patch,
-      );
+      const data = await api.patch<{ event: CalendarEvent }>(`/calendar/events/${eventId}`, patch);
       events.value = events.value.map((event) => (event.id === eventId ? data.event : event));
       return data.event;
     } catch (err) {

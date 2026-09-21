@@ -119,7 +119,8 @@ export const fr = {
   email: {
     activation: {
       title: 'Activez votre e-mail',
-      description: "Obtenez votre propre adresse {'@'}kwami.io. Les messages sont automatiquement triés en cartes d'action intelligentes.",
+      description:
+        "Obtenez votre propre adresse {'@'}kwami.io. Les messages sont automatiquement triés en cartes d'action intelligentes.",
       chooseUsername: "Choisissez votre nom d'utilisateur",
       usernamePlaceholder: 'utilisateur',
       checking: 'Vérification de la disponibilité...',
@@ -132,7 +133,8 @@ export const fr = {
       activate: "Activer l'e-mail",
       error: "Impossible d'activer l'e-mail",
       successTitle: 'E-mail activé !',
-      successDescription: "Votre e-mail est prêt. Les messages entrants apparaîtront sous forme de cartes d'action intelligentes.",
+      successDescription:
+        "Votre e-mail est prêt. Les messages entrants apparaîtront sous forme de cartes d'action intelligentes.",
     },
     categories: {
       all: 'Tout',
@@ -155,8 +157,10 @@ export const fr = {
     },
     release: {
       title: "Libérer l'adresse e-mail",
-      warning: 'Cela supprimera définitivement votre adresse e-mail et tous les messages associés :',
-      permanent: "Cette action est irréversible. Tous les e-mails seront perdus et le nom d'utilisateur redeviendra disponible pour d'autres.",
+      warning:
+        'Cela supprimera définitivement votre adresse e-mail et tous les messages associés :',
+      permanent:
+        "Cette action est irréversible. Tous les e-mails seront perdus et le nom d'utilisateur redeviendra disponible pour d'autres.",
       confirm: "Libérer l'e-mail",
       cancel: "Conserver l'e-mail",
     },
@@ -215,12 +219,16 @@ export const fr = {
     languageSpanish: 'Espagnol',
     installApp: "Installer l'application",
     installTitle: 'Utiliser comme application native',
-    installHint: "Téléchargez Kwami sur cet appareil et ouvrez-le depuis votre écran d'accueil ou votre dock.",
+    installHint:
+      "Téléchargez Kwami sur cet appareil et ouvrez-le depuis votre écran d'accueil ou votre dock.",
     downloadApp: "Télécharger l'application",
     installed: 'Installée sur cet appareil',
-    installIos: "Dans Safari, appuyez sur Partager, puis sur Sur l'écran d'accueil, puis sur Ajouter.",
-    installAndroid: "Appuyez sur Télécharger l'application, ou ouvrez le menu du navigateur et choisissez Installer l'application.",
-    installDesktop: "Cliquez sur Télécharger l'application, ou sur l'icône d'installation dans la barre d'adresse. Sur Safari ou Firefox, ouvrez ce site dans Chrome ou Edge pour l'installer.",
+    installIos:
+      "Dans Safari, appuyez sur Partager, puis sur Sur l'écran d'accueil, puis sur Ajouter.",
+    installAndroid:
+      "Appuyez sur Télécharger l'application, ou ouvrez le menu du navigateur et choisissez Installer l'application.",
+    installDesktop:
+      "Cliquez sur Télécharger l'application, ou sur l'icône d'installation dans la barre d'adresse. Sur Safari ou Firefox, ouvrez ce site dans Chrome ou Edge pour l'installer.",
   },
   models: {
     title: 'Modèles',
@@ -252,7 +260,8 @@ export const fr = {
     providerGithub: 'GitHub',
     providerMetaMask: 'MetaMask',
     providerPhantom: 'Phantom',
-    walletNotFound: "{wallet} n'est pas installé. Ouverture de la page de téléchargement — revenez et réessayez une fois qu'il est ajouté.",
+    walletNotFound:
+      "{wallet} n'est pas installé. Ouverture de la page de téléchargement — revenez et réessayez une fois qu'il est ajouté.",
     walletInstall: 'Installer {wallet}',
     walletInstallOpen: 'Ouvrir la page de téléchargement',
     walletDetected: 'Détecté',
@@ -263,19 +272,23 @@ export const fr = {
     walletActionConnect: 'Connecter',
     connectWallet: 'Connecter {wallet}',
     connectWalletWithChain: 'Connecter {wallet} avec {chain}',
-    walletOpenAppHint: "Ouverture de {wallet}. Les téléphones n'ont pas d'extensions de navigateur, alors installez l'app si rien ne se passe.",
+    walletOpenAppHint:
+      "Ouverture de {wallet}. Les téléphones n'ont pas d'extensions de navigateur, alors installez l'app si rien ne se passe.",
     walletConnecting: 'Approuvez dans {wallet}',
     chainSolana: 'Solana',
     chainEthereum: 'Ethereum',
     web3Statement: 'Connectez-vous à Kwami avec votre portefeuille.',
     web3FormLabel: 'Se connecter avec un portefeuille',
-    web3Hint: 'Approuvez un message dans votre portefeuille. Nous ne vous demandons jamais de transférer des fonds.',
+    web3Hint:
+      'Approuvez un message dans votre portefeuille. Nous ne vous demandons jamais de transférer des fonds.',
     web3Note: "L'adresse de votre portefeuille devient votre compte. Aucun e-mail requis.",
-    web3ProviderDisabled: "La connexion par portefeuille n'est pas encore activée sur ce projet. Utilisez l'e-mail ou le téléphone, ou activez Authentication → Providers → Web3.",
+    web3ProviderDisabled:
+      "La connexion par portefeuille n'est pas encore activée sur ce projet. Utilisez l'e-mail ou le téléphone, ou activez Authentication → Providers → Web3.",
     web3Rejected: 'La signature a été annulée dans le portefeuille.',
     web3Failed: 'La connexion par portefeuille a échoué.',
     configError: 'Erreur de configuration',
-    configErrorHint: "Il manque à cette version des variables d'environnement obligatoires : {vars}. Copiez .env.sample vers .env et remplissez-les.",
+    configErrorHint:
+      "Il manque à cette version des variables d'environnement obligatoires : {vars}. Copiez .env.sample vers .env et remplissez-les.",
     welcome: 'Bienvenue',
     signInContinue: "Connectez-vous pour continuer vers l'app Kwami",
     orContinueWithEmail: 'ou continuez avec un e-mail',
@@ -296,12 +309,14 @@ export const fr = {
     passwordTooShort: 'Le mot de passe doit faire au moins 6 caractères',
     failedSignUp: "Échec de l'inscription",
     confirmByEmail: 'Consultez votre boîte mail pour confirmer votre compte',
-    invalidCredentialsSuggestSignup: 'Identifiants invalides. Nouveau ? Cliquez ci-dessous pour vous inscrire.',
+    invalidCredentialsSuggestSignup:
+      'Identifiants invalides. Nouveau ? Cliquez ci-dessous pour vous inscrire.',
     failedSignIn: 'Échec de la connexion',
     alreadyHaveAccount: 'Vous avez déjà un compte ?',
     noAccount: "Vous n'avez pas de compte ?",
     invalidEmail: 'Saisissez une adresse e-mail valide',
-    emailNotConfirmed: "Confirmez d'abord votre adresse e-mail — le lien est dans votre boîte de réception.",
+    emailNotConfirmed:
+      "Confirmez d'abord votre adresse e-mail — le lien est dans votre boîte de réception.",
     accountExists: 'Un compte existe déjà avec cet e-mail. Connectez-vous plutôt.',
     emailFormLabel: 'Se connecter avec e-mail et mot de passe',
     signingIn: 'Connexion...',
@@ -361,7 +376,8 @@ export const fr = {
     resizeHint: 'Faites glisser pour redimensionner, ou utilisez les flèches',
     ephemeral: 'Non enregistrée',
     signedInHint: 'Les sites où vous êtes connecté le resteront la prochaine fois.',
-    ephemeralHint: 'Cette session est temporaire — les sites où vous vous connectez ne seront pas mémorisés.',
+    ephemeralHint:
+      'Cette session est temporaire — les sites où vous vous connectez ne seront pas mémorisés.',
   },
   wallet: {
     title: 'Portefeuille',
@@ -392,7 +408,8 @@ export const fr = {
       walletCreated: 'Portefeuille créé avec succès.',
       phantomConnected: 'Portefeuille Phantom {pubkey} connecté',
       phantomConnectedNoKey: 'Phantom connecté.',
-      transferIntentCreated: 'Intention de transfert créée ({id}). Envoyez {amount} {symbol} depuis Phantom.',
+      transferIntentCreated:
+        'Intention de transfert créée ({id}). Envoyez {amount} {symbol} depuis Phantom.',
       cardIntentCreated: "Intention d'achat par carte créée ({id}).",
       tokenAdded: 'Jeton ajouté à la liste autorisée.',
     },
@@ -405,7 +422,8 @@ export const fr = {
   tools: {
     webhookUrl: 'URL du webhook',
     httpMethod: 'Méthode HTTP',
-    webhookHint: "L'agent appelle cette URL avec les arguments de l'outil. Elle doit autoriser les requêtes cross-origin depuis cette app — utilisez un serveur MCP pour les API qui ne le font pas.",
+    webhookHint:
+      "L'agent appelle cette URL avec les arguments de l'outil. Elle doit autoriser les requêtes cross-origin depuis cette app — utilisez un serveur MCP pour les API qui ne le font pas.",
     invalidUrl: 'Saisissez une URL de webhook http(s) valide',
     title: 'Outils',
     registeredTools: 'Outils enregistrés',
@@ -440,7 +458,8 @@ export const fr = {
   },
   memory: {
     contextRetrieval: 'Récupération du contexte',
-    contextRetrievalHint: "Quelle quantité de conversation passée et combien de faits mémorisés sont envoyés avec chaque message. Les contextes plus larges se souviennent de plus de choses mais coûtent plus de jetons.",
+    contextRetrievalHint:
+      'Quelle quantité de conversation passée et combien de faits mémorisés sont envoyés avec chaque message. Les contextes plus larges se souviennent de plus de choses mais coûtent plus de jetons.',
     contextSizePlaceholder: 'Choisir la taille du contexte',
     contextSizeLean: 'Léger — 4 messages, uniquement les correspondances fortes',
     contextSizeBalanced: 'Équilibré — 10 messages',
@@ -508,11 +527,14 @@ export const fr = {
     whatsappSenders: 'Expéditeurs WhatsApp',
     smsSenders: 'Expéditeurs SMS',
     latestRuntime: 'Dernière exécution',
-    sharedInfraSummary: 'Des trunks partagés font tourner la plateforme. Chaque kwami garde son propre numéro et son propre expéditeur.',
+    sharedInfraSummary:
+      'Des trunks partagés font tourner la plateforme. Chaque kwami garde son propre numéro et son propre expéditeur.',
     createNumber: 'Créer un numéro',
-    createNumberHelp: 'Créez un numéro de téléphone pour ce kwami en 3 étapes : choisir le pays, trouver un numéro disponible, puis l’acheter.',
+    createNumberHelp:
+      'Créez un numéro de téléphone pour ce kwami en 3 étapes : choisir le pays, trouver un numéro disponible, puis l’acheter.',
     country: 'Pays',
-    provisionNote: 'Acheter un numéro ici le provisionne pour le kwami actif et le synchronise automatiquement avec l’infrastructure téléphonique partagée.',
+    provisionNote:
+      'Acheter un numéro ici le provisionne pour le kwami actif et le synchronise automatiquement avec l’infrastructure téléphonique partagée.',
     findAvailableNumber: 'Trouver un numéro disponible',
     refreshSuggestion: 'Actualiser la suggestion',
     refresh: 'Actualiser',
@@ -526,15 +548,18 @@ export const fr = {
     ok: 'OK',
     noVoiceChannel: 'Provisionnez un numéro pour activer les appels sur ce kwami.',
     callRecipient: 'Destinataire de l’appel',
-    callModesHelp: 'Tester Twilio seul isole votre numéro, votre compte et les règles géographiques. Appeler avec l’agent utilise LiveKit SIP et le worker.',
+    callModesHelp:
+      'Tester Twilio seul isole votre numéro, votre compte et les règles géographiques. Appeler avec l’agent utilise LiveKit SIP et le worker.',
     testCallTwilio: 'Appel de test (Twilio seul)',
     callWithAgent: 'Appeler avec l’agent',
     removeNumberFromKwami: 'Retirer le numéro du kwami',
-    phoneClaimedDetails: 'Le téléphone est réservé à ce kwami. WhatsApp et SMS sont maintenant activés.',
+    phoneClaimedDetails:
+      'Le téléphone est réservé à ce kwami. WhatsApp et SMS sont maintenant activés.',
     whatsapp: 'WhatsApp',
     sms: 'SMS',
     sender: 'Expéditeur',
-    noWhatsappSender: 'Un expéditeur WhatsApp apparaîtra après le provisionnement du premier numéro.',
+    noWhatsappSender:
+      'Un expéditeur WhatsApp apparaîtra après le provisionnement du premier numéro.',
     approvedSender: 'Expéditeur approuvé',
     markWhatsappReady: 'Marquer WhatsApp comme prêt',
     recipient: 'Destinataire',
@@ -557,8 +582,10 @@ export const fr = {
     removePhoneTitle: 'Retirer le numéro de téléphone ?',
     confirmRemoveRelease: 'Retirer et libérer',
     cancel: 'Annuler',
-    removePhoneDetails: 'Cela retire les canaux vocal et WhatsApp de ce kwami, met à jour les trunks LiveKit SIP partagés, détache le numéro de votre trunk SIP Twilio s’il est configuré, et libère le numéro chez Twilio.',
-    removePhoneWarning: 'Vous ne pouvez pas annuler cette action. Vous pourrez provisionner un nouveau numéro ensuite.',
+    removePhoneDetails:
+      'Cela retire les canaux vocal et WhatsApp de ce kwami, met à jour les trunks LiveKit SIP partagés, détache le numéro de votre trunk SIP Twilio s’il est configuré, et libère le numéro chez Twilio.',
+    removePhoneWarning:
+      'Vous ne pouvez pas annuler cette action. Vous pourrez provisionner un nouveau numéro ensuite.',
     numberLabel: 'Numéro :',
     voiceOutboundStaleWarning:
       "Ce canal a été enregistré avant que le SIP sortant ne soit entièrement synchronisé. Vous pouvez quand même essayer {callWithAgent} — en cas d'échec, vérifiez {code} sur l'API et que votre numéro Twilio est bien sur le trunk sortant LiveKit.",
@@ -611,7 +638,7 @@ export const fr = {
     allowInterruptions: 'Autoriser les interruptions',
     allowInterruptionsDesc: "Laisser l'utilisateur interrompre l'agent pendant qu'il parle",
     minInterruptionDuration: "Durée minimale d'interruption (s)",
-    minInterruptionWords: "Nombre minimal de mots pour interrompre",
+    minInterruptionWords: 'Nombre minimal de mots pour interrompre',
     noiseCancellation: 'Réduction de bruit',
     enableNoiseCancellation: 'Activer la réduction de bruit',
     enableNoiseCancellationDesc: "Réduire le bruit de fond dans l'entrée audio",
@@ -673,7 +700,8 @@ export const fr = {
     temperatureHint: 'Plus bas = ciblé, plus haut = créatif',
     maxTokens: 'Jetons maximum',
     maxTokensHint: 'Longueur maximale de la réponse',
-    realtimeInfo: "Les modèles temps réel permettent un flux audio bidirectionnel à très faible latence. Certains prennent aussi en charge l'entrée vidéo en direct.",
+    realtimeInfo:
+      "Les modèles temps réel permettent un flux audio bidirectionnel à très faible latence. Certains prennent aussi en charge l'entrée vidéo en direct.",
     audio: 'Audio',
     video: 'Vidéo',
     tools: 'Outils',
@@ -729,7 +757,8 @@ export const fr = {
     light: 'Clair',
     quickPalettes: 'Palettes rapides (identiques au blob XYZ)',
     syncAvatarColors: "Synchroniser les couleurs de l'avatar",
-    randomizeHint: "Touchez une palette pour l'appliquer, ou utilisez le dé pour tirer un nouveau jeu avec la palette choisie. La luminosité redistribue les couleurs pour les calques sombres ou clairs. Les réglages de scène sont enregistrés localement et avec le bouton Enregistrer du kwami.",
+    randomizeHint:
+      "Touchez une palette pour l'appliquer, ou utilisez le dé pour tirer un nouveau jeu avec la palette choisie. La luminosité redistribue les couleurs pour les calques sombres ou clairs. Les réglages de scène sont enregistrés localement et avec le bouton Enregistrer du kwami.",
     type: 'Type',
     overlayTypeAria: 'Type de calque',
     solid: 'Uni',
@@ -774,6 +803,7 @@ export const fr = {
     maxSize: 'Taille maximale',
     twinkleSpeed: 'Vitesse de scintillement',
     rotationSpeed: 'Vitesse de rotation',
-    starsHint: 'Les étoiles 3D sont rendues dans l’espace de la scène, créant profondeur et parallaxe',
+    starsHint:
+      'Les étoiles 3D sont rendues dans l’espace de la scène, créant profondeur et parallaxe',
   },
 };

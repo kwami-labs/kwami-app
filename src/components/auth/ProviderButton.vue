@@ -20,9 +20,7 @@ const oauth = useOAuthSignIn();
 const web3 = useWeb3SignIn();
 
 const isWeb3 = computed(() => !props.provider.oauth);
-const isLoading = computed(() =>
-  isWeb3.value ? web3.isLoading.value : oauth.isLoading.value,
-);
+const isLoading = computed(() => (isWeb3.value ? web3.isLoading.value : oauth.isLoading.value));
 const error = computed(() => (isWeb3.value ? web3.error.value : oauth.error.value));
 const label = computed(() => t('auth.continueWith', { provider: t(props.provider.labelKey) }));
 /** Only set for a wallet that is not installed; see useWeb3SignIn. */

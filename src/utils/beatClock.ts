@@ -267,7 +267,11 @@ export function createBeatClock(): BeatClock {
       // believe it much. Take the track's word for it. The phase is left to the
       // nudge below and to the onsets after it, rather than snapped to this
       // hit: a snap is the one thing the caller cannot smooth over.
-      if (confidence < RELOCK_CONFIDENCE && intervalMs >= MIN_PERIOD_MS && intervalMs <= MAX_PERIOD_MS) {
+      if (
+        confidence < RELOCK_CONFIDENCE &&
+        intervalMs >= MIN_PERIOD_MS &&
+        intervalMs <= MAX_PERIOD_MS
+      ) {
         periodMs = intervalMs;
       }
     }

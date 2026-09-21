@@ -1,6 +1,6 @@
 /**
  * BlobXyz Avatar Store
- * 
+ *
  * Dedicated store for blob renderer state with organized sections:
  * - SKIN: Visual appearance (skin type, colors, material properties)
  * - SHAPE: Geometry (scale, position, spikes, amplitude)
@@ -20,10 +20,28 @@ import { randomizeBlobState } from 'kwami';
 // =====================================================
 
 export type SkinType =
-  | 'radial' | 'banded' | 'striped' | 'marble' | 'fresnel' | 'iridescent' | 'spiral' | 'plasma' | 'gradient'
-  | 'matte' | 'glossy' | 'metallic' | 'subsurface'
-  | 'chrome' | 'clay' | 'jade' | 'toon-matcap' | 'hologram'
-  | 'flat' | 'stepped' | 'halftone' | 'outlined';
+  | 'radial'
+  | 'banded'
+  | 'striped'
+  | 'marble'
+  | 'fresnel'
+  | 'iridescent'
+  | 'spiral'
+  | 'plasma'
+  | 'gradient'
+  | 'matte'
+  | 'glossy'
+  | 'metallic'
+  | 'subsurface'
+  | 'chrome'
+  | 'clay'
+  | 'jade'
+  | 'toon-matcap'
+  | 'hologram'
+  | 'flat'
+  | 'stepped'
+  | 'halftone'
+  | 'outlined';
 
 export type InteractionAction =
   | 'none'

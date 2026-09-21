@@ -132,7 +132,8 @@ export const extrasIt = {
   extras: {
     themeExported: 'Ecco il tema attuale in JSON.',
     themeJsonRequired: 'Indica il tema come stringa JSON.',
-    themeImportRejected: "Quello non è un tema che l'app sappia leggere, quindi non è cambiato nulla.",
+    themeImportRejected:
+      "Quello non è un tema che l'app sappia leggere, quindi non è cambiato nulla.",
     themeImported: 'Il tema importato è stato applicato.',
     actionImportedTheme: 'Tema importato',
 

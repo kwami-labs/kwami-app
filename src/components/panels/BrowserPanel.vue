@@ -326,9 +326,7 @@ onBeforeUnmount(() => {
           <div
             class="browser-panel__url-dot"
             :class="
-              isPersistent
-                ? 'browser-panel__url-dot--green'
-                : 'browser-panel__url-dot--amber'
+              isPersistent ? 'browser-panel__url-dot--green' : 'browser-panel__url-dot--amber'
             "
             :title="isPersistent ? t('browser.signedInHint') : t('browser.ephemeralHint')"
           />
@@ -747,7 +745,9 @@ onBeforeUnmount(() => {
 }
 
 @keyframes skeleton-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Enter/leave transitions. The docked panel animates its flex basis as part of

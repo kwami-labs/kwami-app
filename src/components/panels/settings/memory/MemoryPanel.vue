@@ -54,17 +54,23 @@ const loadError = ref('');
 // Tab state (persisted via store)
 const activeTab = computed({
   get: () => memoryUI.value.activeTab,
-  set: (v) => { memoryUI.value.activeTab = v; }
+  set: (v) => {
+    memoryUI.value.activeTab = v;
+  },
 });
 
 const contextSize = computed({
   get: () => memoryUI.value.contextSize,
-  set: (v: 'lean' | 'balanced' | 'rich') => { memoryUI.value.contextSize = v; },
+  set: (v: 'lean' | 'balanced' | 'rich') => {
+    memoryUI.value.contextSize = v;
+  },
 });
 
 const includeFacts = computed({
   get: () => memoryUI.value.includeFacts ?? true,
-  set: (v: boolean) => { memoryUI.value.includeFacts = v; },
+  set: (v: boolean) => {
+    memoryUI.value.includeFacts = v;
+  },
 });
 
 const contextSizeOptions = computed(() => [
@@ -120,14 +126,14 @@ interface Node {
   created_at: string | null;
 }
 
-
-
 // Pagination state
 
 // Graph modal state (shared so agent tools can open it)
 const showGraphModal = computed({
   get: () => memoryUI.value.graphModalOpen,
-  set: (v) => { memoryUI.value.graphModalOpen = Boolean(v); },
+  set: (v) => {
+    memoryUI.value.graphModalOpen = Boolean(v);
+  },
 });
 
 // Delete confirmation state
@@ -163,7 +169,7 @@ async function saveEdge() {
   if (!newFact) return;
 
   // Find original to compare
-  const edge = edges.value.find(e => e.uuid === uuid);
+  const edge = edges.value.find((e) => e.uuid === uuid);
   if (!edge || edge.fact === newFact) {
     cancelEditEdge();
     return;
@@ -199,15 +205,30 @@ const savingNode = ref(false);
 
 // Available entity types for the labels dropdown
 const entityTypeNames = [
-  'Preference', 'Person', 'Organization', 'Location', 'Event',
-  'Project', 'Topic', 'Product', 'Skill', 'Goal', 'Procedure',
-  'Pet', 'Activity', 'Attribute', 'Genre', 'Artist', 'Tool', 'Venue',
+  'Preference',
+  'Person',
+  'Organization',
+  'Location',
+  'Event',
+  'Project',
+  'Topic',
+  'Product',
+  'Skill',
+  'Goal',
+  'Procedure',
+  'Pet',
+  'Activity',
+  'Attribute',
+  'Genre',
+  'Artist',
+  'Tool',
+  'Venue',
 ];
 
 const entityTypeOptions = computed(() =>
   entityTypeNames
-    .filter(et => !editNodeData.value.labels.includes(et))
-    .map(et => ({ label: et, value: et }))
+    .filter((et) => !editNodeData.value.labels.includes(et))
+    .map((et) => ({ label: et, value: et })),
 );
 
 function startEditNode(node: Node) {
@@ -244,8 +265,11 @@ async function saveNode() {
   const newName = editNodeData.value.name.trim();
   if (!newName) return;
 
-  const node = nodes.value.find(n => n.uuid === uuid);
-  if (!node) { cancelEditNode(); return; }
+  const node = nodes.value.find((n) => n.uuid === uuid);
+  if (!node) {
+    cancelEditNode();
+    return;
+  }
 
   const oldName = node.name;
   const oldSummary = node.summary;
@@ -281,8 +305,6 @@ async function saveNode() {
 // ============================================================================
 // Graph Operations: Communities, Duplicates, Merge, Reorganize
 // ============================================================================
-
-
 
 const reorganizeRef = ref<InstanceType<typeof ReorganizePreview> | null>(null);
 
@@ -321,7 +343,7 @@ async function mergePair(keepUuid: string, removeUuid: string) {
     );
     // Remove the merged pair from the list
     duplicates.value = duplicates.value.filter(
-      d => !(d.keep.uuid === keepUuid && d.remove.uuid === removeUuid)
+      (d) => !(d.keep.uuid === keepUuid && d.remove.uuid === removeUuid),
     );
     // Refresh data
     loadMemoryData();
@@ -385,10 +407,10 @@ const loadMoreNodes = () => memoryStore.loadMoreNodes();
 
 async function deleteUserMemory() {
   if (!userId.value) return;
-  
+
   isDeleting.value = true;
   deleteError.value = '';
-  
+
   try {
     // The store clears the graph state itself on success.
     const result = await memoryStore.deleteAll();
@@ -415,13 +437,17 @@ const pendingDeletions = ref<Map<string, PendingDeletion>>(new Map());
 function createUndoToast(message: string, onUndo: () => void) {
   return h('div', { class: 'toast-undo-content' }, [
     h('span', message),
-    h('button', {
-      class: 'toast-undo-btn',
-      onClick: (e: Event) => {
-        e.stopPropagation();
-        onUndo();
-      }
-    }, t('memory.undo'))
+    h(
+      'button',
+      {
+        class: 'toast-undo-btn',
+        onClick: (e: Event) => {
+          e.stopPropagation();
+          onUndo();
+        },
+      },
+      t('memory.undo'),
+    ),
   ]);
 }
 
@@ -430,20 +456,20 @@ const deletingEdge = ref<string | null>(null);
 
 function deleteEdge(edgeUuid: string | null) {
   if (!edgeUuid || !userId.value) return;
-  
+
   // Cancel any ongoing edit
   if (editingEdgeUuid.value === edgeUuid) cancelEditEdge();
-  
-  const index = edges.value.findIndex(e => e.uuid === edgeUuid);
+
+  const index = edges.value.findIndex((e) => e.uuid === edgeUuid);
   if (index === -1) return;
-  
+
   const edge = edges.value[index]!;
   edges.value.splice(index, 1);
-  
+
   const timeoutId = setTimeout(() => {
     performEdgeDeletion(edgeUuid);
   }, 5000);
-  
+
   const toastId = toast(
     createUndoToast(t('memory.toastFactRemoved'), () => undoDeletion(edgeUuid)),
     {
@@ -452,9 +478,9 @@ function deleteEdge(edgeUuid: string | null) {
       closeOnClick: false,
       pauseOnHover: true,
       icon: false,
-    }
+    },
   );
-  
+
   pendingDeletions.value.set(edgeUuid, {
     type: 'edge',
     uuid: edgeUuid,
@@ -468,10 +494,10 @@ function deleteEdge(edgeUuid: string | null) {
 function undoDeletion(uuid: string) {
   const pending = pendingDeletions.value.get(uuid);
   if (!pending) return;
-  
+
   clearTimeout(pending.timeoutId);
   toast.dismiss(pending.toastId);
-  
+
   if (pending.type === 'edge') {
     const insertIndex = Math.min(pending.index, edges.value.length);
     edges.value.splice(insertIndex, 0, pending.item as Edge);
@@ -479,7 +505,7 @@ function undoDeletion(uuid: string) {
     const insertIndex = Math.min(pending.index, nodes.value.length);
     nodes.value.splice(insertIndex, 0, pending.item as Node);
   }
-  
+
   pendingDeletions.value.delete(uuid);
   toast.success(t('memory.toastRestored'), { timeout: 2000 });
 }
@@ -487,10 +513,10 @@ function undoDeletion(uuid: string) {
 async function performEdgeDeletion(edgeUuid: string) {
   const pending = pendingDeletions.value.get(edgeUuid);
   if (!pending) return;
-  
+
   const savedPending = { ...pending };
   pendingDeletions.value.delete(edgeUuid);
-  
+
   try {
     await memoryStore.deleteEdge(edgeUuid);
   } catch (e) {
@@ -507,20 +533,20 @@ const deletingNode = ref<string | null>(null);
 
 function deleteNode(nodeUuid: string | null) {
   if (!nodeUuid || !userId.value) return;
-  
+
   // Cancel any ongoing edit
   if (editingNodeUuid.value === nodeUuid) cancelEditNode();
-  
-  const index = nodes.value.findIndex(n => n.uuid === nodeUuid);
+
+  const index = nodes.value.findIndex((n) => n.uuid === nodeUuid);
   if (index === -1) return;
-  
+
   const node = nodes.value[index]!;
   nodes.value.splice(index, 1);
-  
+
   const timeoutId = setTimeout(() => {
     performNodeDeletion(nodeUuid);
   }, 5000);
-  
+
   const toastId = toast(
     createUndoToast(t('memory.toastEntityRemoved'), () => undoDeletion(nodeUuid)),
     {
@@ -529,9 +555,9 @@ function deleteNode(nodeUuid: string | null) {
       closeOnClick: false,
       pauseOnHover: true,
       icon: false,
-    }
+    },
   );
-  
+
   pendingDeletions.value.set(nodeUuid, {
     type: 'node',
     uuid: nodeUuid,
@@ -545,10 +571,10 @@ function deleteNode(nodeUuid: string | null) {
 async function performNodeDeletion(nodeUuid: string) {
   const pending = pendingDeletions.value.get(nodeUuid);
   if (!pending) return;
-  
+
   const savedPending = { ...pending };
   pendingDeletions.value.delete(nodeUuid);
-  
+
   try {
     await memoryStore.deleteNode(nodeUuid);
   } catch (e) {
@@ -567,7 +593,7 @@ watch(
     if (newId && newId !== oldId) {
       loadMemoryData();
     }
-  }
+  },
 );
 
 watch(
@@ -594,7 +620,6 @@ onMounted(() => {
     </div>
 
     <div class="panel-body">
-     
       <!-- Memory Stats -->
       <PanelSection :title="t('memory.overview')">
         <div v-if="isLoading" class="loading-state">
@@ -604,10 +629,16 @@ onMounted(() => {
         <div v-else-if="loadError" class="error-state">
           <iconify-icon icon="ph:warning-duotone"></iconify-icon>
           {{ loadError }}
-          <BaseButton size="sm" variant="secondary" @click="loadMemoryData">{{ t('memory.retry') }}</BaseButton>
+          <BaseButton size="sm" variant="secondary" @click="loadMemoryData">{{
+            t('memory.retry')
+          }}</BaseButton>
         </div>
         <div v-else class="stats-grid">
-          <div class="stat-card" :class="{ active: activeTab === 'facts' }" @click="activeTab = 'facts'">
+          <div
+            class="stat-card"
+            :class="{ active: activeTab === 'facts' }"
+            @click="activeTab = 'facts'"
+          >
             <div class="stat-value">{{ edgesTotal || edges.length }}</div>
             <div class="stat-label">{{ t('memory.facts') }}</div>
             <div v-if="isLoadingMoreEdges" class="stat-sub loading-sub">
@@ -615,7 +646,11 @@ onMounted(() => {
               {{ edges.length }}/{{ edgesTotal }}
             </div>
           </div>
-          <div class="stat-card" :class="{ active: activeTab === 'entities' }" @click="activeTab = 'entities'">
+          <div
+            class="stat-card"
+            :class="{ active: activeTab === 'entities' }"
+            @click="activeTab = 'entities'"
+          >
             <div class="stat-value">{{ nodesTotal || nodes.length }}</div>
             <div class="stat-label">{{ t('memory.entities') }}</div>
             <div v-if="isLoadingMoreNodes" class="stat-sub loading-sub">
@@ -623,10 +658,17 @@ onMounted(() => {
               {{ nodes.length }}/{{ nodesTotal }}
             </div>
           </div>
-          <div class="stat-card" :class="{ active: activeTab === 'messages' }" @click="activeTab = 'messages'">
+          <div
+            class="stat-card"
+            :class="{ active: activeTab === 'messages' }"
+            @click="activeTab = 'messages'"
+          >
             <div class="stat-value">{{ messages.length }}</div>
             <div class="stat-label">{{ t('memory.messages') }}</div>
-            <div class="stat-sub">{{ sessionCount }} {{ sessionCount === 1 ? t('memory.session') : t('memory.sessions') }}</div>
+            <div class="stat-sub">
+              {{ sessionCount }}
+              {{ sessionCount === 1 ? t('memory.session') : t('memory.sessions') }}
+            </div>
           </div>
         </div>
       </PanelSection>
@@ -660,32 +702,44 @@ onMounted(() => {
           {{ t('memory.noFactsLearned') }}
         </div>
         <div v-else class="facts-list">
-          <div v-for="(edge, i) in edges" :key="edge.uuid || i" class="fact-item" :class="{ editing: editingEdgeUuid === edge.uuid }">
+          <div
+            v-for="(edge, i) in edges"
+            :key="edge.uuid || i"
+            class="fact-item"
+            :class="{ editing: editingEdgeUuid === edge.uuid }"
+          >
             <!-- Normal view -->
             <template v-if="editingEdgeUuid !== edge.uuid">
               <div class="fact-row">
                 <div class="fact-content">
-                  <iconify-icon 
-                    :icon="edge.invalid_at ? 'ph:x-circle-duotone' : 'ph:check-circle-duotone'" 
+                  <iconify-icon
+                    :icon="edge.invalid_at ? 'ph:x-circle-duotone' : 'ph:check-circle-duotone'"
                     :class="edge.invalid_at ? 'invalid' : 'valid'"
                   ></iconify-icon>
-                  <span :class="{ 'strikethrough': edge.invalid_at }">{{ edge.fact }}</span>
+                  <span :class="{ strikethrough: edge.invalid_at }">{{ edge.fact }}</span>
                 </div>
                 <div class="item-actions">
-                  <button 
-                    class="action-btn edit-btn" 
+                  <button
+                    class="action-btn edit-btn"
                     @click="startEditEdge(edge)"
                     :title="t('memory.editFactTitle')"
                   >
                     <iconify-icon icon="ph:pencil-simple-duotone"></iconify-icon>
                   </button>
-                  <button 
-                    class="action-btn delete-btn" 
+                  <button
+                    class="action-btn delete-btn"
                     @click="deleteEdge(edge.uuid)"
                     :disabled="deletingEdge === edge.uuid"
                     :title="t('memory.deleteFactTitle')"
                   >
-                    <iconify-icon :icon="deletingEdge === edge.uuid ? 'ph:spinner-gap-duotone' : 'ph:trash-simple-duotone'" :class="{ spin: deletingEdge === edge.uuid }"></iconify-icon>
+                    <iconify-icon
+                      :icon="
+                        deletingEdge === edge.uuid
+                          ? 'ph:spinner-gap-duotone'
+                          : 'ph:trash-simple-duotone'
+                      "
+                      :class="{ spin: deletingEdge === edge.uuid }"
+                    ></iconify-icon>
                   </button>
                 </div>
               </div>
@@ -715,10 +769,22 @@ onMounted(() => {
                   @keydown.escape="cancelEditEdge"
                 />
                 <div class="edit-actions">
-                  <button class="action-btn save-btn" @click="saveEdge" :disabled="savingEdge" :title="t('memory.save')">
-                    <iconify-icon :icon="savingEdge ? 'ph:spinner-gap-duotone' : 'ph:check-bold'" :class="{ spin: savingEdge }"></iconify-icon>
+                  <button
+                    class="action-btn save-btn"
+                    @click="saveEdge"
+                    :disabled="savingEdge"
+                    :title="t('memory.save')"
+                  >
+                    <iconify-icon
+                      :icon="savingEdge ? 'ph:spinner-gap-duotone' : 'ph:check-bold'"
+                      :class="{ spin: savingEdge }"
+                    ></iconify-icon>
                   </button>
-                  <button class="action-btn cancel-btn" @click="cancelEditEdge" :title="t('memory.cancel')">
+                  <button
+                    class="action-btn cancel-btn"
+                    @click="cancelEditEdge"
+                    :title="t('memory.cancel')"
+                  >
                     <iconify-icon icon="ph:x-bold"></iconify-icon>
                   </button>
                 </div>
@@ -731,11 +797,7 @@ onMounted(() => {
           <iconify-icon icon="ph:spinner-gap-duotone" class="spin"></iconify-icon>
           <span>{{ t('memory.loadingFacts', { loaded: edges.length, total: edgesTotal }) }}</span>
         </div>
-        <button 
-          v-else-if="edgesHasMore" 
-          class="load-more-btn" 
-          @click="loadMoreEdges"
-        >
+        <button v-else-if="edgesHasMore" class="load-more-btn" @click="loadMoreEdges">
           <iconify-icon icon="ph:arrow-down-duotone"></iconify-icon>
           {{ t('memory.loadMore', { loaded: edges.length, total: edgesTotal }) }}
         </button>
@@ -751,29 +813,43 @@ onMounted(() => {
           {{ t('memory.noEntitiesDiscovered') }}
         </div>
         <div v-else class="entities-list">
-          <div v-for="(node, i) in nodes" :key="node.uuid || i" class="entity-item" :class="{ editing: editingNodeUuid === node.uuid }">
+          <div
+            v-for="(node, i) in nodes"
+            :key="node.uuid || i"
+            class="entity-item"
+            :class="{ editing: editingNodeUuid === node.uuid }"
+          >
             <!-- Normal view -->
             <template v-if="editingNodeUuid !== node.uuid">
               <div class="entity-row">
                 <div class="entity-header">
                   <span class="entity-name">{{ node.name }}</span>
-                  <span v-for="label in node.labels" :key="label" class="entity-label">{{ label }}</span>
+                  <span v-for="label in node.labels" :key="label" class="entity-label">{{
+                    label
+                  }}</span>
                 </div>
                 <div class="item-actions">
-                  <button 
-                    class="action-btn edit-btn" 
+                  <button
+                    class="action-btn edit-btn"
                     @click="startEditNode(node)"
                     :title="t('memory.editEntityTitle')"
                   >
                     <iconify-icon icon="ph:pencil-simple-duotone"></iconify-icon>
                   </button>
-                  <button 
-                    class="action-btn delete-btn" 
+                  <button
+                    class="action-btn delete-btn"
                     @click="deleteNode(node.uuid)"
                     :disabled="deletingNode === node.uuid"
                     :title="t('memory.deleteEntityTitle')"
                   >
-                    <iconify-icon :icon="deletingNode === node.uuid ? 'ph:spinner-gap-duotone' : 'ph:trash-simple-duotone'" :class="{ spin: deletingNode === node.uuid }"></iconify-icon>
+                    <iconify-icon
+                      :icon="
+                        deletingNode === node.uuid
+                          ? 'ph:spinner-gap-duotone'
+                          : 'ph:trash-simple-duotone'
+                      "
+                      :class="{ spin: deletingNode === node.uuid }"
+                    ></iconify-icon>
                   </button>
                 </div>
               </div>
@@ -808,9 +884,9 @@ onMounted(() => {
                 <div class="edit-field">
                   <label class="edit-label">{{ t('memory.labels') }}</label>
                   <div class="edit-labels">
-                    <span 
-                      v-for="(label, li) in editNodeData.labels" 
-                      :key="li" 
+                    <span
+                      v-for="(label, li) in editNodeData.labels"
+                      :key="li"
                       class="edit-label-chip"
                     >
                       {{ label }}
@@ -830,7 +906,10 @@ onMounted(() => {
                 </div>
                 <div class="edit-actions-row">
                   <button class="action-btn save-btn" @click="saveNode" :disabled="savingNode">
-                    <iconify-icon :icon="savingNode ? 'ph:spinner-gap-duotone' : 'ph:check-bold'" :class="{ spin: savingNode }"></iconify-icon>
+                    <iconify-icon
+                      :icon="savingNode ? 'ph:spinner-gap-duotone' : 'ph:check-bold'"
+                      :class="{ spin: savingNode }"
+                    ></iconify-icon>
                     {{ t('memory.save') }}
                   </button>
                   <button class="action-btn cancel-btn" @click="cancelEditNode">
@@ -845,13 +924,11 @@ onMounted(() => {
         <!-- Lazy loading progress for entities -->
         <div v-if="isLoadingMoreNodes" class="load-more-bar">
           <iconify-icon icon="ph:spinner-gap-duotone" class="spin"></iconify-icon>
-          <span>{{ t('memory.loadingEntities', { loaded: nodes.length, total: nodesTotal }) }}</span>
+          <span>{{
+            t('memory.loadingEntities', { loaded: nodes.length, total: nodesTotal })
+          }}</span>
         </div>
-        <button 
-          v-else-if="nodesHasMore" 
-          class="load-more-btn" 
-          @click="loadMoreNodes"
-        >
+        <button v-else-if="nodesHasMore" class="load-more-btn" @click="loadMoreNodes">
           <iconify-icon icon="ph:arrow-down-duotone"></iconify-icon>
           {{ t('memory.loadMore', { loaded: nodes.length, total: nodesTotal }) }}
         </button>
@@ -867,13 +944,26 @@ onMounted(() => {
           {{ t('memory.noConversationHistory') }}
         </div>
         <div v-else class="messages-list">
-          <div v-for="(msg, i) in messages" :key="i" class="message-item" :class="msg.role_type || msg.role">
+          <div
+            v-for="(msg, i) in messages"
+            :key="i"
+            class="message-item"
+            :class="msg.role_type || msg.role"
+          >
             <div class="message-header">
               <span class="message-role">
-                <iconify-icon :icon="msg.role_type === 'assistant' || msg.role === 'assistant' ? 'ph:robot-duotone' : 'ph:user-duotone'"></iconify-icon>
+                <iconify-icon
+                  :icon="
+                    msg.role_type === 'assistant' || msg.role === 'assistant'
+                      ? 'ph:robot-duotone'
+                      : 'ph:user-duotone'
+                  "
+                ></iconify-icon>
                 {{ msg.role || msg.role_type || t('memory.unknown') }}
               </span>
-              <span v-if="msg.created_at" class="message-date">{{ formatDateTime(msg.created_at) }}</span>
+              <span v-if="msg.created_at" class="message-date">{{
+                formatDateTime(msg.created_at)
+              }}</span>
             </div>
             <p class="message-content">{{ msg.content }}</p>
           </div>
@@ -902,22 +992,27 @@ onMounted(() => {
           </BaseButton>
         </div>
       </PanelSection>
-      
+
       <!-- Graph Modal -->
       <Teleport to="body">
         <Transition name="modal">
-          <div v-if="showGraphModal" class="graph-modal-overlay" @click.self="showGraphModal = false">
+          <div
+            v-if="showGraphModal"
+            class="graph-modal-overlay"
+            @click.self="showGraphModal = false"
+          >
             <div class="graph-modal">
               <div class="graph-modal-header">
-                <h2><iconify-icon icon="ph:graph-duotone"></iconify-icon> {{ t('memory.graphModalTitle') }}</h2>
+                <h2>
+                  <iconify-icon icon="ph:graph-duotone"></iconify-icon>
+                  {{ t('memory.graphModalTitle') }}
+                </h2>
                 <button class="close-btn" @click="showGraphModal = false">
                   <iconify-icon icon="ph:x"></iconify-icon>
                 </button>
               </div>
               <div class="graph-modal-body">
-                <MemoryGraph 
-                  :userId="userId" 
-                />
+                <MemoryGraph :userId="userId" />
               </div>
             </div>
           </div>
@@ -930,7 +1025,10 @@ onMounted(() => {
         <div class="graph-ops-section">
           <div class="graph-ops-row">
             <div class="graph-ops-info">
-              <h4><iconify-icon icon="ph:broom-duotone"></iconify-icon> {{ t('memoryOps.reorganizeTitle') }}</h4>
+              <h4>
+                <iconify-icon icon="ph:broom-duotone"></iconify-icon>
+                {{ t('memoryOps.reorganizeTitle') }}
+              </h4>
               <p>{{ t('memoryOps.reorganizeDesc') }}</p>
             </div>
             <BaseButton
@@ -956,7 +1054,10 @@ onMounted(() => {
         <div class="graph-ops-section">
           <div class="graph-ops-row">
             <div class="graph-ops-info">
-              <h4><iconify-icon icon="ph:copy-duotone"></iconify-icon> {{ t('memoryOps.duplicatesTitle') }}</h4>
+              <h4>
+                <iconify-icon icon="ph:copy-duotone"></iconify-icon>
+                {{ t('memoryOps.duplicatesTitle') }}
+              </h4>
               <p>{{ t('memoryOps.duplicatesDesc') }}</p>
             </div>
             <BaseButton
@@ -978,7 +1079,11 @@ onMounted(() => {
             {{ t('memoryOps.noDuplicates') }}
           </div>
           <div v-else class="duplicates-list">
-            <div v-for="dup in duplicates" :key="`${dup.keep.uuid}-${dup.remove.uuid}`" class="dup-item">
+            <div
+              v-for="dup in duplicates"
+              :key="`${dup.keep.uuid}-${dup.remove.uuid}`"
+              class="dup-item"
+            >
               <div class="dup-header">
                 <span class="dup-score">{{ dup.score }}%</span>
                 <span class="dup-match">{{ t('memoryOps.match') }}</span>
@@ -988,7 +1093,9 @@ onMounted(() => {
                   <iconify-icon icon="ph:check-circle-duotone" class="keep-icon"></iconify-icon>
                   <div>
                     <span class="dup-name">{{ dup.keep.name }}</span>
-                    <span class="dup-edges">{{ dup.keep.edge_count }} {{ t('memoryOps.edges') }}</span>
+                    <span class="dup-edges"
+                      >{{ dup.keep.edge_count }} {{ t('memoryOps.edges') }}</span
+                    >
                   </div>
                 </div>
                 <iconify-icon icon="ph:arrows-merge-duotone" class="merge-arrow"></iconify-icon>
@@ -996,7 +1103,9 @@ onMounted(() => {
                   <iconify-icon icon="ph:x-circle-duotone" class="remove-icon"></iconify-icon>
                   <div>
                     <span class="dup-name">{{ dup.remove.name }}</span>
-                    <span class="dup-edges">{{ dup.remove.edge_count }} {{ t('memoryOps.edges') }}</span>
+                    <span class="dup-edges"
+                      >{{ dup.remove.edge_count }} {{ t('memoryOps.edges') }}</span
+                    >
                   </div>
                 </div>
               </div>
@@ -1019,7 +1128,10 @@ onMounted(() => {
         <div class="graph-ops-section">
           <div class="graph-ops-row">
             <div class="graph-ops-info">
-              <h4><iconify-icon icon="ph:circles-three-plus-duotone"></iconify-icon> {{ t('memoryOps.communitiesTitle') }}</h4>
+              <h4>
+                <iconify-icon icon="ph:circles-three-plus-duotone"></iconify-icon>
+                {{ t('memoryOps.communitiesTitle') }}
+              </h4>
               <p>{{ t('memoryOps.communitiesDesc') }}</p>
             </div>
             <BaseButton
@@ -1036,14 +1148,22 @@ onMounted(() => {
           <div v-if="communitiesLoading" class="loading-state small">
             <iconify-icon icon="ph:spinner-gap-duotone" class="spin"></iconify-icon>
           </div>
-          <div v-else-if="communities.length === 0 && !communitiesLoading" class="empty-state small">
+          <div
+            v-else-if="communities.length === 0 && !communitiesLoading"
+            class="empty-state small"
+          >
             <iconify-icon icon="ph:circles-three-plus-duotone"></iconify-icon>
             {{ t('memoryOps.communitiesEmpty') }}
           </div>
           <div v-else class="communities-list">
             <div v-for="comm in communities" :key="comm.id" class="community-item">
               <div class="community-header">
-                <span class="community-id">{{ comm.members.slice(0, 2).map(m => m.name).join(' & ') }}</span>
+                <span class="community-id">{{
+                  comm.members
+                    .slice(0, 2)
+                    .map((m) => m.name)
+                    .join(' & ')
+                }}</span>
                 <span class="community-size">{{
                   t('memoryOps.communityNodes', { n: comm.size }, comm.size)
                 }}</span>
@@ -1064,24 +1184,23 @@ onMounted(() => {
       <!-- Danger Zone -->
       <PanelSection :title="t('memoryOps.dangerZone')">
         <div class="danger-zone">
-          <h4><iconify-icon icon="ph:warning-duotone"></iconify-icon> {{ t('memoryOps.destructiveTitle') }}</h4>
+          <h4>
+            <iconify-icon icon="ph:warning-duotone"></iconify-icon>
+            {{ t('memoryOps.destructiveTitle') }}
+          </h4>
           <p>{{ t('memoryOps.destructiveDesc') }}</p>
-          <BaseButton 
-            variant="danger" 
-            icon="ph:trash-simple-duotone" 
+          <BaseButton
+            variant="danger"
+            icon="ph:trash-simple-duotone"
             @click="showDeleteConfirm = true"
           >
             {{ t('memoryOps.deleteAllMemory') }}
           </BaseButton>
         </div>
       </PanelSection>
-      
+
       <!-- Reorganize Preview -->
-      <ReorganizePreview
-        ref="reorganizeRef"
-        :userId="userId"
-        @done="onReorgDone"
-      />
+      <ReorganizePreview ref="reorganizeRef" :userId="userId" @done="onReorgDone" />
 
       <!-- Delete Confirmation -->
       <ConfirmDialog
@@ -1250,7 +1369,9 @@ onMounted(() => {
   animation: spin 1s linear infinite;
 }
 @keyframes spin {
-  100% { transform: rotate(360deg); }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Item action buttons (edit + delete) */
@@ -1583,10 +1704,12 @@ onMounted(() => {
   background: var(--surface-1);
   border-radius: 0 6px 6px 0;
 }
-.message-item.user, .message-item.human {
+.message-item.user,
+.message-item.human {
   border-left-color: var(--accent-primary);
 }
-.message-item.assistant, .message-item.ai {
+.message-item.assistant,
+.message-item.ai {
   border-left-color: var(--accent-secondary);
 }
 .message-header {
@@ -1746,8 +1869,6 @@ onMounted(() => {
     transform: scale(0.95) translateY(10px);
   }
 }
-
-
 
 /* Danger Zone */
 .danger-zone {

@@ -35,9 +35,33 @@ let durationInterval: ReturnType<typeof setInterval> | null = null;
 let stopFn: (() => void) | null = null;
 
 const formatOptions: FormatOption[] = [
-  { id: 'fullscreen', label: 'Full Screen', icon: 'ph:monitor-bold', aspectRatio: '16:9', ratio: 16 / 9, outW: 1280, outH: 720 },
-  { id: 'mobile',     label: 'Mobile',      icon: 'ph:device-mobile-bold', aspectRatio: '9:16', ratio: 9 / 16, outW: 720, outH: 1280 },
-  { id: 'square',     label: 'Square',      icon: 'ph:square-bold',        aspectRatio: '1:1',  ratio: 1,      outW: 720, outH: 720 },
+  {
+    id: 'fullscreen',
+    label: 'Full Screen',
+    icon: 'ph:monitor-bold',
+    aspectRatio: '16:9',
+    ratio: 16 / 9,
+    outW: 1280,
+    outH: 720,
+  },
+  {
+    id: 'mobile',
+    label: 'Mobile',
+    icon: 'ph:device-mobile-bold',
+    aspectRatio: '9:16',
+    ratio: 9 / 16,
+    outW: 720,
+    outH: 1280,
+  },
+  {
+    id: 'square',
+    label: 'Square',
+    icon: 'ph:square-bold',
+    aspectRatio: '1:1',
+    ratio: 1,
+    outW: 720,
+    outH: 720,
+  },
 ];
 
 const selectedOption = computed(() => formatOptions.find((o) => o.id === selectedFormat.value));
@@ -48,9 +72,15 @@ const formattedDuration = computed(() => {
   return `${m}:${String(s).padStart(2, '0')}`;
 });
 
-function togglePopover() { isOpen.value = !isOpen.value; }
-function closePopover()  { isOpen.value = false; }
-function selectFormat(format: VideoFormat) { selectedFormat.value = format; }
+function togglePopover() {
+  isOpen.value = !isOpen.value;
+}
+function closePopover() {
+  isOpen.value = false;
+}
+function selectFormat(format: VideoFormat) {
+  selectedFormat.value = format;
+}
 
 // ── Recording flow ────────────────────────────────────────────
 
@@ -85,7 +115,10 @@ function onPickerCancel() {
 function stopRecording() {
   isRecording.value = false;
   isSaving.value = true;
-  if (durationInterval) { clearInterval(durationInterval); durationInterval = null; }
+  if (durationInterval) {
+    clearInterval(durationInterval);
+    durationInterval = null;
+  }
   stopFn?.();
   stopFn = null;
 }
@@ -141,7 +174,13 @@ onUnmounted(() => {
         class="record-btn"
         :class="{ active: isOpen, recording: isRecording, saving: isSaving }"
         :disabled="isSaving"
-        :title="isRecording ? t('recording.stopRecording') : isSaving ? t('recording.saving') : t('recording.record')"
+        :title="
+          isRecording
+            ? t('recording.stopRecording')
+            : isSaving
+              ? t('recording.saving')
+              : t('recording.record')
+        "
         @click="isRecording ? stopRecording() : !isSaving && togglePopover()"
       >
         <iconify-icon
@@ -150,7 +189,9 @@ onUnmounted(() => {
         ></iconify-icon>
       </button>
       <span v-if="isRecording" class="recording-duration">{{ formattedDuration }}</span>
-      <span v-if="isSaving" class="recording-duration saving-label">{{ t('recording.saving') }}</span>
+      <span v-if="isSaving" class="recording-duration saving-label">{{
+        t('recording.saving')
+      }}</span>
     </div>
 
     <!-- Format popover -->
@@ -186,7 +227,9 @@ onUnmounted(() => {
         <!-- Mic toggle -->
         <div class="mic-row">
           <div class="mic-label">
-            <iconify-icon :icon="includeMic ? 'ph:microphone-bold' : 'ph:microphone-slash-bold'"></iconify-icon>
+            <iconify-icon
+              :icon="includeMic ? 'ph:microphone-bold' : 'ph:microphone-slash-bold'"
+            ></iconify-icon>
             <span>{{ t('recording.microphone') }}</span>
           </div>
           <button
@@ -281,8 +324,12 @@ onUnmounted(() => {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* ── Main Button ────────────────────────────────────────────── */
@@ -331,13 +378,19 @@ onUnmounted(() => {
 .record-btn.recording {
   background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
   border-color: transparent;
-  box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4), 0 0 0 0 rgba(239, 68, 68, 0);
+  box-shadow:
+    0 4px 20px rgba(239, 68, 68, 0.4),
+    0 0 0 0 rgba(239, 68, 68, 0);
 }
 
-.record-btn.recording iconify-icon { color: white; }
+.record-btn.recording iconify-icon {
+  color: white;
+}
 
 .record-btn.recording:hover {
-  box-shadow: 0 6px 28px rgba(239, 68, 68, 0.5), 0 0 0 4px rgba(239, 68, 68, 0.15);
+  box-shadow:
+    0 6px 28px rgba(239, 68, 68, 0.5),
+    0 0 0 4px rgba(239, 68, 68, 0.15);
 }
 
 .record-btn.saving {
@@ -347,18 +400,33 @@ onUnmounted(() => {
   opacity: 0.7;
 }
 
-.record-btn.saving iconify-icon { color: var(--text-muted); }
-
-.pulse { animation: pulse 1.5s ease-in-out infinite; }
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.5; }
+.record-btn.saving iconify-icon {
+  color: var(--text-muted);
 }
 
-.spin { animation: spin 0.8s linear infinite; }
+.pulse {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.spin {
+  animation: spin 0.8s linear infinite;
+}
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ── Popover ────────────────────────────────────────────────── */
@@ -426,18 +494,45 @@ onUnmounted(() => {
   text-align: left;
 }
 
-.format-tab iconify-icon { font-size: 16px; color: var(--text-muted); flex-shrink: 0; }
-.format-label { flex: 1; font-size: 12px; font-weight: 500; color: var(--text-secondary); }
-.format-ratio  { font-size: 10px; font-weight: 500; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
+.format-tab iconify-icon {
+  font-size: 16px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.format-label {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+.format-ratio {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+}
 
-.format-tab:hover { background: var(--surface-2); }
+.format-tab:hover {
+  background: var(--surface-2);
+}
 .format-tab:hover iconify-icon,
-.format-tab:hover .format-label { color: var(--text-primary); }
+.format-tab:hover .format-label {
+  color: var(--text-primary);
+}
 
-.format-tab.active { background: var(--accent-glow); border-color: rgba(0, 217, 255, 0.2); }
-.format-tab.active iconify-icon { color: var(--accent-primary); }
-.format-tab.active .format-label { color: var(--text-primary); }
-.format-tab.active .format-ratio  { color: var(--accent-primary); }
+.format-tab.active {
+  background: var(--accent-glow);
+  border-color: rgba(0, 217, 255, 0.2);
+}
+.format-tab.active iconify-icon {
+  color: var(--accent-primary);
+}
+.format-tab.active .format-label {
+  color: var(--text-primary);
+}
+.format-tab.active .format-ratio {
+  color: var(--accent-primary);
+}
 
 .format-preview {
   display: flex;
@@ -455,10 +550,22 @@ onUnmounted(() => {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.preview-box iconify-icon { font-size: 20px; color: var(--text-muted); }
-.preview-box.fullscreen { width: 80px; height: 45px; }
-.preview-box.mobile     { width: 36px; height: 64px; }
-.preview-box.square     { width: 56px; height: 56px; }
+.preview-box iconify-icon {
+  font-size: 20px;
+  color: var(--text-muted);
+}
+.preview-box.fullscreen {
+  width: 80px;
+  height: 45px;
+}
+.preview-box.mobile {
+  width: 36px;
+  height: 64px;
+}
+.preview-box.square {
+  width: 56px;
+  height: 56px;
+}
 
 /* ── Mic toggle row ─────────────────────────────────────────── */
 .mic-row {
@@ -534,14 +641,33 @@ onUnmounted(() => {
   box-shadow: 0 4px 16px rgba(239, 68, 68, 0.3);
 }
 
-.start-btn iconify-icon { font-size: 16px; color: white; }
-.start-btn span         { font-size: 12px; font-weight: 600; color: white; }
-.start-btn:hover        { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(239, 68, 68, 0.4); }
-.start-btn:active       { transform: translateY(0); }
+.start-btn iconify-icon {
+  font-size: 16px;
+  color: white;
+}
+.start-btn span {
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+}
+.start-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(239, 68, 68, 0.4);
+}
+.start-btn:active {
+  transform: translateY(0);
+}
 
 /* Popover transition */
-.popover-enter-active, .popover-leave-active { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
-.popover-enter-from, .popover-leave-to       { opacity: 0; transform: translateY(-8px) scale(0.95); }
+.popover-enter-active,
+.popover-leave-active {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.popover-enter-from,
+.popover-leave-to {
+  opacity: 0;
+  transform: translateY(-8px) scale(0.95);
+}
 
 /* ── Preview Modal ────────────────────────────────────────────── */
 .preview-backdrop {
@@ -586,7 +712,10 @@ onUnmounted(() => {
   color: var(--text-primary);
 }
 
-.preview-title iconify-icon { font-size: 16px; color: var(--accent-primary); }
+.preview-title iconify-icon {
+  font-size: 16px;
+  color: var(--accent-primary);
+}
 
 .preview-close {
   display: flex;
@@ -602,11 +731,28 @@ onUnmounted(() => {
   color: var(--text-muted);
 }
 
-.preview-close:hover { background: var(--surface-2); border-color: var(--glass-border); color: var(--text-primary); }
-.preview-close iconify-icon { font-size: 14px; }
+.preview-close:hover {
+  background: var(--surface-2);
+  border-color: var(--glass-border);
+  color: var(--text-primary);
+}
+.preview-close iconify-icon {
+  font-size: 14px;
+}
 
-.preview-video-wrap { background: #000; display: flex; align-items: center; justify-content: center; max-height: 60vh; }
-.preview-video      { display: block; width: 100%; max-height: 60vh; object-fit: contain; }
+.preview-video-wrap {
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-height: 60vh;
+}
+.preview-video {
+  display: block;
+  width: 100%;
+  max-height: 60vh;
+  object-fit: contain;
+}
 
 .preview-actions {
   display: flex;
@@ -637,8 +783,13 @@ onUnmounted(() => {
   color: var(--text-muted);
 }
 
-.preview-discard-btn:hover { background: var(--surface-2); color: var(--text-primary); }
-.preview-discard-btn iconify-icon { font-size: 15px; }
+.preview-discard-btn:hover {
+  background: var(--surface-2);
+  color: var(--text-primary);
+}
+.preview-discard-btn iconify-icon {
+  font-size: 15px;
+}
 
 .preview-download-btn {
   flex: 1;
@@ -647,12 +798,25 @@ onUnmounted(() => {
   box-shadow: 0 4px 16px rgba(0, 217, 255, 0.25);
 }
 
-.preview-download-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(0, 217, 255, 0.35); }
-.preview-download-btn iconify-icon { font-size: 15px; }
+.preview-download-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 24px rgba(0, 217, 255, 0.35);
+}
+.preview-download-btn iconify-icon {
+  font-size: 15px;
+}
 
 /* Preview modal transition */
-.preview-modal-enter-active, .preview-modal-leave-active { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
-.preview-modal-enter-from, .preview-modal-leave-to       { opacity: 0; }
+.preview-modal-enter-active,
+.preview-modal-leave-active {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.preview-modal-enter-from,
+.preview-modal-leave-to {
+  opacity: 0;
+}
 .preview-modal-enter-from .preview-modal,
-.preview-modal-leave-to .preview-modal                   { transform: scale(0.95) translateY(12px); }
+.preview-modal-leave-to .preview-modal {
+  transform: scale(0.95) translateY(12px);
+}
 </style>

@@ -22,7 +22,10 @@ import { useAgentActionState } from '@/composables/useAgentActionState';
  */
 
 function normalizeKey(value: string): string {
-  return value.trim().toLowerCase().replace(/[\s_-]+/g, ' ');
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, ' ');
 }
 
 function asString(value: unknown, fallback = ''): string {
@@ -76,8 +79,7 @@ export function useRecallAgentTools() {
   }
 
   type Hit =
-    | { kind: 'fact'; uuid: string; label: string }
-    | { kind: 'entity'; uuid: string; label: string };
+    { kind: 'fact'; uuid: string; label: string } | { kind: 'entity'; uuid: string; label: string };
 
   /**
    * Find the one memory the user means.
@@ -144,7 +146,11 @@ export function useRecallAgentTools() {
 
     const hits = findMemories(search);
     if (!hits.length) {
-      return { success: false, forgotten: false, message: t('recall.memoryNotFound', { query: search }) };
+      return {
+        success: false,
+        forgotten: false,
+        message: t('recall.memoryNotFound', { query: search }),
+      };
     }
     if (hits.length > 1) {
       return {
@@ -153,7 +159,10 @@ export function useRecallAgentTools() {
         candidates: hits.slice(0, 5).map((h) => h.label),
         message: t('recall.memoryAmbiguous', {
           query: search,
-          list: hits.slice(0, 5).map((h) => h.label).join('; '),
+          list: hits
+            .slice(0, 5)
+            .map((h) => h.label)
+            .join('; '),
         }),
       };
     }
@@ -164,7 +173,12 @@ export function useRecallAgentTools() {
       t('recall.confirmForgetBody', { text: hit.label }),
     );
     if (!approved) {
-      return { success: false, cancelled: true, forgotten: false, message: t('recall.forgetCancelled') };
+      return {
+        success: false,
+        cancelled: true,
+        forgotten: false,
+        message: t('recall.forgetCancelled'),
+      };
     }
 
     try {
@@ -174,7 +188,12 @@ export function useRecallAgentTools() {
       // from a stale list and report a confusing not-found.
       await memoryStore.load();
       actionState.recordAction(t('recall.actionForgot'), hit.label, { announce: true });
-      return { success: true, forgotten: true, text: hit.label, message: t('recall.forgot', { text: hit.label }) };
+      return {
+        success: true,
+        forgotten: true,
+        text: hit.label,
+        message: t('recall.forgot', { text: hit.label }),
+      };
     } catch (error) {
       return {
         success: false,
@@ -190,7 +209,12 @@ export function useRecallAgentTools() {
       t('recall.confirmForgetAllBody'),
     );
     if (!approved) {
-      return { success: false, cancelled: true, forgotten: false, message: t('recall.forgetAllCancelled') };
+      return {
+        success: false,
+        cancelled: true,
+        forgotten: false,
+        message: t('recall.forgetAllCancelled'),
+      };
     }
 
     try {
@@ -243,7 +267,9 @@ export function useRecallAgentTools() {
    * Positions are 1-based and in the order `list_conversations` returned, so
    * "open the second one" means what the user thinks it means.
    */
-  function resolveSession(which: unknown): { ok: true; id: string; title: string } | { ok: false; message: string } {
+  function resolveSession(
+    which: unknown,
+  ): { ok: true; id: string; title: string } | { ok: false; message: string } {
     const sessions = sessionList();
     if (!sessions.length) return { ok: false, message: t('recall.noSessions') };
 
@@ -253,7 +279,10 @@ export function useRecallAgentTools() {
       if (!found) {
         return {
           ok: false,
-          message: t('recall.sessionOutOfRange', { position: Math.floor(which), count: sessions.length }),
+          message: t('recall.sessionOutOfRange', {
+            position: Math.floor(which),
+            count: sessions.length,
+          }),
         };
       }
       return { ok: true, id: found.id, title: found.title };
@@ -267,13 +296,17 @@ export function useRecallAgentTools() {
 
     const needle = normalizeKey(target);
     const matches = sessions.filter((s) => normalizeKey(s.title).includes(needle));
-    if (!matches.length) return { ok: false, message: t('recall.sessionNotFound', { name: target }) };
+    if (!matches.length)
+      return { ok: false, message: t('recall.sessionNotFound', { name: target }) };
     if (matches.length > 1) {
       return {
         ok: false,
         message: t('recall.sessionAmbiguous', {
           name: target,
-          list: matches.slice(0, 5).map((s) => s.title).join('; '),
+          list: matches
+            .slice(0, 5)
+            .map((s) => s.title)
+            .join('; '),
         }),
       };
     }
@@ -314,7 +347,12 @@ export function useRecallAgentTools() {
       t('recall.confirmDeleteSessionBody', { title: resolved.title }),
     );
     if (!approved) {
-      return { success: false, cancelled: true, deleted: false, message: t('recall.deleteSessionCancelled') };
+      return {
+        success: false,
+        cancelled: true,
+        deleted: false,
+        message: t('recall.deleteSessionCancelled'),
+      };
     }
 
     transcription.deleteHistorySession(resolved.id);
@@ -333,7 +371,12 @@ export function useRecallAgentTools() {
       t('recall.confirmClearBody'),
     );
     if (!approved) {
-      return { success: false, cancelled: true, cleared: false, message: t('recall.clearCancelled') };
+      return {
+        success: false,
+        cancelled: true,
+        cleared: false,
+        message: t('recall.clearCancelled'),
+      };
     }
     transcription.clearMessages();
     actionState.recordAction(t('recall.actionCleared'), undefined, { announce: true });

@@ -25,7 +25,11 @@ import { useAgentActionState } from '@/composables/useAgentActionState';
 import { avatarPresets } from '@/presets/avatar/avatar-presets';
 import { useEmailStore, type EmailCategory } from '@/stores/email';
 import { useCalendarStore, type CalendarEventType } from '@/stores/calendar';
-import { useNavigationStore, BROWSER_PANEL_LAYOUTS, type BrowserPanelLayout } from '@/stores/navigation';
+import {
+  useNavigationStore,
+  BROWSER_PANEL_LAYOUTS,
+  type BrowserPanelLayout,
+} from '@/stores/navigation';
 import { useWorkspaceStore } from '@/stores/workspace';
 import { useKwamiConfigSync } from '@/composables/useKwamiConfigSync';
 import { useSearchPanelAgentTools } from '@/composables/useSearchPanelAgentTools';
@@ -167,7 +171,10 @@ function normalizePanel(panelName: unknown): WorkspacePanel | null {
 }
 
 function normalizeKey(value: string): string {
-  return value.trim().toLowerCase().replace(/[\s_-]+/g, '');
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, '');
 }
 
 function normalizeDomain(domain: unknown): UiControlDomain | null {
@@ -214,9 +221,9 @@ function sendRawConfigUpdate(
   updateType: string,
   config: Record<string, unknown>,
 ): boolean {
-  const pipeline = instance.agent.getPipeline() as
-    | { sendConfigUpdate?: (type: string, config: unknown) => void }
-    | null;
+  const pipeline = instance.agent.getPipeline() as {
+    sendConfigUpdate?: (type: string, config: unknown) => void;
+  } | null;
   if (!pipeline || typeof pipeline.sendConfigUpdate !== 'function') return false;
   try {
     pipeline.sendConfigUpdate(updateType, config);
@@ -419,13 +426,18 @@ export function useWorkspaceAgentTools() {
       );
       return {
         success: false,
-        message: t('workspaceAgentTools.unknownPanel', { panel: String(panelName), allowed: allowedPanels }),
+        message: t('workspaceAgentTools.unknownPanel', {
+          panel: String(panelName),
+          allowed: allowedPanels,
+        }),
       };
     }
 
     uiStore.setPanel(panel);
     const readablePanel = humanizePanel(panel);
-    actionState.recordAction(t('workspaceAgentTools.actionOpenedPanel'), readablePanel, { announce: true });
+    actionState.recordAction(t('workspaceAgentTools.actionOpenedPanel'), readablePanel, {
+      announce: true,
+    });
     return {
       success: true,
       panel,
@@ -465,7 +477,9 @@ export function useWorkspaceAgentTools() {
 
     avatarStore.setRendererType(match as AvatarRenderer);
     persistAvatarChanges();
-    actionState.recordAction(t('workspaceAgentTools.actionSwitchedRenderer'), match, { announce: true });
+    actionState.recordAction(t('workspaceAgentTools.actionSwitchedRenderer'), match, {
+      announce: true,
+    });
     return {
       success: true,
       renderer: match,
@@ -492,13 +506,21 @@ export function useWorkspaceAgentTools() {
       t('workspaceAgentTools.confirmResponseBody', { length }),
     );
     if (!approved) {
-      actionState.recordAction(t('workspaceAgentTools.actionKeptResponseLength'), undefined, { announce: true });
-      return { success: false, cancelled: true, message: t('workspaceAgentTools.responseLengthCancelled') };
+      actionState.recordAction(t('workspaceAgentTools.actionKeptResponseLength'), undefined, {
+        announce: true,
+      });
+      return {
+        success: false,
+        cancelled: true,
+        message: t('workspaceAgentTools.responseLengthCancelled'),
+      };
     }
 
     voiceStore.soulConfig.responseLength = length as ResponseLength;
     syncSoulToAgent();
-    actionState.recordAction(t('workspaceAgentTools.actionUpdatedResponseLength'), length, { announce: true });
+    actionState.recordAction(t('workspaceAgentTools.actionUpdatedResponseLength'), length, {
+      announce: true,
+    });
     return {
       success: true,
       responseLength: length,
@@ -572,7 +594,9 @@ export function useWorkspaceAgentTools() {
         uiStore.togglePanel();
       }
       actionState.recordAction(
-        value ? t('workspaceAgentTools.actionOpenedPanelColumn') : t('workspaceAgentTools.actionClosedPanelColumn'),
+        value
+          ? t('workspaceAgentTools.actionOpenedPanelColumn')
+          : t('workspaceAgentTools.actionClosedPanelColumn'),
         undefined,
         {
           announce: true,
@@ -581,7 +605,9 @@ export function useWorkspaceAgentTools() {
       return {
         success: true,
         message: t('workspaceAgentTools.panelColumnState', {
-          state: value ? t('workspaceAgentTools.panelColumnOpen') : t('workspaceAgentTools.panelColumnClosed'),
+          state: value
+            ? t('workspaceAgentTools.panelColumnOpen')
+            : t('workspaceAgentTools.panelColumnClosed'),
         }),
       };
     }
@@ -591,11 +617,16 @@ export function useWorkspaceAgentTools() {
         return { success: false, message: t('workspaceAgentTools.sizePresetInvalid') };
       }
       uiStore.setSizePreset(value as PanelSizePreset);
-      actionState.recordAction(t('workspaceAgentTools.actionUpdatedPanelSize'), value, { announce: true });
+      actionState.recordAction(t('workspaceAgentTools.actionUpdatedPanelSize'), value, {
+        announce: true,
+      });
       return { success: true, message: t('workspaceAgentTools.sizePresetSet', { value }) };
     }
 
-    return { success: false, message: t('workspaceAgentTools.unknownPanelControl', { control: String(control) }) };
+    return {
+      success: false,
+      message: t('workspaceAgentTools.unknownPanelControl', { control: String(control) }),
+    };
   }
 
   async function setThemeControl(control: unknown, value: unknown) {
@@ -605,23 +636,35 @@ export function useWorkspaceAgentTools() {
 
     const normalized = normalizeKey(control);
     if (normalized === 'preset') {
-      if (typeof value !== 'string') return { success: false, message: t('workspaceAgentTools.themePresetName') };
+      if (typeof value !== 'string')
+        return { success: false, message: t('workspaceAgentTools.themePresetName') };
       const preset = themePresets.find((item) => normalizeKey(item.name) === normalizeKey(value));
       if (!preset)
         return { success: false, message: t('workspaceAgentTools.unknownThemePreset', { value }) };
       themeStore.applyPreset(preset);
-      actionState.recordAction(t('workspaceAgentTools.actionAppliedThemePreset'), preset.name, { announce: true });
-      return { success: true, message: t('workspaceAgentTools.appliedThemePreset', { name: preset.name }) };
+      actionState.recordAction(t('workspaceAgentTools.actionAppliedThemePreset'), preset.name, {
+        announce: true,
+      });
+      return {
+        success: true,
+        message: t('workspaceAgentTools.appliedThemePreset', { name: preset.name }),
+      };
     }
 
     if (normalized === 'accentpreset') {
-      if (typeof value !== 'string') return { success: false, message: t('workspaceAgentTools.accentPresetName') };
+      if (typeof value !== 'string')
+        return { success: false, message: t('workspaceAgentTools.accentPresetName') };
       const preset = accentPresets.find((item) => normalizeKey(item.name) === normalizeKey(value));
       if (!preset)
         return { success: false, message: t('workspaceAgentTools.unknownAccentPreset', { value }) };
       themeStore.setAccentPreset(preset);
-      actionState.recordAction(t('workspaceAgentTools.actionAppliedAccentPreset'), preset.name, { announce: true });
-      return { success: true, message: t('workspaceAgentTools.appliedAccentPreset', { name: preset.name }) };
+      actionState.recordAction(t('workspaceAgentTools.actionAppliedAccentPreset'), preset.name, {
+        announce: true,
+      });
+      return {
+        success: true,
+        message: t('workspaceAgentTools.appliedAccentPreset', { name: preset.name }),
+      };
     }
 
     switch (normalized) {
@@ -638,74 +681,95 @@ export function useWorkspaceAgentTools() {
         }
         return { success: false, message: t('workspaceAgentTools.sidebarInvalid') };
       case 'compactmode':
-        if (typeof value !== 'boolean') return { success: false, message: t('workspaceAgentTools.compactBool') };
+        if (typeof value !== 'boolean')
+          return { success: false, message: t('workspaceAgentTools.compactBool') };
         themeStore.setCompactMode(value);
         break;
       case 'accentprimary':
-        if (typeof value !== 'string') return { success: false, message: t('workspaceAgentTools.accentPrimaryHex') };
+        if (typeof value !== 'string')
+          return { success: false, message: t('workspaceAgentTools.accentPrimaryHex') };
         themeStore.setAccentPrimary(value);
         break;
       case 'accentsecondary':
-        if (typeof value !== 'string') return { success: false, message: t('workspaceAgentTools.accentSecondaryHex') };
+        if (typeof value !== 'string')
+          return { success: false, message: t('workspaceAgentTools.accentSecondaryHex') };
         themeStore.setAccentSecondary(value);
         break;
       case 'glassblur':
-        if (typeof value !== 'number') return { success: false, message: t('workspaceAgentTools.glassBlurNum') };
+        if (typeof value !== 'number')
+          return { success: false, message: t('workspaceAgentTools.glassBlurNum') };
         themeStore.setGlassBlur(value);
         break;
       case 'glassopacity':
-        if (typeof value !== 'number') return { success: false, message: t('workspaceAgentTools.glassOpacityNum') };
+        if (typeof value !== 'number')
+          return { success: false, message: t('workspaceAgentTools.glassOpacityNum') };
         themeStore.setGlassOpacity(value);
         break;
       case 'saturation':
-        if (typeof value !== 'number') return { success: false, message: t('workspaceAgentTools.saturationNum') };
+        if (typeof value !== 'number')
+          return { success: false, message: t('workspaceAgentTools.saturationNum') };
         themeStore.setSaturation(value);
         break;
       case 'gradientdirection':
-        if (typeof value !== 'number') return { success: false, message: t('workspaceAgentTools.gradientDirectionNum') };
+        if (typeof value !== 'number')
+          return { success: false, message: t('workspaceAgentTools.gradientDirectionNum') };
         themeStore.setGradientDirection(value);
         break;
       case 'panelborder':
-        if (typeof value !== 'boolean') return { success: false, message: t('workspaceAgentTools.panelBorderBool') };
+        if (typeof value !== 'boolean')
+          return { success: false, message: t('workspaceAgentTools.panelBorderBool') };
         themeStore.setPanelBorder(value);
         break;
       case 'gloweffects':
-        if (typeof value !== 'boolean') return { success: false, message: t('workspaceAgentTools.glowBool') };
+        if (typeof value !== 'boolean')
+          return { success: false, message: t('workspaceAgentTools.glowBool') };
         themeStore.setGlowEffects(value);
         break;
       case 'highcontrast':
-        if (typeof value !== 'boolean') return { success: false, message: t('workspaceAgentTools.highContrastBool') };
+        if (typeof value !== 'boolean')
+          return { success: false, message: t('workspaceAgentTools.highContrastBool') };
         themeStore.setHighContrast(value);
         break;
       case 'focusindicators':
-        if (typeof value !== 'boolean') return { success: false, message: t('workspaceAgentTools.focusIndicatorsBool') };
+        if (typeof value !== 'boolean')
+          return { success: false, message: t('workspaceAgentTools.focusIndicatorsBool') };
         themeStore.setFocusIndicators(value);
         break;
       case 'cursorflashlight':
-        if (typeof value !== 'boolean') return { success: false, message: t('workspaceAgentTools.cursorFlashlightBool') };
+        if (typeof value !== 'boolean')
+          return { success: false, message: t('workspaceAgentTools.cursorFlashlightBool') };
         themeStore.setCursorFlashlight(value);
         break;
       case 'flashlightsize':
-        if (typeof value !== 'number') return { success: false, message: t('workspaceAgentTools.flashlightSizeNum') };
+        if (typeof value !== 'number')
+          return { success: false, message: t('workspaceAgentTools.flashlightSizeNum') };
         themeStore.setFlashlightSize(value);
         break;
       case 'flashlightintensity':
-        if (typeof value !== 'number') return { success: false, message: t('workspaceAgentTools.flashlightIntensityNum') };
+        if (typeof value !== 'number')
+          return { success: false, message: t('workspaceAgentTools.flashlightIntensityNum') };
         themeStore.setFlashlightIntensity(value);
         break;
       case 'flashlightcolor':
-        if (typeof value !== 'string') return { success: false, message: t('workspaceAgentTools.flashlightColorHex') };
+        if (typeof value !== 'string')
+          return { success: false, message: t('workspaceAgentTools.flashlightColorHex') };
         themeStore.setFlashlightColor(value);
         break;
       case 'borderradius':
-        if (typeof value !== 'number') return { success: false, message: t('workspaceAgentTools.borderRadiusNum') };
+        if (typeof value !== 'number')
+          return { success: false, message: t('workspaceAgentTools.borderRadiusNum') };
         themeStore.setBorderRadius(value);
         break;
       default:
-        return { success: false, message: t('workspaceAgentTools.unknownThemeControl', { control }) };
+        return {
+          success: false,
+          message: t('workspaceAgentTools.unknownThemeControl', { control }),
+        };
     }
 
-    actionState.recordAction(t('workspaceAgentTools.actionUpdatedThemeControl'), String(control), { announce: true });
+    actionState.recordAction(t('workspaceAgentTools.actionUpdatedThemeControl'), String(control), {
+      announce: true,
+    });
     return { success: true, message: t('workspaceAgentTools.updatedThemeControl', { control }) };
   }
 
@@ -720,36 +784,65 @@ export function useWorkspaceAgentTools() {
     }
 
     if (normalized === 'preset') {
-      if (typeof value !== 'string') return { success: false, message: t('workspaceAgentTools.avatarPresetName') };
+      if (typeof value !== 'string')
+        return { success: false, message: t('workspaceAgentTools.avatarPresetName') };
       const preset = avatarPresets.find(
-        (item) => normalizeKey(item.id) === normalizeKey(value) || normalizeKey(item.name) === normalizeKey(value),
+        (item) =>
+          normalizeKey(item.id) === normalizeKey(value) ||
+          normalizeKey(item.name) === normalizeKey(value),
       );
-      if (!preset) return { success: false, message: t('workspaceAgentTools.unknownAvatarPreset', { value }) };
+      if (!preset)
+        return { success: false, message: t('workspaceAgentTools.unknownAvatarPreset', { value }) };
       avatarStore.applyPreset(preset.id);
       persistAvatarChanges();
-      actionState.recordAction(t('workspaceAgentTools.actionAppliedAvatarPreset'), preset.name, { announce: true });
-      return { success: true, message: t('workspaceAgentTools.appliedAvatarPreset', { name: preset.name }) };
+      actionState.recordAction(t('workspaceAgentTools.actionAppliedAvatarPreset'), preset.name, {
+        announce: true,
+      });
+      return {
+        success: true,
+        message: t('workspaceAgentTools.appliedAvatarPreset', { name: preset.name }),
+      };
     }
 
     switch (normalized) {
-      case 'blobskintype': {
-        const validSkins = [
-          'radial', 'banded', 'striped', 'marble', 'fresnel', 'iridescent', 'spiral', 'plasma', 'gradient',
-          'matte', 'glossy', 'metallic', 'subsurface',
-          'chrome', 'clay', 'jade', 'toon-matcap', 'hologram',
-          'flat', 'stepped', 'halftone', 'outlined',
-        ];
-        if (!validSkins.includes(value as string)) {
-          return {
-            success: false,
-            message: t('workspaceAgentTools.blobSkinInvalid', { list: validSkins.join(', ') }),
-          };
+      case 'blobskintype':
+        {
+          const validSkins = [
+            'radial',
+            'banded',
+            'striped',
+            'marble',
+            'fresnel',
+            'iridescent',
+            'spiral',
+            'plasma',
+            'gradient',
+            'matte',
+            'glossy',
+            'metallic',
+            'subsurface',
+            'chrome',
+            'clay',
+            'jade',
+            'toon-matcap',
+            'hologram',
+            'flat',
+            'stepped',
+            'halftone',
+            'outlined',
+          ];
+          if (!validSkins.includes(value as string)) {
+            return {
+              success: false,
+              message: t('workspaceAgentTools.blobSkinInvalid', { list: validSkins.join(', ') }),
+            };
+          }
+          blobStore.skin.type = value as typeof blobStore.skin.type;
         }
-        blobStore.skin.type = value as typeof blobStore.skin.type;
-      }
         break;
       case 'blobcolors':
-        if (!isRecord(value)) return { success: false, message: t('workspaceAgentTools.blobColorsObject') };
+        if (!isRecord(value))
+          return { success: false, message: t('workspaceAgentTools.blobColorsObject') };
         blobStore.setColors(
           typeof value.x === 'string' ? value.x : blobStore.skin.colors.x,
           typeof value.y === 'string' ? value.y : blobStore.skin.colors.y,
@@ -757,7 +850,8 @@ export function useWorkspaceAgentTools() {
         );
         break;
       case 'blobspikes':
-        if (!isRecord(value)) return { success: false, message: t('workspaceAgentTools.blobSpikesObject') };
+        if (!isRecord(value))
+          return { success: false, message: t('workspaceAgentTools.blobSpikesObject') };
         blobStore.setSpikes(
           typeof value.x === 'number' ? value.x : blobStore.shape.spikes.x,
           typeof value.y === 'number' ? value.y : blobStore.shape.spikes.y,
@@ -765,7 +859,8 @@ export function useWorkspaceAgentTools() {
         );
         break;
       case 'blobamplitude':
-        if (!isRecord(value)) return { success: false, message: t('workspaceAgentTools.blobAmplitudeObject') };
+        if (!isRecord(value))
+          return { success: false, message: t('workspaceAgentTools.blobAmplitudeObject') };
         blobStore.setAmplitude(
           typeof value.x === 'number' ? value.x : blobStore.shape.amplitude.x,
           typeof value.y === 'number' ? value.y : blobStore.shape.amplitude.y,
@@ -773,7 +868,8 @@ export function useWorkspaceAgentTools() {
         );
         break;
       case 'blobrotation':
-        if (!isRecord(value)) return { success: false, message: t('workspaceAgentTools.blobRotationObject') };
+        if (!isRecord(value))
+          return { success: false, message: t('workspaceAgentTools.blobRotationObject') };
         blobStore.setRotation(
           typeof value.x === 'number' ? value.x : blobStore.animation.rotation.x,
           typeof value.y === 'number' ? value.y : blobStore.animation.rotation.y,
@@ -781,39 +877,50 @@ export function useWorkspaceAgentTools() {
         );
         break;
       case 'blobscale':
-        if (typeof value !== 'number') return { success: false, message: t('workspaceAgentTools.blobScaleNum') };
+        if (typeof value !== 'number')
+          return { success: false, message: t('workspaceAgentTools.blobScaleNum') };
         blobStore.shape.scale = value;
         break;
       case 'blobopacity':
-        if (typeof value !== 'number') return { success: false, message: t('workspaceAgentTools.blobOpacityNum') };
+        if (typeof value !== 'number')
+          return { success: false, message: t('workspaceAgentTools.blobOpacityNum') };
         blobStore.skin.opacity = value;
         break;
       case 'blobshininess':
-        if (typeof value !== 'number') return { success: false, message: t('workspaceAgentTools.blobShininessNum') };
+        if (typeof value !== 'number')
+          return { success: false, message: t('workspaceAgentTools.blobShininessNum') };
         blobStore.skin.shininess = value;
         break;
       case 'blobwireframe':
-        if (typeof value !== 'boolean') return { success: false, message: t('workspaceAgentTools.blobWireframeBool') };
+        if (typeof value !== 'boolean')
+          return { success: false, message: t('workspaceAgentTools.blobWireframeBool') };
         blobStore.skin.wireframe = value;
         break;
       case 'blobglassmode':
-        if (typeof value !== 'boolean') return { success: false, message: t('workspaceAgentTools.blobGlassBool') };
+        if (typeof value !== 'boolean')
+          return { success: false, message: t('workspaceAgentTools.blobGlassBool') };
         blobStore.skin.glassMode = value;
         break;
       case 'blobaudioreactivity':
-        if (typeof value !== 'number') return { success: false, message: t('workspaceAgentTools.blobAudioReactivityNum') };
+        if (typeof value !== 'number')
+          return { success: false, message: t('workspaceAgentTools.blobAudioReactivityNum') };
         blobStore.audio.reactivity = value;
         break;
       case 'blobaudioenabled':
-        if (typeof value !== 'boolean') return { success: false, message: t('workspaceAgentTools.blobAudioEnabledBool') };
+        if (typeof value !== 'boolean')
+          return { success: false, message: t('workspaceAgentTools.blobAudioEnabledBool') };
         blobStore.audio.enabled = value;
         break;
       case 'blackholecolorscheme':
-        if (typeof value !== 'string') return { success: false, message: t('workspaceAgentTools.bhColorScheme') };
-        blackHoleStore.setColorSchemePreset(value as 'classic' | 'fire' | 'ice' | 'nebula' | 'void');
+        if (typeof value !== 'string')
+          return { success: false, message: t('workspaceAgentTools.bhColorScheme') };
+        blackHoleStore.setColorSchemePreset(
+          value as 'classic' | 'fire' | 'ice' | 'nebula' | 'void',
+        );
         break;
       case 'blackholecolors':
-        if (!isRecord(value)) return { success: false, message: t('workspaceAgentTools.bhColorsObject') };
+        if (!isRecord(value))
+          return { success: false, message: t('workspaceAgentTools.bhColorsObject') };
         blackHoleStore.updateColors({
           hot: typeof value.hot === 'string' ? value.hot : blackHoleStore.colors.hot,
           mid1: typeof value.mid1 === 'string' ? value.mid1 : blackHoleStore.colors.mid1,
@@ -823,54 +930,73 @@ export function useWorkspaceAgentTools() {
         });
         break;
       case 'blackholecore':
-        if (!isRecord(value)) return { success: false, message: t('workspaceAgentTools.bhCoreObject') };
+        if (!isRecord(value))
+          return { success: false, message: t('workspaceAgentTools.bhCoreObject') };
         blackHoleStore.updateCore(value);
         break;
       case 'blackholedisk':
-        if (!isRecord(value)) return { success: false, message: t('workspaceAgentTools.bhDiskObject') };
+        if (!isRecord(value))
+          return { success: false, message: t('workspaceAgentTools.bhDiskObject') };
         blackHoleStore.updateDisk(value);
         break;
       case 'blackholeanimation':
-        if (!isRecord(value)) return { success: false, message: t('workspaceAgentTools.bhAnimObject') };
+        if (!isRecord(value))
+          return { success: false, message: t('workspaceAgentTools.bhAnimObject') };
         blackHoleStore.updateAnimation(value);
         break;
       case 'blackholeeffects':
-        if (!isRecord(value)) return { success: false, message: t('workspaceAgentTools.bhEffectsObject') };
+        if (!isRecord(value))
+          return { success: false, message: t('workspaceAgentTools.bhEffectsObject') };
         blackHoleStore.updateEffects(value);
         break;
       case 'blackholescale':
-        if (typeof value !== 'number') return { success: false, message: t('workspaceAgentTools.bhScaleNum') };
+        if (typeof value !== 'number')
+          return { success: false, message: t('workspaceAgentTools.bhScaleNum') };
         blackHoleStore.setScale(value);
         break;
       case 'particlesfaceappearance':
       case 'particlesfacemotion':
-        if (!isRecord(value)) return { success: false, message: t('workspaceAgentTools.particlesFaceObject') };
+        if (!isRecord(value))
+          return { success: false, message: t('workspaceAgentTools.particlesFaceObject') };
         particlesFaceStore.update(value);
         break;
       // The eye-iris renderer had no agent-facing controls at all, so it could
       // be selected by voice and then not adjusted by voice.
       case 'eyeirispalette':
-        if (typeof value !== 'string') return { success: false, message: t('workspaceAgentTools.eyeIrisPaletteName') };
-        eyeIrisStore.applyPalettePreset(value as Parameters<typeof eyeIrisStore.applyPalettePreset>[0]);
+        if (typeof value !== 'string')
+          return { success: false, message: t('workspaceAgentTools.eyeIrisPaletteName') };
+        eyeIrisStore.applyPalettePreset(
+          value as Parameters<typeof eyeIrisStore.applyPalettePreset>[0],
+        );
         break;
       case 'eyeiriscolors':
-        if (!isRecord(value)) return { success: false, message: t('workspaceAgentTools.eyeIrisColorsObject') };
-        eyeIrisStore.importState({ color: { ...eyeIrisStore.state.color, ...(value as Record<string, string>) } });
+        if (!isRecord(value))
+          return { success: false, message: t('workspaceAgentTools.eyeIrisColorsObject') };
+        eyeIrisStore.importState({
+          color: { ...eyeIrisStore.state.color, ...(value as Record<string, string>) },
+        });
         break;
       case 'eyeirispupil':
-        if (!isRecord(value)) return { success: false, message: t('workspaceAgentTools.eyeIrisPupilObject') };
+        if (!isRecord(value))
+          return { success: false, message: t('workspaceAgentTools.eyeIrisPupilObject') };
         eyeIrisStore.importState({ geometry: { ...eyeIrisStore.state.geometry, ...value } });
         break;
       case 'eyeirismotion':
-        if (!isRecord(value)) return { success: false, message: t('workspaceAgentTools.eyeIrisMotionObject') };
+        if (!isRecord(value))
+          return { success: false, message: t('workspaceAgentTools.eyeIrisMotionObject') };
         eyeIrisStore.importState({ animation: { ...eyeIrisStore.state.animation, ...value } });
         break;
       default:
-        return { success: false, message: t('workspaceAgentTools.unknownAvatarControl', { control }) };
+        return {
+          success: false,
+          message: t('workspaceAgentTools.unknownAvatarControl', { control }),
+        };
     }
 
     persistAvatarChanges();
-    actionState.recordAction(t('workspaceAgentTools.actionUpdatedAvatarControl'), String(control), { announce: true });
+    actionState.recordAction(t('workspaceAgentTools.actionUpdatedAvatarControl'), String(control), {
+      announce: true,
+    });
     return { success: true, message: t('workspaceAgentTools.updatedAvatarControl', { control }) };
   }
 
@@ -887,7 +1013,8 @@ export function useWorkspaceAgentTools() {
         sceneStore.setMediaType(value);
         break;
       case 'imageurl':
-        if (typeof value !== 'string') return { success: false, message: t('workspaceAgentTools.imageUrlString') };
+        if (typeof value !== 'string')
+          return { success: false, message: t('workspaceAgentTools.imageUrlString') };
         sceneStore.setImageUrl(value);
         break;
       case 'imagefit':
@@ -897,11 +1024,13 @@ export function useWorkspaceAgentTools() {
         sceneStore.setImageFit(value);
         break;
       case 'imageopacity':
-        if (typeof value !== 'number') return { success: false, message: t('workspaceAgentTools.imageOpacityNum') };
+        if (typeof value !== 'number')
+          return { success: false, message: t('workspaceAgentTools.imageOpacityNum') };
         sceneStore.setImageOpacity(value);
         break;
       case 'videourl':
-        if (typeof value !== 'string') return { success: false, message: t('workspaceAgentTools.videoUrlString') };
+        if (typeof value !== 'string')
+          return { success: false, message: t('workspaceAgentTools.videoUrlString') };
         sceneStore.setVideoUrl(value);
         break;
       case 'videofit':
@@ -911,39 +1040,48 @@ export function useWorkspaceAgentTools() {
         sceneStore.setVideoFit(value);
         break;
       case 'videoopacity':
-        if (typeof value !== 'number') return { success: false, message: t('workspaceAgentTools.videoOpacityNum') };
+        if (typeof value !== 'number')
+          return { success: false, message: t('workspaceAgentTools.videoOpacityNum') };
         sceneStore.setVideoOpacity(value);
         break;
       case 'videoloop':
-        if (typeof value !== 'boolean') return { success: false, message: t('workspaceAgentTools.videoLoopBool') };
+        if (typeof value !== 'boolean')
+          return { success: false, message: t('workspaceAgentTools.videoLoopBool') };
         sceneStore.setVideoLoop(value);
         break;
       case 'videomuted':
-        if (typeof value !== 'boolean') return { success: false, message: t('workspaceAgentTools.videoMutedBool') };
+        if (typeof value !== 'boolean')
+          return { success: false, message: t('workspaceAgentTools.videoMutedBool') };
         sceneStore.setVideoMuted(value);
         break;
       case 'hdriurl':
-        if (typeof value !== 'string') return { success: false, message: t('workspaceAgentTools.hdriUrlString') };
+        if (typeof value !== 'string')
+          return { success: false, message: t('workspaceAgentTools.hdriUrlString') };
         sceneStore.setHdriUrl(value);
         break;
       case 'hdriintensity':
-        if (typeof value !== 'number') return { success: false, message: t('workspaceAgentTools.hdriIntensityNum') };
+        if (typeof value !== 'number')
+          return { success: false, message: t('workspaceAgentTools.hdriIntensityNum') };
         sceneStore.setHdriIntensity(value);
         break;
       case 'hdriopacity':
-        if (typeof value !== 'number') return { success: false, message: t('workspaceAgentTools.hdriOpacityNum') };
+        if (typeof value !== 'number')
+          return { success: false, message: t('workspaceAgentTools.hdriOpacityNum') };
         sceneStore.setHdriOpacity(value);
         break;
       case 'hdrirotation':
-        if (typeof value !== 'number') return { success: false, message: t('workspaceAgentTools.hdriRotationNum') };
+        if (typeof value !== 'number')
+          return { success: false, message: t('workspaceAgentTools.hdriRotationNum') };
         sceneStore.setHdriRotation(value);
         break;
       case 'hdriblur':
-        if (typeof value !== 'number') return { success: false, message: t('workspaceAgentTools.hdriBlurNum') };
+        if (typeof value !== 'number')
+          return { success: false, message: t('workspaceAgentTools.hdriBlurNum') };
         sceneStore.setHdriBlur(value);
         break;
       case 'gradientenabled':
-        if (typeof value !== 'boolean') return { success: false, message: t('workspaceAgentTools.gradientEnabledBool') };
+        if (typeof value !== 'boolean')
+          return { success: false, message: t('workspaceAgentTools.gradientEnabledBool') };
         sceneStore.setGradientEnabled(value);
         break;
       case 'gradienttype':
@@ -953,11 +1091,13 @@ export function useWorkspaceAgentTools() {
         sceneStore.setGradientType(value);
         break;
       case 'gradientsolidcolor':
-        if (typeof value !== 'string') return { success: false, message: t('workspaceAgentTools.gradientSolidHex') };
+        if (typeof value !== 'string')
+          return { success: false, message: t('workspaceAgentTools.gradientSolidHex') };
         sceneStore.background.gradient.solidColor = value;
         break;
       case 'gradientangle':
-        if (typeof value !== 'number') return { success: false, message: t('workspaceAgentTools.gradientAngleNum') };
+        if (typeof value !== 'number')
+          return { success: false, message: t('workspaceAgentTools.gradientAngleNum') };
         sceneStore.setGradientAngle(value);
         break;
       case 'gradientradialcenter':
@@ -967,11 +1107,13 @@ export function useWorkspaceAgentTools() {
         sceneStore.setGradientRadialCenter(value.x, value.y);
         break;
       case 'gradientradialsize':
-        if (typeof value !== 'number') return { success: false, message: t('workspaceAgentTools.gradientRadialSizeNum') };
+        if (typeof value !== 'number')
+          return { success: false, message: t('workspaceAgentTools.gradientRadialSizeNum') };
         sceneStore.setGradientRadialSize(value);
         break;
       case 'gradientopacity':
-        if (typeof value !== 'number') return { success: false, message: t('workspaceAgentTools.gradientOpacityNum') };
+        if (typeof value !== 'number')
+          return { success: false, message: t('workspaceAgentTools.gradientOpacityNum') };
         sceneStore.setGradientOpacity(value);
         break;
       case 'gradientblendmode':
@@ -987,10 +1129,15 @@ export function useWorkspaceAgentTools() {
         sceneStore.setGradientBlendMode(value);
         break;
       default:
-        return { success: false, message: t('workspaceAgentTools.unknownSceneControl', { control }) };
+        return {
+          success: false,
+          message: t('workspaceAgentTools.unknownSceneControl', { control }),
+        };
     }
 
-    actionState.recordAction(t('workspaceAgentTools.actionUpdatedSceneControl'), String(control), { announce: true });
+    actionState.recordAction(t('workspaceAgentTools.actionUpdatedSceneControl'), String(control), {
+      announce: true,
+    });
     return { success: true, message: t('workspaceAgentTools.updatedSceneControl', { control }) };
   }
 
@@ -1007,7 +1154,11 @@ export function useWorkspaceAgentTools() {
       t('workspaceAgentTools.confirmVoiceBody', { control }),
     );
     if (!approved) {
-      return { success: false, cancelled: true, message: t('workspaceAgentTools.cancelledVoiceControl', { control }) };
+      return {
+        success: false,
+        cancelled: true,
+        message: t('workspaceAgentTools.cancelledVoiceControl', { control }),
+      };
     }
 
     if (normalized === 'pipelinemode') {
@@ -1027,8 +1178,12 @@ export function useWorkspaceAgentTools() {
       // never heard about the switch at all, which is why the message below
       // used to tell the user to reconnect. It can now be applied live.
       const switchedLive =
-        isConnected.value && !!kwami.value && sendRawConfigUpdate(kwami.value, 'pipeline', { pipelineType: value });
-      actionState.recordAction(t('workspaceAgentTools.actionUpdatedPipeline'), value, { announce: true });
+        isConnected.value &&
+        !!kwami.value &&
+        sendRawConfigUpdate(kwami.value, 'pipeline', { pipelineType: value });
+      actionState.recordAction(t('workspaceAgentTools.actionUpdatedPipeline'), value, {
+        announce: true,
+      });
       return {
         success: true,
         message: switchedLive
@@ -1040,25 +1195,29 @@ export function useWorkspaceAgentTools() {
     }
 
     if (normalized === 'ttsvoice') {
-      if (typeof value !== 'string') return { success: false, message: t('workspaceAgentTools.ttsVoiceString') };
+      if (typeof value !== 'string')
+        return { success: false, message: t('workspaceAgentTools.ttsVoiceString') };
       voiceStore.updateTTS({ voice: value });
       if (isConnected.value && kwami.value) {
         kwami.value.agent.updateTtsLive({ voice: value, speed: voiceStore.tts.speed });
       }
     } else if (normalized === 'ttsspeed') {
-      if (typeof value !== 'number') return { success: false, message: t('workspaceAgentTools.ttsSpeedNum') };
+      if (typeof value !== 'number')
+        return { success: false, message: t('workspaceAgentTools.ttsSpeedNum') };
       voiceStore.updateTTS({ speed: value });
       if (isConnected.value && kwami.value) {
         kwami.value.agent.updateTtsLive({ voice: voiceStore.tts.voice, speed: value });
       }
     } else if (normalized === 'realtimevoice') {
-      if (typeof value !== 'string') return { success: false, message: t('workspaceAgentTools.realtimeVoiceString') };
+      if (typeof value !== 'string')
+        return { success: false, message: t('workspaceAgentTools.realtimeVoiceString') };
       voiceStore.updateRealtime({ voice: value });
       if (isConnected.value && kwami.value) {
         kwami.value.agent.updateRealtimeLive({ voice: value });
       }
     } else if (normalized === 'sttlanguage') {
-      if (typeof value !== 'string') return { success: false, message: t('workspaceAgentTools.sttLanguageString') };
+      if (typeof value !== 'string')
+        return { success: false, message: t('workspaceAgentTools.sttLanguageString') };
       voiceStore.updateSTT({ language: value as STTLanguage });
       if (isConnected.value && kwami.value) {
         kwami.value.agent.updateSttLive({
@@ -1075,9 +1234,17 @@ export function useWorkspaceAgentTools() {
       }
       voiceStore.soulConfig.emotionalTone = value;
       syncSoulToAgent();
-    } else if (normalized === 'llmmodel' || normalized === 'sttmodel' || normalized === 'ttsmodel' || normalized === 'realtimemodel') {
+    } else if (
+      normalized === 'llmmodel' ||
+      normalized === 'sttmodel' ||
+      normalized === 'ttsmodel' ||
+      normalized === 'realtimemodel'
+    ) {
       if (!isRecord(value))
-        return { success: false, message: t('workspaceAgentTools.voiceControlSettingsObject', { control }) };
+        return {
+          success: false,
+          message: t('workspaceAgentTools.voiceControlSettingsObject', { control }),
+        };
       if (normalized === 'llmmodel') {
         voiceStore.updateLLM({
           provider:
@@ -1085,7 +1252,8 @@ export function useWorkspaceAgentTools() {
               ? (value.provider as LLMProvider)
               : voiceStore.llm.provider,
           model: typeof value.model === 'string' ? value.model : voiceStore.llm.model,
-          temperature: typeof value.temperature === 'number' ? value.temperature : voiceStore.llm.temperature,
+          temperature:
+            typeof value.temperature === 'number' ? value.temperature : voiceStore.llm.temperature,
         });
       } else if (normalized === 'sttmodel') {
         voiceStore.updateSTT({
@@ -1134,7 +1302,9 @@ export function useWorkspaceAgentTools() {
       return { success: false, message: t('workspaceAgentTools.unknownVoiceControl', { control }) };
     }
 
-    actionState.recordAction(t('workspaceAgentTools.actionUpdatedVoiceControl'), String(control), { announce: true });
+    actionState.recordAction(t('workspaceAgentTools.actionUpdatedVoiceControl'), String(control), {
+      announce: true,
+    });
     return { success: true, message: t('workspaceAgentTools.updatedVoiceControl', { control }) };
   }
 
@@ -1146,7 +1316,8 @@ export function useWorkspaceAgentTools() {
     const eState = voiceStore.enhancementsState;
     switch (normalizeKey(control)) {
       case 'turndetectionenabled':
-        if (typeof value !== 'boolean') return { success: false, message: t('workspaceAgentTools.turnDetectionEnabledBool') };
+        if (typeof value !== 'boolean')
+          return { success: false, message: t('workspaceAgentTools.turnDetectionEnabledBool') };
         eState.turnDetection.enabled = value;
         break;
       case 'turndetectionmode':
@@ -1162,27 +1333,33 @@ export function useWorkspaceAgentTools() {
         eState.turnDetection.model = value;
         break;
       case 'minendpointingdelay':
-        if (typeof value !== 'number') return { success: false, message: t('workspaceAgentTools.minEndpointingNum') };
+        if (typeof value !== 'number')
+          return { success: false, message: t('workspaceAgentTools.minEndpointingNum') };
         eState.turnDetection.minEndpointingDelay = value;
         break;
       case 'maxendpointingdelay':
-        if (typeof value !== 'number') return { success: false, message: t('workspaceAgentTools.maxEndpointingNum') };
+        if (typeof value !== 'number')
+          return { success: false, message: t('workspaceAgentTools.maxEndpointingNum') };
         eState.turnDetection.maxEndpointingDelay = value;
         break;
       case 'interruptionsenabled':
-        if (typeof value !== 'boolean') return { success: false, message: t('workspaceAgentTools.interruptionsEnabledBool') };
+        if (typeof value !== 'boolean')
+          return { success: false, message: t('workspaceAgentTools.interruptionsEnabledBool') };
         eState.interruptions.enabled = value;
         break;
       case 'interruptionduration':
-        if (typeof value !== 'number') return { success: false, message: t('workspaceAgentTools.interruptionDurationNum') };
+        if (typeof value !== 'number')
+          return { success: false, message: t('workspaceAgentTools.interruptionDurationNum') };
         eState.interruptions.minDuration = value;
         break;
       case 'interruptionwords':
-        if (typeof value !== 'number') return { success: false, message: t('workspaceAgentTools.interruptionWordsNum') };
+        if (typeof value !== 'number')
+          return { success: false, message: t('workspaceAgentTools.interruptionWordsNum') };
         eState.interruptions.minWords = value;
         break;
       case 'noisecancellationenabled':
-        if (typeof value !== 'boolean') return { success: false, message: t('workspaceAgentTools.noiseCancellationEnabledBool') };
+        if (typeof value !== 'boolean')
+          return { success: false, message: t('workspaceAgentTools.noiseCancellationEnabledBool') };
         eState.noiseCancellation.enabled = value;
         break;
       case 'noisecancellationmode':
@@ -1192,36 +1369,52 @@ export function useWorkspaceAgentTools() {
         eState.noiseCancellation.mode = value;
         break;
       case 'vadthreshold':
-        if (typeof value !== 'number') return { success: false, message: t('workspaceAgentTools.vadThresholdNum') };
+        if (typeof value !== 'number')
+          return { success: false, message: t('workspaceAgentTools.vadThresholdNum') };
         eState.vad.threshold = value;
         break;
       case 'vadminspeech':
-        if (typeof value !== 'number') return { success: false, message: t('workspaceAgentTools.vadMinSpeechNum') };
+        if (typeof value !== 'number')
+          return { success: false, message: t('workspaceAgentTools.vadMinSpeechNum') };
         eState.vad.minSpeech = value;
         break;
       case 'vadminsilence':
-        if (typeof value !== 'number') return { success: false, message: t('workspaceAgentTools.vadMinSilenceNum') };
+        if (typeof value !== 'number')
+          return { success: false, message: t('workspaceAgentTools.vadMinSilenceNum') };
         eState.vad.minSilence = value;
         break;
       case 'echocancellation':
-        if (typeof value !== 'boolean') return { success: false, message: t('workspaceAgentTools.echoCancellationBool') };
+        if (typeof value !== 'boolean')
+          return { success: false, message: t('workspaceAgentTools.echoCancellationBool') };
         eState.audioProcessing.echoCancellation = value;
         break;
       case 'autogaincontrol':
-        if (typeof value !== 'boolean') return { success: false, message: t('workspaceAgentTools.autoGainBool') };
+        if (typeof value !== 'boolean')
+          return { success: false, message: t('workspaceAgentTools.autoGainBool') };
         eState.audioProcessing.autoGainControl = value;
         break;
       case 'preemptivegeneration':
-        if (typeof value !== 'boolean') return { success: false, message: t('workspaceAgentTools.preemptiveGenBool') };
+        if (typeof value !== 'boolean')
+          return { success: false, message: t('workspaceAgentTools.preemptiveGenBool') };
         eState.performance.preemptiveGeneration = value;
         break;
       default:
-        return { success: false, message: t('workspaceAgentTools.unknownEnhancementControl', { control }) };
+        return {
+          success: false,
+          message: t('workspaceAgentTools.unknownEnhancementControl', { control }),
+        };
     }
 
     syncEnhancementsToAgent();
-    actionState.recordAction(t('workspaceAgentTools.actionUpdatedEnhancementControl'), String(control), { announce: true });
-    return { success: true, message: t('workspaceAgentTools.updatedEnhancementControl', { control }) };
+    actionState.recordAction(
+      t('workspaceAgentTools.actionUpdatedEnhancementControl'),
+      String(control),
+      { announce: true },
+    );
+    return {
+      success: true,
+      message: t('workspaceAgentTools.updatedEnhancementControl', { control }),
+    };
   }
 
   async function setMemoryUiControl(control: unknown, value: unknown) {
@@ -1248,39 +1441,54 @@ export function useWorkspaceAgentTools() {
       voiceStore.memoryUI.activeTab = value;
       voiceStore.memoryUI.graphModalOpen = false;
       uiStore.setPanel('memory');
-      actionState.recordAction(t('workspaceAgentTools.actionOpenedMemoryView'), String(value), { announce: true });
-      return { success: true, message: t('workspaceAgentTools.openedMemoryView', { tab: String(value) }) };
+      actionState.recordAction(t('workspaceAgentTools.actionOpenedMemoryView'), String(value), {
+        announce: true,
+      });
+      return {
+        success: true,
+        message: t('workspaceAgentTools.openedMemoryView', { tab: String(value) }),
+      };
     }
 
     if (openGraphControls.has(normalizedControl)) {
-      const shouldOpen = value === undefined
-        ? true
-        : value === true
-          || value === 'true'
-          || value === 'open'
-          || value === 'show'
-          || value === 1;
+      const shouldOpen =
+        value === undefined
+          ? true
+          : value === true ||
+            value === 'true' ||
+            value === 'open' ||
+            value === 'show' ||
+            value === 1;
       voiceStore.memoryUI.graphModalOpen = shouldOpen;
       uiStore.setPanel('memory');
       actionState.recordAction(
-        shouldOpen ? t('workspaceAgentTools.actionOpenedMemoryGraph') : t('workspaceAgentTools.actionClosedMemoryGraph'),
+        shouldOpen
+          ? t('workspaceAgentTools.actionOpenedMemoryGraph')
+          : t('workspaceAgentTools.actionClosedMemoryGraph'),
         'knowledge-graph',
         { announce: true },
       );
       return {
         success: true,
-        message: shouldOpen ? t('workspaceAgentTools.openedMemoryGraph') : t('workspaceAgentTools.closedMemoryGraph'),
+        message: shouldOpen
+          ? t('workspaceAgentTools.openedMemoryGraph')
+          : t('workspaceAgentTools.closedMemoryGraph'),
       };
     }
 
-    return { success: false, message: t('workspaceAgentTools.unknownMemoryUiControl', { control: String(control) }) };
+    return {
+      success: false,
+      message: t('workspaceAgentTools.unknownMemoryUiControl', { control: String(control) }),
+    };
   }
 
   async function resetUiDomain(domain: unknown, confirm: unknown) {
     if (domain !== 'avatar' && domain !== 'theme' && domain !== 'scene') {
       return {
         success: false,
-        message: t('workspaceAgentTools.resettableDomains', { list: RESETTABLE_DOMAINS.join(', ') }),
+        message: t('workspaceAgentTools.resettableDomains', {
+          list: RESETTABLE_DOMAINS.join(', '),
+        }),
       };
     }
 
@@ -1291,7 +1499,11 @@ export function useWorkspaceAgentTools() {
       t('workspaceAgentTools.confirmResetBody', { domain: String(domain) }),
     );
     if (!approved) {
-      return { success: false, cancelled: true, message: t('workspaceAgentTools.cancelledReset', { domain: String(domain) }) };
+      return {
+        success: false,
+        cancelled: true,
+        message: t('workspaceAgentTools.cancelledReset', { domain: String(domain) }),
+      };
     }
 
     if (domain === 'avatar') {
@@ -1306,8 +1518,13 @@ export function useWorkspaceAgentTools() {
       sceneStore.resetToDefaults();
     }
 
-    actionState.recordAction(t('workspaceAgentTools.actionResetUiDomain'), String(domain), { announce: true });
-    return { success: true, message: t('workspaceAgentTools.resetDomainDone', { domain: String(domain) }) };
+    actionState.recordAction(t('workspaceAgentTools.actionResetUiDomain'), String(domain), {
+      announce: true,
+    });
+    return {
+      success: true,
+      message: t('workspaceAgentTools.resetDomainDone', { domain: String(domain) }),
+    };
   }
 
   async function listUiControls() {
@@ -1443,9 +1660,13 @@ export function useWorkspaceAgentTools() {
     const normalized = normalizeKey(control);
 
     function result(message: string) {
-      actionState.recordAction(t('workspaceAgentTools.actionUpdatedBrowserPanel'), String(control), {
-        announce: true,
-      });
+      actionState.recordAction(
+        t('workspaceAgentTools.actionUpdatedBrowserPanel'),
+        String(control),
+        {
+          announce: true,
+        },
+      );
       return {
         success: true,
         layout: navigationStore.layout,
@@ -1725,9 +1946,10 @@ export function useWorkspaceAgentTools() {
 
   async function listSoulPresets(category: unknown) {
     const wanted = normalizeKey(asString(category));
-    const matching = wanted && wanted !== 'all'
-      ? soulPresets.filter((preset) => normalizeKey(preset.category ?? '') === wanted)
-      : soulPresets;
+    const matching =
+      wanted && wanted !== 'all'
+        ? soulPresets.filter((preset) => normalizeKey(preset.category ?? '') === wanted)
+        : soulPresets;
 
     return {
       success: true,
@@ -1868,7 +2090,9 @@ export function useWorkspaceAgentTools() {
         actionState.recordAction(t('workspaceAgentTools.actionSetVolume'), String(level.value), {
           announce: true,
         });
-        return describe(t('workspaceAgentTools.soundtrackVolume', { percent: Math.round(level.value * 100) }));
+        return describe(
+          t('workspaceAgentTools.soundtrackVolume', { percent: Math.round(level.value * 100) }),
+        );
       }
     } else if (normalized === 'volume') {
       return { success: false, message: t('workspaceAgentTools.soundtrackVolumeNumber') };
@@ -1962,9 +2186,11 @@ export function useWorkspaceAgentTools() {
 
   function normalizeSceneKind(kind: unknown): ScenePresetKind | null {
     const normalized = normalizeKey(asString(kind));
-    if (normalized === 'image' || normalized === 'photo' || normalized === 'picture') return 'image';
+    if (normalized === 'image' || normalized === 'photo' || normalized === 'picture')
+      return 'image';
     if (normalized === 'video' || normalized === 'movie' || normalized === 'clip') return 'video';
-    if (normalized === 'hdri' || normalized === 'environment' || normalized === 'hdr') return 'hdri';
+    if (normalized === 'hdri' || normalized === 'environment' || normalized === 'hdr')
+      return 'hdri';
     return null;
   }
 
@@ -1977,9 +2203,12 @@ export function useWorkspaceAgentTools() {
    * the app has had a curated set the whole time.
    */
   async function listScenePresets(kind: unknown) {
-    const requested = kind === undefined || kind === null || normalizeKey(asString(kind)) === 'all'
-      ? [...SCENE_PRESET_KINDS]
-      : [normalizeSceneKind(kind)].filter(Boolean as unknown as (k: ScenePresetKind | null) => k is ScenePresetKind);
+    const requested =
+      kind === undefined || kind === null || normalizeKey(asString(kind)) === 'all'
+        ? [...SCENE_PRESET_KINDS]
+        : [normalizeSceneKind(kind)].filter(
+            Boolean as unknown as (k: ScenePresetKind | null) => k is ScenePresetKind,
+          );
 
     if (!requested.length) {
       return {
@@ -2110,7 +2339,10 @@ export function useWorkspaceAgentTools() {
     }
 
     if (match.id === workspaceStore.activeWorkspaceId) {
-      return { success: true, message: t('workspaceAgentTools.profileAlreadyActive', { name: match.name }) };
+      return {
+        success: true,
+        message: t('workspaceAgentTools.profileAlreadyActive', { name: match.name }),
+      };
     }
 
     const approved = await confirmIfNeeded(
@@ -2140,12 +2372,7 @@ export function useWorkspaceAgentTools() {
     };
   }
 
-  async function setUiControl(
-    domain: unknown,
-    control: unknown,
-    value: unknown,
-    confirm: unknown,
-  ) {
+  async function setUiControl(domain: unknown, control: unknown, value: unknown, confirm: unknown) {
     const normalizedDomain = normalizeDomain(domain);
     if (!normalizedDomain) {
       return {
@@ -2353,7 +2580,10 @@ export function useWorkspaceAgentTools() {
       name: 'set_memory_ui_control',
       description: t('workspaceAgentTools.toolDescSetMemoryUi'),
       parameters: {
-        control: { type: 'string', enum: ['activeTab', 'openGraphView', 'knowledgeGraph', 'graphView'] },
+        control: {
+          type: 'string',
+          enum: ['activeTab', 'openGraphView', 'knowledgeGraph', 'graphView'],
+        },
         value: {},
       },
       handler: async ({ control, value }) => setMemoryUiControl(control, value),
@@ -2516,7 +2746,9 @@ export function useWorkspaceAgentTools() {
     const calendarStore = useCalendarStore();
     let _lastEmailListing: { id: string; from_address: string; subject: string }[] = [];
 
-    function _resolveRef(rawRef: unknown): { id: string; from_address: string; subject: string } | null {
+    function _resolveRef(
+      rawRef: unknown,
+    ): { id: string; from_address: string; subject: string } | null {
       const ref = asString(rawRef).trim();
       if (!ref) return null;
       const num = parseInt(ref, 10);
@@ -2524,7 +2756,9 @@ export function useWorkspaceAgentTools() {
         return _lastEmailListing[num - 1] ?? null;
       }
       if (ref.includes('-')) {
-        return _lastEmailListing.find((m) => m.id === ref) ?? { id: ref, from_address: '', subject: '' };
+        return (
+          _lastEmailListing.find((m) => m.id === ref) ?? { id: ref, from_address: '', subject: '' }
+        );
       }
       return null;
     }
@@ -2535,7 +2769,17 @@ export function useWorkspaceAgentTools() {
       parameters: {
         category: {
           type: 'string',
-          enum: ['all', 'travel', 'bills', 'events', 'newsletters', 'personal', 'notifications', 'shopping', 'work'],
+          enum: [
+            'all',
+            'travel',
+            'bills',
+            'events',
+            'newsletters',
+            'personal',
+            'notifications',
+            'shopping',
+            'work',
+          ],
         },
       },
       handler: async ({ category }) => {
@@ -2544,11 +2788,20 @@ export function useWorkspaceAgentTools() {
         const cat = asString(category, 'all') as EmailCategory;
         await emailStore.fetchInbox(cat);
         const msgs = emailStore.messages.slice(0, 10);
-        _lastEmailListing = msgs.map((m) => ({ id: m.id, from_address: m.from_address, subject: m.subject }));
+        _lastEmailListing = msgs.map((m) => ({
+          id: m.id,
+          from_address: m.from_address,
+          subject: m.subject,
+        }));
         if (msgs.length === 0) return `No ${cat !== 'all' ? cat + ' ' : ''}emails found.`;
-        return msgs
-          .map((m, i) => `${i + 1}. [${m.is_read ? 'read' : 'UNREAD'}] From: ${m.from_address} | Subject: ${m.subject || '(no subject)'} | Category: ${m.category}`)
-          .join('\n') + '\n\nUse the number (1, 2, 3...) to reference an email in other tools.';
+        return (
+          msgs
+            .map(
+              (m, i) =>
+                `${i + 1}. [${m.is_read ? 'read' : 'UNREAD'}] From: ${m.from_address} | Subject: ${m.subject || '(no subject)'} | Category: ${m.category}`,
+            )
+            .join('\n') + '\n\nUse the number (1, 2, 3...) to reference an email in other tools.'
+        );
       },
     });
 
@@ -2560,7 +2813,8 @@ export function useWorkspaceAgentTools() {
       },
       handler: async ({ email_ref }) => {
         const ref = _resolveRef(email_ref);
-        if (!ref) return 'Invalid email reference. Use a number from the last listing (e.g. "1") or a message ID.';
+        if (!ref)
+          return 'Invalid email reference. Use a number from the last listing (e.g. "1") or a message ID.';
         try {
           const msg = await emailStore.fetchMessage(ref.id);
           emailStore.markRead(ref.id);
@@ -2582,7 +2836,8 @@ export function useWorkspaceAgentTools() {
       handler: async ({ email_ref, body, confirm }) => {
         if (!confirm) return t('workspaceAgentTools.confirmRequired');
         const ref = _resolveRef(email_ref);
-        if (!ref) return 'Invalid email reference. Use a number from the last listing (e.g. "1") or a message ID.';
+        if (!ref)
+          return 'Invalid email reference. Use a number from the last listing (e.g. "1") or a message ID.';
         const replyTo = ref.from_address || (await emailStore.fetchMessage(ref.id))?.from_address;
         const replySubject = ref.subject || '';
         if (!replyTo) return 'Message not found. Try calling read_emails first.';
@@ -2639,7 +2894,8 @@ export function useWorkspaceAgentTools() {
       },
       handler: async ({ email_ref }) => {
         const ref = _resolveRef(email_ref);
-        if (!ref) return 'Invalid email reference. Use a number from the last listing (e.g. "1") or a message ID.';
+        if (!ref)
+          return 'Invalid email reference. Use a number from the last listing (e.g. "1") or a message ID.';
         try {
           await emailStore.archiveMessage(ref.id);
           return 'Email archived.';
@@ -2677,9 +2933,10 @@ export function useWorkspaceAgentTools() {
       handler: async ({ range_start, range_end }) => {
         try {
           const start = typeof range_start === 'string' ? range_start : new Date().toISOString();
-          const end = typeof range_end === 'string'
-            ? range_end
-            : new Date(Date.now() + 1000 * 60 * 60 * 24 * 14).toISOString();
+          const end =
+            typeof range_end === 'string'
+              ? range_end
+              : new Date(Date.now() + 1000 * 60 * 60 * 24 * 14).toISOString();
           const events = await calendarStore.fetchEvents(start, end);
           if (events.length === 0) return t('workspaceAgentTools.calendarNoEvents');
           return events
@@ -2701,20 +2958,34 @@ export function useWorkspaceAgentTools() {
         title: { type: 'string' },
         starts_at: { type: 'string' },
         ends_at: { type: 'string' },
-        event_type: { type: 'string', enum: ['meeting', 'task', 'personal', 'reminder', 'focus', 'other'] },
+        event_type: {
+          type: 'string',
+          enum: ['meeting', 'task', 'personal', 'reminder', 'focus', 'other'],
+        },
         color: { type: 'string' },
         location: { type: 'string' },
         description: { type: 'string' },
         confirm: { type: 'boolean' },
       },
-      handler: async ({ title, starts_at, ends_at, event_type, color, location, description, confirm }) => {
+      handler: async ({
+        title,
+        starts_at,
+        ends_at,
+        event_type,
+        color,
+        location,
+        description,
+        confirm,
+      }) => {
         if (!confirm) return t('workspaceAgentTools.confirmRequired');
         try {
           const created = await calendarStore.createEvent({
             title: typeof title === 'string' ? title : '',
             starts_at: typeof starts_at === 'string' ? starts_at : '',
             ends_at: typeof ends_at === 'string' ? ends_at : '',
-            event_type: (typeof event_type === 'string' ? event_type : 'other') as CalendarEventType,
+            event_type: (typeof event_type === 'string'
+              ? event_type
+              : 'other') as CalendarEventType,
             color: typeof color === 'string' ? color : '#6366f1',
             location: typeof location === 'string' ? location : '',
             description: typeof description === 'string' ? description : '',
@@ -2734,21 +3005,37 @@ export function useWorkspaceAgentTools() {
         title: { type: 'string' },
         starts_at: { type: 'string' },
         ends_at: { type: 'string' },
-        event_type: { type: 'string', enum: ['meeting', 'task', 'personal', 'reminder', 'focus', 'other'] },
+        event_type: {
+          type: 'string',
+          enum: ['meeting', 'task', 'personal', 'reminder', 'focus', 'other'],
+        },
         color: { type: 'string' },
         location: { type: 'string' },
         description: { type: 'string' },
         confirm: { type: 'boolean' },
       },
-      handler: async ({ event_id, title, starts_at, ends_at, event_type, color, location, description, confirm }) => {
+      handler: async ({
+        event_id,
+        title,
+        starts_at,
+        ends_at,
+        event_type,
+        color,
+        location,
+        description,
+        confirm,
+      }) => {
         if (!confirm) return t('workspaceAgentTools.confirmRequired');
-        if (typeof event_id !== 'string' || !event_id.trim()) return t('workspaceAgentTools.calendarEventIdRequired');
+        if (typeof event_id !== 'string' || !event_id.trim())
+          return t('workspaceAgentTools.calendarEventIdRequired');
         try {
           const updated = await calendarStore.updateEvent(event_id, {
             ...(typeof title === 'string' ? { title } : {}),
             ...(typeof starts_at === 'string' ? { starts_at } : {}),
             ...(typeof ends_at === 'string' ? { ends_at } : {}),
-            ...(typeof event_type === 'string' ? { event_type: event_type as CalendarEventType } : {}),
+            ...(typeof event_type === 'string'
+              ? { event_type: event_type as CalendarEventType }
+              : {}),
             ...(typeof color === 'string' ? { color } : {}),
             ...(typeof location === 'string' ? { location } : {}),
             ...(typeof description === 'string' ? { description } : {}),
@@ -2769,7 +3056,8 @@ export function useWorkspaceAgentTools() {
       },
       handler: async ({ event_id, confirm }) => {
         if (!confirm) return t('workspaceAgentTools.confirmRequired');
-        if (typeof event_id !== 'string' || !event_id.trim()) return t('workspaceAgentTools.calendarEventIdRequired');
+        if (typeof event_id !== 'string' || !event_id.trim())
+          return t('workspaceAgentTools.calendarEventIdRequired');
         try {
           await calendarStore.deleteEvent(event_id);
           return t('workspaceAgentTools.calendarDeleted', { id: event_id });

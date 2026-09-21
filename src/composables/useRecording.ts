@@ -14,7 +14,13 @@ export interface ViewportRegion {
 
 function getSupportedMimeType(hasAudio: boolean): string {
   const candidates = hasAudio
-    ? ['video/webm;codecs=vp8,opus', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8', 'video/webm', 'video/mp4']
+    ? [
+        'video/webm;codecs=vp8,opus',
+        'video/webm;codecs=vp9,opus',
+        'video/webm;codecs=vp8',
+        'video/webm',
+        'video/mp4',
+      ]
     : ['video/webm;codecs=vp8', 'video/webm;codecs=vp9', 'video/webm', 'video/mp4'];
   for (const t of candidates) {
     if (MediaRecorder.isTypeSupported(t)) return t;
@@ -32,7 +38,9 @@ function getSupportedMimeType(hasAudio: boolean): string {
  * All sources are routed through the SAME existing KwamiAudio AudioContext so
  * everything ends up on one MediaStreamDestinationNode and one audio track.
  */
-async function buildAudioMix(includeMic: boolean): Promise<{ tracks: MediaStreamTrack[]; cleanup: () => void }> {
+async function buildAudioMix(
+  includeMic: boolean,
+): Promise<{ tracks: MediaStreamTrack[]; cleanup: () => void }> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const kwamiAudio = (window as any).kwami?.avatar?.getAudio?.();
   const ctx: AudioContext | null = kwamiAudio?.getAudioContext?.() ?? null;
@@ -55,7 +63,9 @@ async function buildAudioMix(includeMic: boolean): Promise<{ tracks: MediaStream
   }
 
   if (ctx.state === 'suspended') {
-    try { await ctx.resume(); } catch {}
+    try {
+      await ctx.resume();
+    } catch {}
   }
 
   const destNode = ctx.createMediaStreamDestination();
@@ -64,7 +74,9 @@ async function buildAudioMix(includeMic: boolean): Promise<{ tracks: MediaStream
   if (analyser) {
     analyser.connect(destNode);
     cleanups.push(() => {
-      try { analyser.disconnect(destNode); } catch {}
+      try {
+        analyser.disconnect(destNode);
+      } catch {}
     });
   }
 
@@ -78,7 +90,11 @@ async function buildAudioMix(includeMic: boolean): Promise<{ tracks: MediaStream
       try {
         const voiceSrc = ctx.createMediaStreamSource(voiceEl.srcObject as MediaStream);
         voiceSrc.connect(destNode);
-        cleanups.push(() => { try { voiceSrc.disconnect(); } catch {} });
+        cleanups.push(() => {
+          try {
+            voiceSrc.disconnect();
+          } catch {}
+        });
       } catch {}
     }
   }
@@ -90,7 +106,9 @@ async function buildAudioMix(includeMic: boolean): Promise<{ tracks: MediaStream
       const micSrc = ctx.createMediaStreamSource(micStream);
       micSrc.connect(destNode);
       cleanups.push(() => {
-        try { micSrc.disconnect(); } catch {}
+        try {
+          micSrc.disconnect();
+        } catch {}
         micStream.getTracks().forEach((t) => t.stop());
       });
     } catch {
@@ -169,7 +187,9 @@ export function useRecording() {
       const chunks: Blob[] = [];
 
       const recorder = new MediaRecorder(stream, { mimeType });
-      recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
       recorder.onstop = () => {
         cancelAnimationFrame(animFrame);
         audioCleanup();
@@ -184,7 +204,9 @@ export function useRecording() {
       };
 
       recorder.start(100);
-      recorderStopFn = () => { if (recorder.state !== 'inactive') recorder.stop(); };
+      recorderStopFn = () => {
+        if (recorder.state !== 'inactive') recorder.stop();
+      };
     });
 
     return () => {

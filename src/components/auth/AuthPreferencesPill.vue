@@ -37,16 +37,16 @@ const currentLocale = computed(() => getCurrentLocale());
  */
 const isLight = computed(() => themeStore.resolvedMode === 'light');
 
-const themeLabel = computed(() => (isLight.value ? t('auth.switchToDark') : t('auth.switchToLight')));
+const themeLabel = computed(() =>
+  isLight.value ? t('auth.switchToDark') : t('auth.switchToLight'),
+);
 
 const languageLabel = computed(() =>
   t('auth.languageCurrent', { language: LOCALE_ENDONYMS[currentLocale.value] }),
 );
 
 const backgroundLabel = computed(() =>
-  video.value
-    ? t('auth.backgroundCurrent', { name: video.value.name })
-    : t('auth.backgroundMenu'),
+  video.value ? t('auth.backgroundCurrent', { name: video.value.name }) : t('auth.backgroundMenu'),
 );
 
 // --- menus -----------------------------------------------------------------

@@ -119,7 +119,8 @@ export const en = {
   email: {
     activation: {
       title: 'Activate Your Email',
-      description: "Get your own {'@'}kwami.io email address. Emails are automatically sorted into smart Action Cards.",
+      description:
+        "Get your own {'@'}kwami.io email address. Emails are automatically sorted into smart Action Cards.",
       chooseUsername: 'Choose your username',
       usernamePlaceholder: 'username',
       checking: 'Checking availability...',
@@ -156,7 +157,8 @@ export const en = {
     release: {
       title: 'Release Email Address',
       warning: 'This will permanently delete your email address and all associated messages:',
-      permanent: 'This action cannot be undone. All emails will be lost and the username will become available for others.',
+      permanent:
+        'This action cannot be undone. All emails will be lost and the username will become available for others.',
       confirm: 'Release Email',
       cancel: 'Keep Email',
     },
@@ -220,7 +222,8 @@ export const en = {
     installed: 'Installed on this device',
     installIos: 'In Safari, tap Share, then Add to Home Screen, then Add.',
     installAndroid: 'Tap Download app, or open the browser menu and choose Install app.',
-    installDesktop: 'Click Download app, or the install icon in the address bar. On Safari or Firefox, open this site in Chrome or Edge to install.',
+    installDesktop:
+      'Click Download app, or the install icon in the address bar. On Safari or Firefox, open this site in Chrome or Edge to install.',
   },
   models: {
     title: 'Models',
@@ -252,7 +255,8 @@ export const en = {
     providerGithub: 'GitHub',
     providerMetaMask: 'MetaMask',
     providerPhantom: 'Phantom',
-    walletNotFound: '{wallet} is not installed. Opening the download page — come back and try again once it is added.',
+    walletNotFound:
+      '{wallet} is not installed. Opening the download page — come back and try again once it is added.',
     walletInstall: 'Install {wallet}',
     walletInstallOpen: 'Open the download page',
     walletDetected: 'Detected',
@@ -263,7 +267,8 @@ export const en = {
     walletActionConnect: 'Connect',
     connectWallet: 'Connect {wallet}',
     connectWalletWithChain: 'Connect {wallet} with {chain}',
-    walletOpenAppHint: 'Opening {wallet}. Phones have no browser extensions, so install the app if nothing happens.',
+    walletOpenAppHint:
+      'Opening {wallet}. Phones have no browser extensions, so install the app if nothing happens.',
     walletConnecting: 'Approve in {wallet}',
     chainSolana: 'Solana',
     chainEthereum: 'Ethereum',
@@ -271,13 +276,17 @@ export const en = {
     web3FormLabel: 'Sign in with a wallet',
     web3Hint: 'Approve a message in your wallet. We never ask you to send funds.',
     web3Note: 'Your wallet address becomes your account. No email needed.',
-    web3ProviderDisabled: 'Wallet sign-in is not enabled on this project yet. Use email or phone, or turn on Authentication → Providers → Web3.',
+    web3ProviderDisabled:
+      'Wallet sign-in is not enabled on this project yet. Use email or phone, or turn on Authentication → Providers → Web3.',
     web3Rejected: 'The signature was cancelled in the wallet.',
     web3Failed: 'Wallet sign-in failed.',
-    web3WalletError: '{wallet} could not finish signing. Try again, and reopen the extension if it keeps failing.',
-    web3NetworkFailed: 'The sign-in server could not be reached. Check your connection and try again.',
+    web3WalletError:
+      '{wallet} could not finish signing. Try again, and reopen the extension if it keeps failing.',
+    web3NetworkFailed:
+      'The sign-in server could not be reached. Check your connection and try again.',
     configError: 'Configuration error',
-    configErrorHint: 'This build is missing required environment variables: {vars}. Copy .env.sample to .env and fill them in.',
+    configErrorHint:
+      'This build is missing required environment variables: {vars}. Copy .env.sample to .env and fill them in.',
     welcome: 'Welcome',
     signInContinue: 'Sign in to continue to Kwami App',
     orContinueWithEmail: 'or continue with email',
@@ -407,7 +416,8 @@ export const en = {
   tools: {
     webhookUrl: 'Webhook URL',
     httpMethod: 'HTTP method',
-    webhookHint: 'The agent calls this URL with the tool arguments. It must allow cross-origin requests from this app — use an MCP server for APIs that do not.',
+    webhookHint:
+      'The agent calls this URL with the tool arguments. It must allow cross-origin requests from this app — use an MCP server for APIs that do not.',
     invalidUrl: 'Enter a valid http(s) webhook URL',
     title: 'Tools',
     registeredTools: 'Registered Tools',
@@ -442,7 +452,8 @@ export const en = {
   },
   memory: {
     contextRetrieval: 'Context Retrieval',
-    contextRetrievalHint: 'How much past conversation and how many stored facts are sent with each message. Larger contexts recall more but cost more tokens.',
+    contextRetrievalHint:
+      'How much past conversation and how many stored facts are sent with each message. Larger contexts recall more but cost more tokens.',
     contextSizePlaceholder: 'Select context size',
     contextSizeLean: 'Lean — 4 messages, only strong matches',
     contextSizeBalanced: 'Balanced — 10 messages',
@@ -510,11 +521,14 @@ export const en = {
     whatsappSenders: 'WhatsApp senders',
     smsSenders: 'SMS senders',
     latestRuntime: 'Latest runtime',
-    sharedInfraSummary: 'Shared trunks power the platform. Each kwami still owns its own mapped number and sender.',
+    sharedInfraSummary:
+      'Shared trunks power the platform. Each kwami still owns its own mapped number and sender.',
     createNumber: 'Create Number',
-    createNumberHelp: 'Create a phone number for this kwami in 3 steps: choose country, find an available number, then purchase it.',
+    createNumberHelp:
+      'Create a phone number for this kwami in 3 steps: choose country, find an available number, then purchase it.',
     country: 'Country',
-    provisionNote: 'Buying a number here provisions it for the active kwami and syncs it to the shared phone infrastructure automatically.',
+    provisionNote:
+      'Buying a number here provisions it for the active kwami and syncs it to the shared phone infrastructure automatically.',
     findAvailableNumber: 'Find Available Number',
     refreshSuggestion: 'Refresh Suggestion',
     refresh: 'Refresh',
@@ -528,7 +542,8 @@ export const en = {
     ok: 'OK',
     noVoiceChannel: 'Provision a number to enable calling for this kwami.',
     callRecipient: 'Call recipient',
-    callModesHelp: 'Test Twilio alone isolates your number, account, and geo rules. Call with agent uses LiveKit SIP and the worker.',
+    callModesHelp:
+      'Test Twilio alone isolates your number, account, and geo rules. Call with agent uses LiveKit SIP and the worker.',
     testCallTwilio: 'Test call (Twilio only)',
     callWithAgent: 'Call with agent',
     removeNumberFromKwami: 'Remove number from kwami',
@@ -559,7 +574,8 @@ export const en = {
     removePhoneTitle: 'Remove phone number?',
     confirmRemoveRelease: 'Remove and release',
     cancel: 'Cancel',
-    removePhoneDetails: 'This removes the voice and WhatsApp channels for this kwami, updates shared LiveKit SIP trunks, detaches the number from your Twilio SIP trunk when configured, and releases the number in Twilio.',
+    removePhoneDetails:
+      'This removes the voice and WhatsApp channels for this kwami, updates shared LiveKit SIP trunks, detaches the number from your Twilio SIP trunk when configured, and releases the number in Twilio.',
     removePhoneWarning: 'You cannot undo this. You can provision a new number afterward.',
     numberLabel: 'Number:',
     voiceOutboundStaleWarning:
@@ -675,7 +691,8 @@ export const en = {
     temperatureHint: 'Lower = focused, Higher = creative',
     maxTokens: 'Max Tokens',
     maxTokensHint: 'Maximum response length',
-    realtimeInfo: 'Realtime models enable bidirectional audio streaming with ultra-low latency. Some models also support live video input.',
+    realtimeInfo:
+      'Realtime models enable bidirectional audio streaming with ultra-low latency. Some models also support live video input.',
     audio: 'Audio',
     video: 'Video',
     tools: 'Tools',
@@ -731,7 +748,8 @@ export const en = {
     light: 'Light',
     quickPalettes: 'Quick palettes (same as blob XYZ)',
     syncAvatarColors: 'Sync colors from avatar',
-    randomizeHint: 'Tap a palette to apply it, or use dice to roll a new set with the selected palette. Brightness remaps colors for dark or light overlays. Scene settings save locally and with the kwami Save button.',
+    randomizeHint:
+      'Tap a palette to apply it, or use dice to roll a new set with the selected palette. Brightness remaps colors for dark or light overlays. Scene settings save locally and with the kwami Save button.',
     type: 'Type',
     overlayTypeAria: 'Overlay type',
     solid: 'Solid',
@@ -910,7 +928,8 @@ export const en = {
     unavailableTitle: 'Audio',
     unavailableDesc: 'Audio controls are currently available for Blob XYZ and Black Hole.',
     playerTitle: 'Audio Player',
-    playerDesc: 'Shared audio player for all avatars. Load and play local tracks to drive animation.',
+    playerDesc:
+      'Shared audio player for all avatars. Load and play local tracks to drive animation.',
     blobTitle: 'Blob XYZ Audio',
     blobDesc: 'Configure how Blob XYZ reacts to sound input.',
     audioReactivity: 'Audio Reactivity',
@@ -994,7 +1013,8 @@ export const en = {
     logFullState: 'Log Full State',
     logConfig: 'Log Config',
     aboutKwami: 'About Kwami',
-    aboutText: 'Kwami is a 3D AI companion library featuring visual avatars, voice pipelines via LiveKit, long-term memory with Zep, and extensible tools via MCP.',
+    aboutText:
+      'Kwami is a 3D AI companion library featuring visual avatars, voice pipelines via LiveKit, long-term memory with Zep, and extensible tools via MCP.',
     github: 'GitHub',
     docs: 'Docs',
   },
@@ -1010,7 +1030,8 @@ export const en = {
     usage: 'Usage',
     energyPacks: 'Energy Packs',
     bestValue: 'Best Value',
-    energyInfo: "Energy powers your Kwami's voice conversations. Different AI models consume energy at different rates.",
+    energyInfo:
+      "Energy powers your Kwami's voice conversations. Different AI models consume energy at different rates.",
     transactionHistory: 'Transaction History',
     loading: 'Loading...',
     noTransactions: 'No transactions yet',
@@ -1052,7 +1073,8 @@ export const en = {
     serious: 'Serious',
     compassionate: 'Compassionate',
     emotionalTraits: 'Emotional Traits',
-    emotionalTraitsHint: 'Each slider is bipolar: -100 leans left emotion, 0 is neutral, +100 leans right emotion.',
+    emotionalTraitsHint:
+      'Each slider is bipolar: -100 leans left emotion, 0 is neutral, +100 leans right emotion.',
     neutralPoint: 'Neutral',
     sadness: 'Sadness',
     happiness: 'Happiness',
@@ -1416,7 +1438,8 @@ export const en = {
     noData: 'No graph data found',
     userIdLine: 'User ID:',
     apiLine: 'API:',
-    emptyHint: 'If facts exist but graph is empty, the Zep graph API may not be available on your plan',
+    emptyHint:
+      'If facts exist but graph is empty, the Zep graph API may not be available on your plan',
     linkingFromPrefix: 'Linking from',
     linkingFromSuffix: '-- click a target node',
     cancel: 'Cancel',
@@ -1507,8 +1530,7 @@ export const en = {
     orphanHint: 'Nodes with zero connections',
     duplicateTitle: 'Duplicate merges ({selected}/{total})',
     duplicateHint: '95%+ name similarity',
-    communitiesDetected:
-      '{n} communities | {n} community detected | {n} communities detected',
+    communitiesDetected: '{n} communities | {n} community detected | {n} communities detected',
     warningUndo: 'Selected actions cannot be undone. Uncheck any items you want to keep.',
     previewFailed: 'Preview failed: {message}',
     applyFailed: 'Apply failed: {message}',
@@ -1517,28 +1539,33 @@ export const en = {
   },
   memoryOps: {
     reorganizeTitle: 'Reorganize',
-    reorganizeDesc: 'Remove orphan nodes, auto-merge high-confidence duplicates, and detect communities.',
+    reorganizeDesc:
+      'Remove orphan nodes, auto-merge high-confidence duplicates, and detect communities.',
     duplicatesTitle: 'Duplicates',
-    duplicatesDesc: 'Find nodes with similar names that may represent the same entity. Merge them to consolidate edges and clean up the graph.',
+    duplicatesDesc:
+      'Find nodes with similar names that may represent the same entity. Merge them to consolidate edges and clean up the graph.',
     scan: 'Scan',
     noDuplicates: 'No duplicates found',
     match: 'match',
     edges: 'edges',
     merge: 'Merge',
     communitiesTitle: 'Communities',
-    communitiesDesc: 'Group strongly connected entities into clusters using the Louvain algorithm. Reveals the natural topic areas in your memory.',
+    communitiesDesc:
+      'Group strongly connected entities into clusters using the Louvain algorithm. Reveals the natural topic areas in your memory.',
     detect: 'Detect',
     communitiesEmpty: 'Click Detect to find communities',
     communityNodes: '{n} nodes | {n} node | {n} nodes',
     moreMembers: '+{n} more',
     dangerZone: 'Danger Zone',
     destructiveTitle: 'Destructive Action',
-    destructiveDesc: 'Permanently delete all memory for this user. This includes all threads, facts, entities, and the knowledge graph.',
+    destructiveDesc:
+      'Permanently delete all memory for this user. This includes all threads, facts, entities, and the knowledge graph.',
     deleteAllMemory: 'Delete All User Memory',
     deleteDialogTitle: 'Delete All Memory?',
     deleteForever: 'Delete Forever',
     deleteIntro: 'You are about to permanently delete all memory for:',
-    deleteWarning: 'This action cannot be undone. All threads, facts, entities, and the knowledge graph will be permanently deleted.',
+    deleteWarning:
+      'This action cannot be undone. All threads, facts, entities, and the knowledge graph will be permanently deleted.',
   },
   kwamiActions: {
     created: 'Created "{name}"{emoji}',

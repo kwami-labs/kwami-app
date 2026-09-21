@@ -57,12 +57,8 @@ const reducedMotion =
 
 const stillOnly = ref(reducedMotion?.matches ?? false);
 
-const showYoutube = computed(
-  () => Boolean(youtubeId.value) && !stillOnly.value && !ytFailed.value,
-);
-const showThumb = computed(
-  () => Boolean(youtubeId.value) && (stillOnly.value || ytFailed.value),
-);
+const showYoutube = computed(() => Boolean(youtubeId.value) && !stillOnly.value && !ytFailed.value);
+const showThumb = computed(() => Boolean(youtubeId.value) && (stillOnly.value || ytFailed.value));
 const showStock = computed(() => !youtubeId.value && Boolean(video.value) && !failed.value);
 
 function shouldPlayClip(): boolean {

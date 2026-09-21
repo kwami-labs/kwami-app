@@ -22,7 +22,10 @@ const workspaces = computed(() => workspaceStore.workspaces);
 
 const emit = defineEmits<{
   (e: 'add-click'): void;
-  (e: 'edit-click', ws: { id: string; name: string; colors: { x: string; y: string; z: string } }): void;
+  (
+    e: 'edit-click',
+    ws: { id: string; name: string; colors: { x: string; y: string; z: string } },
+  ): void;
 }>();
 
 function toggleTray() {
@@ -52,7 +55,10 @@ function onAddClick(event?: MouseEvent) {
   emit('add-click');
 }
 
-function onEditClick(ws: { id: string; name: string; colors: { x: string; y: string; z: string } }, event?: MouseEvent) {
+function onEditClick(
+  ws: { id: string; name: string; colors: { x: string; y: string; z: string } },
+  event?: MouseEvent,
+) {
   event?.stopPropagation();
   emit('edit-click', ws);
 }
@@ -80,7 +86,11 @@ defineExpose({ scrollListToBottom });
 
 <template>
   <div class="kwami-selector" :class="{ expanded: trayExpanded }">
-    <button class="kwami-active-btn" @click.stop="toggleTray" :title="t('sidebarModals.switchKwami')">
+    <button
+      class="kwami-active-btn"
+      @click.stop="toggleTray"
+      :title="t('sidebarModals.switchKwami')"
+    >
       <div
         v-if="activeWorkspace"
         class="kwami-preview"
@@ -112,7 +122,8 @@ defineExpose({ scrollListToBottom });
               class="kwami-item-name"
               :title="t('sidebarModals.editNameGradient', { name: ws.name })"
               @click.stop="onEditClick(ws, $event)"
-            >{{ ws.name }}</span>
+              >{{ ws.name }}</span
+            >
             <span v-if="ws.emoji" class="kwami-item-emoji">{{ ws.emoji }}</span>
           </div>
           <span
@@ -128,7 +139,12 @@ defineExpose({ scrollListToBottom });
           />
         </button>
       </div>
-      <button type="button" class="kwami-add-btn" @click="onAddClick($event)" :title="t('sidebarModals.createNewKwami')">
+      <button
+        type="button"
+        class="kwami-add-btn"
+        @click="onAddClick($event)"
+        :title="t('sidebarModals.createNewKwami')"
+      >
         <iconify-icon icon="ph:plus-bold"></iconify-icon>
         <span>{{ t('sidebarModals.newKwami') }}</span>
       </button>

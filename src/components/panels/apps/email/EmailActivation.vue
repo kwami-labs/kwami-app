@@ -18,7 +18,10 @@ let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 function suggestUsername(): string {
   const email = authStore.userEmail || '';
   const prefix = email.split('@')[0] || '';
-  return prefix.replace(/[^a-z0-9._-]/gi, '').toLowerCase().slice(0, 30);
+  return prefix
+    .replace(/[^a-z0-9._-]/gi, '')
+    .toLowerCase()
+    .slice(0, 30);
 }
 
 const validationError = computed(() => {
@@ -87,7 +90,10 @@ async function activate() {
 
         <div class="status-row">
           <template v-if="emailStore.isCheckingUsername">
-            <iconify-icon icon="ph:spinner-gap-bold" class="spin status-icon checking"></iconify-icon>
+            <iconify-icon
+              icon="ph:spinner-gap-bold"
+              class="spin status-icon checking"
+            ></iconify-icon>
             <span class="status-text checking">{{ t('email.activation.checking') }}</span>
           </template>
           <template v-else-if="validationError">
@@ -237,18 +243,30 @@ async function activate() {
   font-size: 14px;
 }
 
-.status-icon.checking { color: var(--text-muted); }
-.status-icon.error { color: var(--error); }
-.status-icon.success { color: var(--success, #22c55e); }
+.status-icon.checking {
+  color: var(--text-muted);
+}
+.status-icon.error {
+  color: var(--error);
+}
+.status-icon.success {
+  color: var(--success, #22c55e);
+}
 
 .status-text {
   font-size: 11px;
   font-weight: 500;
 }
 
-.status-text.checking { color: var(--text-muted); }
-.status-text.error { color: var(--error); }
-.status-text.success { color: var(--success, #22c55e); }
+.status-text.checking {
+  color: var(--text-muted);
+}
+.status-text.error {
+  color: var(--error);
+}
+.status-text.success {
+  color: var(--success, #22c55e);
+}
 
 .activation-error {
   display: flex;
@@ -306,7 +324,11 @@ async function activate() {
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>

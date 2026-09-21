@@ -114,7 +114,10 @@ export function useCommsAgentTools() {
     try {
       await contactsStore.fetchContacts(raw);
     } catch (error) {
-      return { ok: false, message: t('comms.contactLookupFailed', { error: getErrorMessage(error) }) };
+      return {
+        ok: false,
+        message: t('comms.contactLookupFailed', { error: getErrorMessage(error) }),
+      };
     }
 
     const needle = raw.toLowerCase();
@@ -234,7 +237,10 @@ export function useCommsAgentTools() {
           : t('comms.noChannels'),
       };
     } catch (error) {
-      return { success: false, message: t('comms.channelsFailed', { error: getErrorMessage(error) }) };
+      return {
+        success: false,
+        message: t('comms.channelsFailed', { error: getErrorMessage(error) }),
+      };
     }
   }
 
@@ -260,7 +266,10 @@ export function useCommsAgentTools() {
         countryCode: country,
         areaCode: asString(areaCode).trim() || undefined,
         contains: asString(contains).trim() || undefined,
-        limit: typeof limit === 'number' && Number.isFinite(limit) ? Math.min(20, Math.max(1, Math.floor(limit))) : 10,
+        limit:
+          typeof limit === 'number' && Number.isFinite(limit)
+            ? Math.min(20, Math.max(1, Math.floor(limit)))
+            : 10,
       });
       return {
         success: true,
@@ -276,7 +285,10 @@ export function useCommsAgentTools() {
           : t('comms.noNumbersFound'),
       };
     } catch (error) {
-      return { success: false, message: t('comms.numberSearchFailed', { error: getErrorMessage(error) }) };
+      return {
+        success: false,
+        message: t('comms.numberSearchFailed', { error: getErrorMessage(error) }),
+      };
     }
   }
 
@@ -432,7 +444,10 @@ export function useCommsAgentTools() {
           : t('comms.noContacts'),
       };
     } catch (error) {
-      return { success: false, message: t('comms.contactLookupFailed', { error: getErrorMessage(error) }) };
+      return {
+        success: false,
+        message: t('comms.contactLookupFailed', { error: getErrorMessage(error) }),
+      };
     }
   }
 
@@ -483,9 +498,17 @@ export function useCommsAgentTools() {
         email: asString(email).trim() || undefined,
       });
       actionState.recordAction(t('comms.actionCreatedContact'), name, { announce: true });
-      return { success: true, name, phone: normalizeNumber(phone), message: t('comms.contactCreated', { name }) };
+      return {
+        success: true,
+        name,
+        phone: normalizeNumber(phone),
+        message: t('comms.contactCreated', { name }),
+      };
     } catch (error) {
-      return { success: false, message: t('comms.contactSaveFailed', { error: getErrorMessage(error) }) };
+      return {
+        success: false,
+        message: t('comms.contactSaveFailed', { error: getErrorMessage(error) }),
+      };
     }
   }
 
@@ -531,7 +554,10 @@ export function useCommsAgentTools() {
       }
       existing = matches[0]!;
     } catch (error) {
-      return { success: false, message: t('comms.contactLookupFailed', { error: getErrorMessage(error) }) };
+      return {
+        success: false,
+        message: t('comms.contactLookupFailed', { error: getErrorMessage(error) }),
+      };
     }
 
     const nextName = asString(displayName).trim();
@@ -559,7 +585,10 @@ export function useCommsAgentTools() {
         message: t('comms.contactUpdated', { name: nextName || existing.display_name }),
       };
     } catch (error) {
-      return { success: false, message: t('comms.contactSaveFailed', { error: getErrorMessage(error) }) };
+      return {
+        success: false,
+        message: t('comms.contactSaveFailed', { error: getErrorMessage(error) }),
+      };
     }
   }
 
@@ -591,15 +620,25 @@ export function useCommsAgentTools() {
       }
       existing = matches[0]!;
     } catch (error) {
-      return { success: false, message: t('comms.contactLookupFailed', { error: getErrorMessage(error) }) };
+      return {
+        success: false,
+        message: t('comms.contactLookupFailed', { error: getErrorMessage(error) }),
+      };
     }
 
     const approved = await confirmOutbound(
       t('comms.confirmDeleteContactTitle'),
-      t('comms.confirmDeleteContactBody', { name: existing.display_name, phone: existing.phone_number }),
+      t('comms.confirmDeleteContactBody', {
+        name: existing.display_name,
+        phone: existing.phone_number,
+      }),
     );
     if (!approved) {
-      return { success: false, cancelled: true, message: t('comms.deleteCancelled', { name: existing.display_name }) };
+      return {
+        success: false,
+        cancelled: true,
+        message: t('comms.deleteCancelled', { name: existing.display_name }),
+      };
     }
 
     try {
@@ -607,9 +646,16 @@ export function useCommsAgentTools() {
       actionState.recordAction(t('comms.actionDeletedContact'), existing.display_name, {
         announce: true,
       });
-      return { success: true, name: existing.display_name, message: t('comms.contactDeleted', { name: existing.display_name }) };
+      return {
+        success: true,
+        name: existing.display_name,
+        message: t('comms.contactDeleted', { name: existing.display_name }),
+      };
     } catch (error) {
-      return { success: false, message: t('comms.contactSaveFailed', { error: getErrorMessage(error) }) };
+      return {
+        success: false,
+        message: t('comms.contactSaveFailed', { error: getErrorMessage(error) }),
+      };
     }
   }
 
@@ -632,7 +678,10 @@ export function useCommsAgentTools() {
     try {
       await walletStore.refresh();
     } catch (error) {
-      return { success: false, message: t('comms.walletFailed', { error: getErrorMessage(error) }) };
+      return {
+        success: false,
+        message: t('comms.walletFailed', { error: getErrorMessage(error) }),
+      };
     }
 
     if (!walletStore.wallet) {

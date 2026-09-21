@@ -47,21 +47,16 @@ function toggle() {
 </script>
 
 <template>
-  <section 
-    class="panel-section" 
-    :class="{ 
-      collapsed: isCollapsed, 
-      collapsible, 
+  <section
+    class="panel-section"
+    :class="{
+      collapsed: isCollapsed,
+      collapsible,
       'no-padding': noPadding,
-      'no-padding-x': noPaddingX 
+      'no-padding-x': noPaddingX,
     }"
   >
-    <header 
-      v-if="title" 
-      class="section-header"
-      :class="{ clickable: collapsible }"
-      @click="toggle"
-    >
+    <header v-if="title" class="section-header" :class="{ clickable: collapsible }" @click="toggle">
       <div class="section-title">
         <iconify-icon v-if="icon" :icon="icon" class="section-icon"></iconify-icon>
         <h3>{{ title }}</h3>
@@ -69,13 +64,9 @@ function toggle() {
       <div class="section-actions" @click.stop>
         <slot name="actions"></slot>
       </div>
-      <iconify-icon
-        v-if="collapsible"
-        icon="ph:caret-down-bold"
-        class="toggle-icon"
-      ></iconify-icon>
+      <iconify-icon v-if="collapsible" icon="ph:caret-down-bold" class="toggle-icon"></iconify-icon>
     </header>
-    
+
     <Transition name="collapse">
       <div v-show="!isCollapsed" class="section-content">
         <slot></slot>

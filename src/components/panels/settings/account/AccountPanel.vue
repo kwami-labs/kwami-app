@@ -87,12 +87,7 @@ async function handleLogout() {
       <!-- Sign Out -->
       <PanelSection :title="t('account.actions')">
         <div class="action-buttons">
-          <BaseButton
-            variant="danger"
-            icon="ph:sign-out-duotone"
-            block
-            @click="handleLogout"
-          >
+          <BaseButton variant="danger" icon="ph:sign-out-duotone" block @click="handleLogout">
             {{ t('account.signOut') }}
           </BaseButton>
         </div>

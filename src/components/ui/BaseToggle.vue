@@ -11,17 +11,17 @@ const emit = defineEmits(['update:modelValue']);
 </script>
 
 <template>
-  <label 
-    class="toggle-wrapper" 
+  <label
+    class="toggle-wrapper"
     :class="{ disabled, active: modelValue, [`size-${size || 'md'}`]: true }"
   >
-    <input 
-      type="checkbox" 
-      :checked="modelValue" 
+    <input
+      type="checkbox"
+      :checked="modelValue"
       :disabled="disabled"
       @change="emit('update:modelValue', !modelValue)"
     />
-    
+
     <div class="toggle-switch">
       <div class="toggle-track">
         <div class="toggle-glow"></div>
@@ -30,7 +30,7 @@ const emit = defineEmits(['update:modelValue']);
         <div class="thumb-inner"></div>
       </div>
     </div>
-    
+
     <div v-if="label || description" class="toggle-content">
       <span v-if="label" class="toggle-label">{{ label }}</span>
       <span v-if="description" class="toggle-description">{{ description }}</span>
@@ -143,7 +143,9 @@ const emit = defineEmits(['update:modelValue']);
 
 .toggle-wrapper.active .toggle-thumb {
   background: white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2), 0 0 16px var(--accent-glow);
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    0 0 16px var(--accent-glow);
 }
 
 .size-md.active .toggle-thumb {
@@ -166,7 +168,9 @@ const emit = defineEmits(['update:modelValue']);
 }
 
 .toggle-wrapper:hover:not(.disabled).active .toggle-thumb {
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25), 0 0 24px var(--accent-glow);
+  box-shadow:
+    0 2px 12px rgba(0, 0, 0, 0.25),
+    0 0 24px var(--accent-glow);
 }
 
 /* Focus state */
