@@ -30,7 +30,7 @@ import { useEyeIrisSync } from '@/composables/avatar/sync/useEyeIrisSync';
 import { randomizeAvatarPanel } from '@/composables/avatar/randomizeAvatarPanel';
 import { useBlobXyzStore } from '@/stores/avatar.blob-xyz';
 import { useEyeIrisStore } from '@/stores/avatar.eye-iris';
-import { fitKwamiInView } from '@/utils/kwamiViewportFit';
+import { fitKwamiInView, measureKwamiCanvas } from '@/utils/kwamiViewportFit';
 
 const {
   kwami,
@@ -300,14 +300,17 @@ function handleResize() {
   if (!kwami.value || !canvasRef.value) return;
 
   const renderer = kwamiRendererType.value;
-  const hero = renderer === 'eye-iris' ? 'eye-iris' : 'blob-xyz';
-  const desiredScale =
-    renderer === 'eye-iris' ? eyeIrisStore.state.scale : blobXyzStore.shape.scale;
+  if (renderer === 'blob-xyz' || renderer === 'eye-iris') {
+    fitKwamiInView(kwami.value, canvasRef.value, {
+      renderer,
+      desiredScale:
+        renderer === 'eye-iris' ? eyeIrisStore.state.scale : blobXyzStore.shape.scale,
+    });
+    return;
+  }
 
-  fitKwamiInView(kwami.value, canvasRef.value, {
-    renderer: hero,
-    desiredScale,
-  });
+  const { width, height } = measureKwamiCanvas(canvasRef.value);
+  kwami.value.avatar.getScene()?.resize(width, height);
 }
 
 // Watch for canvas to become available (happens after auth guard shows slot)
