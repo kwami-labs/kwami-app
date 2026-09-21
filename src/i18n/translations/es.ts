@@ -357,6 +357,10 @@ export const es = {
     clickToSkip: 'Haz clic en cualquier lugar para omitir',
     randomizeEvery: 'El avatar cambia cada {seconds}s. Haz clic para cambiar el ritmo.',
   },
+  screenRecorder: {
+    start: 'Grabar la pantalla',
+    stop: 'Detener la grabacion y descargar el video',
+  },
   browser: {
     loading: 'Cargando…',
     connecting: 'Conectando con el navegador…',

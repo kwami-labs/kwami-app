@@ -14,6 +14,7 @@ import { useI18n } from 'vue-i18n';
 import { useWelcomeSoundtrack } from '@/composables/useSoundtrack';
 import { useWelcomeBackground } from '@/composables/useWelcomeBackground';
 import { useWelcomeRandomizer } from '@/composables/useWelcomeRandomizer';
+import { useScreenRecorder } from '@/composables/useScreenRecorder';
 
 /**
  * `loginOpen` collapses the pill to its play button. The login panel grew an
@@ -27,6 +28,12 @@ const { t } = useI18n();
 const { currentTrack, isPlaying, toggle, next } = useWelcomeSoundtrack();
 const { video, shuffle } = useWelcomeBackground();
 const { intervalSeconds, cycleInterval } = useWelcomeRandomizer();
+const {
+  isSupported: canRecordScreen,
+  isRecording,
+  elapsedLabel,
+  toggle: toggleRecording,
+} = useScreenRecorder();
 
 /**
  * The pill is the transport for the whole scene, not just the record. A press
@@ -50,6 +57,10 @@ const toggleLabel = computed(() =>
 const randomizeLabel = computed(() =>
   t('welcomeScreen.randomizeEvery', { seconds: intervalSeconds.value }),
 );
+
+const recordLabel = computed(() =>
+  isRecording.value ? t('screenRecorder.stop') : t('screenRecorder.start'),
+);
 </script>
 
 <template>
@@ -69,6 +80,23 @@ const randomizeLabel = computed(() =>
       @click="togglePlayback"
     >
       <iconify-icon :icon="isPlaying ? 'ph:pause-fill' : 'ph:play-fill'"></iconify-icon>
+    </button>
+
+    <button
+      v-if="canRecordScreen"
+      class="pill-btn pill-btn--record"
+      :class="{ 'pill-btn--rolling': isRecording }"
+      type="button"
+      :aria-pressed="isRecording"
+      :title="recordLabel"
+      :aria-label="recordLabel"
+      @click="toggleRecording"
+    >
+      <iconify-icon
+        :icon="isRecording ? 'ph:stop-fill' : 'ph:record-fill'"
+        aria-hidden="true"
+      ></iconify-icon>
+      <span v-if="isRecording" aria-hidden="true">{{ elapsedLabel }}</span>
     </button>
 
     <template v-if="currentTrack">
@@ -192,6 +220,42 @@ const randomizeLabel = computed(() =>
   color: var(--auth-icon-dim);
 }
 
+/* Red while idle too: a record dot that only turns red once it is rolling
+   reads as a disabled button until you press it. */
+.pill-btn--record {
+  color: var(--auth-record);
+}
+
+.pill-btn--record:hover {
+  color: var(--auth-record-strong);
+}
+
+/* Rolling: the dot becomes a stop square, and the timer joins it -- so the
+   button grows the same way the rate button is already wide. */
+.pill-btn--rolling {
+  width: auto;
+  padding: 0 9px;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  background: var(--auth-record-fill);
+}
+
+.pill-btn--rolling iconify-icon {
+  animation: record-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes record-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
 .pill-btn--rate {
   width: auto;
   min-width: 34px;
@@ -264,10 +328,13 @@ const randomizeLabel = computed(() =>
 }
 
 /* The rate button survives both, unlike the transport: it drives the avatar,
-   which is the whole screen, and it is the one control with nothing to read. */
+   which is the whole screen, and it is the one control with nothing to read.
+   So does the record button -- opening the login panel mid-take must not take
+   the stop control away with it. */
 .soundtrack-pill--compact .pill-track,
 .soundtrack-pill--compact .pill-btn--credit,
-.soundtrack-pill--compact .pill-btn:not(.pill-btn--main):not(.pill-btn--rate) {
+.soundtrack-pill--compact
+  .pill-btn:not(.pill-btn--main):not(.pill-btn--rate):not(.pill-btn--record) {
   display: none;
 }
 
@@ -279,6 +346,10 @@ const randomizeLabel = computed(() =>
 
   .pill-btn:hover {
     transform: none;
+  }
+
+  .pill-btn--rolling iconify-icon {
+    animation: none;
   }
 }
 </style>
