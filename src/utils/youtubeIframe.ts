@@ -82,7 +82,7 @@ export function createYoutubePlayer(
   return loadYoutubeIframeApi().then(
     (api) =>
       new Promise<YoutubePlayer>((resolve) => {
-        const player = new api.Player(el, {
+        new api.Player(el, {
           videoId,
           width: '100%',
           height: '100%',
