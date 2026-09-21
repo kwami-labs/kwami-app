@@ -127,6 +127,29 @@ describe('channelsToHex', () => {
 });
 
 describe('randomShape', () => {
+  it('picks a spike count for the body, so rolls are not all the same mid-band husk', () => {
+    // Three independent uniforms in the same band average to ~3.2 almost
+    // every tick. One shared density is uniform across the band, so a
+    // couple of minutes of watching actually visits drops and husks.
+    let low = 0;
+    let high = 0;
+    for (let i = 0; i < 200; i += 1) {
+      const density = shapeDensity(randomShape().spikes);
+      if (density < 0.25) low += 1;
+      if (density > 0.75) high += 1;
+    }
+    expect(low).toBeGreaterThan(25);
+    expect(high).toBeGreaterThan(25);
+  });
+
+  it('keeps the three axes on the same body, not a drop with one husk axis', () => {
+    for (let i = 0; i < 80; i += 1) {
+      const { spikes } = randomShape();
+      const spread = Math.max(...spikes) - Math.min(...spikes);
+      expect(spread).toBeLessThan((SPIKE_RANGE[1] - SPIKE_RANGE[0]) * 0.25);
+    }
+  });
+
   it('fills every parameter', () => {
     const s = randomShape();
     expect(flatten(s)).toHaveLength(19);
@@ -329,17 +352,22 @@ describe('remixShape', () => {
     expect(Math.max(...highs)).toBeGreaterThan(4.4);
   });
 
-  it('refuses a destination that would leave the spikes looking unchanged', () => {
+  it('refuses a destination that would leave the spike count looking unchanged', () => {
     const from = randomShape(() => 0.5);
     for (let i = 0; i < 20; i += 1) {
       const next = remixShape(from);
-      const span = SPIKE_RANGE[1] - SPIKE_RANGE[0];
-      const jump = Math.hypot(
-        next.spikes[0]! - from.spikes[0]!,
-        next.spikes[1]! - from.spikes[1]!,
-        next.spikes[2]! - from.spikes[2]!,
-      );
-      expect(jump).toBeGreaterThan(span * 0.3);
+      // The count jumps by at least a third of the band; the per-axis trim
+      // can shave a little off the mean, so the floor is under 0.32.
+      expect(Math.abs(shapeDensity(next.spikes) - shapeDensity(from.spikes))).toBeGreaterThan(0.2);
+    }
+  });
+
+  it('changes how many lobes the body has on every tick', () => {
+    let live = randomShape();
+    for (let i = 0; i < 20; i += 1) {
+      const next = remixShape(live);
+      expect(Math.abs(shapeDensity(next.spikes) - shapeDensity(live.spikes))).toBeGreaterThan(0.2);
+      live = next;
     }
   });
 

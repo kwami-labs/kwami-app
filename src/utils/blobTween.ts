@@ -82,16 +82,6 @@ function between(min: number, max: number, random: () => number): number {
 }
 
 /**
- * The most amplitude a body with these spike frequencies may have.
- *
- * Exported for the tests, and because it is the rule the two shape generators
- * share: `randomShape` rolls under it and `driftShape` walks under it, so a
- * shape can no more drift into the shredded corner than it can be rolled there.
- *
- * @param spikes - The three noise frequencies. Density is their mean, via
- *   `shapeDensity`.
- */
-/**
  * How husk-like a body is, 0 at the gelatine end of `SPIKE_RANGE` and 1 at the
  * dense end.
  *
@@ -105,6 +95,13 @@ export function shapeDensity(spikes: readonly [number, number, number]): number 
   return Math.max(0, Math.min(1, (mean - SPIKE_RANGE[0]) / span));
 }
 
+/**
+ * The most amplitude a body with these spike frequencies may have.
+ *
+ * Exported for the tests, and because it is the rule the two shape generators
+ * share: `randomShape` rolls under it and `driftShape` walks under it, so a
+ * shape can no more drift into the shredded corner than it can be rolled there.
+ */
 export function amplitudeCeiling(spikes: readonly [number, number, number]): number {
   return AMPLITUDE_RANGE[1]
     + (DENSE_AMPLITUDE_CEILING - AMPLITUDE_RANGE[1]) * shapeDensity(spikes);
@@ -149,8 +146,72 @@ export function scaleAudioSpikeEffects(
   };
 }
 
+const SPIKE_SPAN = SPIKE_RANGE[1] - SPIKE_RANGE[0];
+
+/**
+ * How far one axis may wander from the body's spike count.
+ *
+ * A tenth of the band is enough that the three axes are not a sphere of
+ * identical lobes, and small enough that a drop cannot grow a husk on one
+ * side. The count itself is chosen first; this is only the trim.
+ */
+const SPIKE_AXIS_SPREAD = SPIKE_SPAN * 0.1;
+
+/**
+ * How far a remix has to move the spike count before the tick reads as a
+ * new body.
+ *
+ * About a third of the band. Closer than that is the same number of lobes
+ * on different axes — which is what "always the same spikes" looked like
+ * when the three frequencies were rolled independently and their mean sat
+ * in the middle every time.
+ */
+const SPIKE_MIN_DENSITY_JUMP = 0.32;
+
+function spikeCenter(density: number): number {
+  return SPIKE_RANGE[0] + density * SPIKE_SPAN;
+}
+
+function rollSpikesAround(center: number, random: () => number): [number, number, number] {
+  // Clamped, not reflected: reflecting a drop's trim off the floor would
+  // push it back toward the husk, and the ends of the band would never
+  // actually land on a drop or a husk.
+  const axis = (): number =>
+    Math.max(
+      SPIKE_RANGE[0],
+      Math.min(SPIKE_RANGE[1], center + (random() * 2 - 1) * SPIKE_AXIS_SPREAD),
+    );
+  return [axis(), axis(), axis()];
+}
+
+/**
+ * A density at least `SPIKE_MIN_DENSITY_JUMP` away from `from`.
+ *
+ * Constructed rather than rejected: retrying a uniform draw leaves a few
+ * percent of ticks on the same spike count, which is the look this is
+ * undoing. The valid set is the two ends of `[0, 1]` that sit far enough
+ * away; we pick uniformly among them so a body at 0.05 always becomes a
+ * husk and one at 0.9 always becomes a drop, instead of stalling.
+ */
+function pickDensityAwayFrom(from: number, random: () => number): number {
+  const lowSpan = Math.max(0, from - SPIKE_MIN_DENSITY_JUMP);
+  const highStart = Math.min(1, from + SPIKE_MIN_DENSITY_JUMP);
+  const highSpan = Math.max(0, 1 - highStart);
+  const total = lowSpan + highSpan;
+  if (!(total > 0)) return from < 0.5 ? 1 : 0;
+  const pick = random() * total;
+  if (pick < lowSpan) return pick;
+  return highStart + (pick - lowSpan);
+}
+
 /**
  * A fresh destination.
+ *
+ * The spike *count* is one roll. Three independent frequencies in the same
+ * band average into the same mid-range husk almost every tick — Irwin-Hall
+ * on three samples, peaked at 3.2 — which is why the login blob looked
+ * like it was only changing colour. One density, then a little per-axis
+ * trim, is a drop or a husk or something in between, on purpose.
  *
  * @param random - Injected so tests can pin the roll.
  */
@@ -161,8 +222,7 @@ export function randomShape(random: () => number = Math.random): BlobShape {
     between(range[0], range[1], random),
   ];
 
-  // Spikes first: they set the ceiling the amplitudes are then rolled under.
-  const spikes = triple(SPIKE_RANGE);
+  const spikes = rollSpikesAround(spikeCenter(random()), random);
   const ceiling = amplitudeCeiling(spikes);
 
   return {
@@ -329,42 +389,41 @@ export function driftShape(from: BlobShape, random: () => number = Math.random):
 }
 
 /**
- * The next destination: a new body, anywhere in the range.
+ * The next destination: a new body, with a different number of lobes.
  *
- * Spikes and amplitude re-roll across the whole band every tick — that is
- * the difference between a blob that is sometimes a drop and sometimes a
- * husk, and one that sits on the same spike setting. Time, shininess and
- * colour still drift: a sixteen-fold jump in scroll speed reads as boiling,
- * and a full palette cut every second is a strobe, not a new shape.
+ * Spikes and amplitude re-roll every tick — that is the difference between
+ * a blob that is sometimes a drop and sometimes a husk, and one that sits
+ * on the same spike setting. The count is chosen *away* from the one the
+ * body already has, so a tick cannot land on "the same spikes, shuffled
+ * across the axes". Time, shininess and colour still drift: a sixteen-fold
+ * jump in scroll speed reads as boiling, and a full palette cut every
+ * second is a strobe, not a new shape.
  *
  * @param from - Where the blob is now. Not mutated.
  * @param random - Injected so tests can pin the roll.
  */
-function spikeDistance(a: readonly number[], b: readonly number[]): number {
-  let sum = 0;
-  for (let i = 0; i < 3; i += 1) {
-    const delta = (a[i] ?? 0) - (b[i] ?? 0);
-    sum += delta * delta;
-  }
-  return Math.sqrt(sum);
-}
-
-/** About a third of the band — close enough that a tick would read as "the same spikes". */
-const SPIKE_MIN_JUMP = (SPIKE_RANGE[1] - SPIKE_RANGE[0]) * 0.35;
-
 export function remixShape(from: BlobShape, random: () => number = Math.random): BlobShape {
-  let next = randomShape(random);
-  for (let guard = 0; guard < 8 && spikeDistance(from.spikes, next.spikes) < SPIKE_MIN_JUMP; guard += 1) {
-    next = randomShape(random);
-  }
-  next.time = [
-    drift(from.time[0]!, TIME_RANGE, DRIFT_FRACTIONS.time, random),
-    drift(from.time[1]!, TIME_RANGE, DRIFT_FRACTIONS.time, random),
-    drift(from.time[2]!, TIME_RANGE, DRIFT_FRACTIONS.time, random),
-  ];
-  next.shininess = drift(from.shininess, SHININESS_RANGE, DRIFT_FRACTIONS.shininess, random);
-  next.channels = from.channels.map((channel) =>
-    reflect(channel + (random() * 2 - 1) * CHANNEL_DRIFT, 0, 255),
+  const spikes = rollSpikesAround(
+    spikeCenter(pickDensityAwayFrom(shapeDensity(from.spikes), random)),
+    random,
   );
-  return next;
+  const ceiling = amplitudeCeiling(spikes);
+
+  return {
+    spikes,
+    amplitude: [
+      between(AMPLITUDE_RANGE[0], ceiling, random),
+      between(AMPLITUDE_RANGE[0], ceiling, random),
+      between(AMPLITUDE_RANGE[0], ceiling, random),
+    ],
+    time: [
+      drift(from.time[0]!, TIME_RANGE, DRIFT_FRACTIONS.time, random),
+      drift(from.time[1]!, TIME_RANGE, DRIFT_FRACTIONS.time, random),
+      drift(from.time[2]!, TIME_RANGE, DRIFT_FRACTIONS.time, random),
+    ],
+    shininess: drift(from.shininess, SHININESS_RANGE, DRIFT_FRACTIONS.shininess, random),
+    channels: from.channels.map((channel) =>
+      reflect(channel + (random() * 2 - 1) * CHANNEL_DRIFT, 0, 255),
+    ),
+  };
 }
