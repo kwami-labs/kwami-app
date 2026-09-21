@@ -25,6 +25,9 @@ import { RANDOMIZE_INTERVALS_MS, useWelcomeRandomizer } from '@/composables/useW
  */
 const analyser = { smoothingTimeConstant: 0.35 };
 
+const scene = { resize: vi.fn() };
+const position = { reset: vi.fn(), refresh: vi.fn() };
+
 const avatar = {
   randomize: vi.fn(),
   switchRenderer: vi.fn(),
@@ -32,6 +35,7 @@ const avatar = {
   setScale: vi.fn(),
   setShininess: vi.fn(),
   setWireframe: vi.fn(),
+  getScene: vi.fn(() => scene),
   getEyeIris: vi.fn(() => null),
   getAudio: vi.fn(() => ({
     getAudioElement: () => ({ paused: true }),
@@ -39,6 +43,7 @@ const avatar = {
     getAnalyser: () => analyser,
   })),
   getBlob: vi.fn(() => ({
+    position,
     getMesh: () => ({ rotation: { x: 0, y: 0, z: 0 } }),
     setTouchStrength: vi.fn(),
     setTouchDuration: vi.fn(),
@@ -111,6 +116,11 @@ beforeEach(() => {
   vi.useFakeTimers();
   avatar.switchRenderer.mockClear();
   avatar.setSkin.mockClear();
+  avatar.setScale.mockClear();
+  avatar.setWireframe.mockClear();
+  scene.resize.mockClear();
+  position.reset.mockClear();
+  position.refresh.mockClear();
   analyser.smoothingTimeConstant = 0.35;
   useWelcomeRandomizer().intervalMs.value = RANDOMIZE_INTERVALS_MS[0];
 });
@@ -181,6 +191,34 @@ describe('the welcome blob timer', () => {
     await vi.advanceTimersByTimeAsync(5_000);
 
     expect(avatar.switchRenderer.mock.calls.length).toBe(afterUnmount);
+  });
+
+  it('turns on wireframe when the 1-in-8 roll lands', async () => {
+    // Stay on blob-xyz (low rolls) until the last call, which is high enough
+    // for `pickWelcomeWireframe` and still below the eye-iris threshold.
+    const random = vi.spyOn(Math, 'random').mockReturnValue(0);
+    try {
+      await mountBlob();
+      avatar.setWireframe.mockClear();
+      random.mockReturnValue(0.9);
+      await vi.advanceTimersByTimeAsync(1_000);
+      expect(avatar.setWireframe).toHaveBeenCalledWith(true);
+    } finally {
+      random.mockRestore();
+    }
+  });
+
+  it('recenters and rescales when the canvas is resized', async () => {
+    await mountBlob();
+    avatar.setScale.mockClear();
+    position.reset.mockClear();
+    scene.resize.mockClear();
+
+    window.dispatchEvent(new Event('resize'));
+
+    expect(position.reset).toHaveBeenCalled();
+    expect(scene.resize).toHaveBeenCalled();
+    expect(avatar.setScale).toHaveBeenCalled();
   });
 
   it('does not leave a watcher driving a disposed kwami', async () => {
