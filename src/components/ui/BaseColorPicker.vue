@@ -5,16 +5,19 @@ export type ColorPickerVariant = 'preview' | 'inline';
 export type ColorPickerMode = 'square' | 'wheel';
 export type ColorFormat = 'hex' | 'rgb' | 'hsl';
 
-const props = withDefaults(defineProps<{
-  label?: string;
-  modelValue: string;
-  disabled?: boolean;
-  variant?: ColorPickerVariant;
-  defaultMode?: ColorPickerMode;
-}>(), {
-  variant: 'preview',
-  defaultMode: 'square'
-});
+const props = withDefaults(
+  defineProps<{
+    label?: string;
+    modelValue: string;
+    disabled?: boolean;
+    variant?: ColorPickerVariant;
+    defaultMode?: ColorPickerMode;
+  }>(),
+  {
+    variant: 'preview',
+    defaultMode: 'square',
+  },
+);
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void;
@@ -48,29 +51,35 @@ const hexInput = ref('');
 function hexToHsl(hex: string): { h: number; s: number; l: number } {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   if (!result) return { h: 0, s: 100, l: 50 };
-  
+
   const r = parseInt(result[1] ?? '0', 16) / 255;
   const g = parseInt(result[2] ?? '0', 16) / 255;
   const b = parseInt(result[3] ?? '0', 16) / 255;
-  
+
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
   const l = (max + min) / 2;
-  
+
   let h = 0;
   let s = 0;
-  
+
   if (max !== min) {
     const d = max - min;
     s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-    
+
     switch (max) {
-      case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6 * 360; break;
-      case g: h = ((b - r) / d + 2) / 6 * 360; break;
-      case b: h = ((r - g) / d + 4) / 6 * 360; break;
+      case r:
+        h = (((g - b) / d + (g < b ? 6 : 0)) / 6) * 360;
+        break;
+      case g:
+        h = (((b - r) / d + 2) / 6) * 360;
+        break;
+      case b:
+        h = (((r - g) / d + 4) / 6) * 360;
+        break;
     }
   }
-  
+
   return { h, s: s * 100, l: l * 100 };
 }
 
@@ -78,25 +87,46 @@ function hexToHsl(hex: string): { h: number; s: number; l: number } {
 function hslToHex(h: number, s: number, l: number): string {
   s = s / 100;
   l = l / 100;
-  
+
   const c = (1 - Math.abs(2 * l - 1)) * s;
-  const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
   const m = l - c / 2;
-  
-  let r = 0, g = 0, b = 0;
-  
-  if (h >= 0 && h < 60) { r = c; g = x; b = 0; }
-  else if (h >= 60 && h < 120) { r = x; g = c; b = 0; }
-  else if (h >= 120 && h < 180) { r = 0; g = c; b = x; }
-  else if (h >= 180 && h < 240) { r = 0; g = x; b = c; }
-  else if (h >= 240 && h < 300) { r = x; g = 0; b = c; }
-  else { r = c; g = 0; b = x; }
-  
+
+  let r = 0,
+    g = 0,
+    b = 0;
+
+  if (h >= 0 && h < 60) {
+    r = c;
+    g = x;
+    b = 0;
+  } else if (h >= 60 && h < 120) {
+    r = x;
+    g = c;
+    b = 0;
+  } else if (h >= 120 && h < 180) {
+    r = 0;
+    g = c;
+    b = x;
+  } else if (h >= 180 && h < 240) {
+    r = 0;
+    g = x;
+    b = c;
+  } else if (h >= 240 && h < 300) {
+    r = x;
+    g = 0;
+    b = c;
+  } else {
+    r = c;
+    g = 0;
+    b = x;
+  }
+
   const toHex = (n: number) => {
     const hex = Math.round((n + m) * 255).toString(16);
     return hex.length === 1 ? '0' + hex : hex;
   };
-  
+
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
 
@@ -104,24 +134,45 @@ function hslToHex(h: number, s: number, l: number): string {
 function hslToRgb(h: number, s: number, l: number): { r: number; g: number; b: number } {
   s = s / 100;
   l = l / 100;
-  
+
   const c = (1 - Math.abs(2 * l - 1)) * s;
-  const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
   const m = l - c / 2;
-  
-  let r = 0, g = 0, b = 0;
-  
-  if (h >= 0 && h < 60) { r = c; g = x; b = 0; }
-  else if (h >= 60 && h < 120) { r = x; g = c; b = 0; }
-  else if (h >= 120 && h < 180) { r = 0; g = c; b = x; }
-  else if (h >= 180 && h < 240) { r = 0; g = x; b = c; }
-  else if (h >= 240 && h < 300) { r = x; g = 0; b = c; }
-  else { r = c; g = 0; b = x; }
-  
+
+  let r = 0,
+    g = 0,
+    b = 0;
+
+  if (h >= 0 && h < 60) {
+    r = c;
+    g = x;
+    b = 0;
+  } else if (h >= 60 && h < 120) {
+    r = x;
+    g = c;
+    b = 0;
+  } else if (h >= 120 && h < 180) {
+    r = 0;
+    g = c;
+    b = x;
+  } else if (h >= 180 && h < 240) {
+    r = 0;
+    g = x;
+    b = c;
+  } else if (h >= 240 && h < 300) {
+    r = x;
+    g = 0;
+    b = c;
+  } else {
+    r = c;
+    g = 0;
+    b = x;
+  }
+
   return {
     r: Math.round((r + m) * 255),
     g: Math.round((g + m) * 255),
-    b: Math.round((b + m) * 255)
+    b: Math.round((b + m) * 255),
   };
 }
 
@@ -151,24 +202,24 @@ function getColorString(): string {
 function drawSquareGradient() {
   const canvas = gradientRef.value;
   if (!canvas) return;
-  
+
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
-  
+
   const width = canvas.width;
   const height = canvas.height;
-  
+
   // Draw hue base color
   ctx.fillStyle = `hsl(${hue.value}, 100%, 50%)`;
   ctx.fillRect(0, 0, width, height);
-  
+
   // Draw white gradient (left to right)
   const whiteGradient = ctx.createLinearGradient(0, 0, width, 0);
   whiteGradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
   whiteGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
   ctx.fillStyle = whiteGradient;
   ctx.fillRect(0, 0, width, height);
-  
+
   // Draw black gradient (top to bottom)
   const blackGradient = ctx.createLinearGradient(0, 0, 0, height);
   blackGradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
@@ -180,18 +231,18 @@ function drawSquareGradient() {
 function drawHueSlider() {
   const canvas = hueRef.value;
   if (!canvas) return;
-  
+
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
-  
+
   const width = canvas.width;
   const height = canvas.height;
-  
+
   const gradient = ctx.createLinearGradient(0, 0, width, 0);
   for (let i = 0; i <= 360; i += 60) {
     gradient.addColorStop(i / 360, `hsl(${i}, 100%, 50%)`);
   }
-  
+
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, width, height);
 }
@@ -202,30 +253,30 @@ function drawHueSlider() {
 function drawWheel() {
   const canvas = wheelRef.value;
   if (!canvas) return;
-  
+
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
-  
+
   const centerX = canvas.width / 2;
   const centerY = canvas.height / 2;
   const radius = Math.min(centerX, centerY) - 5;
-  
+
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  
+
   // Draw color wheel with radial gradient for each hue slice
   for (let angle = 0; angle < 360; angle++) {
     const startAngle = ((angle - 1) * Math.PI) / 180;
     const endAngle = ((angle + 1) * Math.PI) / 180;
-    
+
     ctx.beginPath();
     ctx.moveTo(centerX, centerY);
     ctx.arc(centerX, centerY, radius, startAngle, endAngle);
     ctx.closePath();
-    
+
     const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
     gradient.addColorStop(0, `hsl(${angle}, 0%, ${lightness.value}%)`);
     gradient.addColorStop(1, `hsl(${angle}, 100%, ${lightness.value}%)`);
-    
+
     ctx.fillStyle = gradient;
     ctx.fill();
   }
@@ -239,18 +290,18 @@ function drawWheel() {
 function handleSquareGradientInteraction(e: MouseEvent | TouchEvent) {
   const canvas = gradientRef.value;
   if (!canvas) return;
-  
+
   const rect = canvas.getBoundingClientRect();
-  const clientX = 'touches' in e ? e.touches[0]?.clientX ?? 0 : e.clientX;
-  const clientY = 'touches' in e ? e.touches[0]?.clientY ?? 0 : e.clientY;
-  
+  const clientX = 'touches' in e ? (e.touches[0]?.clientX ?? 0) : e.clientX;
+  const clientY = 'touches' in e ? (e.touches[0]?.clientY ?? 0) : e.clientY;
+
   const x = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
   const y = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height));
-  
+
   // In square mode: x = saturation, y = brightness (inverse lightness)
   saturation.value = x * 100;
-  lightness.value = 50 - (y * 50); // Map y to lightness range
-  
+  lightness.value = 50 - y * 50; // Map y to lightness range
+
   updateColor();
 }
 
@@ -258,13 +309,13 @@ function handleSquareGradientInteraction(e: MouseEvent | TouchEvent) {
 function handleHueSliderInteraction(e: MouseEvent | TouchEvent) {
   const canvas = hueRef.value;
   if (!canvas) return;
-  
+
   const rect = canvas.getBoundingClientRect();
-  const clientX = 'touches' in e ? e.touches[0]?.clientX ?? 0 : e.clientX;
-  
+  const clientX = 'touches' in e ? (e.touches[0]?.clientX ?? 0) : e.clientX;
+
   const x = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
   hue.value = x * 360;
-  
+
   drawSquareGradient();
   updateColor();
 }
@@ -273,31 +324,31 @@ function handleHueSliderInteraction(e: MouseEvent | TouchEvent) {
 function handleWheelInteraction(e: MouseEvent | TouchEvent) {
   const canvas = wheelRef.value;
   if (!canvas) return;
-  
+
   const rect = canvas.getBoundingClientRect();
   const scaleX = canvas.width / rect.width;
   const scaleY = canvas.height / rect.height;
-  const clientX = 'touches' in e ? e.touches[0]?.clientX ?? 0 : e.clientX;
-  const clientY = 'touches' in e ? e.touches[0]?.clientY ?? 0 : e.clientY;
-  
+  const clientX = 'touches' in e ? (e.touches[0]?.clientX ?? 0) : e.clientX;
+  const clientY = 'touches' in e ? (e.touches[0]?.clientY ?? 0) : e.clientY;
+
   const x = (clientX - rect.left) * scaleX;
   const y = (clientY - rect.top) * scaleY;
-  
+
   const centerX = canvas.width / 2;
   const centerY = canvas.height / 2;
   const radius = Math.min(centerX, centerY) - 5;
-  
+
   const dx = x - centerX;
   const dy = y - centerY;
   const distance = Math.sqrt(dx * dx + dy * dy);
-  
+
   if (distance <= radius) {
     let h = Math.atan2(dy, dx) * (180 / Math.PI);
     if (h < 0) h += 360;
-    
+
     hue.value = h;
     saturation.value = Math.min((distance / radius) * 100, 100);
-    
+
     updateColor();
   }
 }
@@ -306,13 +357,13 @@ function handleWheelInteraction(e: MouseEvent | TouchEvent) {
 function handleBrightnessInteraction(e: MouseEvent | TouchEvent) {
   const container = (e.target as HTMLElement).closest('.brightness-container');
   if (!container) return;
-  
+
   const rect = container.getBoundingClientRect();
-  const clientX = 'touches' in e ? e.touches[0]?.clientX ?? 0 : e.clientX;
-  
+  const clientX = 'touches' in e ? (e.touches[0]?.clientX ?? 0) : e.clientX;
+
   const x = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
   lightness.value = x * 100;
-  
+
   drawWheel();
   updateColor();
 }
@@ -321,15 +372,18 @@ function handleBrightnessInteraction(e: MouseEvent | TouchEvent) {
 let isDragging = false;
 let dragTarget: 'gradient' | 'hue' | 'wheel' | 'brightness' | null = null;
 
-function startDrag(e: MouseEvent | TouchEvent, target: 'gradient' | 'hue' | 'wheel' | 'brightness') {
+function startDrag(
+  e: MouseEvent | TouchEvent,
+  target: 'gradient' | 'hue' | 'wheel' | 'brightness',
+) {
   isDragging = true;
   dragTarget = target;
-  
+
   if (target === 'gradient') handleSquareGradientInteraction(e);
   else if (target === 'hue') handleHueSliderInteraction(e);
   else if (target === 'wheel') handleWheelInteraction(e);
   else if (target === 'brightness') handleBrightnessInteraction(e);
-  
+
   const moveHandler = (e: MouseEvent | TouchEvent) => {
     if (!isDragging) return;
     if (dragTarget === 'gradient') handleSquareGradientInteraction(e);
@@ -337,7 +391,7 @@ function startDrag(e: MouseEvent | TouchEvent, target: 'gradient' | 'hue' | 'whe
     else if (dragTarget === 'wheel') handleWheelInteraction(e);
     else if (dragTarget === 'brightness') handleBrightnessInteraction(e);
   };
-  
+
   const upHandler = () => {
     isDragging = false;
     dragTarget = null;
@@ -346,7 +400,7 @@ function startDrag(e: MouseEvent | TouchEvent, target: 'gradient' | 'hue' | 'whe
     document.removeEventListener('touchmove', moveHandler);
     document.removeEventListener('touchend', upHandler);
   };
-  
+
   document.addEventListener('mousemove', moveHandler);
   document.addEventListener('mouseup', upHandler);
   document.addEventListener('touchmove', moveHandler);
@@ -364,7 +418,7 @@ function updateColor() {
 function handleColorInput(e: Event) {
   let val = (e.target as HTMLInputElement).value.trim();
   hexInput.value = val;
-  
+
   // Try to parse as hex
   if (/^#?[0-9A-Fa-f]{6}$/.test(val.replace('#', ''))) {
     if (!val.startsWith('#')) val = '#' + val;
@@ -405,50 +459,50 @@ function redrawCanvases() {
 // Cursor positions
 const squareCursorStyle = computed(() => ({
   left: `${saturation.value}%`,
-  top: `${(50 - lightness.value) / 50 * 100}%`
+  top: `${((50 - lightness.value) / 50) * 100}%`,
 }));
 
 const hueCursorStyle = computed(() => ({
-  left: `${(hue.value / 360) * 100}%`
+  left: `${(hue.value / 360) * 100}%`,
 }));
 
 const wheelCursorStyle = computed(() => {
   if (!wheelRef.value) return { left: '50%', top: '50%' };
-  
+
   const canvas = wheelRef.value;
   const centerX = canvas.width / 2;
   const centerY = canvas.height / 2;
   const radius = Math.min(centerX, centerY) - 5;
-  
+
   const angle = hue.value * (Math.PI / 180);
   const distance = (saturation.value / 100) * radius;
-  
+
   const scale = canvas.getBoundingClientRect().width / canvas.width;
   const x = centerX + Math.cos(angle) * distance;
   const y = centerY + Math.sin(angle) * distance;
-  
+
   return {
     left: `${x * scale}px`,
-    top: `${y * scale}px`
+    top: `${y * scale}px`,
   };
 });
 
 const brightnessCursorStyle = computed(() => ({
-  left: `${lightness.value}%`
+  left: `${lightness.value}%`,
 }));
 
 // Calculate popover position
 function updatePopoverPosition() {
   if (!pickerRef.value) return;
-  
+
   const rect = pickerRef.value.getBoundingClientRect();
   const popoverWidth = 232;
   const popoverHeight = 300;
   const gap = 8;
-  
+
   let top = rect.bottom + gap;
   let left = rect.left;
-  
+
   if (top + popoverHeight > window.innerHeight) {
     top = rect.top - popoverHeight - gap;
   }
@@ -456,7 +510,7 @@ function updatePopoverPosition() {
     left = window.innerWidth - popoverWidth - 8;
   }
   if (left < 8) left = 8;
-  
+
   popoverPosition.value = { top, left };
 }
 
@@ -464,14 +518,14 @@ function updatePopoverPosition() {
 function togglePopover() {
   if (props.disabled) return;
   isPopoverOpen.value = !isPopoverOpen.value;
-  
+
   if (isPopoverOpen.value) {
     const hsl = hexToHsl(props.modelValue);
     hue.value = hsl.h;
     saturation.value = hsl.s;
     lightness.value = hsl.l;
     hexInput.value = getColorString();
-    
+
     updatePopoverPosition();
     nextTick(() => redrawCanvases());
   }
@@ -496,11 +550,14 @@ function handleScroll() {
   if (isPopoverOpen.value) closePopover();
 }
 
-watch(() => props.modelValue, (newVal) => {
-  if (!isPopoverOpen.value) {
-    hexInput.value = newVal.toUpperCase();
-  }
-});
+watch(
+  () => props.modelValue,
+  (newVal) => {
+    if (!isPopoverOpen.value) {
+      hexInput.value = newVal.toUpperCase();
+    }
+  },
+);
 
 onMounted(() => {
   hexInput.value = props.modelValue.toUpperCase();
@@ -518,21 +575,21 @@ onUnmounted(() => {
 
 <template>
   <!-- Preview Variant -->
-  <div 
+  <div
     v-if="variant === 'preview'"
     ref="pickerRef"
-    class="color-picker-wrapper" 
+    class="color-picker-wrapper"
     :class="{ disabled, hovered: isHovered }"
     @mouseenter="isHovered = true"
     @mouseleave="isHovered = false"
   >
     <label v-if="label" class="color-label">{{ label }}</label>
     <div class="color-input-wrapper" @click="togglePopover">
-      <div 
-        class="color-preview" 
-        :style="{ 
+      <div
+        class="color-preview"
+        :style="{
           background: modelValue,
-          boxShadow: isHovered ? `0 4px 20px ${glowColor}` : `0 2px 8px rgba(0,0,0,0.3)` 
+          boxShadow: isHovered ? `0 4px 20px ${glowColor}` : `0 2px 8px rgba(0,0,0,0.3)`,
         }"
       ></div>
       <div class="color-value">{{ modelValue.toUpperCase() }}</div>
@@ -540,12 +597,7 @@ onUnmounted(() => {
   </div>
 
   <!-- Inline Variant -->
-  <div 
-    v-else
-    ref="pickerRef"
-    class="color-picker-inline" 
-    :class="{ disabled }"
-  >
+  <div v-else ref="pickerRef" class="color-picker-inline" :class="{ disabled }">
     <label v-if="label" class="inline-label">{{ label }}</label>
     <div class="inline-input-wrapper" @click="togglePopover">
       <div class="inline-color-swatch" :style="{ background: modelValue }"></div>
@@ -556,24 +608,24 @@ onUnmounted(() => {
   <!-- Teleported Popover -->
   <Teleport to="body">
     <Transition name="popover">
-      <div 
-        v-if="isPopoverOpen" 
-        ref="popoverRef" 
+      <div
+        v-if="isPopoverOpen"
+        ref="popoverRef"
         class="color-popover"
         :style="{ top: `${popoverPosition.top}px`, left: `${popoverPosition.left}px` }"
       >
         <!-- Mode Switcher -->
         <div class="mode-switcher">
-          <button 
-            class="mode-btn" 
+          <button
+            class="mode-btn"
             :class="{ active: pickerMode === 'square' }"
             @click="switchMode('square')"
             title="Square picker"
           >
             <iconify-icon icon="ph:square-duotone"></iconify-icon>
           </button>
-          <button 
-            class="mode-btn" 
+          <button
+            class="mode-btn"
             :class="{ active: pickerMode === 'wheel' }"
             @click="switchMode('wheel')"
             title="Wheel picker"
@@ -585,8 +637,8 @@ onUnmounted(() => {
         <!-- Square Mode -->
         <template v-if="pickerMode === 'square'">
           <div class="gradient-container">
-            <canvas 
-              ref="gradientRef" 
+            <canvas
+              ref="gradientRef"
               class="gradient-canvas"
               width="200"
               height="150"
@@ -595,9 +647,9 @@ onUnmounted(() => {
             ></canvas>
             <div class="gradient-cursor" :style="squareCursorStyle"></div>
           </div>
-          
+
           <div class="hue-container">
-            <canvas 
+            <canvas
               ref="hueRef"
               class="hue-canvas"
               width="200"
@@ -612,7 +664,7 @@ onUnmounted(() => {
         <!-- Wheel Mode -->
         <template v-else>
           <div class="wheel-container">
-            <canvas 
+            <canvas
               ref="wheelRef"
               class="wheel-canvas"
               width="200"
@@ -620,11 +672,15 @@ onUnmounted(() => {
               @mousedown="startDrag($event, 'wheel')"
               @touchstart.prevent="startDrag($event, 'wheel')"
             ></canvas>
-            <div class="wheel-cursor" :style="wheelCursorStyle" :class="{ visible: saturation > 0 }"></div>
+            <div
+              class="wheel-cursor"
+              :style="wheelCursorStyle"
+              :class="{ visible: saturation > 0 }"
+            ></div>
           </div>
-          
+
           <div class="brightness-container">
-            <div 
+            <div
               class="brightness-canvas"
               @mousedown="startDrag($event, 'brightness')"
               @touchstart.prevent="startDrag($event, 'brightness')"
@@ -639,10 +695,12 @@ onUnmounted(() => {
             <div class="comparison-swatch current" :style="{ background: modelValue }"></div>
             <div class="comparison-swatch new" :style="{ background: currentColor }"></div>
           </div>
-          <button class="format-toggle" @click="cycleFormat">{{ colorFormat.toUpperCase() }}</button>
-          <input 
-            type="text" 
-            class="color-input" 
+          <button class="format-toggle" @click="cycleFormat">
+            {{ colorFormat.toUpperCase() }}
+          </button>
+          <input
+            type="text"
+            class="color-input"
             :value="hexInput"
             @input="handleColorInput"
             @blur="hexInput = getColorString()"
@@ -1011,7 +1069,9 @@ onUnmounted(() => {
 /* Popover Transition */
 .popover-enter-active,
 .popover-leave-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
 }
 
 .popover-enter-from,

@@ -59,10 +59,10 @@ function handleKeydown(e: KeyboardEvent) {
       <TransitionGroup name="tag" tag="div" class="tags-wrapper">
         <span v-for="tag in modelValue" :key="tag" class="tag">
           <span class="tag-text">{{ tag }}</span>
-          <button 
+          <button
             type="button"
-            class="remove-btn" 
-            @click.stop="removeTag(tag)" 
+            class="remove-btn"
+            @click.stop="removeTag(tag)"
             :disabled="disabled"
             tabindex="-1"
           >
@@ -74,7 +74,7 @@ function handleKeydown(e: KeyboardEvent) {
       <input
         type="text"
         v-model="newValue"
-        :placeholder="modelValue.length === 0 ? (placeholder || t('ui.addItemPlaceholder')) : ''"
+        :placeholder="modelValue.length === 0 ? placeholder || t('ui.addItemPlaceholder') : ''"
         :disabled="disabled"
         @keydown="handleKeydown"
         @focus="isFocused = true"

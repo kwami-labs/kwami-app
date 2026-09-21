@@ -185,11 +185,7 @@ export const useVoiceStore = defineStore('voice', () => {
     realtime.value = { ...realtime.value, ...config };
   }
 
-  function applyPreset(preset: {
-    stt: STTConfig;
-    llm: LLMConfig;
-    tts: TTSConfig;
-  }) {
+  function applyPreset(preset: { stt: STTConfig; llm: LLMConfig; tts: TTSConfig }) {
     stt.value = { ...preset.stt };
     llm.value = { ...preset.llm };
     tts.value = { ...preset.tts };
@@ -219,19 +215,34 @@ export const useVoiceStore = defineStore('voice', () => {
   function applySnapshot(settings: Record<string, unknown>) {
     if (!settings) return;
     try {
-      if (settings.pipelineMode != null) pipelineMode.value = settings.pipelineMode as typeof pipelineMode.value;
-      if (settings.stt && typeof settings.stt === 'object') stt.value = { ...stt.value, ...settings.stt } as STTConfig;
-      if (settings.llm && typeof settings.llm === 'object') llm.value = { ...llm.value, ...settings.llm } as LLMConfig;
-      if (settings.tts && typeof settings.tts === 'object') tts.value = { ...tts.value, ...settings.tts } as TTSConfig;
-      if (settings.realtime && typeof settings.realtime === 'object') realtime.value = { ...realtime.value, ...settings.realtime } as RealtimeConfig;
+      if (settings.pipelineMode != null)
+        pipelineMode.value = settings.pipelineMode as typeof pipelineMode.value;
+      if (settings.stt && typeof settings.stt === 'object')
+        stt.value = { ...stt.value, ...settings.stt } as STTConfig;
+      if (settings.llm && typeof settings.llm === 'object')
+        llm.value = { ...llm.value, ...settings.llm } as LLMConfig;
+      if (settings.tts && typeof settings.tts === 'object')
+        tts.value = { ...tts.value, ...settings.tts } as TTSConfig;
+      if (settings.realtime && typeof settings.realtime === 'object')
+        realtime.value = { ...realtime.value, ...settings.realtime } as RealtimeConfig;
       if (settings.activePreset != null) activePreset.value = settings.activePreset as string;
-      if (settings.modelsUI && typeof settings.modelsUI === 'object') modelsUI.value = { ...modelsUI.value, ...settings.modelsUI };
-      if (settings.voiceUI && typeof settings.voiceUI === 'object') voiceUI.value = { ...voiceUI.value, ...settings.voiceUI };
-      const soulUIFromSettings = (settings.soulUI ?? settings.personaUI) as Record<string, unknown> | undefined;
-      const soulConfigFromSettings = (settings.soulConfig ?? settings.personaConfig) as Record<string, unknown> | undefined;
-      if (soulUIFromSettings && typeof soulUIFromSettings === 'object') soulUI.value = { ...soulUI.value, ...soulUIFromSettings };
-      if (soulConfigFromSettings && typeof soulConfigFromSettings === 'object') soulConfig.value = { ...soulConfig.value, ...soulConfigFromSettings } as typeof soulConfig.value;
-      if (settings.memoryUI && typeof settings.memoryUI === 'object') memoryUI.value = { ...memoryUI.value, ...settings.memoryUI };
+      if (settings.modelsUI && typeof settings.modelsUI === 'object')
+        modelsUI.value = { ...modelsUI.value, ...settings.modelsUI };
+      if (settings.voiceUI && typeof settings.voiceUI === 'object')
+        voiceUI.value = { ...voiceUI.value, ...settings.voiceUI };
+      const soulUIFromSettings = (settings.soulUI ?? settings.personaUI) as
+        Record<string, unknown> | undefined;
+      const soulConfigFromSettings = (settings.soulConfig ?? settings.personaConfig) as
+        Record<string, unknown> | undefined;
+      if (soulUIFromSettings && typeof soulUIFromSettings === 'object')
+        soulUI.value = { ...soulUI.value, ...soulUIFromSettings };
+      if (soulConfigFromSettings && typeof soulConfigFromSettings === 'object')
+        soulConfig.value = {
+          ...soulConfig.value,
+          ...soulConfigFromSettings,
+        } as typeof soulConfig.value;
+      if (settings.memoryUI && typeof settings.memoryUI === 'object')
+        memoryUI.value = { ...memoryUI.value, ...settings.memoryUI };
       if (settings.enhancementsState && typeof settings.enhancementsState === 'object') {
         const s = settings.enhancementsState as Record<string, unknown>;
         const e = enhancementsState.value;
@@ -300,8 +311,21 @@ export const useVoiceStore = defineStore('voice', () => {
 
   // Auto-save when any config changes
   watch(
-    [pipelineMode, stt, llm, tts, realtime, activePreset, soulUI, soulConfig, memoryUI, enhancementsState],
-    () => { saveSettings(); },
+    [
+      pipelineMode,
+      stt,
+      llm,
+      tts,
+      realtime,
+      activePreset,
+      soulUI,
+      soulConfig,
+      memoryUI,
+      enhancementsState,
+    ],
+    () => {
+      saveSettings();
+    },
     { deep: true },
   );
 

@@ -3,9 +3,9 @@
  */
 
 export interface RGB {
-    r: number;
-    g: number;
-    b: number;
+  r: number;
+  g: number;
+  b: number;
 }
 
 /**
@@ -14,12 +14,14 @@ export interface RGB {
  * @returns RGB object or null if invalid
  */
 export function hexToRgb(hex: string): RGB | null {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result ? {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result
+    ? {
         r: parseInt(result[1]!, 16),
         g: parseInt(result[2]!, 16),
-        b: parseInt(result[3]!, 16)
-    } : null;
+        b: parseInt(result[3]!, 16),
+      }
+    : null;
 }
 
 /**
@@ -30,7 +32,7 @@ export function hexToRgb(hex: string): RGB | null {
  * @returns Hex color string with #
  */
 export function rgbToHex(r: number, g: number, b: number): string {
-    return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+  return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
 }
 
 /**
@@ -40,12 +42,12 @@ export function rgbToHex(r: number, g: number, b: number): string {
  * @returns Adjusted hex color string
  */
 export function adjustBrightness(hex: string, percent: number): string {
-    const num = parseInt(hex.replace('#', ''), 16);
-    const amt = Math.round(2.55 * percent);
-    const R = Math.min(255, Math.max(0, (num >> 16) + amt));
-    const G = Math.min(255, Math.max(0, ((num >> 8) & 0x00FF) + amt));
-    const B = Math.min(255, Math.max(0, (num & 0x0000FF) + amt));
-    return `#${(0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1)}`;
+  const num = parseInt(hex.replace('#', ''), 16);
+  const amt = Math.round(2.55 * percent);
+  const R = Math.min(255, Math.max(0, (num >> 16) + amt));
+  const G = Math.min(255, Math.max(0, ((num >> 8) & 0x00ff) + amt));
+  const B = Math.min(255, Math.max(0, (num & 0x0000ff) + amt));
+  return `#${(0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1)}`;
 }
 
 /**
@@ -56,15 +58,15 @@ export function adjustBrightness(hex: string, percent: number): string {
  * @returns Mixed hex color string
  */
 export function mixColors(color1: string, color2: string, weight: number = 0.5): string {
-    const rgb1 = hexToRgb(color1);
-    const rgb2 = hexToRgb(color2);
-    if (!rgb1 || !rgb2) return color1;
+  const rgb1 = hexToRgb(color1);
+  const rgb2 = hexToRgb(color2);
+  if (!rgb1 || !rgb2) return color1;
 
-    const r = Math.round(rgb1.r * weight + rgb2.r * (1 - weight));
-    const g = Math.round(rgb1.g * weight + rgb2.g * (1 - weight));
-    const b = Math.round(rgb1.b * weight + rgb2.b * (1 - weight));
+  const r = Math.round(rgb1.r * weight + rgb2.r * (1 - weight));
+  const g = Math.round(rgb1.g * weight + rgb2.g * (1 - weight));
+  const b = Math.round(rgb1.b * weight + rgb2.b * (1 - weight));
 
-    return rgbToHex(r, g, b);
+  return rgbToHex(r, g, b);
 }
 
 /**
@@ -81,38 +83,38 @@ export function mixColors(color1: string, color2: string, weight: number = 0.5):
  * @returns Hex color string with #
  */
 export function hslToHex(h: number, s: number, l: number): string {
-    // Normalize values
-    h = ((h % 360) + 360) % 360;
-    h /= 360;
-    s /= 100;
-    l /= 100;
+  // Normalize values
+  h = ((h % 360) + 360) % 360;
+  h /= 360;
+  s /= 100;
+  l /= 100;
 
-    let r: number, g: number, b: number;
+  let r: number, g: number, b: number;
 
-    if (s === 0) {
-        r = g = b = l;
-    } else {
-        const hue2rgb = (p: number, q: number, t: number): number => {
-            if (t < 0) t += 1;
-            if (t > 1) t -= 1;
-            if (t < 1 / 6) return p + (q - p) * 6 * t;
-            if (t < 1 / 2) return q;
-            if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
-            return p;
-        };
-        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-        const p = 2 * l - q;
-        r = hue2rgb(p, q, h + 1 / 3);
-        g = hue2rgb(p, q, h);
-        b = hue2rgb(p, q, h - 1 / 3);
-    }
-
-    const toHex = (x: number): string => {
-        const hex = Math.round(x * 255).toString(16);
-        return hex.length === 1 ? '0' + hex : hex;
+  if (s === 0) {
+    r = g = b = l;
+  } else {
+    const hue2rgb = (p: number, q: number, t: number): number => {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1 / 6) return p + (q - p) * 6 * t;
+      if (t < 1 / 2) return q;
+      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+      return p;
     };
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    r = hue2rgb(p, q, h + 1 / 3);
+    g = hue2rgb(p, q, h);
+    b = hue2rgb(p, q, h - 1 / 3);
+  }
 
-    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+  const toHex = (x: number): string => {
+    const hex = Math.round(x * 255).toString(16);
+    return hex.length === 1 ? '0' + hex : hex;
+  };
+
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
 
 /**
@@ -120,7 +122,12 @@ export function hslToHex(h: number, s: number, l: number): string {
  * @returns Random hex color string with #
  */
 export function randomHex(): string {
-    return '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+  return (
+    '#' +
+    Math.floor(Math.random() * 16777215)
+      .toString(16)
+      .padStart(6, '0')
+  );
 }
 
 /**
@@ -131,8 +138,8 @@ export function randomHex(): string {
  * @returns Random number within range
  */
 export function randomInRange(min: number, max: number, step: number = 0.01): number {
-    const range = (max - min) / step;
-    return min + Math.round(Math.random() * range) * step;
+  const range = (max - min) / step;
+  return min + Math.round(Math.random() * range) * step;
 }
 
 /**
@@ -142,13 +149,13 @@ export function randomInRange(min: number, max: number, step: number = 0.01): nu
  * @returns Debounced function
  */
 export function debounce<T extends (...args: unknown[]) => void>(
-    func: T,
-    wait: number
+  func: T,
+  wait: number,
 ): (...args: Parameters<T>) => void {
-    let timeout: ReturnType<typeof setTimeout> | null = null;
+  let timeout: ReturnType<typeof setTimeout> | null = null;
 
-    return (...args: Parameters<T>) => {
-        if (timeout) clearTimeout(timeout);
-        timeout = setTimeout(() => func(...args), wait);
-    };
+  return (...args: Parameters<T>) => {
+    if (timeout) clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
 }

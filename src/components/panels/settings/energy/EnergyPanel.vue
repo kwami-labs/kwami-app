@@ -51,31 +51,46 @@ function usageUnit(modelType: string): string {
 
 function transactionIcon(type: string): string {
   switch (type) {
-    case 'purchase': return 'ph:lightning-fill';
-    case 'usage': return 'ph:flame-duotone';
-    case 'bonus': return 'ph:gift-duotone';
-    case 'refund': return 'ph:arrow-counter-clockwise-duotone';
-    default: return 'ph:circle-duotone';
+    case 'purchase':
+      return 'ph:lightning-fill';
+    case 'usage':
+      return 'ph:flame-duotone';
+    case 'bonus':
+      return 'ph:gift-duotone';
+    case 'refund':
+      return 'ph:arrow-counter-clockwise-duotone';
+    default:
+      return 'ph:circle-duotone';
   }
 }
 
 function transactionColor(type: string): string {
   switch (type) {
-    case 'purchase': return 'var(--accent-primary)';
-    case 'usage': return 'var(--accent-secondary)';
-    case 'bonus': return 'var(--warning)';
-    case 'refund': return 'var(--text-muted)';
-    default: return 'var(--text-muted)';
+    case 'purchase':
+      return 'var(--accent-primary)';
+    case 'usage':
+      return 'var(--accent-secondary)';
+    case 'bonus':
+      return 'var(--warning)';
+    case 'refund':
+      return 'var(--text-muted)';
+    default:
+      return 'var(--text-muted)';
   }
 }
 
 function modelTypeIcon(type: string): string {
   switch (type) {
-    case 'llm': return 'ph:brain-duotone';
-    case 'stt': return 'ph:microphone-duotone';
-    case 'tts': return 'ph:speaker-high-duotone';
-    case 'realtime': return 'ph:waveform-duotone';
-    default: return 'ph:circle-duotone';
+    case 'llm':
+      return 'ph:brain-duotone';
+    case 'stt':
+      return 'ph:microphone-duotone';
+    case 'tts':
+      return 'ph:speaker-high-duotone';
+    case 'realtime':
+      return 'ph:waveform-duotone';
+    default:
+      return 'ph:circle-duotone';
   }
 }
 
@@ -101,10 +116,14 @@ const creditErrorMessage = computed(() => {
 
 function packIcon(packId: string): string {
   switch (packId) {
-    case 'starter': return 'ph:battery-medium-duotone';
-    case 'standard': return 'ph:battery-high-duotone';
-    case 'pro': return 'ph:battery-charging-duotone';
-    default: return 'ph:lightning-duotone';
+    case 'starter':
+      return 'ph:battery-medium-duotone';
+    case 'standard':
+      return 'ph:battery-high-duotone';
+    case 'pro':
+      return 'ph:battery-charging-duotone';
+    default:
+      return 'ph:lightning-duotone';
   }
 }
 </script>
@@ -163,11 +182,7 @@ function packIcon(packId: string): string {
 
       <!-- Tabs -->
       <div class="tabs">
-        <button
-          class="tab"
-          :class="{ active: activeTab === 'buy' }"
-          @click="switchTab('buy')"
-        >
+        <button class="tab" :class="{ active: activeTab === 'buy' }" @click="switchTab('buy')">
           <iconify-icon icon="ph:lightning-fill" class="tab-icon"></iconify-icon>
           {{ t('energyPanel.recharge') }}
         </button>
@@ -179,11 +194,7 @@ function packIcon(packId: string): string {
           <iconify-icon icon="ph:clock-duotone" class="tab-icon"></iconify-icon>
           {{ t('energyPanel.history') }}
         </button>
-        <button
-          class="tab"
-          :class="{ active: activeTab === 'usage' }"
-          @click="switchTab('usage')"
-        >
+        <button class="tab" :class="{ active: activeTab === 'usage' }" @click="switchTab('usage')">
           <iconify-icon icon="ph:chart-bar-duotone" class="tab-icon"></iconify-icon>
           {{ t('energyPanel.usage') }}
         </button>
@@ -232,11 +243,7 @@ function packIcon(packId: string): string {
           <span>{{ t('energyPanel.noTransactions') }}</span>
         </div>
         <div v-else class="transactions-list">
-          <div
-            v-for="tx in creditsStore.transactions"
-            :key="tx.id"
-            class="transaction-item"
-          >
+          <div v-for="tx in creditsStore.transactions" :key="tx.id" class="transaction-item">
             <div class="tx-icon" :style="{ color: transactionColor(tx.type) }">
               <iconify-icon :icon="transactionIcon(tx.type)"></iconify-icon>
             </div>
@@ -271,11 +278,7 @@ function packIcon(packId: string): string {
           <span>{{ t('energyPanel.noUsage') }}</span>
         </div>
         <div v-else class="usage-list">
-          <div
-            v-for="log in creditsStore.usageLogs"
-            :key="log.id"
-            class="usage-item"
-          >
+          <div v-for="log in creditsStore.usageLogs" :key="log.id" class="usage-item">
             <div class="usage-icon">
               <iconify-icon :icon="modelTypeIcon(log.model_type)"></iconify-icon>
             </div>
@@ -314,8 +317,12 @@ function packIcon(packId: string): string {
   transition: border-color 0.3s ease;
 }
 
-.energy-meter.high { border-color: var(--accent-glow); }
-.energy-meter.depleted { border-color: var(--error-glow); }
+.energy-meter.high {
+  border-color: var(--accent-glow);
+}
+.energy-meter.depleted {
+  border-color: var(--error-glow);
+}
 
 .meter-icon {
   font-size: 32px;
@@ -324,8 +331,13 @@ function packIcon(packId: string): string {
   line-height: 1;
 }
 
-.energy-meter.depleted .meter-icon { color: var(--error); opacity: 0.5; }
-.energy-meter.low .meter-icon { color: var(--warning); }
+.energy-meter.depleted .meter-icon {
+  color: var(--error);
+  opacity: 0.5;
+}
+.energy-meter.low .meter-icon {
+  color: var(--warning);
+}
 
 .meter-content {
   flex: 1;
@@ -347,7 +359,9 @@ function packIcon(packId: string): string {
   font-variant-numeric: tabular-nums;
 }
 
-.energy-meter.depleted .meter-amount { color: var(--error); }
+.energy-meter.depleted .meter-amount {
+  color: var(--error);
+}
 
 .meter-unit {
   font-size: 12px;
@@ -373,8 +387,12 @@ function packIcon(packId: string): string {
   transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.energy-meter.depleted .meter-bar-fill { background: var(--error); }
-.energy-meter.low .meter-bar-fill { background: linear-gradient(90deg, var(--error), var(--warning)); }
+.energy-meter.depleted .meter-bar-fill {
+  background: var(--error);
+}
+.energy-meter.low .meter-bar-fill {
+  background: linear-gradient(90deg, var(--error), var(--warning));
+}
 
 .meter-bar-glow {
   position: absolute;
@@ -400,9 +418,15 @@ function packIcon(packId: string): string {
   font-weight: 500;
 }
 
-.stat-icon { font-size: 10px; }
-.stat-icon.charged { color: var(--success); }
-.stat-icon.used { color: var(--warning); }
+.stat-icon {
+  font-size: 10px;
+}
+.stat-icon.charged {
+  color: var(--success);
+}
+.stat-icon.used {
+  color: var(--warning);
+}
 
 /* Warnings */
 .depleted-warning,
@@ -485,14 +509,18 @@ function packIcon(packId: string): string {
   transition: all 0.2s ease;
 }
 
-.tab:hover { color: var(--text-primary); }
+.tab:hover {
+  color: var(--text-primary);
+}
 
 .tab.active {
   color: var(--accent-primary);
   border-bottom-color: var(--accent-primary);
 }
 
-.tab-icon { font-size: 14px; }
+.tab-icon {
+  font-size: 14px;
+}
 
 /* ========================================================================= */
 /* Energy Packs                                                              */
@@ -628,9 +656,14 @@ function packIcon(packId: string): string {
   transition: background 0.15s ease;
 }
 
-.transaction-item:hover { background: var(--surface-1); }
+.transaction-item:hover {
+  background: var(--surface-1);
+}
 
-.tx-icon { font-size: 18px; flex-shrink: 0; }
+.tx-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
 
 .tx-info {
   display: flex;
@@ -661,8 +694,12 @@ function packIcon(packId: string): string {
   flex-shrink: 0;
 }
 
-.tx-amount.positive { color: var(--accent-primary); }
-.tx-amount.negative { color: var(--text-muted); }
+.tx-amount.positive {
+  color: var(--accent-primary);
+}
+.tx-amount.negative {
+  color: var(--text-muted);
+}
 
 /* ========================================================================= */
 /* Usage                                                                     */
@@ -683,7 +720,9 @@ function packIcon(packId: string): string {
   transition: background 0.15s ease;
 }
 
-.usage-item:hover { background: var(--surface-1); }
+.usage-item:hover {
+  background: var(--surface-1);
+}
 
 .usage-icon {
   font-size: 18px;
@@ -759,7 +798,11 @@ function packIcon(packId: string): string {
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>

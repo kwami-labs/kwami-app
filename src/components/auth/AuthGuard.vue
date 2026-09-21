@@ -88,7 +88,12 @@ onUnmounted(() => {
     </Transition>
 
     <!-- App content (always rendered for canvas background) -->
-    <div class="app-content" :class="{ 'behind-auth': showWelcomeLayer || (!authStore.isAuthenticated && !authStore.loading) }">
+    <div
+      class="app-content"
+      :class="{
+        'behind-auth': showWelcomeLayer || (!authStore.isAuthenticated && !authStore.loading),
+      }"
+    >
       <slot />
     </div>
 

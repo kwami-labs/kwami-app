@@ -19,9 +19,9 @@ test.describe('panel navigation', () => {
   });
 
   test('number keys switch settings panels', async ({ app: page }) => {
-    // SETTINGS_PANEL_KEYS: 1 avatar, 2 scene, 3 audio, ...
-    await pressPanelKey(page, '2', 'scene');
-    await pressPanelKey(page, '3', 'audio');
+    // SETTINGS_VISUAL_PANELS: 1 avatar, 2 audio, 3 scene, 4 theme
+    await pressPanelKey(page, '2', 'audio');
+    await pressPanelKey(page, '3', 'scene');
     await pressPanelKey(page, '1', 'avatar');
   });
 
@@ -36,10 +36,10 @@ test.describe('panel navigation', () => {
     // `p` toggles, so it can't be retried idempotently. Prove the keydown
     // listener is live with a press that CAN be retried first.
     //
-    // Probe with '2' (scene), not '1' (avatar): avatar is already the default,
+    // Probe with '3' (scene), not '1' (avatar): avatar is already the default,
     // so setPanel('avatar') changes nothing, the save watcher never fires and
     // localStorage stays null — the probe would spin until it timed out.
-    await pressPanelKey(page, '2', 'scene');
+    await pressPanelKey(page, '3', 'scene');
 
     await expect(sidebar).not.toHaveClass(/collapsed/);
 
@@ -51,26 +51,30 @@ test.describe('panel navigation', () => {
   });
 
   test('ignores shortcuts while typing in a field', async ({ app: page }) => {
-    await pressPanelKey(page, '2', 'scene');
+    await pressPanelKey(page, '3', 'scene');
 
     const field = page.locator('input[type="text"], input:not([type]), textarea').first();
     if (await field.count()) {
       await field.click();
       await field.type('123');
       // still on scene: the keystrokes went to the input, not the shortcut handler
-      await expect.poll(() => page.evaluate(() => localStorage.getItem('kwami-active-panel'))).toBe('scene');
+      await expect
+        .poll(() => page.evaluate(() => localStorage.getItem('kwami-active-panel')))
+        .toBe('scene');
     }
   });
 });
 
 test.describe('persistence', () => {
   test('restores the active panel across a reload', async ({ app: page }) => {
-    await pressPanelKey(page, '3', 'audio');
+    await pressPanelKey(page, '2', 'audio');
 
     await reloadApp(page);
     await expect(page.locator('.control-bar-container')).toBeVisible(READY);
 
-    await expect.poll(() => page.evaluate(() => localStorage.getItem('kwami-active-panel'))).toBe('audio');
+    await expect
+      .poll(() => page.evaluate(() => localStorage.getItem('kwami-active-panel')))
+      .toBe('audio');
   });
 
   test('persists the theme across a reload', async ({ app: page }) => {

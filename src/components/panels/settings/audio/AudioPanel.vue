@@ -20,7 +20,12 @@ const { rendererType } = storeToRefs(avatarStore);
     <BlobXyzSettings v-if="rendererType === 'blob-xyz'" />
     <BlackHoleSettings v-else-if="rendererType === 'black-hole'" />
 
-    <PanelSection v-else :title="t('audioPanel.unavailableTitle')" icon="ph:warning-circle-duotone" collapsible>
+    <PanelSection
+      v-else
+      :title="t('audioPanel.unavailableTitle')"
+      icon="ph:warning-circle-duotone"
+      collapsible
+    >
       <p class="section-desc">{{ t('audioPanel.unavailableDesc') }}</p>
     </PanelSection>
 

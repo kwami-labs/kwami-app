@@ -41,13 +41,13 @@ Full variable list: [Environment](environment.md).
 bun run dev
 ```
 
-The Vite server listens on [http://localhost:5173](http://localhost:5173) (`strictPort: true`). Open it, sign in with a provider listed in `VITE_AUTH_PROVIDERS` (default Google), and a default companion is created if the account has none.
+The Vite server listens on [http://localhost:5173](http://localhost:5173) (`strictPort: true`). Open it and sign in with email and password, or with a provider listed in `VITE_AUTH_PROVIDERS` (default Google). A default companion is created if the account has none.
 
 You cannot have a useful voice session without a reachable API (`POST /token`) and LiveKit URL. The 3D avatar still renders without them.
 
 ## Local Kwami SDK
 
-This app depends on the published `kwami` package (`^2.1.1`). To develop against a sibling checkout:
+This app depends on the published `kwami` package (`2.2.0-dev.1`). To develop against a sibling checkout:
 
 ```bash
 cd ../kwami

@@ -26,8 +26,8 @@ const form = reactive({
 });
 
 const activeKwamiName = computed(() => workspaceStore.getActiveWorkspace()?.name || 'Kwami');
-const selectedContact = computed(() =>
-  contactsStore.contacts.find((contact) => contact.id === selectedId.value) || null,
+const selectedContact = computed(
+  () => contactsStore.contacts.find((contact) => contact.id === selectedId.value) || null,
 );
 const isEditing = computed(() => Boolean(selectedContact.value));
 
@@ -160,7 +160,9 @@ onMounted(() => {
           :placeholder="t('contacts.searchPlaceholder')"
         />
         <p v-if="contactsStore.loading" class="muted">{{ t('contacts.loading') }}</p>
-        <p v-else-if="contactsStore.filteredContacts.length === 0" class="muted">{{ t('contacts.empty') }}</p>
+        <p v-else-if="contactsStore.filteredContacts.length === 0" class="muted">
+          {{ t('contacts.empty') }}
+        </p>
         <button
           v-for="contact in contactsStore.filteredContacts"
           :key="contact.id"
@@ -205,11 +207,7 @@ onMounted(() => {
           :label="t('contacts.instagram')"
           placeholder="@username"
         />
-        <BaseInput
-          v-model="form.tiktok"
-          :label="t('contacts.tiktok')"
-          placeholder="@username"
-        />
+        <BaseInput v-model="form.tiktok" :label="t('contacts.tiktok')" placeholder="@username" />
 
         <div class="form-actions">
           <BaseButton

@@ -34,7 +34,11 @@ function randomizeFrequencyEffects() {
 
   <PanelSection :title="t('audioPanel.audioReactivity')" icon="ph:microphone-duotone" collapsible>
     <template #actions>
-      <button class="dice-btn" @click="randomizeAudio" :title="t('audioPanel.randomizeAudioSettings')">
+      <button
+        class="dice-btn"
+        @click="randomizeAudio"
+        :title="t('audioPanel.randomizeAudioSettings')"
+      >
         <iconify-icon icon="ph:dice-three-duotone"></iconify-icon>
       </button>
     </template>
@@ -48,23 +52,62 @@ function randomizeFrequencyEffects() {
     <AudioVisualizer />
 
     <div v-if="audio.enabled" class="slider-group" style="margin-top: 12px">
-      <BaseSlider :label="t('audioPanel.reactivity')" :min="0" :max="2" :step="0.1" v-model="audio.reactivity" />
-      <BaseSlider :label="t('audioPanel.smoothing')" :min="0.5" :max="0.99" :step="0.01" v-model="audio.smoothing" />
+      <BaseSlider
+        :label="t('audioPanel.reactivity')"
+        :min="0"
+        :max="2"
+        :step="0.1"
+        v-model="audio.reactivity"
+      />
+      <BaseSlider
+        :label="t('audioPanel.smoothing')"
+        :min="0.5"
+        :max="0.99"
+        :step="0.01"
+        v-model="audio.smoothing"
+      />
     </div>
   </PanelSection>
 
-  <PanelSection v-if="audio.enabled" :title="t('audioPanel.frequencyResponse')" icon="ph:equalizer-duotone" collapsible>
+  <PanelSection
+    v-if="audio.enabled"
+    :title="t('audioPanel.frequencyResponse')"
+    icon="ph:equalizer-duotone"
+    collapsible
+  >
     <template #actions>
-      <button class="dice-btn" @click="randomizeFrequencyEffects" :title="t('audioPanel.randomizeFrequencyResponse')">
+      <button
+        class="dice-btn"
+        @click="randomizeFrequencyEffects"
+        :title="t('audioPanel.randomizeFrequencyResponse')"
+      >
         <iconify-icon icon="ph:dice-three-duotone"></iconify-icon>
       </button>
     </template>
     <p class="section-desc">{{ t('audioPanel.frequencyResponseDesc') }}</p>
 
     <div class="slider-group">
-      <BaseSlider :label="t('audioPanel.bassDiskGlow')" :min="0" :max="1" :step="0.05" v-model="audio.frequencyEffects.bassDiskGlow" />
-      <BaseSlider :label="t('audioPanel.midDiskSpeed')" :min="0" :max="1" :step="0.05" v-model="audio.frequencyEffects.midDiskSpeed" />
-      <BaseSlider :label="t('audioPanel.highStarTwinkle')" :min="0" :max="1" :step="0.05" v-model="audio.frequencyEffects.highStarTwinkle" />
+      <BaseSlider
+        :label="t('audioPanel.bassDiskGlow')"
+        :min="0"
+        :max="1"
+        :step="0.05"
+        v-model="audio.frequencyEffects.bassDiskGlow"
+      />
+      <BaseSlider
+        :label="t('audioPanel.midDiskSpeed')"
+        :min="0"
+        :max="1"
+        :step="0.05"
+        v-model="audio.frequencyEffects.midDiskSpeed"
+      />
+      <BaseSlider
+        :label="t('audioPanel.highStarTwinkle')"
+        :min="0"
+        :max="1"
+        :step="0.05"
+        v-model="audio.frequencyEffects.highStarTwinkle"
+      />
     </div>
   </PanelSection>
 </template>

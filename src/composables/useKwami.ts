@@ -32,7 +32,10 @@ export function useKwami() {
   /** @deprecated Use memoryUserId for memory/agent. Kept for compatibility. */
   const userId = computed(() => authStore.userId || 'anonymous');
 
-  function getMemoryRuntimeConfig(memoryUI: { contextSize?: 'lean' | 'balanced' | 'rich'; includeFacts?: boolean }) {
+  function getMemoryRuntimeConfig(memoryUI: {
+    contextSize?: 'lean' | 'balanced' | 'rich';
+    includeFacts?: boolean;
+  }) {
     const preset = memoryUI.contextSize ?? 'balanced';
     const includeFacts = memoryUI.includeFacts ?? true;
     if (preset === 'lean') {
@@ -60,7 +63,11 @@ export function useKwami() {
     canvas: HTMLCanvasElement,
     renderer: 'blob-xyz' | 'black-hole' | 'particles-face' | 'eye-iris' = 'blob-xyz',
     options?: {
-      onSearchResults?: (data: { query: string; results: Array<{ title: string; url: string; content: string }>; answer: string | null }) => void;
+      onSearchResults?: (data: {
+        query: string;
+        results: Array<{ title: string; url: string; content: string }>;
+        answer: string | null;
+      }) => void;
     },
   ) {
     rendererType.value = renderer;
@@ -73,7 +80,7 @@ export function useKwami() {
         renderer: renderer,
         blob: {
           colors: { x: '#ff0066', y: '#00ff66', z: '#6600ff' },
-          spikes: { x: 0.3, y: 0.3, z: 0.3 },
+          spikes: { x: 3.1, y: 3.6, z: 2.8 },
           rotation: { x: 0.002, y: 0.003, z: 0.001 },
         },
         scene: {
@@ -139,11 +146,8 @@ export function useKwami() {
       const wasConnected = isConnected.value;
       isConnected.value = state !== 'idle';
 
-      const panelState =
-        state === 'initializing' ? 'listening' : state;
-      window.dispatchEvent(
-        new CustomEvent('kwami:stateChanged', { detail: panelState }),
-      );
+      const panelState = state === 'initializing' ? 'listening' : state;
+      window.dispatchEvent(new CustomEvent('kwami:stateChanged', { detail: panelState }));
 
       if (wasConnected !== isConnected.value) {
         console.log(`🔌 Connection state: ${isConnected.value ? 'connected' : 'disconnected'}`);
@@ -156,7 +160,6 @@ export function useKwami() {
     // Expose for debugging
     window.kwami = kwamiInstance.value;
   }
-
 
   interface LiveKitTokenResponse {
     token: string;
@@ -286,7 +289,11 @@ export function useKwami() {
     // 7. Memory runtime retrieval settings
     agent.syncConfigToBackend('memory', getMemoryRuntimeConfig(voiceStore.memoryUI));
 
-    console.log('📤 Synced all configs to backend on connect (including', toolDefs.length, 'tools)');
+    console.log(
+      '📤 Synced all configs to backend on connect (including',
+      toolDefs.length,
+      'tools)',
+    );
   }
 
   /**
@@ -370,7 +377,7 @@ export function useKwami() {
       // Safety cleanup: remove orphaned audio elements so the browser's mic
       // indicator disappears.
       const audioElements = document.querySelectorAll('audio[id^="kwami-"]');
-      audioElements.forEach(el => {
+      audioElements.forEach((el) => {
         const audioEl = el as HTMLAudioElement;
         audioEl.pause();
         audioEl.srcObject = null;

@@ -1,53 +1,57 @@
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
-import type { ViewMode } from './types'
+import { useI18n } from 'vue-i18n';
+import type { ViewMode } from './types';
 
-const { t } = useI18n()
+const { t } = useI18n();
 
 defineProps<{
-  searchQuery: string
-  filterType: string
-  entityTypes: string[]
-  showEdgeLabels: boolean
-  viewMode: ViewMode
-  loading: boolean
-}>()
+  searchQuery: string;
+  filterType: string;
+  entityTypes: string[];
+  showEdgeLabels: boolean;
+  viewMode: ViewMode;
+  loading: boolean;
+}>();
 
 const emit = defineEmits<{
-  (e: 'update:searchQuery', value: string): void
-  (e: 'update:filterType', value: string): void
-  (e: 'update:showEdgeLabels', value: boolean): void
-  (e: 'update:viewMode', value: ViewMode): void
-  (e: 'refresh'): void
-}>()
+  (e: 'update:searchQuery', value: string): void;
+  (e: 'update:filterType', value: string): void;
+  (e: 'update:showEdgeLabels', value: boolean): void;
+  (e: 'update:viewMode', value: ViewMode): void;
+  (e: 'refresh'): void;
+}>();
 </script>
 
 <template>
   <div class="graph-header">
     <div class="search-box">
       <iconify-icon icon="ph:magnifying-glass"></iconify-icon>
-      <input 
+      <input
         :value="searchQuery"
         @input="emit('update:searchQuery', ($event.target as HTMLInputElement).value)"
-        type="text" 
+        type="text"
         :placeholder="t('memoryGraph.searchPlaceholder')"
         class="search-input"
       />
     </div>
-    
-    <select 
-      :value="filterType" 
+
+    <select
+      :value="filterType"
       @change="emit('update:filterType', ($event.target as HTMLSelectElement).value)"
       class="type-filter"
     >
       <option v-for="etype in entityTypes" :key="etype" :value="etype">
-        {{ etype === 'all' ? t('memoryGraph.filterAll') : etype.charAt(0).toUpperCase() + etype.slice(1) }}
+        {{
+          etype === 'all'
+            ? t('memoryGraph.filterAll')
+            : etype.charAt(0).toUpperCase() + etype.slice(1)
+        }}
       </option>
     </select>
-    
+
     <!-- View Mode Toggle -->
     <div class="view-toggle">
-      <button 
+      <button
         class="view-btn"
         :class="{ active: viewMode === '3d' }"
         @click="emit('update:viewMode', '3d')"
@@ -56,7 +60,7 @@ const emit = defineEmits<{
         <iconify-icon icon="ph:cube"></iconify-icon>
         3D
       </button>
-      <button 
+      <button
         class="view-btn"
         :class="{ active: viewMode === '2d' }"
         @click="emit('update:viewMode', '2d')"
@@ -66,19 +70,19 @@ const emit = defineEmits<{
         2D
       </button>
     </div>
-    
-    <button 
-      class="toggle-btn" 
+
+    <button
+      class="toggle-btn"
       :class="{ active: showEdgeLabels }"
       @click="emit('update:showEdgeLabels', !showEdgeLabels)"
       :title="t('memoryGraph.toggleEdgeLabels')"
     >
       <iconify-icon icon="ph:text-aa"></iconify-icon>
     </button>
-    
+
     <button class="refresh-btn" @click="emit('refresh')" :disabled="loading">
-      <iconify-icon 
-        :icon="loading ? 'ph:spinner-gap' : 'ph:arrows-clockwise'" 
+      <iconify-icon
+        :icon="loading ? 'ph:spinner-gap' : 'ph:arrows-clockwise'"
         :class="{ spin: loading }"
       />
     </button>

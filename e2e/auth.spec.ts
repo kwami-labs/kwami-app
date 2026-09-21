@@ -1,4 +1,4 @@
-import { test, expect, gotoApp, stubApi, stubKwamiRuntime, WELCOME_MS } from './fixtures';
+import { test, expect, gotoApp, stubApi, stubKwamiRuntime, TEST_USER, WELCOME_MS } from './fixtures';
 
 test.describe('unauthenticated', () => {
   test('shows the welcome layer, then the auth page', async ({ signedOut: page }) => {
@@ -26,6 +26,27 @@ test.describe('unauthenticated', () => {
     await expect(page.locator('.title-main')).toBeVisible({ timeout: WELCOME_MS + 5_000 });
 
     await expect(page.locator('.control-bar-container')).toHaveCount(0);
+  });
+});
+
+test.describe('welcome background', () => {
+  test('double-clicking the empty backdrop picks a video', async ({ signedOut: page }) => {
+    // The catalogue is on pexels; without this stub the catch-all treats that
+    // fetch as an escape. An empty body is enough: we assert the choice, not
+    // that the clip decoded.
+    await page.route('https://videos.pexels.com/**', (route) =>
+      route.fulfill({ status: 200, contentType: 'video/mp4', body: '' }),
+    );
+
+    await gotoApp(page);
+    await expect(page.locator('.title-main')).toBeVisible({ timeout: WELCOME_MS + 5_000 });
+
+    // Top-left of the page, well clear of the centred avatar and the pills.
+    await page.locator('.page').dblclick({ position: { x: 16, y: 16 } });
+
+    await expect
+      .poll(async () => page.evaluate(() => window.localStorage.getItem('kwami.welcomeBackground')))
+      .not.toBeNull();
   });
 });
 
@@ -80,5 +101,273 @@ test.describe('console hygiene', () => {
     await expect(page.locator('.control-bar-container')).toBeVisible({ timeout: WELCOME_MS + 10_000 });
 
     expect(errors).toEqual([]);
+  });
+});
+
+/**
+ * Opens the login panel and waits for it to be genuinely usable.
+ *
+ * Two waits, both load-bearing. The CTA only reacts once AuthGuard has released
+ * the welcome rings, hence the wordmark. And `login-entry--open` lands ~230ms
+ * before the panel's max-height transition starts, a window in which the form is
+ * laid out below the fold inside a still-zero-height scroll container — visible
+ * to a locator, but not yet clickable. Waiting for the last control in the form
+ * to be fully in the viewport is what says the panel has settled.
+ */
+async function openLoginPanel(page: import('@playwright/test').Page) {
+  await expect(page.locator('.title-main')).toBeVisible({ timeout: WELCOME_MS + 5_000 });
+  await page.locator('.login-cta').click();
+  await expect(page.locator('.login-entry')).toHaveClass(/login-entry--open/);
+  await expect(page.locator('.email-auth__switch-btn')).toBeInViewport({ ratio: 1 });
+}
+
+/**
+ * These two blocks drive the login panel, which costs far more wall-clock than
+ * the specs above: AuthGuard holds the welcome rings for MIN_WELCOME_MS, the
+ * avatar boots WebGL through software rasterisation in CI, and only then does
+ * the panel play its open transition. A full pass measures 24-32s on a loaded
+ * machine, so the 30s default is a coin flip — the UI is stable well before
+ * then, it is the fixed boot cost that does not fit.
+ */
+test.describe.configure({ timeout: 60_000 });
+
+test.describe('email and password', () => {
+  test('offers the form alongside the OAuth buttons', async ({ signedOut: page }) => {
+    await gotoApp(page);
+    await openLoginPanel(page);
+
+    await expect(page.locator('form.email-auth')).toBeVisible();
+    await expect(page.locator('input[name="email"]')).toBeVisible();
+    await expect(page.locator('input[name="password"]')).toBeVisible();
+    // Sign-in mode: no confirmation field until the user switches.
+    await expect(page.locator('input[name="confirmPassword"]')).toHaveCount(0);
+  });
+
+  test('switches to sign up and back', async ({ signedOut: page }) => {
+    await gotoApp(page);
+    await openLoginPanel(page);
+
+    await page.locator('.email-auth__switch-btn').click();
+    await expect(page.locator('input[name="confirmPassword"]')).toBeVisible();
+
+    await page.locator('.email-auth__switch-btn').click();
+    await expect(page.locator('input[name="confirmPassword"]')).toHaveCount(0);
+  });
+
+  test('rejects a malformed address without hitting the network', async ({ signedOut: page }) => {
+    await gotoApp(page);
+    await openLoginPanel(page);
+
+    let tokenCalls = 0;
+    await page.route('**/auth/v1/token**', (route) => {
+      tokenCalls += 1;
+      return route.fulfill({ status: 400, json: { message: 'should not be reached' } });
+    });
+
+    await page.locator('input[name="email"]').fill('not-an-email');
+    await page.locator('input[name="password"]').fill('hunter2');
+    await page.locator('form.email-auth button[type="submit"]').click();
+
+    await expect(page.locator('.email-auth__error')).toHaveText('Enter a valid email address');
+    expect(tokenCalls).toBe(0);
+  });
+
+  test('surfaces bad credentials as a sign-up suggestion', async ({ signedOut: page }) => {
+    await page.route('**/auth/v1/token**', (route) =>
+      route.fulfill({
+        status: 400,
+        json: { code: 'invalid_credentials', error_code: 'invalid_credentials', message: 'Invalid login credentials' },
+      }),
+    );
+
+    await gotoApp(page);
+    await openLoginPanel(page);
+
+    await page.locator('input[name="email"]').fill('nobody@kwami.test');
+    await page.locator('input[name="password"]').fill('wrong-password');
+    await page.locator('form.email-auth button[type="submit"]').click();
+
+    await expect(page.locator('.email-auth__error')).toContainText('Invalid credentials');
+    // Still signed out.
+    await expect(page.locator('.title-main')).toBeVisible();
+  });
+
+  test('signs in and dismisses the auth overlay', async ({ signedOut: page }) => {
+    await page.route('**/auth/v1/token**', (route) =>
+      route.fulfill({
+        status: 200,
+        json: {
+          access_token: 'test-access-token',
+          refresh_token: 'test-refresh-token',
+          token_type: 'bearer',
+          expires_in: 86_400,
+          expires_at: Math.floor(Date.now() / 1000) + 86_400,
+          user: {
+            id: TEST_USER.id,
+            aud: 'authenticated',
+            role: 'authenticated',
+            email: TEST_USER.email,
+            app_metadata: { provider: 'email' },
+            user_metadata: {},
+            created_at: new Date().toISOString(),
+          },
+        },
+      }),
+    );
+
+    await gotoApp(page);
+    await openLoginPanel(page);
+
+    await page.locator('input[name="email"]').fill(TEST_USER.email);
+    await page.locator('input[name="password"]').fill('hunter2');
+    await page.locator('form.email-auth button[type="submit"]').click();
+
+    await expect(page.locator('.title-main')).toHaveCount(0, { timeout: 15_000 });
+  });
+});
+
+test.describe('phone number', () => {
+  async function openMobileTab(page: import('@playwright/test').Page) {
+    await openLoginPanel(page);
+    await page.getByRole('tab', { name: 'Mobile' }).click();
+    await expect(page.locator('form.phone-auth')).toBeVisible();
+  }
+
+  test('offers a Mobile tab and the phone form', async ({ signedOut: page }) => {
+    await gotoApp(page);
+    await openMobileTab(page);
+
+    await expect(page.locator('input[name="phone"]')).toBeVisible();
+    await expect(page.locator('input[name="otp"]')).toHaveCount(0);
+  });
+
+  test('rejects a malformed number without hitting the network', async ({ signedOut: page }) => {
+    await gotoApp(page);
+    await openMobileTab(page);
+
+    let otpCalls = 0;
+    await page.route('**/auth/v1/otp**', (route) => {
+      otpCalls += 1;
+      return route.fulfill({ status: 400, json: { message: 'should not be reached' } });
+    });
+
+    await page.locator('input[name="phone"]').fill('555-1234');
+    await page.locator('form.phone-auth button[type="submit"]').click();
+
+    await expect(page.locator('.phone-auth__error')).toContainText('valid phone number');
+    expect(otpCalls).toBe(0);
+  });
+
+  test('sends an OTP then verifies it and dismisses the overlay', async ({ signedOut: page }) => {
+    await page.route('**/auth/v1/otp**', (route) => route.fulfill({ status: 200, json: {} }));
+    await page.route('**/auth/v1/verify**', (route) =>
+      route.fulfill({
+        status: 200,
+        json: {
+          access_token: 'test-access-token',
+          refresh_token: 'test-refresh-token',
+          token_type: 'bearer',
+          expires_in: 86_400,
+          expires_at: Math.floor(Date.now() / 1000) + 86_400,
+          user: {
+            id: TEST_USER.id,
+            aud: 'authenticated',
+            role: 'authenticated',
+            phone: '+15551234567',
+            app_metadata: { provider: 'phone' },
+            user_metadata: {},
+            created_at: new Date().toISOString(),
+          },
+        },
+      }),
+    );
+
+    await gotoApp(page);
+    await openMobileTab(page);
+
+    await page.locator('input[name="phone"]').fill('+15551234567');
+    await page.locator('form.phone-auth button[type="submit"]').click();
+
+    await expect(page.locator('input[name="otp"]')).toBeVisible();
+    await page.locator('input[name="otp"]').fill('123456');
+    await page.locator('form.phone-auth button[type="submit"]').click();
+
+    await expect(page.locator('.title-main')).toHaveCount(0, { timeout: 15_000 });
+  });
+});
+
+test.describe('phantom wallet', () => {
+  test('offers Phantom on the web3 tab', async ({ signedOut: page }) => {
+    await gotoApp(page);
+    await openLoginPanel(page);
+
+    await page.getByRole('tab', { name: 'Web3' }).click();
+
+    await expect(page.getByText(/Approve a message in your wallet/i)).toBeVisible();
+    // Named for what pressing them does. With no extension in a headless
+    // browser that is an install, not a sign-in.
+    await expect(page.getByRole('button', { name: 'Install Phantom' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Install MetaMask' })).toBeVisible();
+    await expect(page.locator('.wallet-card--phantom')).toContainText('Not installed');
+    await expect(page.getByText(/Your wallet address becomes your account/i)).toBeVisible();
+  });
+
+  test('opens the download page when the extension is not installed', async ({ signedOut: page }) => {
+    // Context-level so it also catches the pop-up, which is a separate Page and
+    // would otherwise escape this page's routes and hit the real web store.
+    await page.context().route('https://chromewebstore.google.com/**', (route) =>
+      route.fulfill({ status: 200, contentType: 'text/html', body: '<title>Phantom</title>' }),
+    );
+
+    await gotoApp(page);
+    await openLoginPanel(page);
+    await page.getByRole('tab', { name: 'Web3' }).click();
+
+    const [popup] = await Promise.all([
+      page.waitForEvent('popup'),
+      page.getByRole('button', { name: 'Install Phantom' }).click(),
+    ]);
+
+    expect(popup.url()).toBe(
+      'https://chromewebstore.google.com/detail/phantom/bfnaelmomeimhlpmgjnjophhpkkoljpa',
+    );
+    await popup.close();
+
+    // And the in-page fallback, for when a pop-up blocker wins.
+    await expect(page.locator('.provider-error')).toContainText('Phantom is not installed');
+    await expect(page.locator('.provider-install')).toHaveAttribute(
+      'href',
+      'https://chromewebstore.google.com/detail/phantom/bfnaelmomeimhlpmgjnjophhpkkoljpa',
+    );
+  });
+
+  test('uses the Phantom-namespaced provider over a foreign window.solana', async ({ signedOut: page }) => {
+    // Another Solana wallet claimed window.solana first — the case that made
+    // `window.solana.isPhantom` the wrong detector.
+    await page.addInitScript(() => {
+      (window as unknown as Record<string, unknown>).solana = { isPhantom: false, connect: () => Promise.resolve({}) };
+      (window as unknown as Record<string, unknown>).phantom = {
+        solana: {
+          isPhantom: true,
+          connect: () => Promise.resolve({}),
+          // Signal the call rather than completing a real SIWS handshake.
+          signIn: () => {
+            (window as unknown as Record<string, unknown>).__PHANTOM_SIGNIN__ = true;
+            return Promise.reject(new Error('user rejected'));
+          },
+        },
+      };
+    });
+
+    await gotoApp(page);
+    await openLoginPanel(page);
+
+    await page.getByRole('tab', { name: 'Web3' }).click();
+    // Phantom is injected here, so this card offers the sign-in.
+    await page.getByRole('button', { name: /Connect Phantom with Solana/i }).click();
+
+    await expect
+      .poll(() => page.evaluate(() => (window as unknown as Record<string, unknown>).__PHANTOM_SIGNIN__))
+      .toBe(true);
   });
 });

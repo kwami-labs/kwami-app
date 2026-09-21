@@ -130,7 +130,9 @@ onUnmounted(() => {
           </div>
           <div class="info-item">
             <span class="info-label">{{ t('infoPanel.connected') }}</span>
-            <span class="info-value">{{ isConnected ? t('infoPanel.yes') : t('infoPanel.no') }}</span>
+            <span class="info-value">{{
+              isConnected ? t('infoPanel.yes') : t('infoPanel.no')
+            }}</span>
           </div>
           <div class="info-item">
             <span class="info-label">{{ t('infoPanel.fps') }}</span>
@@ -160,14 +162,24 @@ onUnmounted(() => {
         <div class="shortcuts-list">
           <div class="shortcut-group">
             <span class="shortcut-group-title">{{ t('infoPanel.avatarControls') }}</span>
-            <div class="shortcut-item"><kbd>R</kbd> <span>{{ t('infoPanel.randomizeBlob') }}</span></div>
-            <div class="shortcut-item"><kbd>L</kbd> <span>{{ t('infoPanel.listeningMode') }}</span></div>
-            <div class="shortcut-item"><kbd>T</kbd> <span>{{ t('infoPanel.thinkingMode') }}</span></div>
-            <div class="shortcut-item"><kbd>I</kbd> <span>{{ t('infoPanel.idleMode') }}</span></div>
+            <div class="shortcut-item">
+              <kbd>R</kbd> <span>{{ t('infoPanel.randomizeBlob') }}</span>
+            </div>
+            <div class="shortcut-item">
+              <kbd>L</kbd> <span>{{ t('infoPanel.listeningMode') }}</span>
+            </div>
+            <div class="shortcut-item">
+              <kbd>T</kbd> <span>{{ t('infoPanel.thinkingMode') }}</span>
+            </div>
+            <div class="shortcut-item">
+              <kbd>I</kbd> <span>{{ t('infoPanel.idleMode') }}</span>
+            </div>
           </div>
           <div class="shortcut-group">
             <span class="shortcut-group-title">{{ t('infoPanel.panelNavigation') }}</span>
-            <div class="shortcut-item"><kbd>P</kbd> <span>{{ t('infoPanel.togglePanel') }}</span></div>
+            <div class="shortcut-item">
+              <kbd>P</kbd> <span>{{ t('infoPanel.togglePanel') }}</span>
+            </div>
             <div class="shortcut-item">
               <kbd>1</kbd>-<kbd>9</kbd> <kbd>0</kbd> <kbd>-</kbd> <kbd>=</kbd>
               <span>{{ t('infoPanel.switchPanels') }}</span>
@@ -182,39 +194,64 @@ onUnmounted(() => {
         <div class="panel-guide">
           <div class="guide-item">
             <iconify-icon icon="ph:ghost-duotone"></iconify-icon>
-            <div><strong>{{ t('sidebar.panels.avatar') }}</strong> <span>{{ t('infoPanel.visualBlob') }}</span></div>
+            <div>
+              <strong>{{ t('sidebar.panels.avatar') }}</strong>
+              <span>{{ t('infoPanel.visualBlob') }}</span>
+            </div>
           </div>
           <div class="guide-item">
             <iconify-icon icon="ph:mountains-duotone"></iconify-icon>
-            <div><strong>{{ t('scene.title') }}</strong> <span>{{ t('infoPanel.environment') }}</span></div>
+            <div>
+              <strong>{{ t('scene.title') }}</strong> <span>{{ t('infoPanel.environment') }}</span>
+            </div>
           </div>
           <div class="guide-item">
             <iconify-icon icon="ph:waveform-duotone"></iconify-icon>
-            <div><strong>{{ t('audioPanel.title') }}</strong> <span>{{ t('infoPanel.soundReactivity') }}</span></div>
+            <div>
+              <strong>{{ t('audioPanel.title') }}</strong>
+              <span>{{ t('infoPanel.soundReactivity') }}</span>
+            </div>
           </div>
           <div class="guide-item">
             <iconify-icon icon="ph:robot-duotone"></iconify-icon>
-            <div><strong>{{ t('sidebar.agent') }}</strong> <span>{{ t('infoPanel.connection') }}</span></div>
+            <div>
+              <strong>{{ t('sidebar.agent') }}</strong> <span>{{ t('infoPanel.connection') }}</span>
+            </div>
           </div>
           <div class="guide-item">
             <iconify-icon icon="ph:microphone-duotone"></iconify-icon>
-            <div><strong>{{ t('voice.title') }}</strong> <span>{{ t('infoPanel.pipelineConfig') }}</span></div>
+            <div>
+              <strong>{{ t('voice.title') }}</strong>
+              <span>{{ t('infoPanel.pipelineConfig') }}</span>
+            </div>
           </div>
           <div class="guide-item">
             <iconify-icon icon="ph:sliders-duotone"></iconify-icon>
-            <div><strong>{{ t('enhancements.title') }}</strong> <span>{{ t('infoPanel.audioProcess') }}</span></div>
+            <div>
+              <strong>{{ t('enhancements.title') }}</strong>
+              <span>{{ t('infoPanel.audioProcess') }}</span>
+            </div>
           </div>
           <div class="guide-item">
             <iconify-icon icon="ph:user-circle-duotone"></iconify-icon>
-            <div><strong>{{ t('soulPanel.title') }}</strong> <span>{{ t('infoPanel.personality') }}</span></div>
+            <div>
+              <strong>{{ t('soulPanel.title') }}</strong>
+              <span>{{ t('infoPanel.personality') }}</span>
+            </div>
           </div>
           <div class="guide-item">
             <iconify-icon icon="ph:brain-duotone"></iconify-icon>
-            <div><strong>{{ t('memory.title') }}</strong> <span>{{ t('infoPanel.longTermMemory') }}</span></div>
+            <div>
+              <strong>{{ t('memory.title') }}</strong>
+              <span>{{ t('infoPanel.longTermMemory') }}</span>
+            </div>
           </div>
           <div class="guide-item">
             <iconify-icon icon="ph:wrench-duotone"></iconify-icon>
-            <div><strong>{{ t('tools.title') }}</strong> <span>{{ t('infoPanel.functionCalling') }}</span></div>
+            <div>
+              <strong>{{ t('tools.title') }}</strong>
+              <span>{{ t('infoPanel.functionCalling') }}</span>
+            </div>
           </div>
         </div>
       </section>
@@ -233,7 +270,8 @@ onUnmounted(() => {
         <h3>{{ t('infoPanel.debug') }}</h3>
         <div class="action-buttons">
           <button class="action-btn" @click="logState">
-            <iconify-icon icon="ph:terminal-window-duotone"></iconify-icon> {{ t('infoPanel.logFullState') }}
+            <iconify-icon icon="ph:terminal-window-duotone"></iconify-icon>
+            {{ t('infoPanel.logFullState') }}
           </button>
           <button class="action-btn" @click="logConfig">
             <iconify-icon icon="ph:gear-duotone"></iconify-icon> {{ t('infoPanel.logConfig') }}
@@ -249,7 +287,8 @@ onUnmounted(() => {
         </p>
         <div class="about-links">
           <a href="#" class="about-link"
-            ><iconify-icon icon="ph:github-logo-duotone"></iconify-icon> {{ t('infoPanel.github') }}</a
+            ><iconify-icon icon="ph:github-logo-duotone"></iconify-icon>
+            {{ t('infoPanel.github') }}</a
           >
           <a href="#" class="about-link"
             ><iconify-icon icon="ph:book-open-duotone"></iconify-icon> {{ t('infoPanel.docs') }}</a

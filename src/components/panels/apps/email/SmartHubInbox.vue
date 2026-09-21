@@ -46,15 +46,15 @@ async function confirmRelease() {
 }
 
 const categories: { id: EmailCategory; icon: string }[] = [
-  { id: 'all',            icon: 'ph:squares-four-duotone' },
-  { id: 'personal',       icon: 'ph:user-circle-duotone' },
-  { id: 'work',           icon: 'ph:briefcase-duotone' },
-  { id: 'travel',         icon: 'ph:airplane-duotone' },
-  { id: 'bills',          icon: 'ph:receipt-duotone' },
-  { id: 'events',         icon: 'ph:calendar-check-duotone' },
-  { id: 'shopping',       icon: 'ph:shopping-bag-duotone' },
-  { id: 'newsletters',    icon: 'ph:newspaper-duotone' },
-  { id: 'notifications',  icon: 'ph:bell-ringing-duotone' },
+  { id: 'all', icon: 'ph:squares-four-duotone' },
+  { id: 'personal', icon: 'ph:user-circle-duotone' },
+  { id: 'work', icon: 'ph:briefcase-duotone' },
+  { id: 'travel', icon: 'ph:airplane-duotone' },
+  { id: 'bills', icon: 'ph:receipt-duotone' },
+  { id: 'events', icon: 'ph:calendar-check-duotone' },
+  { id: 'shopping', icon: 'ph:shopping-bag-duotone' },
+  { id: 'newsletters', icon: 'ph:newspaper-duotone' },
+  { id: 'notifications', icon: 'ph:bell-ringing-duotone' },
 ];
 
 const filteredConversations = computed(() => {
@@ -106,7 +106,13 @@ onMounted(async () => {
             </button>
             <Transition name="popover">
               <div v-if="showMenu" class="menu-popover">
-                <button class="menu-item" @click="emailStore.refreshInbox(); closeMenu()">
+                <button
+                  class="menu-item"
+                  @click="
+                    emailStore.refreshInbox();
+                    closeMenu();
+                  "
+                >
                   <iconify-icon icon="ph:arrow-clockwise"></iconify-icon>
                   {{ t('email.inbox.refresh') }}
                 </button>
@@ -150,7 +156,9 @@ onMounted(async () => {
       @cancel="showReleaseDialog = false"
     >
       <p>{{ t('email.release.warning') }}</p>
-      <p><strong>{{ emailStore.account?.email_address }}</strong></p>
+      <p>
+        <strong>{{ emailStore.account?.email_address }}</strong>
+      </p>
       <p class="warning-text">{{ t('email.release.permanent') }}</p>
     </ConfirmDialog>
 
@@ -213,7 +221,9 @@ onMounted(async () => {
 }
 
 /* --- Popover menu --- */
-.menu-anchor { position: relative; }
+.menu-anchor {
+  position: relative;
+}
 
 .menu-trigger {
   display: flex;
@@ -267,23 +277,53 @@ onMounted(async () => {
   white-space: nowrap;
 }
 
-.menu-item iconify-icon { font-size: 16px; flex-shrink: 0; }
-.menu-item:hover { background: var(--surface-2); color: var(--text-primary); }
-.menu-item.danger { color: var(--error); }
-.menu-item.danger:hover { background: var(--error-glow, rgba(248, 113, 113, 0.1)); }
-.menu-divider { height: 1px; margin: 4px 8px; background: var(--glass-border); }
+.menu-item iconify-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.menu-item:hover {
+  background: var(--surface-2);
+  color: var(--text-primary);
+}
+.menu-item.danger {
+  color: var(--error);
+}
+.menu-item.danger:hover {
+  background: var(--error-glow, rgba(248, 113, 113, 0.1));
+}
+.menu-divider {
+  height: 1px;
+  margin: 4px 8px;
+  background: var(--glass-border);
+}
 
-.popover-enter-active { animation: popIn 0.15s cubic-bezier(0.16, 1, 0.3, 1); }
-.popover-leave-active { animation: popOut 0.1s ease-in; }
+.popover-enter-active {
+  animation: popIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.popover-leave-active {
+  animation: popOut 0.1s ease-in;
+}
 
 @keyframes popIn {
-  from { opacity: 0; transform: scale(0.92) translateY(-4px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 @keyframes popOut {
-  from { opacity: 1; transform: scale(1) translateY(0); }
-  to { opacity: 0; transform: scale(0.95) translateY(-2px); }
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95) translateY(-2px);
+  }
 }
 
 /* --- Category bar --- */
@@ -296,7 +336,9 @@ onMounted(async () => {
   border-bottom: 1px solid var(--glass-border);
 }
 
-.category-bar::-webkit-scrollbar { display: none; }
+.category-bar::-webkit-scrollbar {
+  display: none;
+}
 
 .cat-pill {
   display: flex;
@@ -315,7 +357,10 @@ onMounted(async () => {
   font-family: inherit;
 }
 
-.cat-pill:hover { background: var(--surface-2); color: var(--text-primary); }
+.cat-pill:hover {
+  background: var(--surface-2);
+  color: var(--text-primary);
+}
 
 .cat-pill.active {
   background: var(--accent-glow);
@@ -323,8 +368,12 @@ onMounted(async () => {
   color: var(--accent-primary);
 }
 
-.cat-icon { font-size: 14px; }
-.cat-label { font-size: 11px; }
+.cat-icon {
+  font-size: 14px;
+}
+.cat-label {
+  font-size: 11px;
+}
 
 .cat-badge {
   display: inline-flex;
@@ -357,8 +406,14 @@ onMounted(async () => {
   color: var(--text-muted);
 }
 
-.empty-icon { font-size: 40px; opacity: 0.5; }
-.empty-state p { font-size: 13px; margin: 0; }
+.empty-icon {
+  font-size: 40px;
+  opacity: 0.5;
+}
+.empty-state p {
+  font-size: 13px;
+  margin: 0;
+}
 
 .loading-state {
   display: flex;
@@ -371,10 +426,16 @@ onMounted(async () => {
   color: var(--accent-primary);
 }
 
-.spin { animation: spin 1s linear infinite; }
+.spin {
+  animation: spin 1s linear infinite;
+}
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>

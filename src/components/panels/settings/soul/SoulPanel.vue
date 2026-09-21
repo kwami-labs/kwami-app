@@ -32,16 +32,20 @@ const { soulUI, soulConfig: savedSoulConfig } = storeToRefs(voiceStore);
 // Persisted template selection state via store
 const selectedCategory = computed({
   get: () => soulUI.value.selectedCategory,
-  set: (v) => { soulUI.value.selectedCategory = v; }
+  set: (v) => {
+    soulUI.value.selectedCategory = v;
+  },
 });
 const selectedTemplateId = computed({
   get: () => soulUI.value.selectedTemplateId,
-  set: (v) => { soulUI.value.selectedTemplateId = v; }
+  set: (v) => {
+    soulUI.value.selectedTemplateId = v;
+  },
 });
 
 const filteredTemplates = computed(() => {
   if (!selectedCategory.value) return soulPresets;
-  return soulPresets.filter(t => t.category === selectedCategory.value);
+  return soulPresets.filter((t) => t.category === selectedCategory.value);
 });
 
 const emotionalToneOptions = [
@@ -142,26 +146,79 @@ const emotionalTraits = reactive({
   creativity: 0,
 });
 
-const emotionalTraitDefs = computed(() => ([
-  { key: 'happiness', label: t('soulPanel.happinessPair'), leftLabel: t('soulPanel.sadness'), rightLabel: t('soulPanel.happiness') },
-  { key: 'energy', label: t('soulPanel.energyPair'), leftLabel: t('soulPanel.exhausted'), rightLabel: t('soulPanel.energized') },
-  { key: 'confidence', label: t('soulPanel.confidencePair'), leftLabel: t('soulPanel.insecure'), rightLabel: t('soulPanel.confident') },
-  { key: 'calmness', label: t('soulPanel.calmnessPair'), leftLabel: t('soulPanel.anxious'), rightLabel: t('soulPanel.calm') },
-  { key: 'optimism', label: t('soulPanel.optimismPair'), leftLabel: t('soulPanel.pessimistic'), rightLabel: t('soulPanel.optimistic') },
-  { key: 'socialness', label: t('soulPanel.socialnessPair'), leftLabel: t('soulPanel.reserved'), rightLabel: t('soulPanel.social') },
-  { key: 'empathy', label: t('soulPanel.empathyPair'), leftLabel: t('soulPanel.detached'), rightLabel: t('soulPanel.empathic') },
-  { key: 'curiosity', label: t('soulPanel.curiosityPair'), leftLabel: t('soulPanel.indifferent'), rightLabel: t('soulPanel.curious') },
-  { key: 'creativity', label: t('soulPanel.creativityPair'), leftLabel: t('soulPanel.rigid'), rightLabel: t('soulPanel.creative') },
-  { key: 'patience', label: t('soulPanel.patiencePair'), leftLabel: t('soulPanel.irritable'), rightLabel: t('soulPanel.patient') },
-]) as const);
+const emotionalTraitDefs = computed(
+  () =>
+    [
+      {
+        key: 'happiness',
+        label: t('soulPanel.happinessPair'),
+        leftLabel: t('soulPanel.sadness'),
+        rightLabel: t('soulPanel.happiness'),
+      },
+      {
+        key: 'energy',
+        label: t('soulPanel.energyPair'),
+        leftLabel: t('soulPanel.exhausted'),
+        rightLabel: t('soulPanel.energized'),
+      },
+      {
+        key: 'confidence',
+        label: t('soulPanel.confidencePair'),
+        leftLabel: t('soulPanel.insecure'),
+        rightLabel: t('soulPanel.confident'),
+      },
+      {
+        key: 'calmness',
+        label: t('soulPanel.calmnessPair'),
+        leftLabel: t('soulPanel.anxious'),
+        rightLabel: t('soulPanel.calm'),
+      },
+      {
+        key: 'optimism',
+        label: t('soulPanel.optimismPair'),
+        leftLabel: t('soulPanel.pessimistic'),
+        rightLabel: t('soulPanel.optimistic'),
+      },
+      {
+        key: 'socialness',
+        label: t('soulPanel.socialnessPair'),
+        leftLabel: t('soulPanel.reserved'),
+        rightLabel: t('soulPanel.social'),
+      },
+      {
+        key: 'empathy',
+        label: t('soulPanel.empathyPair'),
+        leftLabel: t('soulPanel.detached'),
+        rightLabel: t('soulPanel.empathic'),
+      },
+      {
+        key: 'curiosity',
+        label: t('soulPanel.curiosityPair'),
+        leftLabel: t('soulPanel.indifferent'),
+        rightLabel: t('soulPanel.curious'),
+      },
+      {
+        key: 'creativity',
+        label: t('soulPanel.creativityPair'),
+        leftLabel: t('soulPanel.rigid'),
+        rightLabel: t('soulPanel.creative'),
+      },
+      {
+        key: 'patience',
+        label: t('soulPanel.patiencePair'),
+        leftLabel: t('soulPanel.irritable'),
+        rightLabel: t('soulPanel.patient'),
+      },
+    ] as const,
+);
 
 // Sync from Kwami and mirror to persisted store
 function syncFromKwami() {
   if (!kwami.value) return;
-  
+
   // Prevent watchers from firing during sync
   isSyncing = true;
-  
+
   try {
     const pConfig = kwami.value.soul.getConfig();
 
@@ -182,7 +239,9 @@ function syncFromKwami() {
     saveToStore();
   } finally {
     // Re-enable watchers after sync completes (use setTimeout to ensure all reactive updates are processed)
-    setTimeout(() => { isSyncing = false; }, 0);
+    setTimeout(() => {
+      isSyncing = false;
+    }, 0);
   }
 }
 
@@ -226,70 +285,92 @@ function restoreSavedSoulToKwami() {
 // Live sync watchers - sync changes to kwami automatically
 let isSyncing = false; // Prevent infinite loops during sync
 
-watch(() => config.name, (v) => {
-  if (!isSyncing && kwami.value) {
-    kwami.value.soul.setName(v);
-    syncSoulToBackend();
-    saveToStore();
-    const activeId = workspaceStore.activeWorkspaceId;
-    if (activeId && v.trim()) {
-      workspaceStore.updateKwami(activeId, { name: v.trim() }, authStore.userId);
+watch(
+  () => config.name,
+  (v) => {
+    if (!isSyncing && kwami.value) {
+      kwami.value.soul.setName(v);
+      syncSoulToBackend();
+      saveToStore();
+      const activeId = workspaceStore.activeWorkspaceId;
+      if (activeId && v.trim()) {
+        workspaceStore.updateKwami(activeId, { name: v.trim() }, authStore.userId);
+      }
     }
-  }
-});
+  },
+);
 
-watch(() => config.personality, (v) => {
-  if (!isSyncing && kwami.value) {
-    kwami.value.soul.updateConfig({ personality: v });
-    syncSoulToBackend();
-    saveToStore();
-  }
-});
+watch(
+  () => config.personality,
+  (v) => {
+    if (!isSyncing && kwami.value) {
+      kwami.value.soul.updateConfig({ personality: v });
+      syncSoulToBackend();
+      saveToStore();
+    }
+  },
+);
 
-watch(() => config.conversationStyle, (v) => {
-  if (!isSyncing && kwami.value) {
-    kwami.value.soul.setConversationStyle(v);
-    syncSoulToBackend();
-    saveToStore();
-  }
-});
+watch(
+  () => config.conversationStyle,
+  (v) => {
+    if (!isSyncing && kwami.value) {
+      kwami.value.soul.setConversationStyle(v);
+      syncSoulToBackend();
+      saveToStore();
+    }
+  },
+);
 
-watch(() => config.responseLength, (v) => {
-  if (!isSyncing && kwami.value) {
-    kwami.value.soul.setResponseLength(v);
-    syncSoulToBackend();
-    saveToStore();
-  }
-});
+watch(
+  () => config.responseLength,
+  (v) => {
+    if (!isSyncing && kwami.value) {
+      kwami.value.soul.setResponseLength(v);
+      syncSoulToBackend();
+      saveToStore();
+    }
+  },
+);
 
-watch(() => config.emotionalTone, (v) => {
-  if (!isSyncing && kwami.value) {
-    kwami.value.soul.setEmotionalTone(v);
-    syncSoulToBackend();
-    saveToStore();
-  }
-});
+watch(
+  () => config.emotionalTone,
+  (v) => {
+    if (!isSyncing && kwami.value) {
+      kwami.value.soul.setEmotionalTone(v);
+      syncSoulToBackend();
+      saveToStore();
+    }
+  },
+);
 
-watch(() => config.systemPrompt, (v) => {
-  if (!isSyncing && kwami.value) {
-    kwami.value.soul.updateConfig({ systemPrompt: v });
-    syncSoulToBackend();
-    saveToStore();
-  }
-});
+watch(
+  () => config.systemPrompt,
+  (v) => {
+    if (!isSyncing && kwami.value) {
+      kwami.value.soul.updateConfig({ systemPrompt: v });
+      syncSoulToBackend();
+      saveToStore();
+    }
+  },
+);
 
-watch(emotionalTraits, (v) => {
-  if (!isSyncing && kwami.value) {
-    Object.keys(v).forEach((key) => {
-      kwami.value?.soul.setEmotionalTrait(
-        key as keyof typeof emotionalTraits, 
-        v[key as keyof typeof v]
-      );
-    });
-    syncSoulToBackend();
-    saveToStore();
-  }
-}, { deep: true });
+watch(
+  emotionalTraits,
+  (v) => {
+    if (!isSyncing && kwami.value) {
+      Object.keys(v).forEach((key) => {
+        kwami.value?.soul.setEmotionalTrait(
+          key as keyof typeof emotionalTraits,
+          v[key as keyof typeof v],
+        );
+      });
+      syncSoulToBackend();
+      saveToStore();
+    }
+  },
+  { deep: true },
+);
 
 function updateTraits(newTraits: string[]) {
   kwami.value?.soul.updateConfig({ traits: newTraits });
@@ -329,7 +410,9 @@ function importSoul() {
       syncSoulToBackend();
     } catch (error) {
       toast.error(
-        t('soulPanel.soulImportFailed', { message: translateApiUserMessage((error as Error).message, t) }),
+        t('soulPanel.soulImportFailed', {
+          message: translateApiUserMessage((error as Error).message, t),
+        }),
       );
     }
   };
@@ -428,15 +511,27 @@ onMounted(() => {
       <!-- Identity -->
       <PanelSection :title="t('soulPanel.identity')">
         <BaseInput
-           :label="t('soulPanel.name')"
-           v-model="config.name"
-           icon="ph:identification-badge-duotone"
-           :placeholder="t('soulPanel.namePlaceholder')"
+          :label="t('soulPanel.name')"
+          v-model="config.name"
+          icon="ph:identification-badge-duotone"
+          :placeholder="t('soulPanel.namePlaceholder')"
         />
         <!-- TextArea not yet primitive, keep native or make Primitive? Native is fine for now but styled -->
         <div class="form-group" style="margin-top: 8px">
-          <label style="font-size: 11px; color: var(--text-tertiary); margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
-            <iconify-icon icon="ph:sparkle-duotone" style="font-size: 14px; color: var(--text-tertiary);"></iconify-icon>
+          <label
+            style="
+              font-size: 11px;
+              color: var(--text-tertiary);
+              margin-bottom: 4px;
+              display: flex;
+              align-items: center;
+              gap: 6px;
+            "
+          >
+            <iconify-icon
+              icon="ph:sparkle-duotone"
+              style="font-size: 14px; color: var(--text-tertiary)"
+            ></iconify-icon>
             {{ t('soulPanel.personality') }}
           </label>
           <textarea
@@ -446,8 +541,20 @@ onMounted(() => {
           ></textarea>
         </div>
         <div class="form-group" style="margin-top: 8px">
-          <label style="font-size: 11px; color: var(--text-tertiary); margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
-            <iconify-icon icon="ph:terminal-window-duotone" style="font-size: 14px; color: var(--text-tertiary);"></iconify-icon>
+          <label
+            style="
+              font-size: 11px;
+              color: var(--text-tertiary);
+              margin-bottom: 4px;
+              display: flex;
+              align-items: center;
+              gap: 6px;
+            "
+          >
+            <iconify-icon
+              icon="ph:terminal-window-duotone"
+              style="font-size: 14px; color: var(--text-tertiary)"
+            ></iconify-icon>
             {{ t('soulPanel.systemPrompt') }}
           </label>
           <textarea
@@ -455,7 +562,11 @@ onMounted(() => {
             rows="4"
             :placeholder="t('soulPanel.systemPromptPlaceholder')"
           ></textarea>
-          <BaseButton size="sm" icon="ph:eye-duotone" @click="previewPrompt" style="margin-top: 8px"
+          <BaseButton
+            size="sm"
+            icon="ph:eye-duotone"
+            @click="previewPrompt"
+            style="margin-top: 8px"
             >{{ t('soulPanel.previewFullPrompt') }}</BaseButton
           >
         </div>
@@ -551,12 +662,12 @@ onMounted(() => {
       <PanelSection :title="t('soulPanel.actions')">
         <div class="action-buttons">
           <div class="row">
-            <BaseButton variant="secondary" icon="ph:export-duotone" @click="exportSoul"
-              >{{ t('soulPanel.exportJson') }}</BaseButton
-            >
-            <BaseButton variant="secondary" icon="ph:download-duotone" @click="importSoul"
-              >{{ t('soulPanel.importJson') }}</BaseButton
-            >
+            <BaseButton variant="secondary" icon="ph:export-duotone" @click="exportSoul">{{
+              t('soulPanel.exportJson')
+            }}</BaseButton>
+            <BaseButton variant="secondary" icon="ph:download-duotone" @click="importSoul">{{
+              t('soulPanel.importJson')
+            }}</BaseButton>
           </div>
           <BaseButton
             variant="secondary"
@@ -794,7 +905,8 @@ textarea {
 .template-card.selected {
   background: color-mix(in srgb, var(--template-color, var(--accent-primary)) 12%, transparent);
   border-color: var(--template-color, var(--accent-primary));
-  box-shadow: 0 0 12px color-mix(in srgb, var(--template-color, var(--accent-primary)) 25%, transparent);
+  box-shadow: 0 0 12px
+    color-mix(in srgb, var(--template-color, var(--accent-primary)) 25%, transparent);
 }
 
 .template-icon {

@@ -10,6 +10,7 @@ Vue SFCs under [`src/components/`](../../src/components/). There is no router; `
 | `auth/AuthPage.vue` | Sign-in surface |
 | `auth/GoogleButton.vue` | Google OAuth (still used when Google is enabled) |
 | `auth/ProviderButton.vue` | Other OAuth / wallet buttons from `VITE_AUTH_PROVIDERS` |
+| `auth/EmailAuthForm.vue` | Email + password sign-in / sign-up; always rendered |
 | `auth/LoginButton.vue` | Shared sign-in control |
 | `auth/WelcomeBlob.vue` | Decorative blob on auth |
 | `welcome/WelcomeRings.vue` | Animated wordmark / rings |

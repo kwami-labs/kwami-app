@@ -1,27 +1,30 @@
 <script setup lang="ts">
 import BaseButton from './BaseButton.vue';
 
-const props = withDefaults(defineProps<{
-  open: boolean
-  title: string
-  icon?: string
-  confirmLabel?: string
-  confirmIcon?: string
-  confirmVariant?: 'primary' | 'danger' | 'accent' | 'secondary'
-  cancelLabel?: string
-  loading?: boolean
-}>(), {
-  icon: 'ph:warning-duotone',
-  confirmLabel: 'Confirm',
-  confirmIcon: undefined,
-  confirmVariant: 'primary',
-  cancelLabel: 'Cancel',
-  loading: false,
-});
+const props = withDefaults(
+  defineProps<{
+    open: boolean;
+    title: string;
+    icon?: string;
+    confirmLabel?: string;
+    confirmIcon?: string;
+    confirmVariant?: 'primary' | 'danger' | 'accent' | 'secondary';
+    cancelLabel?: string;
+    loading?: boolean;
+  }>(),
+  {
+    icon: 'ph:warning-duotone',
+    confirmLabel: 'Confirm',
+    confirmIcon: undefined,
+    confirmVariant: 'primary',
+    cancelLabel: 'Cancel',
+    loading: false,
+  },
+);
 
 const emit = defineEmits<{
-  (e: 'confirm'): void
-  (e: 'cancel'): void
+  (e: 'confirm'): void;
+  (e: 'cancel'): void;
 }>();
 
 function handleCancel() {
@@ -48,11 +51,7 @@ function handleCancel() {
               <slot name="footerLeft" />
             </div>
             <div class="footer-actions">
-              <BaseButton
-                variant="secondary"
-                @click="handleCancel"
-                :disabled="loading"
-              >
+              <BaseButton variant="secondary" @click="handleCancel" :disabled="loading">
                 {{ cancelLabel }}
               </BaseButton>
               <BaseButton
@@ -190,19 +189,39 @@ function handleCancel() {
 }
 
 @keyframes dialogOverlayIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 @keyframes dialogOverlayOut {
-  from { opacity: 1; }
-  to { opacity: 0; }
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }
 @keyframes dialogContentIn {
-  from { opacity: 0; transform: scale(0.88) translateY(-16px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
+  from {
+    opacity: 0;
+    transform: scale(0.88) translateY(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 @keyframes dialogContentOut {
-  from { opacity: 1; transform: scale(1) translateY(0); }
-  to { opacity: 0; transform: scale(0.95) translateY(8px); }
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95) translateY(8px);
+  }
 }
 </style>

@@ -71,7 +71,10 @@ function randomizeProcedural() {
       <BaseColorPicker :label="t('eyeIrisAvatar.secondary')" v-model="state.color.secondary" />
       <BaseColorPicker :label="t('eyeIrisAvatar.accent')" v-model="state.color.accent" />
       <BaseColorPicker :label="t('eyeIrisAvatar.limbal')" v-model="state.color.limbal" />
-      <BaseColorPicker :label="t('eyeIrisAvatar.collaretteColor')" v-model="state.color.collarette" />
+      <BaseColorPicker
+        :label="t('eyeIrisAvatar.collaretteColor')"
+        v-model="state.color.collarette"
+      />
       <BaseColorPicker :label="t('eyeIrisAvatar.cryptColor')" v-model="state.color.crypt" />
       <BaseColorPicker :label="t('eyeIrisAvatar.streakColor')" v-model="state.color.streak" />
     </div>
@@ -79,56 +82,192 @@ function randomizeProcedural() {
 
   <PanelSection :title="t('eyeIrisAvatar.proceduralDetails')" icon="ph:sliders-duotone" collapsible>
     <template #actions>
-      <button class="dice-btn" @click="randomizeProcedural" :title="t('eyeIrisAvatar.randomizeProcedural')">
+      <button
+        class="dice-btn"
+        @click="randomizeProcedural"
+        :title="t('eyeIrisAvatar.randomizeProcedural')"
+      >
         <iconify-icon icon="ph:dice-three-duotone"></iconify-icon>
       </button>
     </template>
     <div class="slider-group">
       <div class="group-block">
         <p class="group-title">Geometry</p>
-        <BaseSlider :label="t('eyeIrisAvatar.irisRadius')" :min="0.82" :max="0.98" :step="0.01" v-model="state.geometry.irisRadius" />
-        <BaseSlider :label="t('eyeIrisAvatar.pupilRadius')" :min="0.12" :max="0.5" :step="0.01" v-model="state.geometry.pupilRadius" />
-        <BaseSlider :label="t('eyeIrisAvatar.limbalRingWidth')" :min="0.02" :max="0.16" :step="0.01" v-model="state.geometry.limbalRingWidth" />
-        <BaseSlider :label="t('eyeIrisAvatar.scale')" :min="3.5" :max="8" :step="0.01" v-model="state.scale" />
+        <BaseSlider
+          :label="t('eyeIrisAvatar.irisRadius')"
+          :min="0.82"
+          :max="0.98"
+          :step="0.01"
+          v-model="state.geometry.irisRadius"
+        />
+        <BaseSlider
+          :label="t('eyeIrisAvatar.pupilRadius')"
+          :min="0.12"
+          :max="0.5"
+          :step="0.01"
+          v-model="state.geometry.pupilRadius"
+        />
+        <BaseSlider
+          :label="t('eyeIrisAvatar.limbalRingWidth')"
+          :min="0.02"
+          :max="0.16"
+          :step="0.01"
+          v-model="state.geometry.limbalRingWidth"
+        />
+        <BaseSlider
+          :label="t('eyeIrisAvatar.scale')"
+          :min="3.5"
+          :max="8"
+          :step="0.01"
+          v-model="state.scale"
+        />
       </div>
 
       <div class="group-block">
         <p class="group-title">Fibers</p>
-        <BaseSlider :label="t('eyeIrisAvatar.fiberDensity')" :min="40" :max="1000" :step="1" v-model="state.detail.fiberDensity" />
-        <BaseSlider :label="t('eyeIrisAvatar.fiberSharpness')" :min="0" :max="1.5" :step="0.01" v-model="state.detail.fiberSharpness" />
-        <BaseSlider :label="t('eyeIrisAvatar.radialStreaks')" :min="0" :max="1.2" :step="0.01" v-model="state.detail.radialStreakStrength" />
-        <BaseSlider :label="t('eyeIrisAvatar.noise')" :min="0" :max="3" :step="0.01" v-model="state.detail.noiseStrength" />
+        <BaseSlider
+          :label="t('eyeIrisAvatar.fiberDensity')"
+          :min="40"
+          :max="1000"
+          :step="1"
+          v-model="state.detail.fiberDensity"
+        />
+        <BaseSlider
+          :label="t('eyeIrisAvatar.fiberSharpness')"
+          :min="0"
+          :max="1.5"
+          :step="0.01"
+          v-model="state.detail.fiberSharpness"
+        />
+        <BaseSlider
+          :label="t('eyeIrisAvatar.radialStreaks')"
+          :min="0"
+          :max="1.2"
+          :step="0.01"
+          v-model="state.detail.radialStreakStrength"
+        />
+        <BaseSlider
+          :label="t('eyeIrisAvatar.noise')"
+          :min="0"
+          :max="3"
+          :step="0.01"
+          v-model="state.detail.noiseStrength"
+        />
       </div>
 
       <div class="group-block">
         <p class="group-title">Structures</p>
-        <BaseSlider :label="t('eyeIrisAvatar.collarette')" :min="0" :max="1.2" :step="0.01" v-model="state.detail.collaretteStrength" />
-        <BaseSlider :label="t('eyeIrisAvatar.cryptStrength')" :min="0" :max="1.4" :step="0.01" v-model="state.detail.cryptStrength" />
-        <BaseSlider :label="t('eyeIrisAvatar.furrowStrength')" :min="0" :max="1.4" :step="0.01" v-model="state.detail.furrowStrength" />
-        <BaseSlider :label="t('eyeIrisAvatar.innerRingStrength')" :min="0" :max="1.5" :step="0.01" v-model="state.detail.innerRingStrength" />
-        <BaseSlider :label="t('eyeIrisAvatar.limbalIntensity')" :min="0" :max="1.4" :step="0.01" v-model="state.detail.limbalIntensity" />
-        <BaseSlider :label="t('eyeIrisAvatar.ringContrast')" :min="0" :max="1.4" :step="0.01" v-model="state.detail.ringContrast" />
+        <BaseSlider
+          :label="t('eyeIrisAvatar.collarette')"
+          :min="0"
+          :max="1.2"
+          :step="0.01"
+          v-model="state.detail.collaretteStrength"
+        />
+        <BaseSlider
+          :label="t('eyeIrisAvatar.cryptStrength')"
+          :min="0"
+          :max="1.4"
+          :step="0.01"
+          v-model="state.detail.cryptStrength"
+        />
+        <BaseSlider
+          :label="t('eyeIrisAvatar.furrowStrength')"
+          :min="0"
+          :max="1.4"
+          :step="0.01"
+          v-model="state.detail.furrowStrength"
+        />
+        <BaseSlider
+          :label="t('eyeIrisAvatar.innerRingStrength')"
+          :min="0"
+          :max="1.5"
+          :step="0.01"
+          v-model="state.detail.innerRingStrength"
+        />
+        <BaseSlider
+          :label="t('eyeIrisAvatar.limbalIntensity')"
+          :min="0"
+          :max="1.4"
+          :step="0.01"
+          v-model="state.detail.limbalIntensity"
+        />
+        <BaseSlider
+          :label="t('eyeIrisAvatar.ringContrast')"
+          :min="0"
+          :max="1.4"
+          :step="0.01"
+          v-model="state.detail.ringContrast"
+        />
       </div>
 
       <div class="group-block">
         <p class="group-title">Pigment Variation</p>
-        <BaseSlider :label="t('eyeIrisAvatar.sectorMix')" :min="0" :max="1" :step="0.01" v-model="state.detail.sectorMix" />
-        <BaseSlider :label="t('eyeIrisAvatar.pigmentMottleStrength')" :min="0" :max="1.5" :step="0.01" v-model="state.detail.pigmentMottleStrength" />
-        <BaseSlider :label="t('eyeIrisAvatar.spokesStrength')" :min="0" :max="1.5" :step="0.01" v-model="state.detail.spokesStrength" />
+        <BaseSlider
+          :label="t('eyeIrisAvatar.sectorMix')"
+          :min="0"
+          :max="1"
+          :step="0.01"
+          v-model="state.detail.sectorMix"
+        />
+        <BaseSlider
+          :label="t('eyeIrisAvatar.pigmentMottleStrength')"
+          :min="0"
+          :max="1.5"
+          :step="0.01"
+          v-model="state.detail.pigmentMottleStrength"
+        />
+        <BaseSlider
+          :label="t('eyeIrisAvatar.spokesStrength')"
+          :min="0"
+          :max="1.5"
+          :step="0.01"
+          v-model="state.detail.spokesStrength"
+        />
       </div>
 
       <div class="group-block">
         <p class="group-title">Pattern Motion</p>
-        <BaseSlider :label="t('eyeIrisAvatar.shimmerSpeed')" :min="0" :max="0.8" :step="0.01" v-model="state.animation.shimmerSpeed" />
-        <BaseSlider :label="t('eyeIrisAvatar.shimmerStrength')" :min="0" :max="0.7" :step="0.01" v-model="state.animation.shimmerStrength" />
-        <BaseSlider :label="t('eyeIrisAvatar.patternFlow')" :min="0" :max="0.5" :step="0.01" v-model="state.animation.patternFlow" />
-        <BaseSlider :label="t('eyeIrisAvatar.patternRotation')" :min="-0.2" :max="0.2" :step="0.01" v-model="state.animation.patternRotation" />
+        <BaseSlider
+          :label="t('eyeIrisAvatar.shimmerSpeed')"
+          :min="0"
+          :max="0.8"
+          :step="0.01"
+          v-model="state.animation.shimmerSpeed"
+        />
+        <BaseSlider
+          :label="t('eyeIrisAvatar.shimmerStrength')"
+          :min="0"
+          :max="0.7"
+          :step="0.01"
+          v-model="state.animation.shimmerStrength"
+        />
+        <BaseSlider
+          :label="t('eyeIrisAvatar.patternFlow')"
+          :min="0"
+          :max="0.5"
+          :step="0.01"
+          v-model="state.animation.patternFlow"
+        />
+        <BaseSlider
+          :label="t('eyeIrisAvatar.patternRotation')"
+          :min="-0.2"
+          :max="0.2"
+          :step="0.01"
+          v-model="state.animation.patternRotation"
+        />
       </div>
 
       <div class="group-block">
         <p class="group-title">Follow</p>
         <BaseToggle :label="t('eyeIrisAvatar.followEnabled')" v-model="state.follow.enabled" />
-        <BaseSlider :label="t('eyeIrisAvatar.followSensitivity')" :min="0.2" :max="2" :step="0.01" v-model="state.follow.sensitivity" />
+        <BaseSlider
+          :label="t('eyeIrisAvatar.followSensitivity')"
+          :min="0.2"
+          :max="2"
+          :step="0.01"
+          v-model="state.follow.sensitivity"
+        />
         <BaseToggle :label="t('eyeIrisAvatar.pupilMotion')" v-model="state.follow.pupilMotion" />
         <BaseSlider
           v-if="state.follow.pupilMotion"
@@ -147,10 +286,34 @@ function randomizeProcedural() {
       <BaseToggle :label="t('eyeIrisAvatar.audioEnabled')" v-model="state.audio.enabled" />
     </div>
     <div class="slider-group" v-if="state.audio.enabled">
-      <BaseSlider :label="t('eyeIrisAvatar.audioReactivity')" :min="0" :max="2" :step="0.05" v-model="state.audio.reactivity" />
-      <BaseSlider :label="t('eyeIrisAvatar.pupilResponse')" :min="0" :max="0.6" :step="0.01" v-model="state.audio.pupilResponse" />
-      <BaseSlider :label="t('eyeIrisAvatar.shimmerResponse')" :min="0" :max="0.8" :step="0.01" v-model="state.audio.shimmerResponse" />
-      <BaseSlider :label="t('eyeIrisAvatar.smoothing')" :min="0.6" :max="0.98" :step="0.01" v-model="state.audio.smoothing" />
+      <BaseSlider
+        :label="t('eyeIrisAvatar.audioReactivity')"
+        :min="0"
+        :max="2"
+        :step="0.05"
+        v-model="state.audio.reactivity"
+      />
+      <BaseSlider
+        :label="t('eyeIrisAvatar.pupilResponse')"
+        :min="0"
+        :max="0.6"
+        :step="0.01"
+        v-model="state.audio.pupilResponse"
+      />
+      <BaseSlider
+        :label="t('eyeIrisAvatar.shimmerResponse')"
+        :min="0"
+        :max="0.8"
+        :step="0.01"
+        v-model="state.audio.shimmerResponse"
+      />
+      <BaseSlider
+        :label="t('eyeIrisAvatar.smoothing')"
+        :min="0.6"
+        :max="0.98"
+        :step="0.01"
+        v-model="state.audio.smoothing"
+      />
     </div>
   </PanelSection>
 </template>

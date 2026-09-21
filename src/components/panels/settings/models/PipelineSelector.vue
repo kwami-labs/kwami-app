@@ -32,7 +32,7 @@ const selected = computed({
         <span class="pipeline-desc">{{ t('models.standardPipelineDesc') }}</span>
       </div>
     </button>
-    
+
     <button
       class="pipeline-btn"
       :class="{ active: selected === 'realtime' }"

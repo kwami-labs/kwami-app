@@ -57,8 +57,7 @@ export function useLanguagesApi() {
     provider: string,
     type: 'stt' | 'tts' | 'realtime',
   ): Promise<Language[]> {
-    const resource =
-      type === 'stt' ? sttResource : type === 'tts' ? ttsResource : realtimeResource;
+    const resource = type === 'stt' ? sttResource : type === 'tts' ? ttsResource : realtimeResource;
     const result = await resource.fetchProvider(provider);
     return result?.languages || [];
   }
@@ -80,8 +79,7 @@ export function useLanguagesApi() {
     realtimeLanguages: realtimeResource.all,
     allLanguages: allLanguagesResource.data,
     isLoading: computed(
-      () =>
-        allLanguagesResource.isLoading.value || catalogResources.some((r) => r.isLoading.value),
+      () => allLanguagesResource.isLoading.value || catalogResources.some((r) => r.isLoading.value),
     ),
     error: computed(
       () =>

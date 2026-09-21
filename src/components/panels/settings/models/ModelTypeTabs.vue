@@ -78,7 +78,10 @@ function getProviderIcon(provider: string): string {
         <span class="tab-label">{{ tab.label }}</span>
       </div>
       <div v-if="getModelForTab(tab.id)" class="tab-model">
-        <iconify-icon :icon="getProviderIcon(getModelForTab(tab.id)!.provider)" class="model-provider-icon"></iconify-icon>
+        <iconify-icon
+          :icon="getProviderIcon(getModelForTab(tab.id)!.provider)"
+          class="model-provider-icon"
+        ></iconify-icon>
         <span class="model-name">{{ getModelDisplayName(getModelForTab(tab.id)!.model) }}</span>
       </div>
     </button>

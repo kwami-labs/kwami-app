@@ -7,7 +7,6 @@ import { useWorkspaceStore } from '@/stores/workspace';
 import { useKwamiConfigSync } from '@/composables/useKwamiConfigSync';
 import { useToast } from 'vue-toastification';
 
-
 export interface KwamiForEdit {
   id: string;
   name: string;
@@ -81,7 +80,9 @@ export function useKwamiActions() {
     randomize: boolean;
     colors: { x: string; y: string; z: string };
   }) {
-    const initial: Parameters<typeof workspaceStore.addKwami>[1] = payload.name ? { name: payload.name } : {};
+    const initial: Parameters<typeof workspaceStore.addKwami>[1] = payload.name
+      ? { name: payload.name }
+      : {};
     initial.randomize = payload.randomize;
     initial.colors = { ...payload.colors };
     if (!payload.randomize && activeWorkspace.value) {
@@ -99,7 +100,10 @@ export function useKwamiActions() {
     return newKwami;
   }
 
-  async function onEditSave(payload: { name: string; colors: { x: string; y: string; z: string } }) {
+  async function onEditSave(payload: {
+    name: string;
+    colors: { x: string; y: string; z: string };
+  }) {
     const kwami = editKwami.value;
     if (!kwami) return;
     await workspaceStore.updateKwami(kwami.id, payload, authStore.userId);

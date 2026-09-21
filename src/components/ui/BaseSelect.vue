@@ -25,7 +25,7 @@ const dropdownPlacement = ref<'top' | 'bottom'>('bottom');
 const dropdownStyle = ref<Record<string, string>>({});
 
 const selectedOption = computed(() => {
-  return props.options.find(opt => opt.value === props.modelValue);
+  return props.options.find((opt) => opt.value === props.modelValue);
 });
 
 function updateDropdownPosition() {
@@ -73,7 +73,7 @@ function toggle() {
   if (props.disabled) return;
   isOpen.value = !isOpen.value;
   if (isOpen.value) {
-    highlightedIndex.value = props.options.findIndex(opt => opt.value === props.modelValue);
+    highlightedIndex.value = props.options.findIndex((opt) => opt.value === props.modelValue);
     nextTick(updateDropdownPosition);
   }
 }
@@ -98,7 +98,10 @@ function handleKeydown(event: KeyboardEvent) {
     if (event.key === 'Enter' || event.key === ' ' || event.key === 'ArrowDown') {
       event.preventDefault();
       isOpen.value = true;
-      highlightedIndex.value = Math.max(0, props.options.findIndex(opt => opt.value === props.modelValue));
+      highlightedIndex.value = Math.max(
+        0,
+        props.options.findIndex((opt) => opt.value === props.modelValue),
+      );
       nextTick(updateDropdownPosition);
     }
     return;
@@ -148,9 +151,9 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div 
-    ref="selectRef" 
-    class="base-select" 
+  <div
+    ref="selectRef"
+    class="base-select"
     :class="{ disabled, open: isOpen, block }"
     @keydown="handleKeydown"
   >
@@ -158,17 +161,21 @@ onUnmounted(() => {
       <iconify-icon v-if="icon" :icon="icon"></iconify-icon>
       {{ label }}
     </label>
-    
-    <button 
+
+    <button
       ref="triggerRef"
-      type="button" 
-      class="select-trigger" 
+      type="button"
+      class="select-trigger"
       :disabled="disabled"
       @click="toggle"
       :tabindex="disabled ? -1 : 0"
     >
       <span class="select-value" :class="{ placeholder: !selectedOption }">
-        <iconify-icon v-if="selectedOption?.icon" :icon="selectedOption.icon" class="option-icon"></iconify-icon>
+        <iconify-icon
+          v-if="selectedOption?.icon"
+          :icon="selectedOption.icon"
+          class="option-icon"
+        ></iconify-icon>
         {{ selectedOption?.label || placeholder || t('ui.selectPlaceholder') }}
       </span>
       <iconify-icon icon="ph:caret-up-down-bold" class="caret"></iconify-icon>
@@ -188,18 +195,18 @@ onUnmounted(() => {
               :key="opt.value"
               type="button"
               class="dropdown-option"
-              :class="{ 
+              :class="{
                 selected: opt.value === modelValue,
-                highlighted: idx === highlightedIndex 
+                highlighted: idx === highlightedIndex,
               }"
               @click="select(opt)"
               @mouseenter="highlightedIndex = idx"
             >
               <iconify-icon v-if="opt.icon" :icon="opt.icon" class="option-icon"></iconify-icon>
               <span class="option-label">{{ opt.label }}</span>
-              <iconify-icon 
-                v-if="opt.value === modelValue" 
-                icon="ph:check-bold" 
+              <iconify-icon
+                v-if="opt.value === modelValue"
+                icon="ph:check-bold"
                 class="check-icon"
               ></iconify-icon>
             </button>
@@ -310,13 +317,13 @@ onUnmounted(() => {
   border-radius: 12px;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  box-shadow: 
+  box-shadow:
     0 12px 40px rgba(0, 0, 0, 0.4),
     0 0 0 1px rgba(255, 255, 255, 0.05) inset;
   overflow: hidden;
 }
 
-.base-select-dropdown-portal[data-placement="top"] {
+.base-select-dropdown-portal[data-placement='top'] {
   box-shadow:
     0 -12px 40px rgba(0, 0, 0, 0.28),
     0 0 0 1px rgba(255, 255, 255, 0.05) inset;
@@ -408,11 +415,11 @@ onUnmounted(() => {
   animation: dropdownOut 0.15s ease-in;
 }
 
-.base-select-dropdown-portal[data-placement="top"].dropdown-enter-active {
+.base-select-dropdown-portal[data-placement='top'].dropdown-enter-active {
   animation: dropdownInUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.base-select-dropdown-portal[data-placement="top"].dropdown-leave-active {
+.base-select-dropdown-portal[data-placement='top'].dropdown-leave-active {
   animation: dropdownOutUp 0.15s ease-in;
 }
 

@@ -23,11 +23,15 @@ const selectedModel = ref<string>(llm.value.model);
 // Persisted UI state via store
 const expandedProvider = computed({
   get: () => modelsUI.value.llmExpandedProvider,
-  set: (v) => { modelsUI.value.llmExpandedProvider = v; }
+  set: (v) => {
+    modelsUI.value.llmExpandedProvider = v;
+  },
 });
 const sortBy = computed({
   get: () => modelsUI.value.llmSortBy,
-  set: (v) => { modelsUI.value.llmSortBy = v; }
+  set: (v) => {
+    modelsUI.value.llmSortBy = v;
+  },
 });
 
 // Expand the selected provider's accordion
@@ -63,34 +67,34 @@ const allModels = computed(() => {
 // Min/max calculations for range bars
 const minContext = computed(() => {
   if (!allModels.value.length) return 0;
-  return Math.min(...allModels.value.map(m => m.context_window));
+  return Math.min(...allModels.value.map((m) => m.context_window));
 });
 
 const maxContext = computed(() => {
   if (!allModels.value.length) return 1;
-  return Math.max(...allModels.value.map(m => m.context_window));
+  return Math.max(...allModels.value.map((m) => m.context_window));
 });
 
 const minPrice = computed(() => {
   if (!allModels.value.length) return 0;
   const prices = allModels.value
-    .filter(m => m.providers && Object.keys(m.providers).length > 0)
-    .map(m => Math.min(...Object.values(m.providers).map(p => p.input_per_1m)));
+    .filter((m) => m.providers && Object.keys(m.providers).length > 0)
+    .map((m) => Math.min(...Object.values(m.providers).map((p) => p.input_per_1m)));
   return prices.length ? Math.min(...prices) : 0;
 });
 
 const maxPrice = computed(() => {
   if (!allModels.value.length) return 1;
   const prices = allModels.value
-    .filter(m => m.providers && Object.keys(m.providers).length > 0)
-    .map(m => Math.min(...Object.values(m.providers).map(p => p.input_per_1m)));
+    .filter((m) => m.providers && Object.keys(m.providers).length > 0)
+    .map((m) => Math.min(...Object.values(m.providers).map((p) => p.input_per_1m)));
   return prices.length ? Math.max(...prices) : 1;
 });
 
 // Models grouped by provider (for accordion view)
 const modelsByProvider = computed(() => {
   if (!allModels.value.length) return {};
-  
+
   const grouped: Record<string, InferenceModel[]> = {};
   for (const model of allModels.value) {
     const provider = model.provider;
@@ -104,14 +108,18 @@ const modelsByProvider = computed(() => {
 // Flat sorted list (for price/context/speed view)
 const sortedModelsFlat = computed(() => {
   if (!allModels.value.length) return [];
-  
+
   const models = [...allModels.value];
-  
+
   if (sortBy.value === 'price') {
     // Highest price first (most expensive at top)
     models.sort((a, b) => {
-      const priceA = a.providers ? Math.min(...Object.values(a.providers).map(p => p.input_per_1m)) : 0;
-      const priceB = b.providers ? Math.min(...Object.values(b.providers).map(p => p.input_per_1m)) : 0;
+      const priceA = a.providers
+        ? Math.min(...Object.values(a.providers).map((p) => p.input_per_1m))
+        : 0;
+      const priceB = b.providers
+        ? Math.min(...Object.values(b.providers).map((p) => p.input_per_1m))
+        : 0;
       return priceB - priceA;
     });
   } else if (sortBy.value === 'context') {
@@ -130,7 +138,7 @@ const sortedModelsFlat = computed(() => {
     const speedOrder: Record<string, number> = { fast: 0, standard: 1, slow: 2 };
     models.sort((a, b) => (speedOrder[a.speed] ?? 1) - (speedOrder[b.speed] ?? 1));
   }
-  
+
   return models;
 });
 
@@ -154,12 +162,12 @@ function getProviderIcon(provider: string): string {
 function selectModel(modelId: string, provider: string) {
   selectedProvider.value = provider;
   selectedModel.value = modelId;
-  
+
   voiceStore.updateLLM({
     provider: provider as LLMProvider,
     model: modelId,
   });
-  
+
   if (isConnected.value && kwami.value) {
     kwami.value.agent.syncConfigToBackend('llm', {
       provider,
@@ -170,16 +178,19 @@ function selectModel(modelId: string, provider: string) {
   }
 }
 
-watch(() => [llm.value.provider, llm.value.model], ([newProvider, newModel]) => {
-  selectedProvider.value = newProvider || '';
-  selectedModel.value = newModel || '';
-  // Auto-expand the new provider's accordion
-  expandSelectedProvider();
-});
+watch(
+  () => [llm.value.provider, llm.value.model],
+  ([newProvider, newModel]) => {
+    selectedProvider.value = newProvider || '';
+    selectedModel.value = newModel || '';
+    // Auto-expand the new provider's accordion
+    expandSelectedProvider();
+  },
+);
 
 function updateTemperature(value: number) {
   voiceStore.updateLLM({ temperature: value });
-  
+
   if (isConnected.value && kwami.value) {
     kwami.value.agent.syncConfigToBackend('llm', {
       provider: llm.value.provider,
@@ -215,31 +226,33 @@ function updateMaxTokens(value: number) {
       <!-- Sort Controls -->
       <div class="sort-row">
         <span class="sort-label">{{ t('modelTabs.sort') }}</span>
-        <button 
-          class="sort-btn" 
+        <button
+          class="sort-btn"
           :class="{ active: sortBy === 'provider' }"
           @click="sortBy = 'provider'"
-        >{{ t('modelTabs.provider') }}</button>
-        <button 
-          class="sort-btn" 
-          :class="{ active: sortBy === 'price' }"
-          @click="sortBy = 'price'"
-        >{{ t('modelTabs.price') }}</button>
-        <button 
-          class="sort-btn" 
+        >
+          {{ t('modelTabs.provider') }}
+        </button>
+        <button class="sort-btn" :class="{ active: sortBy === 'price' }" @click="sortBy = 'price'">
+          {{ t('modelTabs.price') }}
+        </button>
+        <button
+          class="sort-btn"
           :class="{ active: sortBy === 'context' }"
           @click="sortBy = 'context'"
-        >{{ t('modelTabs.context') }}</button>
-        <button 
-          class="sort-btn" 
+        >
+          {{ t('modelTabs.context') }}
+        </button>
+        <button
+          class="sort-btn"
           :class="{ active: sortBy === 'languages' }"
           @click="sortBy = 'languages'"
-        >{{ t('modelTabs.languages') }}</button>
-        <button 
-          class="sort-btn" 
-          :class="{ active: sortBy === 'speed' }"
-          @click="sortBy = 'speed'"
-        >{{ t('modelTabs.speed') }}</button>
+        >
+          {{ t('modelTabs.languages') }}
+        </button>
+        <button class="sort-btn" :class="{ active: sortBy === 'speed' }" @click="sortBy = 'speed'">
+          {{ t('modelTabs.speed') }}
+        </button>
       </div>
 
       <!-- Models by Provider (accordion view) -->
@@ -294,7 +307,12 @@ function updateMaxTokens(value: number) {
       </div>
 
       <!-- Parameters -->
-      <PanelSection :title="t('modelTabs.parameters')" icon="ph:sliders-horizontal-duotone" collapsible defaultCollapsed>
+      <PanelSection
+        :title="t('modelTabs.parameters')"
+        icon="ph:sliders-horizontal-duotone"
+        collapsible
+        defaultCollapsed
+      >
         <div class="params-form">
           <BaseSlider
             :label="t('modelTabs.temperature')"
@@ -306,7 +324,7 @@ function updateMaxTokens(value: number) {
             :showValue="true"
           />
           <p class="param-hint">{{ t('modelTabs.temperatureHint') }}</p>
-          
+
           <BaseSlider
             :label="t('modelTabs.maxTokens')"
             :min="64"
@@ -346,8 +364,12 @@ function updateMaxTokens(value: number) {
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .sort-row {
@@ -436,7 +458,6 @@ function updateMaxTokens(value: number) {
   flex-direction: column;
   gap: 6px;
 }
-
 
 .params-form {
   display: flex;

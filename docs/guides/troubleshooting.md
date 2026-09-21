@@ -27,6 +27,10 @@ flowchart TD
 | Provider enabled | `VITE_AUTH_PROVIDERS` must match the Supabase dashboard. An extra provider returns 400 |
 | Popup blocked | OAuth uses a popup; allow popups for `localhost:5173` |
 | Redirect URLs | Add `http://localhost:5173/**` to the Supabase Auth redirect allowlist |
+| Email provider off | Email + password 400s with "Email logins are disabled" — enable it under Authentication -> Providers |
+| Sign-up mail never arrives | Expected when the address already has a confirmed account; the form says so and switches to sign in |
+| "Phantom was not detected" | The extension is missing, or it is present but another Solana wallet claimed `window.solana` — the app checks `window.phantom.solana` first |
+| Web3 tab missing | Add `phantom` to `VITE_AUTH_PROVIDERS` and enable Authentication -> Web3 (Solana) |
 
 ## Avatar only, no voice
 

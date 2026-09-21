@@ -37,7 +37,7 @@ export type { PaletteType as ScenePaletteType } from '@/composables/avatar/useCo
 export interface GradientStop {
   color: string;
   position: number; // 0-100
-  opacity: number;  // 0-1
+  opacity: number; // 0-1
 }
 
 export interface GradientOrb {
@@ -245,7 +245,8 @@ export const useSceneStore = defineStore('scene', () => {
         background.effects.starField.count = settings.effects.starField.count ?? 7000;
         background.effects.starField.fieldRadius = settings.effects.starField.fieldRadius ?? 500;
         background.effects.starField.twinkleSpeed = settings.effects.starField.twinkleSpeed ?? 1.4;
-        background.effects.starField.rotationSpeed = settings.effects.starField.rotationSpeed ?? 0.00025;
+        background.effects.starField.rotationSpeed =
+          settings.effects.starField.rotationSpeed ?? 0.00025;
         background.effects.starField.minSize = settings.effects.starField.minSize ?? 0.6;
         background.effects.starField.maxSize = settings.effects.starField.maxSize ?? 3.0;
       } else {
@@ -291,7 +292,7 @@ export const useSceneStore = defineStore('scene', () => {
     () => {
       saveSettings();
     },
-    { deep: true }
+    { deep: true },
   );
 
   // Actions

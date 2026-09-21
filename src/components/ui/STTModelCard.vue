@@ -8,15 +8,44 @@ const { t } = useI18n();
 
 // Language name mapping
 const LANGUAGE_NAMES: Record<string, string> = {
-  en: 'English', 'en-US': 'English (US)', 'en-GB': 'English (UK)', 'en-AU': 'English (AU)',
-  es: 'Spanish', 'es-419': 'Spanish (LATAM)', 'es-ES': 'Spanish (Spain)',
-  fr: 'French', 'fr-CA': 'French (CA)', de: 'German', it: 'Italian',
-  pt: 'Portuguese', 'pt-BR': 'Portuguese (BR)', nl: 'Dutch', pl: 'Polish',
-  ru: 'Russian', zh: 'Chinese', 'zh-CN': 'Chinese (Simplified)', 'zh-TW': 'Chinese (Traditional)',
-  ja: 'Japanese', ko: 'Korean', ar: 'Arabic', hi: 'Hindi', tr: 'Turkish',
-  vi: 'Vietnamese', th: 'Thai', id: 'Indonesian', sv: 'Swedish', da: 'Danish',
-  no: 'Norwegian', fi: 'Finnish', cs: 'Czech', el: 'Greek', he: 'Hebrew',
-  hu: 'Hungarian', ro: 'Romanian', uk: 'Ukrainian', multi: 'Multi-language',
+  en: 'English',
+  'en-US': 'English (US)',
+  'en-GB': 'English (UK)',
+  'en-AU': 'English (AU)',
+  es: 'Spanish',
+  'es-419': 'Spanish (LATAM)',
+  'es-ES': 'Spanish (Spain)',
+  fr: 'French',
+  'fr-CA': 'French (CA)',
+  de: 'German',
+  it: 'Italian',
+  pt: 'Portuguese',
+  'pt-BR': 'Portuguese (BR)',
+  nl: 'Dutch',
+  pl: 'Polish',
+  ru: 'Russian',
+  zh: 'Chinese',
+  'zh-CN': 'Chinese (Simplified)',
+  'zh-TW': 'Chinese (Traditional)',
+  ja: 'Japanese',
+  ko: 'Korean',
+  ar: 'Arabic',
+  hi: 'Hindi',
+  tr: 'Turkish',
+  vi: 'Vietnamese',
+  th: 'Thai',
+  id: 'Indonesian',
+  sv: 'Swedish',
+  da: 'Danish',
+  no: 'Norwegian',
+  fi: 'Finnish',
+  cs: 'Czech',
+  el: 'Greek',
+  he: 'Hebrew',
+  hu: 'Hungarian',
+  ro: 'Romanian',
+  uk: 'Ukrainian',
+  multi: 'Multi-language',
   multilingual: 'Multilingual',
 };
 
@@ -109,7 +138,7 @@ const languagePercent = computed(() => {
 
 // Formatted languages for tooltip
 const formattedLanguages = computed(() => {
-  return props.model.languages.map(code => ({
+  return props.model.languages.map((code) => ({
     code,
     name: LANGUAGE_NAMES[code] || code.toUpperCase(),
   }));
@@ -120,8 +149,10 @@ const showLanguages = ref(false);
 
 // Key features to show
 const hasSpecialFeature = computed(() => {
-  return props.model.features.includes('diarization') || 
-         props.model.features.includes('medical_vocabulary');
+  return (
+    props.model.features.includes('diarization') ||
+    props.model.features.includes('medical_vocabulary')
+  );
 });
 
 function handleClick() {
@@ -142,44 +173,48 @@ function handleClick() {
       <iconify-icon :icon="providerIcon" class="provider-icon"></iconify-icon>
       <span class="model-name">{{ model.display_name }}</span>
     </div>
-    
+
     <!-- Range Bars -->
     <div class="card-ranges">
       <div v-if="priceDisplay" class="range-row">
-        <RangeBar 
-          :value="pricePercent" 
+        <RangeBar
+          :value="pricePercent"
           icon="ph:currency-dollar-duotone"
           :label="t('sttModelCard.price')"
           :title="t('sttModelCard.priceTitle', { price: priceDisplay })"
         />
         <span class="range-value">{{ priceDisplay }}</span>
       </div>
-      <div 
+      <div
         class="range-row lang-row"
         @mouseenter="showLanguages = true"
         @mouseleave="showLanguages = false"
       >
-        <RangeBar 
-          :value="languagePercent" 
+        <RangeBar
+          :value="languagePercent"
           icon="ph:globe-duotone"
           :label="t('sttModelCard.lang')"
           :title="t('sttModelCard.languagesTitle', { languages: languageDisplay })"
         />
         <span class="range-value">{{ languageDisplay }}</span>
-        
+
         <!-- Languages Popover -->
         <Transition name="fade">
           <div v-if="showLanguages && model.languages.length > 1" class="languages-popover">
             <div class="popover-header">
               <iconify-icon icon="ph:globe-duotone"></iconify-icon>
               <span>{{
-                t('sttModelCard.languagesHeading', { n: model.languages.length }, model.languages.length)
+                t(
+                  'sttModelCard.languagesHeading',
+                  { n: model.languages.length },
+                  model.languages.length,
+                )
               }}</span>
             </div>
             <div class="languages-grid">
-              <span 
-                v-for="lang in formattedLanguages" 
-                :key="lang.code" 
+              <span
+                v-for="lang in formattedLanguages"
+                :key="lang.code"
                 class="lang-badge"
                 :title="lang.name"
               >
@@ -190,8 +225,8 @@ function handleClick() {
         </Transition>
       </div>
       <div class="range-row">
-        <RangeBar 
-          :value="speedPercent" 
+        <RangeBar
+          :value="speedPercent"
           icon="ph:lightning-duotone"
           :label="t('sttModelCard.speed')"
           :title="t('sttModelCard.speedTitle', { speed: speedDisplay })"
@@ -199,7 +234,7 @@ function handleClick() {
         <span class="range-value">{{ speedDisplay }}</span>
       </div>
     </div>
-    
+
     <div v-if="hasSpecialFeature" class="card-features">
       <span
         v-if="model.features.includes('diarization')"
@@ -218,7 +253,7 @@ function handleClick() {
         <span class="feature-label">{{ t('sttModelCard.featureMedical') }}</span>
       </span>
     </div>
-    
+
     <div class="selected-indicator">
       <iconify-icon icon="ph:check-circle-duotone"></iconify-icon>
     </div>

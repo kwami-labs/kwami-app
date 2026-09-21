@@ -1,35 +1,30 @@
 # Releasing
 
-This package is `0.1.0` and **private** (`"private": true`). There is no npm publish. Releases are Git tags plus whatever hosts the static Vite build (and optional Tauri installers).
+Versions, tags, the GitHub Release and [`CHANGELOG.md`](../../CHANGELOG.md) are cut automatically by [semantic-release](https://semantic-release.gitbook.io) after `ci` goes green on `main` or `stg`. Nothing is hand-maintained. See [CONTRIBUTING.md#releases](../../CONTRIBUTING.md#releases).
 
-## Versioning
+```text
+merge a PR into main or stg
+        │
+        ▼
+      ci.yml ── red ──▶ nothing
+        │ green
+        ▼
+      cd.yml
+        ├─ release   semantic-release → CHANGELOG.md + tag + GitHub Release
+        └─ deploy    wrangler → channel Worker
+```
 
-[Semantic Versioning](https://semver.org/) for tags (`vMAJOR.MINOR.PATCH`):
+The client is pre-1.0: breaking changes bump the minor, everything else bumps the patch. `v0.1.0` is a baseline tag created on the first `cd` run if no `v*` tag exists.
 
-| Bump | When |
-| --- | --- |
-| **PATCH** | Client bug fix, no API contract change |
-| **MINOR** | New panel, tool, or env var; existing flows still work |
-| **MAJOR** | Breaking client contract (removed `VITE_*`, changed `/token` body, dropped a store snapshot field without migration) |
-
-Keep [CHANGELOG.md](../../CHANGELOG.md) in [Keep a Changelog](https://keepachangelog.com/) form. Move `[Unreleased]` notes into the new version section in the same PR as the version bump.
-
-## Checklist
-
-1. `bun run typecheck && bun run lint:check && bun run format:check && bun run test:unit`
-2. `bun run test:e2e` (or rely on CI)
-3. `bun run build` with the **production** `.env` you intend to ship (`VITE_*` is baked in)
-4. Update `package.json` `version` and `CHANGELOG.md`
-5. Tag `vX.Y.Z` on `main` after merge
-6. Attach Playwright / coverage artifacts only if they help the notes — never attach `.env`
+Do not push tags by hand. Do not bump `package.json` `version` in a pull request. The PR title must be a Conventional Commit — it becomes the squash subject, and semantic-release reads that subject.
 
 ## What gets baked into the binary
 
 ```mermaid
 flowchart LR
-  Env[".env at build time"] --> Vite[vite build]
+  Env["Environment VITE_* at build time"] --> Vite[vite build]
   Vite --> Dist[dist/]
-  Dist --> Web[Static host / PWA]
+  Dist --> Worker[Cloudflare Worker]
   Dist --> Tauri[tauri build]
 ```
 
@@ -41,4 +36,4 @@ Before a signed Tauri ship: change `identifier` from `com.tauri.dev`, replace ic
 
 ## Security releases
 
-Fixes land on `main` first. Credit reporters in the changelog if they want. Process: [SECURITY.md](../../SECURITY.md).
+Fixes land on `dev`, then promote `dev → stg → main`. Credit reporters in the changelog if they want. Process: [SECURITY.md](../../SECURITY.md).

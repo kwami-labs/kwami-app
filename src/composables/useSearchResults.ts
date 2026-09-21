@@ -1,10 +1,10 @@
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import { storeToRefs } from 'pinia';
-import { useSearchStore, type SearchResultItem } from '@/stores/search';
+import { useSearchStore, type SearchResultItem, type SearchPanelLayout } from '@/stores/search';
 
 let searchResultsListenerAttached = false;
 
-export type { SearchResultItem };
+export type { SearchResultItem, SearchPanelLayout };
 
 export interface SearchResultsState {
   query: string;
@@ -16,8 +16,23 @@ export interface SearchResultsState {
 
 export function useSearchResults() {
   const store = useSearchStore();
-  const { query, results, answer, error, hasSearchData } = storeToRefs(store);
-  const { setResults: storeSetResults, setError: storeSetError, clear: storeClear } = store;
+  const {
+    query,
+    results,
+    answer,
+    error,
+    isSearching,
+    focusedIndex,
+    focusedResult,
+    hasSearchData,
+    isWindowed,
+    layout,
+    rect,
+    isManipulating,
+    isDocked,
+    isFloating,
+    isFullscreen,
+  } = storeToRefs(store);
 
   if (!searchResultsListenerAttached) {
     searchResultsListenerAttached = true;
@@ -33,47 +48,60 @@ export function useSearchResults() {
         answer: detail?.answer ?? null,
       });
     });
+    /**
+     * The agent fires this the moment it starts a search, well before the
+     * results event. Without it the panel shows the previous search's cards
+     * while a new one runs, which reads as the search having been ignored.
+     */
+    window.addEventListener('kwami:search_started', (e: Event) => {
+      const detail = (e as CustomEvent).detail as { query?: string } | undefined;
+      store.setSearching(true, detail?.query);
+    });
     window.addEventListener('kwami:remove_result', (e: Event) => {
       const detail = (e as CustomEvent).detail as { index?: number };
       if (typeof detail?.index === 'number') store.removeResultAt(detail.index);
     });
   }
 
-  function setResults(data: {
-    query: string;
-    results: SearchResultItem[];
-    answer?: string | null;
-  }) {
-    storeSetResults(data);
-  }
-
-  function setLoading(_loading: boolean) {
-    if (_loading) storeSetError('');
-  }
-
-  function setError(message: string) {
-    storeSetError(message);
-  }
-
-  function clear() {
-    storeClear();
-  }
-
-  const hasResults = computed(
-    () => results.value.length > 0 || (answer.value?.length ?? 0) > 0,
-  );
+  const hasResults = computed(() => results.value.length > 0 || (answer.value?.length ?? 0) > 0);
 
   return {
     query,
     results,
     answer,
-    loading: ref(false),
     error,
-    setResults,
-    setLoading,
-    setError,
-    clear,
+    isSearching,
+    /** Kept for callers written against the old shape. */
+    loading: isSearching,
+    focusedIndex,
+    focusedResult,
     hasResults,
     hasSearchData,
+
+    // Panel layout
+    isWindowed,
+    layout,
+    rect,
+    isManipulating,
+    isDocked,
+    isFloating,
+    isFullscreen,
+
+    setResults: store.setResults,
+    setLoading: (value: boolean) => store.setSearching(value),
+    setError: store.setError,
+    focusResult: store.focusResult,
+    clearFocus: store.clearFocus,
+    removeResultAt: store.removeResultAt,
+    clear: store.clear,
+    setLayout: store.setLayout,
+    expandFullscreen: store.expandFullscreen,
+    collapseFullscreen: store.collapseFullscreen,
+    toggleFullscreen: store.toggleFullscreen,
+    setRect: store.setRect,
+    syncToViewport: store.syncToViewport,
+    centerPanel: store.centerPanel,
+    resetLayout: store.resetLayout,
+    setManipulating: store.setManipulating,
   };
 }

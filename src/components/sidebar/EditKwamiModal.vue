@@ -19,7 +19,11 @@ const emit = defineEmits<{
 const { t } = useI18n();
 
 const name = ref('');
-const colors = ref<{ x: string; y: string; z: string }>({ x: '#00d9ff', y: '#a855f7', z: '#22c55e' });
+const colors = ref<{ x: string; y: string; z: string }>({
+  x: '#00d9ff',
+  y: '#a855f7',
+  z: '#22c55e',
+});
 
 watch(
   () => [props.open, props.kwami] as const,
@@ -28,7 +32,7 @@ watch(
       name.value = kwami.name;
       colors.value = { ...kwami.colors };
     }
-  }
+  },
 );
 
 function onConfirm() {
@@ -76,7 +80,12 @@ function onRandomize() {
     <div class="kwami-gradient-section">
       <div class="gradient-section-header">
         <span class="gradient-label">{{ t('sidebarModals.avatarGradient') }}</span>
-        <button type="button" class="gradient-dice-btn" :title="t('sidebarModals.randomizeColors')" @click="onRandomize">
+        <button
+          type="button"
+          class="gradient-dice-btn"
+          :title="t('sidebarModals.randomizeColors')"
+          @click="onRandomize"
+        >
           <iconify-icon icon="ph:dice-five-duotone"></iconify-icon>
           <span>{{ t('sidebarModals.random') }}</span>
         </button>

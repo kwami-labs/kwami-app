@@ -74,8 +74,12 @@ function handleClickOutside(event: MouseEvent) {
   }
 }
 
-watch(hasUnsavedChanges, (v) => { if (!v) saveActionsOpen.value = false; });
-watch(isSettingsMode, (v) => { if (!v) saveActionsOpen.value = false; });
+watch(hasUnsavedChanges, (v) => {
+  if (!v) saveActionsOpen.value = false;
+});
+watch(isSettingsMode, (v) => {
+  if (!v) saveActionsOpen.value = false;
+});
 
 onMounted(() => document.addEventListener('click', handleClickOutside));
 onUnmounted(() => document.removeEventListener('click', handleClickOutside));
@@ -87,13 +91,9 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
                 [mode btn] [save chip]  when sidebar is right (anchored bottom-left)
   -->
   <div class="mode-switch-container" :class="{ 'sidebar-right': isSidebarRight }">
-
     <!-- Save chip — left side when sidebar is left, right side when sidebar is right -->
     <transition name="save-chip">
-      <div
-        v-if="isSettingsMode && hasUnsavedChanges"
-        class="save-wrap"
-      >
+      <div v-if="isSettingsMode && hasUnsavedChanges" class="save-wrap">
         <button
           class="save-btn"
           :class="{ active: saveActionsOpen }"
@@ -142,7 +142,6 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
         <iconify-icon :key="modeIcon" :icon="modeIcon"></iconify-icon>
       </transition>
     </button>
-
   </div>
 </template>
 
@@ -154,7 +153,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
   right: 20px;
   z-index: 1001;
   display: flex;
-  flex-direction: row;       /* horizontal: chip on the left, btn on the right */
+  flex-direction: row; /* horizontal: chip on the left, btn on the right */
   align-items: center;
   gap: 8px;
   pointer-events: auto;
@@ -190,7 +189,9 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 .mode-btn:hover:not(:disabled) {
   background: color-mix(in srgb, var(--accent-primary) 12%, var(--glass-bg));
   border-color: color-mix(in srgb, var(--accent-primary) 24%, var(--glass-border));
-  box-shadow: 0 0 14px color-mix(in srgb, var(--accent-primary) 16%, transparent), var(--glass-shadow);
+  box-shadow:
+    0 0 14px color-mix(in srgb, var(--accent-primary) 16%, transparent),
+    var(--glass-shadow);
   color: var(--text-primary);
   transform: scale(1.08);
 }
@@ -246,7 +247,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 .save-actions {
   position: absolute;
   bottom: calc(100% + 10px);
-  right: 0;                   /* aligns to right edge of chip (default: sidebar left) */
+  right: 0; /* aligns to right edge of chip (default: sidebar left) */
   display: flex;
   gap: 8px;
   padding: 8px;
@@ -309,7 +310,9 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 /* ── Transitions ── */
 .save-chip-enter-active,
 .save-chip-leave-active {
-  transition: opacity 0.2s ease, transform 0.2s var(--ease-out);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s var(--ease-out);
 }
 
 .save-chip-enter-from,
@@ -320,7 +323,9 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 
 .save-actions-enter-active,
 .save-actions-leave-active {
-  transition: opacity 0.18s ease, transform 0.18s var(--ease-out);
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s var(--ease-out);
 }
 
 .save-actions-enter-from,
@@ -331,7 +336,9 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 
 .icon-swap-enter-active,
 .icon-swap-leave-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
 }
 
 .icon-swap-enter-from,
@@ -345,7 +352,11 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>

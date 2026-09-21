@@ -56,7 +56,8 @@ Startup validation (`src/lib/env.ts`) fails the boot UI if `VITE_SUPABASE_URL` o
 
 - Session restore goes through `supabase.auth.getSession()`.
 - Google (and optional Apple / Azure / GitHub) OAuth can finish in a **popup**. The popup posts `{ type: 'supabase-auth-callback', session }` to `window.opener`. The parent **must** ignore messages from any other origin.
-- Wallet providers (Phantom, MetaMask) are opt-in via `VITE_AUTH_PROVIDERS` and still produce a Supabase session — they are not a second auth stack.
+- Wallet providers (Phantom, MetaMask) are opt-in via `VITE_AUTH_PROVIDERS` and still produce a Supabase session — they are not a second auth stack. Phantom is resolved via `window.phantom.solana` rather than `window.solana`, which any installed Solana wallet may claim.
+- Email + password goes straight to `signInWithPassword` / `signUp`; no credential is stored or logged client-side. A sign-up for an address that already has a confirmed account is reported as such, which trades Supabase's user-enumeration protection for not leaving the user waiting on a mail that never arrives — see the comment in `useEmailAuth.ts` to revert that choice.
 - Hash fragments that contain `access_token` are stripped with `history.replaceState`.
 - `getAuthToken()` de-duplicates session reads, refreshes ~60s before `expires_at`, and invalidates on `onAuthStateChange`.
 

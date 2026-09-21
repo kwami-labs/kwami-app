@@ -35,21 +35,28 @@ onMounted(() => {
       const e = livekitVoice.enhancements;
       if (e.turnDetection) {
         turnDetection.enabled = e.turnDetection.enabled ?? turnDetection.enabled;
-        turnDetection.mode = (e.turnDetection.mode as typeof turnDetection.mode) ?? turnDetection.mode;
-        turnDetection.model = (e.turnDetection.model as typeof turnDetection.model) ?? turnDetection.model;
-        turnDetection.minEndpointingDelay = e.turnDetection.minEndpointingDelay ?? turnDetection.minEndpointingDelay;
-        turnDetection.maxEndpointingDelay = e.turnDetection.maxEndpointingDelay ?? turnDetection.maxEndpointingDelay;
+        turnDetection.mode =
+          (e.turnDetection.mode as typeof turnDetection.mode) ?? turnDetection.mode;
+        turnDetection.model =
+          (e.turnDetection.model as typeof turnDetection.model) ?? turnDetection.model;
+        turnDetection.minEndpointingDelay =
+          e.turnDetection.minEndpointingDelay ?? turnDetection.minEndpointingDelay;
+        turnDetection.maxEndpointingDelay =
+          e.turnDetection.maxEndpointingDelay ?? turnDetection.maxEndpointingDelay;
         interruptions.enabled = e.turnDetection.allowInterruptions ?? interruptions.enabled;
-        interruptions.minDuration = e.turnDetection.minInterruptionDuration ?? interruptions.minDuration;
+        interruptions.minDuration =
+          e.turnDetection.minInterruptionDuration ?? interruptions.minDuration;
         interruptions.minWords = e.turnDetection.minInterruptionWords ?? interruptions.minWords;
       }
       if (e.noiseCancellation) {
         noiseCancellation.enabled = e.noiseCancellation.enabled ?? noiseCancellation.enabled;
-        noiseCancellation.mode = (e.noiseCancellation.mode as typeof noiseCancellation.mode) ?? noiseCancellation.mode;
+        noiseCancellation.mode =
+          (e.noiseCancellation.mode as typeof noiseCancellation.mode) ?? noiseCancellation.mode;
       }
       if (e.echoCancellation !== undefined) audioProcessing.echoCancellation = e.echoCancellation;
       if (e.autoGainControl !== undefined) audioProcessing.autoGainControl = e.autoGainControl;
-      if (e.preemptiveGeneration !== undefined) performance.preemptiveGeneration = e.preemptiveGeneration;
+      if (e.preemptiveGeneration !== undefined)
+        performance.preemptiveGeneration = e.preemptiveGeneration;
     }
     if (livekitVoice?.vad) {
       const v = livekitVoice.vad;
@@ -321,7 +328,6 @@ watch(() => performance.preemptiveGeneration, debouncedApply);
           <BaseToggle v-model="performance.preemptiveGeneration" />
         </div>
       </PanelSection>
-
     </div>
   </div>
 </template>
@@ -400,7 +406,12 @@ watch(() => performance.preemptiveGeneration, debouncedApply);
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 </style>

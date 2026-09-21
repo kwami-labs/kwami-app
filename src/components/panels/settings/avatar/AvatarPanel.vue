@@ -37,12 +37,7 @@ const blackHoleStore = useBlackHoleStore();
 const eyeIrisStore = useEyeIrisStore();
 
 // Use store state
-const {
-  rendererType,
-  blobXyzPresets,
-  blackHolePresets,
-  eyeIrisPresets,
-} = storeToRefs(avatarStore);
+const { rendererType, blobXyzPresets, blackHolePresets, eyeIrisPresets } = storeToRefs(avatarStore);
 
 // =====================================================
 // HELPERS
@@ -74,24 +69,23 @@ const { syncFromKwami: syncBlobFromKwami, applyToKwami: applyBlobToKwami } = use
   registerWatchers: false,
 });
 
-const { syncFromKwami: syncBlackHoleFromKwami, applyToKwami: applyBlackHoleToKwami } = useBlackHoleSync({
-  kwami,
-  getBlackHole,
-  registerWatchers: false,
-});
+const { syncFromKwami: syncBlackHoleFromKwami, applyToKwami: applyBlackHoleToKwami } =
+  useBlackHoleSync({
+    kwami,
+    getBlackHole,
+    registerWatchers: false,
+  });
 const { syncFromKwami: syncEyeIrisFromKwami, applyToKwami: applyEyeIrisToKwami } = useEyeIrisSync({
   kwami,
   getEyeIris,
   registerWatchers: false,
 });
-const {
-  syncFromKwami: syncParticlesFromKwami,
-  applyToKwami: applyParticlesToKwami,
-} = useParticlesFaceSync({
-  kwami,
-  getParticlesFace,
-  registerWatchers: false,
-});
+const { syncFromKwami: syncParticlesFromKwami, applyToKwami: applyParticlesToKwami } =
+  useParticlesFaceSync({
+    kwami,
+    getParticlesFace,
+    registerWatchers: false,
+  });
 
 // =====================================================
 // COMPUTED
@@ -173,7 +167,7 @@ watch(
     blobStore.audio,
   ],
   () => avatarStore.saveSettings(),
-  { deep: true }
+  { deep: true },
 );
 
 watch(
@@ -193,13 +187,13 @@ watch(
     blackHoleStore.cameraZoom,
   ],
   () => avatarStore.saveSettings(),
-  { deep: true }
+  { deep: true },
 );
 
 watch(
   () => eyeIrisStore.state,
   () => avatarStore.saveSettings(),
-  { deep: true }
+  { deep: true },
 );
 
 // Save renderer type changes
@@ -228,14 +222,10 @@ function handleRandomize() {
 function handleReset() {
   const savedAvatar = workspaceStore.getActiveSavedConfig()?.avatar;
   const hasSavedAvatar =
-    savedAvatar &&
-    typeof savedAvatar === 'object' &&
-    Object.keys(savedAvatar as object).length > 0;
+    savedAvatar && typeof savedAvatar === 'object' && Object.keys(savedAvatar as object).length > 0;
 
   if (hasSavedAvatar) {
-    avatarStore.applySnapshot(
-      savedAvatar as Parameters<typeof avatarStore.applySnapshot>[0],
-    );
+    avatarStore.applySnapshot(savedAvatar as Parameters<typeof avatarStore.applySnapshot>[0]);
   } else {
     avatarStore.reset();
     blobStore.resetAll();
@@ -247,9 +237,7 @@ function handleReset() {
   }
   applyCurrentRendererToKwami(rendererType.value);
 
-  workspaceStore.updateActiveConfigLocal(
-    JSON.parse(JSON.stringify(getConfig())) as KwamiConfig,
-  );
+  workspaceStore.updateActiveConfigLocal(JSON.parse(JSON.stringify(getConfig())) as KwamiConfig);
   avatarStore.saveSettings();
 }
 
@@ -530,7 +518,11 @@ onUnmounted(() => {
           <iconify-icon icon="ph:dice-five-duotone"></iconify-icon>
           <span>{{ t('avatar.randomize') }}</span>
         </button>
-        <button class="action-btn reset" @click="handleReset" :title="t('avatar.resetDefaultsTitle')">
+        <button
+          class="action-btn reset"
+          @click="handleReset"
+          :title="t('avatar.resetDefaultsTitle')"
+        >
           <iconify-icon icon="ph:arrow-counter-clockwise-duotone"></iconify-icon>
           <span>{{ t('avatar.reset') }}</span>
         </button>

@@ -1,0 +1,38 @@
+# Catches a push that landed on main without going through a pull request.
+#
+# This cannot *prevent* the push, only notice it after the fact. A red run
+# here means "revert that, then open a PR", not "the build is broken".
+name: branch-guard
+
+on:
+  push:
+    branches: [main, stg]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: branch-guard-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  guard:
+    name: no direct pushes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+
+      - name: Assert this push came from a pull request or the release automation
+        env:
+          BRANCH: ${{ github.ref_name }}
+          HEAD_SHA: ${{ github.sha }}
+          REPO: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ github.token }}
+          COMMITS: ${{ toJSON(github.event.commits) }}
+        run: node scripts/ci/assert-push-allowed.mjs

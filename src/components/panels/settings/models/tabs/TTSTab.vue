@@ -22,7 +22,9 @@ const selectedModel = ref<string>(tts.value.model);
 // Persisted UI state via store
 const expandedProvider = computed({
   get: () => modelsUI.value.ttsExpandedProvider,
-  set: (v) => { modelsUI.value.ttsExpandedProvider = v; }
+  set: (v) => {
+    modelsUI.value.ttsExpandedProvider = v;
+  },
 });
 
 // Expand the selected provider's accordion
@@ -49,7 +51,7 @@ onMounted(async () => {
 
 // const inferenceModelsByProvider = computed(() => {
 //   if (!ttsInferenceModels.value?.models) return {};
-  
+
 //   const grouped: Record<string, InferenceTTSModel[]> = {};
 //   for (const model of ttsInferenceModels.value.models) {
 //     const provider = model.provider;
@@ -66,33 +68,39 @@ const hasInferenceModels = computed(() => {
 // Persisted sorting via store
 const sortBy = computed({
   get: () => modelsUI.value.ttsSortBy,
-  set: (v) => { modelsUI.value.ttsSortBy = v; }
+  set: (v) => {
+    modelsUI.value.ttsSortBy = v;
+  },
 });
 
 // Min/max calculations
 const minPrice = computed(() => {
   const models = ttsInferenceModels.value?.models || [];
-  const prices = models.map(m => m.pricing?.scale_per_1m_chars).filter(p => p !== undefined) as number[];
+  const prices = models
+    .map((m) => m.pricing?.scale_per_1m_chars)
+    .filter((p) => p !== undefined) as number[];
   return prices.length ? Math.min(...prices) : 0;
 });
 
 const maxPrice = computed(() => {
   const models = ttsInferenceModels.value?.models || [];
-  const prices = models.map(m => m.pricing?.scale_per_1m_chars).filter(p => p !== undefined) as number[];
+  const prices = models
+    .map((m) => m.pricing?.scale_per_1m_chars)
+    .filter((p) => p !== undefined) as number[];
   return prices.length ? Math.max(...prices) : 1;
 });
 
 // Count advanced features
 function countAdvancedFeatures(features: string[]): number {
   const advanced = ['voice_cloning', 'emotion_control', 'ultra_low_latency'];
-  return features.filter(f => advanced.includes(f)).length;
+  return features.filter((f) => advanced.includes(f)).length;
 }
 
 // Models grouped by provider (for accordion view)
 const modelsByProvider = computed(() => {
   const models = ttsInferenceModels.value?.models || [];
   if (!models.length) return {};
-  
+
   const grouped: Record<string, InferenceTTSModel[]> = {};
   for (const model of models) {
     const provider = model.provider;
@@ -106,12 +114,14 @@ const modelsByProvider = computed(() => {
 const sortedModelsFlat = computed(() => {
   const models = ttsInferenceModels.value?.models || [];
   if (!models.length) return [];
-  
+
   const sorted = [...models];
-  
+
   if (sortBy.value === 'price') {
     // Highest price first
-    sorted.sort((a, b) => (b.pricing?.scale_per_1m_chars || 0) - (a.pricing?.scale_per_1m_chars || 0));
+    sorted.sort(
+      (a, b) => (b.pricing?.scale_per_1m_chars || 0) - (a.pricing?.scale_per_1m_chars || 0),
+    );
   } else if (sortBy.value === 'features') {
     // Most features first
     sorted.sort((a, b) => countAdvancedFeatures(b.features) - countAdvancedFeatures(a.features));
@@ -120,7 +130,7 @@ const sortedModelsFlat = computed(() => {
     const speedOrder: Record<string, number> = { fast: 0, standard: 1, slow: 2 };
     sorted.sort((a, b) => (speedOrder[a.speed] ?? 1) - (speedOrder[b.speed] ?? 1));
   }
-  
+
   return sorted;
 });
 
@@ -140,12 +150,12 @@ function getProviderIcon(provider: string): string {
 function selectModel(modelId: string, provider: string) {
   selectedProvider.value = provider;
   selectedModel.value = modelId;
-  
+
   voiceStore.updateTTS({
     provider: provider as TTSProvider,
     model: modelId,
   });
-  
+
   if (isConnected.value && kwami.value) {
     kwami.value.agent.updateTtsLive({
       provider,
@@ -154,11 +164,14 @@ function selectModel(modelId: string, provider: string) {
   }
 }
 
-watch(() => [tts.value.provider, tts.value.model], ([newProvider, newModel]) => {
-  selectedProvider.value = newProvider || '';
-  selectedModel.value = newModel || '';
-  expandSelectedProvider();
-});
+watch(
+  () => [tts.value.provider, tts.value.model],
+  ([newProvider, newModel]) => {
+    selectedProvider.value = newProvider || '';
+    selectedModel.value = newModel || '';
+    expandSelectedProvider();
+  },
+);
 </script>
 
 <template>
@@ -173,26 +186,26 @@ watch(() => [tts.value.provider, tts.value.model], ([newProvider, newModel]) => 
       <!-- Sort Controls -->
       <div class="sort-row">
         <span class="sort-label">{{ t('modelTabs.sort') }}</span>
-        <button 
-          class="sort-btn" 
+        <button
+          class="sort-btn"
           :class="{ active: sortBy === 'provider' }"
           @click="sortBy = 'provider'"
-        >{{ t('modelTabs.provider') }}</button>
-        <button 
-          class="sort-btn" 
-          :class="{ active: sortBy === 'price' }"
-          @click="sortBy = 'price'"
-        >{{ t('modelTabs.price') }}</button>
-        <button 
-          class="sort-btn" 
+        >
+          {{ t('modelTabs.provider') }}
+        </button>
+        <button class="sort-btn" :class="{ active: sortBy === 'price' }" @click="sortBy = 'price'">
+          {{ t('modelTabs.price') }}
+        </button>
+        <button
+          class="sort-btn"
           :class="{ active: sortBy === 'features' }"
           @click="sortBy = 'features'"
-        >{{ t('modelTabs.features') }}</button>
-        <button 
-          class="sort-btn" 
-          :class="{ active: sortBy === 'speed' }"
-          @click="sortBy = 'speed'"
-        >{{ t('modelTabs.speed') }}</button>
+        >
+          {{ t('modelTabs.features') }}
+        </button>
+        <button class="sort-btn" :class="{ active: sortBy === 'speed' }" @click="sortBy = 'speed'">
+          {{ t('modelTabs.speed') }}
+        </button>
       </div>
 
       <!-- Models by Provider (accordion view) -->
@@ -268,8 +281,12 @@ watch(() => [tts.value.provider, tts.value.model], ([newProvider, newModel]) => 
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .sort-row {
@@ -358,5 +375,4 @@ watch(() => [tts.value.provider, tts.value.model], ([newProvider, newModel]) => 
   flex-direction: column;
   gap: 6px;
 }
-
 </style>

@@ -82,7 +82,11 @@ const {
     </div>
 
     <div class="panel-body">
-      <PanelSection v-if="showOverview" :title="t('communications.overview')" icon="ph:phone-call-duotone">
+      <PanelSection
+        v-if="showOverview"
+        :title="t('communications.overview')"
+        icon="ph:phone-call-duotone"
+      >
         <div class="summary-grid">
           <div class="summary-card">
             <span class="summary-label">{{ t('communications.voiceNumbers') }}</span>
@@ -159,7 +163,13 @@ const {
           <div class="result-card">
             <div>
               <strong>{{ suggestedNumber.phoneNumber }}</strong>
-              <p>{{ suggestedNumber.locality || suggestedNumber.region || t('communications.availableNumber') }}</p>
+              <p>
+                {{
+                  suggestedNumber.locality ||
+                  suggestedNumber.region ||
+                  t('communications.availableNumber')
+                }}
+              </p>
             </div>
           </div>
         </div>
@@ -175,7 +185,12 @@ const {
         </BaseButton>
       </PanelSection>
 
-      <PanelSection v-if="showPhoneSections && isPhoneClaimed" :title="t('communications.phoneChannel')" icon="ph:phone-duotone" collapsible>
+      <PanelSection
+        v-if="showPhoneSections && isPhoneClaimed"
+        :title="t('communications.phoneChannel')"
+        icon="ph:phone-duotone"
+        collapsible
+      >
         <div v-if="selectedVoiceChannel" class="channel-card">
           <div class="channel-row">
             <span>{{ t('communications.assignedNumber') }}</span>
@@ -187,7 +202,11 @@ const {
           </div>
           <div class="channel-row">
             <span>{{ t('communications.lastSyncOutbound') }}</span>
-            <strong>{{ voiceOutboundCapabilityStale ? t('communications.notRecorded') : t('communications.ok') }}</strong>
+            <strong>{{
+              voiceOutboundCapabilityStale
+                ? t('communications.notRecorded')
+                : t('communications.ok')
+            }}</strong>
           </div>
         </div>
         <i18n-t
@@ -203,7 +222,9 @@ const {
             <code>LIVEKIT_SIP_OUTBOUND_TRUNK_ID</code>
           </template>
         </i18n-t>
-        <p v-if="selectedVoiceChannel" class="muted-text infra-text">{{ voiceInfrastructureNote }}</p>
+        <p v-if="selectedVoiceChannel" class="muted-text infra-text">
+          {{ voiceInfrastructureNote }}
+        </p>
         <p v-else class="muted-text">{{ t('communications.noVoiceChannel') }}</p>
         <p v-if="props.mode === 'phone'" class="muted-text infra-text">
           {{ t('communications.phoneClaimedDetails') }}
@@ -250,11 +271,18 @@ const {
         </BaseButton>
       </PanelSection>
 
-      <PanelSection v-if="showWhatsappSections" :title="t('communications.whatsapp')" icon="ph:chat-teardrop-text-duotone" collapsible>
+      <PanelSection
+        v-if="showWhatsappSections"
+        :title="t('communications.whatsapp')"
+        icon="ph:chat-teardrop-text-duotone"
+        collapsible
+      >
         <div v-if="selectedWhatsappChannel" class="channel-card">
           <div class="channel-row">
             <span>{{ t('communications.sender') }}</span>
-            <strong>{{ selectedWhatsappChannel.provider_sender || selectedWhatsappChannel.phone_number }}</strong>
+            <strong>{{
+              selectedWhatsappChannel.provider_sender || selectedWhatsappChannel.phone_number
+            }}</strong>
           </div>
           <div class="channel-row">
             <span>{{ t('communications.status') }}</span>
@@ -302,7 +330,12 @@ const {
         </BaseButton>
       </PanelSection>
 
-      <PanelSection v-if="showSmsSections" :title="t('communications.sms')" icon="ph:chat-text-duotone" collapsible>
+      <PanelSection
+        v-if="showSmsSections"
+        :title="t('communications.sms')"
+        icon="ph:chat-text-duotone"
+        collapsible
+      >
         <div v-if="selectedSmsChannel" class="channel-card">
           <div class="channel-row">
             <span>{{ t('communications.sender') }}</span>
@@ -346,9 +379,13 @@ const {
         collapsible
         default-collapsed
       >
-        <div v-if="recentCalls.length === 0" class="muted-text">{{ t('communications.noCallEvents') }}</div>
+        <div v-if="recentCalls.length === 0" class="muted-text">
+          {{ t('communications.noCallEvents') }}
+        </div>
         <div v-for="call in recentCalls" :key="call.id" class="event-card">
-          <strong>{{ call.to_number || call.from_number || t('communications.callFallback') }}</strong>
+          <strong>{{
+            call.to_number || call.from_number || t('communications.callFallback')
+          }}</strong>
           <span>{{ call.status }}</span>
           <small>{{ new Date(call.created_at).toLocaleString() }}</small>
         </div>
@@ -361,15 +398,21 @@ const {
         collapsible
         default-collapsed
       >
-        <div v-if="recentMessages.length === 0" class="muted-text">{{ t('communications.noMessageEvents') }}</div>
+        <div v-if="recentMessages.length === 0" class="muted-text">
+          {{ t('communications.noMessageEvents') }}
+        </div>
         <div v-for="message in recentMessages" :key="message.id" class="event-card">
-          <strong>{{ message.to_address || message.from_address || t('communications.messageFallback') }}</strong>
+          <strong>{{
+            message.to_address || message.from_address || t('communications.messageFallback')
+          }}</strong>
           <span>{{ message.provider_status || t('communications.queued') }}</span>
           <small>{{ message.body || t('communications.noContent') }}</small>
         </div>
       </PanelSection>
 
-      <div v-if="loading" class="muted-text loading-text">{{ t('communications.loadingCommunications') }}</div>
+      <div v-if="loading" class="muted-text loading-text">
+        {{ t('communications.loadingCommunications') }}
+      </div>
     </div>
 
     <ConfirmDialog

@@ -15,11 +15,15 @@ const { realtime, modelsUI } = storeToRefs(voiceStore);
 // Persisted UI state via store
 const videoEnabled = computed({
   get: () => modelsUI.value.realtimeVideoEnabled,
-  set: (v) => { modelsUI.value.realtimeVideoEnabled = v; }
+  set: (v) => {
+    modelsUI.value.realtimeVideoEnabled = v;
+  },
 });
 const expandedProvider = computed({
   get: () => modelsUI.value.realtimeExpandedProvider,
-  set: (v) => { modelsUI.value.realtimeExpandedProvider = v; }
+  set: (v) => {
+    modelsUI.value.realtimeExpandedProvider = v;
+  },
 });
 
 // Expand selected provider on mount
@@ -72,10 +76,26 @@ function selectModel(modelId: string, provider: string) {
 
 // Known model metadata (since realtime models don't have enriched data yet)
 const modelInfo: Record<string, { name: string; features: string[]; video: boolean }> = {
-  'gpt-4o-realtime-preview': { name: 'GPT-4o Realtime', features: ['audio', 'function_calling'], video: true },
-  'gpt-4o-mini-realtime-preview': { name: 'GPT-4o Mini Realtime', features: ['audio', 'function_calling'], video: false },
-  'gemini-2.0-flash-exp': { name: 'Gemini 2.0 Flash', features: ['audio', 'function_calling'], video: true },
-  'gemini-live-2.5-flash-native-audio': { name: 'Gemini Live 2.5', features: ['audio', 'native_audio'], video: true },
+  'gpt-4o-realtime-preview': {
+    name: 'GPT-4o Realtime',
+    features: ['audio', 'function_calling'],
+    video: true,
+  },
+  'gpt-4o-mini-realtime-preview': {
+    name: 'GPT-4o Mini Realtime',
+    features: ['audio', 'function_calling'],
+    video: false,
+  },
+  'gemini-2.0-flash-exp': {
+    name: 'Gemini 2.0 Flash',
+    features: ['audio', 'function_calling'],
+    video: true,
+  },
+  'gemini-live-2.5-flash-native-audio': {
+    name: 'Gemini Live 2.5',
+    features: ['audio', 'native_audio'],
+    video: true,
+  },
   'amazon.nova-sonic-v1:0': { name: 'Nova Sonic', features: ['audio'], video: false },
   'amazon.nova-2-sonic-v1:0': { name: 'Nova 2 Sonic', features: ['audio'], video: false },
 };
@@ -120,20 +140,35 @@ function getModelInfo(modelId: string) {
             @click="selectModel(model, String(provider))"
           >
             <div class="model-header">
-              <iconify-icon :icon="getProviderIcon(String(provider))" class="provider-icon"></iconify-icon>
+              <iconify-icon
+                :icon="getProviderIcon(String(provider))"
+                class="provider-icon"
+              ></iconify-icon>
               <span class="model-name">{{ getModelInfo(model).name }}</span>
             </div>
             <div class="model-id">{{ model }}</div>
             <div class="model-features">
-              <span v-if="getModelInfo(model).features.includes('audio')" class="feature audio" :title="t('modelTabs.bidirectionalAudio')">
+              <span
+                v-if="getModelInfo(model).features.includes('audio')"
+                class="feature audio"
+                :title="t('modelTabs.bidirectionalAudio')"
+              >
                 <iconify-icon icon="ph:waveform-duotone"></iconify-icon>
                 <span class="feature-label">{{ t('modelTabs.audio') }}</span>
               </span>
-              <span v-if="getModelInfo(model).video" class="feature video" :title="t('modelTabs.videoInput')">
+              <span
+                v-if="getModelInfo(model).video"
+                class="feature video"
+                :title="t('modelTabs.videoInput')"
+              >
                 <iconify-icon icon="ph:video-camera-duotone"></iconify-icon>
                 <span class="feature-label">{{ t('modelTabs.video') }}</span>
               </span>
-              <span v-if="getModelInfo(model).features.includes('function_calling')" class="feature tools" :title="t('modelTabs.functionCalling')">
+              <span
+                v-if="getModelInfo(model).features.includes('function_calling')"
+                class="feature tools"
+                :title="t('modelTabs.functionCalling')"
+              >
                 <iconify-icon icon="ph:wrench-duotone"></iconify-icon>
                 <span class="feature-label">{{ t('modelTabs.tools') }}</span>
               </span>
@@ -146,7 +181,12 @@ function getModelInfo(modelId: string) {
       </PanelSection>
 
       <!-- Video Settings -->
-      <PanelSection :title="t('modelTabs.realtimeVideoInput')" icon="ph:video-camera-duotone" collapsible defaultCollapsed>
+      <PanelSection
+        :title="t('modelTabs.realtimeVideoInput')"
+        icon="ph:video-camera-duotone"
+        collapsible
+        defaultCollapsed
+      >
         <div class="video-settings">
           <label class="toggle-row">
             <span>{{ t('modelTabs.enableVideo') }}</span>
@@ -161,7 +201,7 @@ function getModelInfo(modelId: string) {
             </button>
           </label>
           <p class="setting-hint">{{ t('modelTabs.videoHint') }}</p>
-          
+
           <div v-if="videoEnabled" class="video-options">
             <p class="coming-soon">
               <iconify-icon icon="ph:hammer-duotone"></iconify-icon>
@@ -226,8 +266,12 @@ function getModelInfo(modelId: string) {
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .models-list {

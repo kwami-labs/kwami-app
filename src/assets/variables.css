@@ -10,9 +10,7 @@
   --glass-bg: rgba(8, 10, 18, 0.88);
   --glass-border: rgba(255, 255, 255, 0.06);
   --glass-highlight: rgba(255, 255, 255, 0.03);
-  --glass-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.5),
-    0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
   --glass-blur: 24px;
 
   /* Colors - refined palette with cyan accent */
@@ -41,7 +39,12 @@
   --error-glow: rgba(248, 113, 113, 0.15);
 
   /* Typography - DM Sans for modern, friendly feel */
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family:
+    'DM Sans',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
   line-height: 1.5;
   font-weight: 400;
   color: var(--text-primary);
@@ -69,4 +72,196 @@
   --duration-fast: 0.15s;
   --duration-normal: 0.25s;
   --duration-slow: 0.4s;
+}
+/* =====================================================
+   AUTH SCREEN TOKENS
+
+   The login screen is painted with its own glass idiom -- literal rgba over a
+   coloured radial wash -- rather than the --glass-* / --surface-* tokens the
+   signed-in chrome uses. Those tokens are rewritten by the theme store as
+   inline styles on <html>, which is fine for panels but would drag the login
+   screen's deliberately distinct look along with every slider in ThemePanel.
+
+   So the auth screen gets its own small palette, defined here and flipped by
+   `data-theme` alone. The dark values are the literals the components carried
+   before these tokens existed; the light ones are their counterparts.
+   ===================================================== */
+
+:root {
+  --auth-bg:
+    radial-gradient(ellipse 120% 82% at 50% -20%, rgba(53, 158, 238, 0.1), transparent 55%),
+    radial-gradient(ellipse 76% 55% at 82% 32%, rgba(239, 71, 111, 0.08), transparent 52%),
+    radial-gradient(ellipse 76% 55% at 10% 70%, rgba(3, 206, 164, 0.08), transparent 50%), #06070a;
+  --auth-ambient: radial-gradient(ellipse at center, rgba(53, 158, 238, 0.1) 0%, transparent 72%);
+
+  /* Text */
+  --auth-text: #f6f8ff;
+  --auth-text-muted: rgba(180, 188, 210, 0.9);
+  --auth-text-dim: rgba(194, 203, 227, 0.72);
+  --auth-text-faint: rgba(255, 255, 255, 0.3);
+  --auth-title-glow: 0 0 34px rgba(53, 158, 238, 0.22);
+
+  /* Icon-only controls (pill buttons) */
+  --auth-icon: rgba(246, 248, 255, 0.86);
+  --auth-icon-strong: #f7f9ff;
+  --auth-icon-dim: rgba(246, 248, 255, 0.66);
+
+  /* Floating glass: the login card and the two corner pills */
+  --auth-glass-bg: linear-gradient(
+    130deg,
+    rgba(255, 255, 255, 0.26) 0%,
+    rgba(255, 255, 255, 0.12) 46%,
+    rgba(255, 255, 255, 0.08) 100%
+  );
+  --auth-glass-bg-open: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.2) 0%,
+    rgba(255, 255, 255, 0.1) 48%,
+    rgba(255, 255, 255, 0.05) 100%
+  );
+  --auth-glass-border: rgba(255, 255, 255, 0.24);
+  --auth-glass-border-strong: rgba(255, 255, 255, 0.3);
+  --auth-glass-border-open: rgba(255, 255, 255, 0.2);
+  --auth-glass-shadow: 0 14px 38px rgba(16, 28, 56, 0.44);
+  --auth-glass-shadow-open:
+    0 22px 72px rgba(0, 0, 0, 0.44), inset 0 1px 0 rgba(255, 255, 255, 0.26);
+  --auth-hover-fill: rgba(255, 255, 255, 0.16);
+  --auth-active-fill: rgba(255, 255, 255, 0.14);
+  --auth-rule: rgba(255, 255, 255, 0.14);
+
+  /* Filled controls sitting inside the glass: provider buttons, tab shell */
+  --auth-field-bg: rgba(5, 10, 20, 0.66);
+  --auth-field-bg-hover: rgba(9, 16, 31, 0.78);
+  --auth-field-border: rgba(255, 255, 255, 0.2);
+  --auth-field-border-hover: rgba(255, 255, 255, 0.28);
+  --auth-field-text: rgba(250, 253, 255, 0.99);
+  --auth-tab-bg: rgba(7, 11, 20, 0.5);
+  --auth-tab-border: rgba(255, 255, 255, 0.16);
+  /* Selected chip is frosted glass, not a brand gradient — the login card is
+     already sitting on colour from the blob. */
+  --auth-tab-indicator: rgba(255, 255, 255, 0.18);
+  --auth-tab-indicator-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28);
+
+  /* Phantom is the one provider button carrying a fill of its own, so the
+     wallet route reads as a first-class choice rather than a footnote. */
+  --auth-phantom-bg: linear-gradient(135deg, #4aa8f0 0%, #2b7fd4 100%);
+  --auth-phantom-bg-hover: linear-gradient(135deg, #5cb3f5 0%, #3a8ede 100%);
+  --auth-phantom-border: rgba(120, 190, 255, 0.55);
+  --auth-phantom-border-hover: rgba(150, 210, 255, 0.72);
+  --auth-phantom-text: #f7fbff;
+
+  /* Wallet connect buttons. Brand fills are always on: a grey card with a
+     tint that only appears once the extension is found looked unfinished. */
+  --auth-wallet-ready: #7dffd2;
+  --auth-wallet-cta-bg: rgba(255, 255, 255, 0.16);
+  --auth-wallet-badge-bg: rgba(255, 255, 255, 0.16);
+  --auth-wallet-phantom-fill: linear-gradient(135deg, #6a56f0 0%, #3d3280 100%);
+  --auth-wallet-phantom-fill-hover: linear-gradient(135deg, #7b68ff 0%, #4a3d93 100%);
+  --auth-wallet-phantom-ink: #f6f3ff;
+  --auth-wallet-phantom-icon: #ffffff;
+  --auth-wallet-phantom-icon-bg: rgba(255, 255, 255, 0.16);
+  --auth-wallet-metamask-fill: linear-gradient(135deg, #f6851b 0%, #c34712 100%);
+  --auth-wallet-metamask-fill-hover: linear-gradient(135deg, #ff9433 0%, #d45518 100%);
+  --auth-wallet-metamask-ink: #fff7ef;
+  --auth-wallet-metamask-icon: #ffffff;
+  --auth-wallet-metamask-icon-bg: rgba(255, 255, 255, 0.18);
+
+  --auth-focus-ring: rgba(53, 158, 238, 0.85);
+
+  /* Laid over a chosen video backdrop. The clips are arbitrary photography --
+     a snowy peak is near-white, a night city near-black -- so the scrim pins
+     whatever is playing to a known luminance and the text tokens above keep
+     the contrast they were picked for. Darkest down the middle, where the
+     wordmark and the login card sit. */
+  --auth-video-scrim: linear-gradient(
+    180deg,
+    rgba(4, 6, 12, 0.58) 0%,
+    rgba(4, 6, 12, 0.72) 45%,
+    rgba(4, 6, 12, 0.78) 100%
+  );
+}
+
+:root[data-theme='light'] {
+  --auth-bg:
+    radial-gradient(ellipse 120% 82% at 50% -20%, rgba(53, 158, 238, 0.18), transparent 55%),
+    radial-gradient(ellipse 76% 55% at 82% 32%, rgba(239, 71, 111, 0.14), transparent 52%),
+    radial-gradient(ellipse 76% 55% at 10% 70%, rgba(3, 206, 164, 0.14), transparent 50%), #eef1f8;
+  --auth-ambient: radial-gradient(ellipse at center, rgba(53, 158, 238, 0.14) 0%, transparent 72%);
+
+  --auth-text: #10142a;
+  --auth-text-muted: rgba(48, 56, 84, 0.86);
+  --auth-text-dim: rgba(62, 72, 102, 0.76);
+  --auth-text-faint: rgba(16, 20, 42, 0.38);
+  --auth-title-glow: 0 0 34px rgba(53, 158, 238, 0.26);
+
+  --auth-icon: rgba(24, 30, 52, 0.76);
+  --auth-icon-strong: #10142a;
+  --auth-icon-dim: rgba(24, 30, 52, 0.56);
+
+  /* Light glass reads as frosted white: the translucent fills that separate a
+     card from a near-black page disappear against a near-white one, so these
+     run far more opaque and lean on the border and shadow instead. */
+  --auth-glass-bg: linear-gradient(
+    130deg,
+    rgba(255, 255, 255, 0.88) 0%,
+    rgba(255, 255, 255, 0.74) 46%,
+    rgba(255, 255, 255, 0.66) 100%
+  );
+  --auth-glass-bg-open: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.9) 0%,
+    rgba(255, 255, 255, 0.78) 48%,
+    rgba(255, 255, 255, 0.7) 100%
+  );
+  --auth-glass-border: rgba(16, 24, 48, 0.12);
+  --auth-glass-border-strong: rgba(16, 24, 48, 0.18);
+  --auth-glass-border-open: rgba(16, 24, 48, 0.1);
+  --auth-glass-shadow: 0 14px 38px rgba(22, 34, 64, 0.16);
+  --auth-glass-shadow-open:
+    0 22px 72px rgba(22, 34, 64, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --auth-hover-fill: rgba(16, 24, 48, 0.08);
+  --auth-active-fill: rgba(16, 24, 48, 0.07);
+  --auth-rule: rgba(16, 24, 48, 0.14);
+
+  --auth-field-bg: rgba(255, 255, 255, 0.82);
+  --auth-field-bg-hover: rgba(255, 255, 255, 0.95);
+  --auth-field-border: rgba(16, 24, 48, 0.16);
+  --auth-field-border-hover: rgba(16, 24, 48, 0.26);
+  --auth-field-text: rgba(12, 16, 34, 0.96);
+  --auth-tab-bg: rgba(16, 24, 48, 0.06);
+  --auth-tab-border: rgba(16, 24, 48, 0.12);
+  --auth-tab-indicator: #ffffff;
+  --auth-tab-indicator-shadow: 0 1px 3px rgba(16, 24, 48, 0.1);
+
+  /* The fill stays: it carries white text at >4.5:1 on either page, and going
+     pale here would cost the button the emphasis it exists for. Only the
+     border moves, since a light halo vanishes against a near-white card. */
+  --auth-phantom-bg: linear-gradient(135deg, #3d9bec 0%, #1f6fc4 100%);
+  --auth-phantom-bg-hover: linear-gradient(135deg, #4aa8f0 0%, #2b7fd4 100%);
+  --auth-phantom-border: rgba(24, 92, 168, 0.42);
+  --auth-phantom-border-hover: rgba(24, 92, 168, 0.58);
+  --auth-phantom-text: #ffffff;
+
+  --auth-wallet-ready: #b8ffe8;
+  --auth-wallet-cta-bg: rgba(255, 255, 255, 0.2);
+  --auth-wallet-badge-bg: rgba(255, 255, 255, 0.18);
+  --auth-wallet-phantom-fill: linear-gradient(135deg, #6d5ce8 0%, #43348a 100%);
+  --auth-wallet-phantom-fill-hover: linear-gradient(135deg, #7d6cf0 0%, #4f3e9a 100%);
+  --auth-wallet-phantom-ink: #f7f4ff;
+  --auth-wallet-phantom-icon: #ffffff;
+  --auth-wallet-phantom-icon-bg: rgba(255, 255, 255, 0.16);
+  --auth-wallet-metamask-fill: linear-gradient(135deg, #e2761b 0%, #b33d0e 100%);
+  --auth-wallet-metamask-fill-hover: linear-gradient(135deg, #f08528 0%, #c44a14 100%);
+  --auth-wallet-metamask-ink: #fff7ef;
+  --auth-wallet-metamask-icon: #ffffff;
+  --auth-wallet-metamask-icon-bg: rgba(255, 255, 255, 0.18);
+
+  /* Light mode wants the mirror of the dark scrim: a white veil, not a dark
+     one, or the screen's dark ink lands on a dimmed photo and disappears. */
+  --auth-video-scrim: linear-gradient(
+    180deg,
+    rgba(238, 241, 248, 0.68) 0%,
+    rgba(238, 241, 248, 0.8) 45%,
+    rgba(238, 241, 248, 0.86) 100%
+  );
 }

@@ -49,15 +49,21 @@ function handleDeactivated() {
   currentView.value = 'activation';
 }
 
-watch(() => workspaceStore.activeWorkspaceId, () => {
-  loadAccount();
-});
+watch(
+  () => workspaceStore.activeWorkspaceId,
+  () => {
+    loadAccount();
+  },
+);
 
-watch(() => emailStore.isActivated, (activated) => {
-  if (activated && currentView.value === 'activation') {
-    currentView.value = 'inbox';
-  }
-});
+watch(
+  () => emailStore.isActivated,
+  (activated) => {
+    if (activated && currentView.value === 'activation') {
+      currentView.value = 'inbox';
+    }
+  },
+);
 
 onMounted(() => {
   loadAccount();
@@ -84,11 +90,7 @@ onMounted(() => {
       @deactivated="handleDeactivated"
     />
 
-    <EmailThread
-      v-if="currentView === 'thread'"
-      key="thread"
-      @back="handleBack"
-    />
+    <EmailThread v-if="currentView === 'thread'" key="thread" @back="handleBack" />
 
     <EmailCompose
       v-if="currentView === 'compose'"
@@ -118,7 +120,11 @@ onMounted(() => {
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>

@@ -106,8 +106,19 @@ export function getDefaultEyeIrisState(): EyeIrisState {
       crypt: '#1d1208',
       streak: '#d6b45b',
     },
-    animation: { shimmerSpeed: 0.16, shimmerStrength: 0.1, patternFlow: 0.24, patternRotation: 0.08 },
-    audio: { enabled: true, reactivity: 1.0, pupilResponse: 0.22, shimmerResponse: 0.35, smoothing: 0.82 },
+    animation: {
+      shimmerSpeed: 0.16,
+      shimmerStrength: 0.1,
+      patternFlow: 0.24,
+      patternRotation: 0.08,
+    },
+    audio: {
+      enabled: true,
+      reactivity: 1.0,
+      pupilResponse: 0.22,
+      shimmerResponse: 0.35,
+      smoothing: 0.82,
+    },
     follow: { enabled: true, sensitivity: 1.0, pupilMotion: true, pupilMotionStrength: 0.12 },
     clickEvents: {
       click: { enabled: true, action: 'pulse' },
@@ -161,13 +172,45 @@ export const useEyeIrisStore = defineStore('eyeIris', () => {
   function applyPalettePreset(preset: EyeIrisPalettePreset) {
     state.palettePreset = preset;
     if (preset === 'light-brown') {
-      state.color = { base: '#8f4b24', secondary: '#b06a34', accent: '#e2a24d', limbal: '#3b1d10', collarette: '#a35a2c', crypt: '#2a160d', streak: '#f0b265' };
+      state.color = {
+        base: '#8f4b24',
+        secondary: '#b06a34',
+        accent: '#e2a24d',
+        limbal: '#3b1d10',
+        collarette: '#a35a2c',
+        crypt: '#2a160d',
+        streak: '#f0b265',
+      };
     } else if (preset === 'hazel') {
-      state.color = { base: '#6b4b23', secondary: '#a37229', accent: '#d0a73c', limbal: '#2b190a', collarette: '#845223', crypt: '#1d1208', streak: '#d6b45b' };
+      state.color = {
+        base: '#6b4b23',
+        secondary: '#a37229',
+        accent: '#d0a73c',
+        limbal: '#2b190a',
+        collarette: '#845223',
+        crypt: '#1d1208',
+        streak: '#d6b45b',
+      };
     } else if (preset === 'blue-grey') {
-      state.color = { base: '#73879b', secondary: '#9db2c4', accent: '#d6e3ef', limbal: '#2b3540', collarette: '#8398ab', crypt: '#1d2530', streak: '#dce7f0' };
+      state.color = {
+        base: '#73879b',
+        secondary: '#9db2c4',
+        accent: '#d6e3ef',
+        limbal: '#2b3540',
+        collarette: '#8398ab',
+        crypt: '#1d2530',
+        streak: '#dce7f0',
+      };
     } else {
-      state.color = { base: '#2f8f84', secondary: '#4ac1aa', accent: '#a1e75c', limbal: '#12483e', collarette: '#3ea892', crypt: '#0d3129', streak: '#9fe5b2' };
+      state.color = {
+        base: '#2f8f84',
+        secondary: '#4ac1aa',
+        accent: '#a1e75c',
+        limbal: '#12483e',
+        collarette: '#3ea892',
+        crypt: '#0d3129',
+        streak: '#9fe5b2',
+      };
     }
   }
 

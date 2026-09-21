@@ -34,7 +34,9 @@ export function detectPwaPlatform(
 export function detectStandaloneDisplay(): boolean {
   if (!isBrowser()) return false;
   const mediaStandalone = window.matchMedia?.('(display-mode: standalone)')?.matches ?? false;
-  const iosStandalone = 'standalone' in navigator && Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
+  const iosStandalone =
+    'standalone' in navigator &&
+    Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
   return mediaStandalone || iosStandalone;
 }
 

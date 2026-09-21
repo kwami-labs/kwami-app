@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { defineAsyncComponent, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, defineAsyncComponent, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useToast } from 'vue-toastification';
 import { useKwami } from '@/composables/useKwami';
@@ -12,6 +12,7 @@ import TheSidebar from '@/components/sidebar/TheSidebar.vue';
 import ControlBar from '@/components/controls/ControlBar.vue';
 import EnergyBadge from '@/components/energy/EnergyBadge.vue';
 import SearchOrbitCards from '@/components/search/SearchOrbitCards.vue';
+import SearchPanel from '@/components/search/SearchPanel.vue';
 import SidebarModeSwitch from '@/components/sidebar/SidebarModeSwitch.vue';
 import BrowserPanel from '@/components/panels/BrowserPanel.vue';
 
@@ -27,6 +28,9 @@ import { useBlackHoleSync } from '@/composables/avatar/sync/useBlackHoleSync';
 import { useParticlesFaceSync } from '@/composables/avatar/sync/useParticlesFaceSync';
 import { useEyeIrisSync } from '@/composables/avatar/sync/useEyeIrisSync';
 import { randomizeAvatarPanel } from '@/composables/avatar/randomizeAvatarPanel';
+import { useBlobXyzStore } from '@/stores/avatar.blob-xyz';
+import { useEyeIrisStore } from '@/stores/avatar.eye-iris';
+import { fitKwamiInView, measureKwamiCanvas } from '@/utils/kwamiViewportFit';
 
 const {
   kwami,
@@ -45,28 +49,72 @@ import { loadUserLocaleFromDb } from '@/lib/userAppSettings';
 // importing all 23 put MemoryPanel (2.2k lines), SceneBackground (1.8k) and
 // ThemePanel (1.3k) into the entry chunk. defineAsyncComponent splits each
 // into its own chunk, fetched the first time the panel is opened.
-const AvatarPanel = defineAsyncComponent(() => import('@/components/panels/settings/avatar/AvatarPanel.vue'));
-const AudioPanel = defineAsyncComponent(() => import('@/components/panels/settings/audio/AudioPanel.vue'));
-const ScenePanel = defineAsyncComponent(() => import('@/components/panels/settings/scene/ScenePanel.vue'));
-const VoicePanel = defineAsyncComponent(() => import('@/components/panels/settings/voice/VoicePanel.vue'));
-const EnhancementsPanel = defineAsyncComponent(() => import('@/components/panels/settings/enhancements/EnhancementsPanel.vue'));
-const HistoryPanel = defineAsyncComponent(() => import('@/components/panels/settings/transcription/TranscriptionPanel.vue'));
-const PhonePanelSettings = defineAsyncComponent(() => import('@/components/panels/settings/communications/PhonePanel.vue'));
-const SoulPanel = defineAsyncComponent(() => import('@/components/panels/settings/soul/SoulPanel.vue'));
-const MemoryPanel = defineAsyncComponent(() => import('@/components/panels/settings/memory/MemoryPanel.vue'));
-const ToolsPanel = defineAsyncComponent(() => import('@/components/panels/settings/tools/ToolsPanel.vue'));
-const InfoPanel = defineAsyncComponent(() => import('@/components/panels/settings/info/InfoPanel.vue'));
-const MetricsPanel = defineAsyncComponent(() => import('@/components/panels/settings/metrics/MetricsPanel.vue'));
-const AccountPanel = defineAsyncComponent(() => import('@/components/panels/settings/account/AccountPanel.vue'));
-const ThemePanel = defineAsyncComponent(() => import('@/components/panels/settings/theme/ThemePanel.vue'));
-const ModelsPanel = defineAsyncComponent(() => import('@/components/panels/settings/models/ModelsPanel.vue'));
-const EnergyPanel = defineAsyncComponent(() => import('@/components/panels/settings/energy/EnergyPanel.vue'));
-const ContactsPanel = defineAsyncComponent(() => import('@/components/panels/apps/contacts/ContactsPanel.vue'));
-const EmailPanel = defineAsyncComponent(() => import('@/components/panels/apps/email/EmailPanel.vue'));
-const WalletPanel = defineAsyncComponent(() => import('@/components/panels/apps/wallet/WalletPanel.vue'));
-const CalendarPanel = defineAsyncComponent(() => import('@/components/panels/apps/calendar/CalendarPanel.vue'));
-const PhonePanel = defineAsyncComponent(() => import('@/components/panels/apps/phone/PhonePanel.vue'));
-const WhatsappPanel = defineAsyncComponent(() => import('@/components/panels/apps/whatsapp/WhatsappPanel.vue'));
+const AvatarPanel = defineAsyncComponent(
+  () => import('@/components/panels/settings/avatar/AvatarPanel.vue'),
+);
+const AudioPanel = defineAsyncComponent(
+  () => import('@/components/panels/settings/audio/AudioPanel.vue'),
+);
+const ScenePanel = defineAsyncComponent(
+  () => import('@/components/panels/settings/scene/ScenePanel.vue'),
+);
+const VoicePanel = defineAsyncComponent(
+  () => import('@/components/panels/settings/voice/VoicePanel.vue'),
+);
+const EnhancementsPanel = defineAsyncComponent(
+  () => import('@/components/panels/settings/enhancements/EnhancementsPanel.vue'),
+);
+const HistoryPanel = defineAsyncComponent(
+  () => import('@/components/panels/settings/transcription/TranscriptionPanel.vue'),
+);
+const PhonePanelSettings = defineAsyncComponent(
+  () => import('@/components/panels/settings/communications/PhonePanel.vue'),
+);
+const SoulPanel = defineAsyncComponent(
+  () => import('@/components/panels/settings/soul/SoulPanel.vue'),
+);
+const MemoryPanel = defineAsyncComponent(
+  () => import('@/components/panels/settings/memory/MemoryPanel.vue'),
+);
+const ToolsPanel = defineAsyncComponent(
+  () => import('@/components/panels/settings/tools/ToolsPanel.vue'),
+);
+const InfoPanel = defineAsyncComponent(
+  () => import('@/components/panels/settings/info/InfoPanel.vue'),
+);
+const MetricsPanel = defineAsyncComponent(
+  () => import('@/components/panels/settings/metrics/MetricsPanel.vue'),
+);
+const AccountPanel = defineAsyncComponent(
+  () => import('@/components/panels/settings/account/AccountPanel.vue'),
+);
+const ThemePanel = defineAsyncComponent(
+  () => import('@/components/panels/settings/theme/ThemePanel.vue'),
+);
+const ModelsPanel = defineAsyncComponent(
+  () => import('@/components/panels/settings/models/ModelsPanel.vue'),
+);
+const EnergyPanel = defineAsyncComponent(
+  () => import('@/components/panels/settings/energy/EnergyPanel.vue'),
+);
+const ContactsPanel = defineAsyncComponent(
+  () => import('@/components/panels/apps/contacts/ContactsPanel.vue'),
+);
+const EmailPanel = defineAsyncComponent(
+  () => import('@/components/panels/apps/email/EmailPanel.vue'),
+);
+const WalletPanel = defineAsyncComponent(
+  () => import('@/components/panels/apps/wallet/WalletPanel.vue'),
+);
+const CalendarPanel = defineAsyncComponent(
+  () => import('@/components/panels/apps/calendar/CalendarPanel.vue'),
+);
+const PhonePanel = defineAsyncComponent(
+  () => import('@/components/panels/apps/phone/PhonePanel.vue'),
+);
+const WhatsappPanel = defineAsyncComponent(
+  () => import('@/components/panels/apps/whatsapp/WhatsappPanel.vue'),
+);
 const SmsPanel = defineAsyncComponent(() => import('@/components/panels/apps/sms/SmsPanel.vue'));
 
 const uiStore = useUIStore();
@@ -75,6 +123,8 @@ const workspaceStore = useWorkspaceStore();
 
 const searchResults = useSearchResults();
 const avatarStore = useAvatarStore();
+const blobXyzStore = useBlobXyzStore();
+const eyeIrisStore = useEyeIrisStore();
 
 const splitRatio = ref(50);
 const isDraggingSplitter = ref(false);
@@ -105,6 +155,17 @@ function stopDrag() {
 
 // Navigation: extension opens tab/split; no sidebar
 const navState = useNavigation();
+
+/**
+ * Whether the browser panel is taking part in the split.
+ *
+ * Only the docked layout does. Floating and fullscreen panels are fixed
+ * overlays, so reserving half the row for them squeezed the avatar into a
+ * sliver of the screen with nothing rendered beside it.
+ */
+const isSplitWithBrowser = computed(
+  () => navState.isActive.value && !!navState.liveUrl.value && navState.isDocked.value,
+);
 useWorkspaceAgentTools();
 
 // Sync per-kwami config: apply config when switching kwami, debounced save to DB
@@ -138,6 +199,13 @@ const { applyToKwami: applyEyeIrisToKwami } = useEyeIrisSync({
 });
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
+
+// A slider write sets the stored scale on the live mesh. Re-frame so a phone
+// still caps it instead of waiting for the next window resize.
+watch(
+  () => [blobXyzStore.shape.scale, eyeIrisStore.state.scale, kwamiRendererType.value] as const,
+  () => handleResize(),
+);
 
 // Watch for authentication: credits, load kwamis from DB (welcome rings shown only during AuthGuard loading)
 watch(
@@ -189,7 +257,6 @@ onUnmounted(() => {
   window.removeEventListener('kwami:insufficient-credits', onInsufficientCredits);
 });
 
-
 // Track if Kwami has been initialized
 const isInitialized = ref(false);
 
@@ -204,11 +271,22 @@ function applySavedAvatarState() {
 
   // Apply the saved state for the active renderer
   switch (savedRenderer) {
-    case 'blob-xyz': applyBlobToKwami(); break;
-    case 'black-hole': applyBlackHoleToKwami(); break;
-    case 'particles-face': applyParticlesFaceToKwami(); break;
-    case 'eye-iris': applyEyeIrisToKwami(); break;
+    case 'blob-xyz':
+      applyBlobToKwami();
+      break;
+    case 'black-hole':
+      applyBlackHoleToKwami();
+      break;
+    case 'particles-face':
+      applyParticlesFaceToKwami();
+      break;
+    case 'eye-iris':
+      applyEyeIrisToKwami();
+      break;
   }
+
+  // Saved scale can overflow a phone; re-frame after the store values land.
+  handleResize();
 }
 
 // Apply current store soul to the Kwami instance so the live agent matches the active kwami config
@@ -270,19 +348,19 @@ function initializeKwami() {
 
 // Handle window resize - trigger scene resize and recenter avatar
 function handleResize() {
-  if (kwami.value && canvasRef.value) {
-    // Get parent container size (not canvas size, as canvas has inline styles)
-    const parent = canvasRef.value.parentElement;
-    if (!parent) return;
-    
-    const width = parent.clientWidth || window.innerWidth;
-    const height = parent.clientHeight || window.innerHeight;
-    
-    // Resize the scene (renderer and camera)
-    kwami.value.avatar.getScene()?.resize(width, height);
-    // Refresh blob position to recenter after resize
-    kwami.value.avatar.getBlob()?.position.refresh();
+  if (!kwami.value || !canvasRef.value) return;
+
+  const renderer = kwamiRendererType.value;
+  if (renderer === 'blob-xyz' || renderer === 'eye-iris') {
+    fitKwamiInView(kwami.value, canvasRef.value, {
+      renderer,
+      desiredScale: renderer === 'eye-iris' ? eyeIrisStore.state.scale : blobXyzStore.shape.scale,
+    });
+    return;
   }
+
+  const { width, height } = measureKwamiCanvas(canvasRef.value);
+  kwami.value.avatar.getScene()?.resize(width, height);
 }
 
 // Watch for canvas to become available (happens after auth guard shows slot)
@@ -363,6 +441,8 @@ onMounted(() => {
 
   // Add resize listener
   window.addEventListener('resize', handleResize);
+  window.visualViewport?.addEventListener('resize', handleResize);
+  window.visualViewport?.addEventListener('scroll', handleResize);
 
   // Shortcuts
   document.addEventListener('keydown', onGlobalKeydown);
@@ -370,6 +450,8 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize);
+  window.visualViewport?.removeEventListener('resize', handleResize);
+  window.visualViewport?.removeEventListener('scroll', handleResize);
   document.removeEventListener('keydown', onGlobalKeydown);
   if (resizeObserver) {
     resizeObserver.disconnect();
@@ -383,26 +465,26 @@ onUnmounted(() => {
 
 <template>
   <AuthGuard>
-    <div 
-      id="kwami-root" 
+    <div
+      id="kwami-root"
       class="root-layout"
       :class="{
-        'split-layout': navState.isActive.value && !!navState.liveUrl.value,
+        'split-layout': isSplitWithBrowser,
         'sidebar-right': themeStore.sidebarPosition === 'right',
-        'is-dragging': isDraggingSplitter
+        'is-dragging': isDraggingSplitter,
       }"
     >
       <!-- Main area: canvas + overlays (no nav sidebar) -->
-      <div 
-        class="main-area"
-        :style="navState.isActive.value && !!navState.liveUrl.value ? { flex: `0 0 ${splitRatio}%` } : {}"
-      >
+      <div class="main-area" :style="isSplitWithBrowser ? { flex: `0 0 ${splitRatio}%` } : {}">
         <canvas id="kwami-canvas" ref="canvasRef"></canvas>
 
         <!-- UI controls only shown when authenticated and welcome complete -->
         <template v-if="authStore.isAuthenticated">
-          <!-- Search results as orbit cards around the Kwami (blob) -->
+          <!-- Search results. Two presentations of the same store: the orbit
+               cards around the Kwami, or a draggable window. Each hides
+               itself when the other is the current layout. -->
           <SearchOrbitCards />
+          <SearchPanel />
           <!-- Control Bar (top-right of main area; moves with canvas when nav opens) -->
           <div class="control-bar-container">
             <EnergyBadge />
@@ -412,11 +494,7 @@ onUnmounted(() => {
         </template>
       </div>
 
-      <div 
-        v-if="navState.isActive.value && !!navState.liveUrl.value" 
-        class="layout-splitter" 
-        @mousedown="startDrag"
-      >
+      <div v-if="isSplitWithBrowser" class="layout-splitter" @mousedown="startDrag">
         <div class="splitter-handle"></div>
       </div>
 
@@ -460,8 +538,14 @@ onUnmounted(() => {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Root layout: flex row for main area + nav sidebar */

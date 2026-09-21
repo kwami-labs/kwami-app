@@ -18,10 +18,10 @@ const classes = computed(() => {
     'base-btn',
     `variant-${props.variant || 'secondary'}`,
     `size-${props.size || 'md'}`,
-    { 
+    {
       block: props.block,
       loading: props.loading,
-      'icon-only': props.icon && !props.iconRight && !slots.default
+      'icon-only': props.icon && !props.iconRight && !slots.default,
     },
   ];
 });
@@ -32,16 +32,16 @@ const slots = useSlots();
 </script>
 
 <template>
-  <button 
-    :class="classes" 
-    :disabled="disabled || loading" 
-    @click="emit('click', $event)"
-  >
+  <button :class="classes" :disabled="disabled || loading" @click="emit('click', $event)">
     <span class="btn-content">
       <iconify-icon v-if="loading" icon="ph:spinner-gap-bold" class="spin"></iconify-icon>
       <iconify-icon v-else-if="icon" :icon="icon" class="btn-icon"></iconify-icon>
       <span v-if="$slots.default" class="btn-text"><slot></slot></span>
-      <iconify-icon v-if="iconRight && !loading" :icon="iconRight" class="btn-icon-right"></iconify-icon>
+      <iconify-icon
+        v-if="iconRight && !loading"
+        :icon="iconRight"
+        class="btn-icon-right"
+      ></iconify-icon>
     </span>
     <span class="btn-glow"></span>
   </button>
