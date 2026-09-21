@@ -133,7 +133,11 @@ export function useAgentActionState() {
       return Promise.resolve(false);
     }
 
-    recordAction(options.title, options.message, { state: 'acting', announce: true, resetAfterMs: 1500 });
+    recordAction(options.title, options.message, {
+      state: 'acting',
+      announce: true,
+      resetAfterMs: 1500,
+    });
 
     return new Promise<boolean>((resolve) => {
       const timeoutMs = options.timeoutMs ?? 30000;

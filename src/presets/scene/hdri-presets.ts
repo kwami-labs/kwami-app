@@ -1,6 +1,6 @@
 /**
  * Scene HDRI Presets
- * 
+ *
  * Preset configurations for 3D environment backgrounds from Poly Haven
  * These are equirectangular HDR images that rotate with the camera
  */
@@ -81,7 +81,7 @@ export const sceneHdriPresets: SceneHdriPreset[] = [
     thumbnail: `${BASE_URL}/extra/Tonemapped%20JPG/brown_photostudio_02.jpg`,
     category: 'studio',
   },
-  
+
   // Indoor / Studio
   {
     id: 'studio-small-03',
@@ -118,7 +118,7 @@ export const sceneHdriPresets: SceneHdriPreset[] = [
     thumbnail: `${BASE_URL}/extra/Tonemapped%20JPG/industrial_sunset.jpg`,
     category: 'outdoor',
   },
-  
+
   // Night / Space
   {
     id: 'moonlit-golf',
@@ -155,7 +155,7 @@ export const sceneHdriPresets: SceneHdriPreset[] = [
     thumbnail: `${BASE_URL}/extra/Tonemapped%20JPG/rural_asphalt_road.jpg`,
     category: 'night',
   },
-  
+
   // Sky / Clouds
   {
     id: 'blue-sky',

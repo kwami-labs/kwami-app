@@ -46,7 +46,11 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     workspace.hasUnsavedConfig = !configsEqual(workspace.config, workspace.savedConfig);
   }
 
-  function setWorkspaceConfig(workspace: KwamiWorkspace, config?: KwamiConfig, markAsSaved = false) {
+  function setWorkspaceConfig(
+    workspace: KwamiWorkspace,
+    config?: KwamiConfig,
+    markAsSaved = false,
+  ) {
     workspace.config = cloneConfig(config);
     if (markAsSaved) {
       workspace.savedConfig = cloneConfig(config);
@@ -56,11 +60,21 @@ export const useWorkspaceStore = defineStore('workspace', () => {
 
   function generateRandomKwami(): Omit<KwamiWorkspace, 'config'> {
     const adjectives = [
-      'Cosmic', 'Mystic', 'Neon', 'Stellar', 'Aurora', 'Crystal', 'Shadow', 'Prism',
+      'Cosmic',
+      'Mystic',
+      'Neon',
+      'Stellar',
+      'Aurora',
+      'Crystal',
+      'Shadow',
+      'Prism',
     ];
     const nouns = ['Spark', 'Wave', 'Pulse', 'Echo', 'Drift', 'Glow', 'Flux', 'Vibe'];
     const randomColor = () =>
-      '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+      '#' +
+      Math.floor(Math.random() * 16777215)
+        .toString(16)
+        .padStart(6, '0');
     const adj = adjectives[Math.floor(Math.random() * adjectives.length)] || 'Cosmic';
     const noun = nouns[Math.floor(Math.random() * nouns.length)] || 'Spark';
     return {
@@ -133,7 +147,12 @@ export const useWorkspaceStore = defineStore('workspace', () => {
 
   async function createKwamiInDb(
     userId: string,
-    data: { name: string; emoji: string; colors: { x: string; y: string; z: string }; config?: KwamiConfig },
+    data: {
+      name: string;
+      emoji: string;
+      colors: { x: string; y: string; z: string };
+      config?: KwamiConfig;
+    },
   ): Promise<KwamiWorkspace | null> {
     const { data: row, error } = await supabase
       .from('user_kwamis')
@@ -187,10 +206,17 @@ export const useWorkspaceStore = defineStore('workspace', () => {
       const active = workspaces.value.find((w) => w.id === activeWorkspaceId.value);
       name = (initial?.name?.trim() || active?.name || 'Kwami').slice(0, 64);
       emoji = '';
-      colors = initial?.colors && typeof initial.colors === 'object'
-        ? { ...defaultColors, ...initial.colors }
-        : (active?.colors ? { ...active.colors } : defaultColors);
-      config = initial?.config ? JSON.parse(JSON.stringify(initial.config)) : (active?.config ? JSON.parse(JSON.stringify(active.config)) : undefined);
+      colors =
+        initial?.colors && typeof initial.colors === 'object'
+          ? { ...defaultColors, ...initial.colors }
+          : active?.colors
+            ? { ...active.colors }
+            : defaultColors;
+      config = initial?.config
+        ? JSON.parse(JSON.stringify(initial.config))
+        : active?.config
+          ? JSON.parse(JSON.stringify(active.config))
+          : undefined;
     }
 
     const payload = { name, emoji, colors, config };
@@ -228,7 +254,11 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     const wasActive = activeWorkspaceId.value === id;
     const isDbId = isPersistedKwamiId(id);
     if (isDbId && userId) {
-      const { error } = await supabase.from('user_kwamis').delete().eq('id', id).eq('user_id', userId);
+      const { error } = await supabase
+        .from('user_kwamis')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', userId);
       if (error) {
         console.warn('Failed to delete kwami from DB:', error);
         return false;

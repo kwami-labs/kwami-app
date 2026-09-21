@@ -5,8 +5,22 @@ let navigationListenerAttached = false;
 
 export function useNavigation() {
   const store = useNavigationStore();
-  const { isActive, currentUrl, currentTitle, isLoading, liveUrl, hasNavigation } =
-    storeToRefs(store);
+  const {
+    isActive,
+    currentUrl,
+    currentTitle,
+    isLoading,
+    liveUrl,
+    vendor,
+    isPersistent,
+    hasNavigation,
+    layout,
+    floatingRect,
+    isManipulating,
+    isDocked,
+    isFloating,
+    isFullscreen,
+  } = storeToRefs(store);
 
   if (!navigationListenerAttached) {
     navigationListenerAttached = true;
@@ -20,6 +34,8 @@ export function useNavigation() {
         liveUrl?: string;
         url?: string;
         title?: string;
+        vendor?: string;
+        persistent?: boolean;
       };
       if (!detail?.action) return;
 
@@ -29,6 +45,8 @@ export function useNavigation() {
             url: detail.url || '',
             title: detail.title || '',
             liveUrl: detail.liveUrl || '',
+            vendor: detail.vendor,
+            persistent: detail.persistent,
             isLoading: false,
           });
           // Force isActive to true even if url is empty
@@ -59,10 +77,7 @@ export function useNavigation() {
       };
       if (!detail?.action) return;
 
-      window.postMessage(
-        { source: 'kwami-app', type: 'kwami:nav_command', detail },
-        '*'
-      );
+      window.postMessage({ source: 'kwami-app', type: 'kwami:nav_command', detail }, '*');
 
       switch (detail.action) {
         case 'navigate':
@@ -87,7 +102,9 @@ export function useNavigation() {
         store.end();
       }
       if (type === 'kwami:ext_disconnected') {
-        console.warn('[Kwami] Extension bridge disconnected. Reload this page after reloading the extension.');
+        console.warn(
+          '[Kwami] Extension bridge disconnected. Reload this page after reloading the extension.',
+        );
       }
       if (type === 'kwami:ext_page_content') {
         const msg = {
@@ -105,7 +122,13 @@ export function useNavigation() {
         const payload = new TextEncoder().encode(JSON.stringify(msg));
         window.dispatchEvent(new CustomEvent('kwami:send_data', { detail: payload }));
         if (rest.title != null || rest.text != null || rest.elements != null || rest.html != null) {
-          const contentMsg = { type: 'nav_page_content', title: rest.title, text: rest.text, elements: rest.elements, html: rest.html };
+          const contentMsg = {
+            type: 'nav_page_content',
+            title: rest.title,
+            text: rest.text,
+            elements: rest.elements,
+            html: rest.html,
+          };
           const contentPayload = new TextEncoder().encode(JSON.stringify(contentMsg));
           window.dispatchEvent(new CustomEvent('kwami:send_data', { detail: contentPayload }));
         }
@@ -130,7 +153,32 @@ export function useNavigation() {
     currentTitle,
     isLoading,
     liveUrl,
+    vendor,
+    isPersistent,
     hasNavigation,
+
+    // Panel layout. Exposed here rather than reached for through the store so
+    // the agent's client tools and the panel's own chrome drive exactly the
+    // same code path -- "make the browser fullscreen" by voice and clicking
+    // the expand button must not be two different behaviours.
+    layout,
+    floatingRect,
+    isManipulating,
+    isDocked,
+    isFloating,
+    isFullscreen,
+    setLayout: store.setLayout,
+    expandFullscreen: store.expandFullscreen,
+    collapseFullscreen: store.collapseFullscreen,
+    toggleFullscreen: store.toggleFullscreen,
+    moveTo: store.moveTo,
+    resizeTo: store.resizeTo,
+    setRect: store.setRect,
+    syncToViewport: store.syncToViewport,
+    centerPanel: store.centerPanel,
+    resetLayout: store.resetLayout,
+    setManipulating: store.setManipulating,
+
     end: store.end,
     requestBrowserClose,
   };

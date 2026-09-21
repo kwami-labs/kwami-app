@@ -9,15 +9,44 @@ const { t } = useI18n();
 
 // Language name mapping
 const LANGUAGE_NAMES: Record<string, string> = {
-  en: 'English', 'en-US': 'English (US)', 'en-GB': 'English (UK)', 'en-AU': 'English (AU)',
-  es: 'Spanish', 'es-419': 'Spanish (LATAM)', 'es-ES': 'Spanish (Spain)',
-  fr: 'French', 'fr-CA': 'French (CA)', de: 'German', it: 'Italian',
-  pt: 'Portuguese', 'pt-BR': 'Portuguese (BR)', nl: 'Dutch', pl: 'Polish',
-  ru: 'Russian', zh: 'Chinese', 'zh-CN': 'Chinese (Simplified)', 'zh-TW': 'Chinese (Traditional)',
-  ja: 'Japanese', ko: 'Korean', ar: 'Arabic', hi: 'Hindi', tr: 'Turkish',
-  vi: 'Vietnamese', th: 'Thai', id: 'Indonesian', sv: 'Swedish', da: 'Danish',
-  no: 'Norwegian', fi: 'Finnish', cs: 'Czech', el: 'Greek', he: 'Hebrew',
-  hu: 'Hungarian', ro: 'Romanian', uk: 'Ukrainian', multi: 'Multi-language',
+  en: 'English',
+  'en-US': 'English (US)',
+  'en-GB': 'English (UK)',
+  'en-AU': 'English (AU)',
+  es: 'Spanish',
+  'es-419': 'Spanish (LATAM)',
+  'es-ES': 'Spanish (Spain)',
+  fr: 'French',
+  'fr-CA': 'French (CA)',
+  de: 'German',
+  it: 'Italian',
+  pt: 'Portuguese',
+  'pt-BR': 'Portuguese (BR)',
+  nl: 'Dutch',
+  pl: 'Polish',
+  ru: 'Russian',
+  zh: 'Chinese',
+  'zh-CN': 'Chinese (Simplified)',
+  'zh-TW': 'Chinese (Traditional)',
+  ja: 'Japanese',
+  ko: 'Korean',
+  ar: 'Arabic',
+  hi: 'Hindi',
+  tr: 'Turkish',
+  vi: 'Vietnamese',
+  th: 'Thai',
+  id: 'Indonesian',
+  sv: 'Swedish',
+  da: 'Danish',
+  no: 'Norwegian',
+  fi: 'Finnish',
+  cs: 'Czech',
+  el: 'Greek',
+  he: 'Hebrew',
+  hu: 'Hungarian',
+  ro: 'Romanian',
+  uk: 'Ukrainian',
+  multi: 'Multi-language',
   multilingual: 'Multilingual',
 };
 
@@ -78,11 +107,11 @@ const contextPercent = computed(() => {
 // Get the cheapest input price from providers
 const inputPrice = computed(() => {
   if (!hasProviders.value) return null;
-  
+
   const providers = (props.model as InferenceModel).providers;
   if (!providers || Object.keys(providers).length === 0) return null;
-  
-  const prices = Object.values(providers).map(p => p.input_per_1m);
+
+  const prices = Object.values(providers).map((p) => p.input_per_1m);
   return Math.min(...prices);
 });
 
@@ -126,7 +155,7 @@ const speedDisplay = computed(() => {
 // Formatted languages for tooltip
 const formattedLanguages = computed(() => {
   if (!props.model.languages) return [];
-  return props.model.languages.map(code => ({
+  return props.model.languages.map((code) => ({
     code,
     name: LANGUAGE_NAMES[code] || code.toUpperCase(),
   }));
@@ -135,7 +164,9 @@ const formattedLanguages = computed(() => {
 // Visible flags (show up to 6, then "+N")
 const MAX_VISIBLE_FLAGS = 6;
 const visibleLanguages = computed(() => formattedLanguages.value.slice(0, MAX_VISIBLE_FLAGS));
-const extraLanguageCount = computed(() => Math.max(0, formattedLanguages.value.length - MAX_VISIBLE_FLAGS));
+const extraLanguageCount = computed(() =>
+  Math.max(0, formattedLanguages.value.length - MAX_VISIBLE_FLAGS),
+);
 
 // Show languages popover
 const showLanguages = ref(false);
@@ -143,9 +174,7 @@ const showLanguages = ref(false);
 // Key capabilities to show (max 2)
 const keyCapabilities = computed(() => {
   const priority = ['vision', 'function_calling', 'json_mode'];
-  return props.model.capabilities
-    .filter(c => priority.includes(c))
-    .slice(0, 2);
+  return props.model.capabilities.filter((c) => priority.includes(c)).slice(0, 2);
 });
 
 function handleClick() {
@@ -166,12 +195,12 @@ function handleClick() {
       <iconify-icon :icon="providerIcon" class="provider-icon"></iconify-icon>
       <span class="model-name">{{ model.display_name }}</span>
     </div>
-    
+
     <!-- Range Bars -->
     <div class="card-ranges">
       <div class="range-row">
-        <RangeBar 
-          :value="contextPercent" 
+        <RangeBar
+          :value="contextPercent"
           icon="ph:stack-duotone"
           :label="t('llmModelCard.context')"
           :title="t('llmModelCard.contextTitle', { ctx: contextDisplay })"
@@ -179,8 +208,8 @@ function handleClick() {
         <span class="range-value">{{ contextDisplay }}</span>
       </div>
       <div v-if="priceDisplay" class="range-row">
-        <RangeBar 
-          :value="pricePercent" 
+        <RangeBar
+          :value="pricePercent"
           icon="ph:currency-dollar-duotone"
           :label="t('sttModelCard.price')"
           :title="t('llmModelCard.priceTitle', { price: priceDisplay })"
@@ -190,20 +219,20 @@ function handleClick() {
       <!-- Language Flags -->
       <div v-if="formattedLanguages.length" class="lang-flags-row">
         <iconify-icon icon="ph:globe-duotone" class="lang-label-icon"></iconify-icon>
-        <div 
+        <div
           class="lang-flags"
           @mouseenter="showLanguages = true"
           @mouseleave="showLanguages = false"
         >
-          <iconify-icon 
-            v-for="lang in visibleLanguages" 
-            :key="lang.code" 
-            :icon="getFlagIcon(lang.code)" 
+          <iconify-icon
+            v-for="lang in visibleLanguages"
+            :key="lang.code"
+            :icon="getFlagIcon(lang.code)"
             class="flag-icon"
             :title="lang.name"
           ></iconify-icon>
           <span v-if="extraLanguageCount > 0" class="lang-more">+{{ extraLanguageCount }}</span>
-          
+
           <!-- Languages Popover -->
           <Transition name="fade">
             <div v-if="showLanguages && formattedLanguages.length > 1" class="languages-popover">
@@ -218,9 +247,9 @@ function handleClick() {
                 }}</span>
               </div>
               <div class="languages-grid">
-                <span 
-                  v-for="lang in formattedLanguages" 
-                  :key="lang.code" 
+                <span
+                  v-for="lang in formattedLanguages"
+                  :key="lang.code"
                   class="lang-badge"
                   :title="lang.name"
                 >
@@ -233,8 +262,8 @@ function handleClick() {
         </div>
       </div>
       <div class="range-row">
-        <RangeBar 
-          :value="speedPercent" 
+        <RangeBar
+          :value="speedPercent"
           icon="ph:lightning-duotone"
           :label="t('sttModelCard.speed')"
           :title="t('sttModelCard.speedTitle', { speed: speedDisplay })"
@@ -242,7 +271,7 @@ function handleClick() {
         <span class="range-value">{{ speedDisplay }}</span>
       </div>
     </div>
-    
+
     <div v-if="keyCapabilities.length" class="card-capabilities">
       <span
         v-if="keyCapabilities.includes('vision')"
@@ -261,7 +290,7 @@ function handleClick() {
         <span class="cap-label">{{ t('llmModelCard.capTools') }}</span>
       </span>
     </div>
-    
+
     <div class="selected-indicator">
       <iconify-icon icon="ph:check-circle-duotone"></iconify-icon>
     </div>

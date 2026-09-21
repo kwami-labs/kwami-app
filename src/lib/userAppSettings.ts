@@ -1,10 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import {
-  getCurrentLocale,
-  normalizeLocale,
-  setLocale,
-  type SupportedLocale,
-} from '@/i18n';
+import { getCurrentLocale, normalizeLocale, setLocale, type SupportedLocale } from '@/i18n';
 
 /**
  * Load saved locale for the signed-in user and apply it. If no row exists yet,
@@ -28,20 +23,18 @@ export async function loadUserLocaleFromDb(userId: string): Promise<void> {
   }
 
   const current = getCurrentLocale();
-  const { error: seedError } = await supabase.from('user_app_settings').upsert(
-    { user_id: userId, locale: current },
-    { onConflict: 'user_id' },
-  );
+  const { error: seedError } = await supabase
+    .from('user_app_settings')
+    .upsert({ user_id: userId, locale: current }, { onConflict: 'user_id' });
   if (seedError) {
     console.warn('Failed to seed user app settings:', seedError.message);
   }
 }
 
 export async function saveUserLocaleToDb(userId: string, locale: SupportedLocale): Promise<void> {
-  const { error } = await supabase.from('user_app_settings').upsert(
-    { user_id: userId, locale },
-    { onConflict: 'user_id' },
-  );
+  const { error } = await supabase
+    .from('user_app_settings')
+    .upsert({ user_id: userId, locale }, { onConflict: 'user_id' });
   if (error) {
     console.warn('Failed to save locale:', error.message);
   }

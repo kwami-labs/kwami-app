@@ -12,14 +12,14 @@ const props = defineProps<{
 const barColor = computed(() => {
   // If explicit color is provided, use it
   if (props.color) return props.color;
-  
+
   // If autoColor is enabled, use value-based coloring
   if (props.autoColor) {
     if (props.value >= 70) return 'green';
     if (props.value >= 40) return 'yellow';
     return 'red';
   }
-  
+
   // Default to cyan
   return 'cyan';
 });
@@ -32,8 +32,8 @@ const barColor = computed(() => {
       <span v-if="label">{{ label }}</span>
     </div>
     <div class="range-track">
-      <div 
-        class="range-fill" 
+      <div
+        class="range-fill"
         :class="barColor"
         :style="{ width: `${Math.min(100, Math.max(0, value))}%` }"
       ></div>

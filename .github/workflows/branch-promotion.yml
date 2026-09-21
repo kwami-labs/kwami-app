@@ -1,0 +1,84 @@
+name: branch promotion
+
+# Keeps the promote path one-directional:
+#
+#   feature/* → dev → stg → main
+#
+# Rules live in scripts/ci/assert-promotion-path.mjs (unit-tested). `stg` takes
+# PRs from any branch except `main`. PRs into `main` must be this repository's
+# current tip of `stg` — not a fork and not a namesake branch. Back-merges into
+# lower channels are pushed by cd.yml, not merged by PR.
+#
+# `pull_request_target` so the check runs from the base branch's copy of this
+# workflow even when the head branch predates it. Only the base ref is checked
+# out (for the script); no untrusted PR code is executed.
+on:
+  pull_request_target:
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+    branches: [main, stg, dev]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  guard:
+    name: enforce promotion path
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+
+      - name: Allow only the promote path
+        id: guard
+        env:
+          BASE: ${{ github.base_ref }}
+          HEAD: ${{ github.head_ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          BASE_REPO: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/ci/assert-promotion-path.mjs
+
+      - name: Comment on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          REASON_FILE="${RUNNER_TEMP}/promotion-error.txt"
+          if [ -f "$REASON_FILE" ]; then
+            REASON=$(cat "$REASON_FILE")
+          else
+            REASON='Promotion path check failed.'
+          fi
+          MARKER='<!-- kwami-branch-promotion -->'
+          BODY=$(printf '%s\n' \
+            "$MARKER" \
+            '### Branch promotion' \
+            '' \
+            "$REASON" \
+            '' \
+            'Allowed path: `feature/* → dev → stg → main`.' \
+            '' \
+            '- PRs into `stg` may come from any branch except `main`.' \
+            '- PRs into `main` must be from this repo'\''s current tip of `stg`.' \
+            '- Back-merges into `dev` are done by `cd.yml`, not by PR.' \
+            '' \
+            'Rules: `scripts/ci/assert-promotion-path.mjs`.')
+          existing=$(gh api "repos/${REPO}/issues/${PR}/comments" --paginate \
+            --jq ".[] | select(.user.login==\"github-actions[bot]\" and (.body | contains(\"${MARKER}\"))) | .id" \
+            | head -n1 || true)
+          if [ -n "$existing" ]; then
+            gh api -X PATCH "repos/${REPO}/issues/comments/${existing}" -f body="$BODY" >/dev/null
+          else
+            gh api "repos/${REPO}/issues/${PR}/comments" -f body="$BODY" >/dev/null
+          fi

@@ -3,7 +3,6 @@ import { ref } from 'vue';
 import { api, createRequestGuard, isAbortError } from '@/lib/apiClient';
 import { useWorkspaceStore } from '@/stores/workspace';
 
-
 export interface WalletToken {
   id: string;
   mint_address: string;
@@ -39,7 +38,6 @@ export interface FundingIntent {
   provider_redirect_url?: string | null;
   created_at: string;
 }
-
 
 export const useWalletStore = defineStore('wallet', () => {
   const loading = ref(false);

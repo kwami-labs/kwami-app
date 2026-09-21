@@ -1,6 +1,5 @@
 import { api } from '@/lib/apiClient';
 
-
 export interface ChannelRecord {
   id: string;
   kwami_id: string;
@@ -57,8 +56,9 @@ export interface NumberSearchResult {
   capabilities?: Record<string, boolean>;
 }
 
-
-export async function fetchKwamiCommunications(kwamiId: string): Promise<KwamiCommunicationsSnapshot> {
+export async function fetchKwamiCommunications(
+  kwamiId: string,
+): Promise<KwamiCommunicationsSnapshot> {
   return api.get<KwamiCommunicationsSnapshot>(`/channels/kwamis/${kwamiId}`);
 }
 

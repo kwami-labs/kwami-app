@@ -3,17 +3,20 @@ import { computed, useSlots } from 'vue';
 import PanelHeaderControls from '@/components/ui/PanelHeaderControls.vue';
 import { useThemeStore } from '@/stores/theme';
 
-const props = withDefaults(defineProps<{
-  title: string;
-  icon: string;
-  noPadding?: boolean;
-  showSizeButtons?: boolean;
-  showCloseButton?: boolean;
-}>(), {
-  noPadding: false,
-  showSizeButtons: true,
-  showCloseButton: true,
-});
+const props = withDefaults(
+  defineProps<{
+    title: string;
+    icon: string;
+    noPadding?: boolean;
+    showSizeButtons?: boolean;
+    showCloseButton?: boolean;
+  }>(),
+  {
+    noPadding: false,
+    showSizeButtons: true,
+    showCloseButton: true,
+  },
+);
 
 const slots = useSlots();
 const themeStore = useThemeStore();
@@ -105,7 +108,7 @@ h2 {
   margin-bottom: max(4px, calc(var(--radius-xl, 16px) - 16px));
   scrollbar-width: thin;
   scrollbar-color: var(--surface-3) transparent;
-  
+
   /* Multi-column responsive grid layout */
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -130,7 +133,13 @@ h2 {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>

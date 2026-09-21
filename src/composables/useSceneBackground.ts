@@ -217,7 +217,13 @@ export function useSceneBackground() {
 
   /** Rasterize equirectangular HDR (or LDR) texture to the WebGL canvas; encodes opacity in shader. */
   function rasterizeHdriEquirectToCanvas(texture: THREE.Texture): HTMLCanvasElement | null {
-    if (!ensureHdriBlitPipeline() || !hdriBlitRenderer || !hdriBlitMaterial || !hdriBlitCamera || !hdriBlitScene) {
+    if (
+      !ensureHdriBlitPipeline() ||
+      !hdriBlitRenderer ||
+      !hdriBlitMaterial ||
+      !hdriBlitCamera ||
+      !hdriBlitScene
+    ) {
       return null;
     }
 
@@ -323,13 +329,13 @@ export function useSceneBackground() {
     const a = orb.opacity;
     const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
 
-    gradient.addColorStop(0.00, hexToRgba(orb.color, a));
-    gradient.addColorStop(0.10, hexToRgba(orb.color, a * 0.92));
+    gradient.addColorStop(0.0, hexToRgba(orb.color, a));
+    gradient.addColorStop(0.1, hexToRgba(orb.color, a * 0.92));
     gradient.addColorStop(0.25, hexToRgba(orb.color, a * (0.7 + soft * 0.15)));
     gradient.addColorStop(0.45, hexToRgba(orb.color, a * (0.35 + soft * 0.1)));
     gradient.addColorStop(0.65, hexToRgba(orb.color, a * (0.12 + soft * 0.05)));
     gradient.addColorStop(0.85, hexToRgba(orb.color, a * 0.03));
-    gradient.addColorStop(1.00, hexToRgba(orb.color, 0));
+    gradient.addColorStop(1.0, hexToRgba(orb.color, 0));
 
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, width, height);
@@ -409,8 +415,10 @@ export function useSceneBackground() {
     ctx.globalAlpha = mediaOpacity;
     ctx.globalCompositeOperation = 'source-over';
 
-    const imgWidth = mediaImage instanceof HTMLVideoElement ? mediaImage.videoWidth : mediaImage.width;
-    const imgHeight = mediaImage instanceof HTMLVideoElement ? mediaImage.videoHeight : mediaImage.height;
+    const imgWidth =
+      mediaImage instanceof HTMLVideoElement ? mediaImage.videoWidth : mediaImage.width;
+    const imgHeight =
+      mediaImage instanceof HTMLVideoElement ? mediaImage.videoHeight : mediaImage.height;
 
     if (!imgWidth || !imgHeight) {
       ctx.restore();
@@ -800,25 +808,45 @@ export function useSceneBackground() {
   function setupWatchers() {
     watch(() => background.value.media.type, updateMediaBackground);
     watch(() => background.value.media.image.url, updateMediaBackground);
-    watch(() => background.value.media.image.fit, () => {
-      if (background.value.media.type === 'image' && currentImageElement) {
-        compositeBackground(currentImageElement, background.value.media.image.opacity, background.value.media.image.fit);
-      }
-    });
-    watch(() => background.value.media.image.opacity, () => {
-      if (background.value.media.type === 'image' && currentImageElement) {
-        compositeBackground(currentImageElement, background.value.media.image.opacity, background.value.media.image.fit);
-      }
-    });
+    watch(
+      () => background.value.media.image.fit,
+      () => {
+        if (background.value.media.type === 'image' && currentImageElement) {
+          compositeBackground(
+            currentImageElement,
+            background.value.media.image.opacity,
+            background.value.media.image.fit,
+          );
+        }
+      },
+    );
+    watch(
+      () => background.value.media.image.opacity,
+      () => {
+        if (background.value.media.type === 'image' && currentImageElement) {
+          compositeBackground(
+            currentImageElement,
+            background.value.media.image.opacity,
+            background.value.media.image.fit,
+          );
+        }
+      },
+    );
     watch(() => background.value.media.video.url, updateMediaBackground);
-    watch(() => background.value.media.video.muted, (muted) => {
-      const video = getHiddenVideoElement();
-      if (video) video.muted = muted;
-    });
-    watch(() => background.value.media.video.loop, (loop) => {
-      const video = getHiddenVideoElement();
-      if (video) video.loop = loop;
-    });
+    watch(
+      () => background.value.media.video.muted,
+      (muted) => {
+        const video = getHiddenVideoElement();
+        if (video) video.muted = muted;
+      },
+    );
+    watch(
+      () => background.value.media.video.loop,
+      (loop) => {
+        const video = getHiddenVideoElement();
+        if (video) video.loop = loop;
+      },
+    );
     watch(
       () => [background.value.media.video.fit, background.value.media.video.opacity],
       () => {

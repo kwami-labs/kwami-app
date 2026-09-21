@@ -231,7 +231,9 @@ function anySignal(signals: AbortSignal[]): { signal: AbortSignal; cleanup: () =
 }
 
 function buildUrl(path: string, query?: Record<string, QueryValue>): string {
-  const base = path.startsWith('http') ? path : `${API_BASE}${path.startsWith('/') ? '' : '/'}${path}`;
+  const base = path.startsWith('http')
+    ? path
+    : `${API_BASE}${path.startsWith('/') ? '' : '/'}${path}`;
   if (!query) return base;
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(query)) {
@@ -242,7 +244,11 @@ function buildUrl(path: string, query?: Record<string, QueryValue>): string {
   return qs ? `${base}${base.includes('?') ? '&' : '?'}${qs}` : base;
 }
 
-function isRetriable(method: HttpMethod, status: number | null, hasIdempotencyKey: boolean): boolean {
+function isRetriable(
+  method: HttpMethod,
+  status: number | null,
+  hasIdempotencyKey: boolean,
+): boolean {
   // DELETE is deliberately excluded even though the endpoints are idempotent
   // server-side: a retry whose first attempt succeeded 404s on the second and
   // surfaces an error where the operation actually worked.
@@ -301,7 +307,10 @@ export async function request<T>(
     const timeoutController = new AbortController();
     const timer =
       timeoutMs > 0
-        ? setTimeout(() => timeoutController.abort(new DOMException('Timeout', 'TimeoutError')), timeoutMs)
+        ? setTimeout(
+            () => timeoutController.abort(new DOMException('Timeout', 'TimeoutError')),
+            timeoutMs,
+          )
         : null;
 
     const signals = [timeoutController.signal];
@@ -325,7 +334,11 @@ export async function request<T>(
         method,
         headers,
         body:
-          body === undefined ? undefined : isFormData || typeof body === 'string' ? (body as BodyInit) : JSON.stringify(body),
+          body === undefined
+            ? undefined
+            : isFormData || typeof body === 'string'
+              ? (body as BodyInit)
+              : JSON.stringify(body),
         signal,
       });
     } catch (e: unknown) {
@@ -398,7 +411,8 @@ export async function request<T>(
 
 export const api = {
   request,
-  get: <T>(path: string, options?: ApiRequestOptions) => request<T>('GET', path, undefined, options),
+  get: <T>(path: string, options?: ApiRequestOptions) =>
+    request<T>('GET', path, undefined, options),
   post: <T>(path: string, body?: unknown, options?: ApiRequestOptions) =>
     request<T>('POST', path, body, options),
   put: <T>(path: string, body?: unknown, options?: ApiRequestOptions) =>

@@ -33,7 +33,7 @@ export const useUIStore = defineStore('ui', () => {
   const panelWidth = ref(DEFAULT_SIZE_PRESETS.small.width);
   const sidebarMode = ref<SidebarMode>('settings');
   const isNavAnimating = ref(false);
-  
+
   // Size presets configuration
   const sizePresets = ref<Record<PanelSizePreset, SizePresetConfig>>({ ...DEFAULT_SIZE_PRESETS });
   const activeSizePreset = ref<PanelSizePreset>('small');
@@ -71,7 +71,7 @@ export const useUIStore = defineStore('ui', () => {
   function onWindowResize() {
     windowWidth.value = window.innerWidth;
     clampPanelToViewport();
-    
+
     // Auto-enable/disable compact mode based on viewport
     const theme = useThemeStore();
     if (windowWidth.value < MOBILE_BREAKPOINT) {
@@ -253,7 +253,7 @@ export const useUIStore = defineStore('ui', () => {
   setupResizeListener();
   // Clamp panel width on initial load in case viewport is smaller than saved width
   clampPanelToViewport();
-  
+
   // Check mobile viewport on initial load and auto-enable compact mode if needed
   if (typeof window !== 'undefined' && window.innerWidth < MOBILE_BREAKPOINT) {
     const theme = useThemeStore();
@@ -278,7 +278,7 @@ export const useUIStore = defineStore('ui', () => {
         saveSettings();
       }
     },
-    { immediate: true }
+    { immediate: true },
   );
 
   return {

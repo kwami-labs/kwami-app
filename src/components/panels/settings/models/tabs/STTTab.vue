@@ -22,7 +22,9 @@ const selectedModel = ref<string>(stt.value.model);
 // Persisted UI state via store
 const expandedProvider = computed({
   get: () => modelsUI.value.sttExpandedProvider,
-  set: (v) => { modelsUI.value.sttExpandedProvider = v; }
+  set: (v) => {
+    modelsUI.value.sttExpandedProvider = v;
+  },
 });
 
 // Expand the selected provider's accordion
@@ -49,7 +51,7 @@ onMounted(async () => {
 
 // const inferenceModelsByProvider = computed(() => {
 //   if (!sttInferenceModels.value?.models) return {};
-  
+
 //   const grouped: Record<string, InferenceSTTModel[]> = {};
 //   for (const model of sttInferenceModels.value.models) {
 //     const provider = model.provider;
@@ -66,19 +68,25 @@ const hasInferenceModels = computed(() => {
 // Persisted sorting via store
 const sortBy = computed({
   get: () => modelsUI.value.sttSortBy,
-  set: (v) => { modelsUI.value.sttSortBy = v; }
+  set: (v) => {
+    modelsUI.value.sttSortBy = v;
+  },
 });
 
 // Min/max calculations
 const minPrice = computed(() => {
   const models = sttInferenceModels.value?.models || [];
-  const prices = models.map(m => m.pricing?.scale_per_min).filter(p => p !== undefined) as number[];
+  const prices = models
+    .map((m) => m.pricing?.scale_per_min)
+    .filter((p) => p !== undefined) as number[];
   return prices.length ? Math.min(...prices) : 0;
 });
 
 const maxPrice = computed(() => {
   const models = sttInferenceModels.value?.models || [];
-  const prices = models.map(m => m.pricing?.scale_per_min).filter(p => p !== undefined) as number[];
+  const prices = models
+    .map((m) => m.pricing?.scale_per_min)
+    .filter((p) => p !== undefined) as number[];
   return prices.length ? Math.max(...prices) : 1;
 });
 
@@ -86,7 +94,7 @@ const maxPrice = computed(() => {
 const modelsByProvider = computed(() => {
   const models = sttInferenceModels.value?.models || [];
   if (!models.length) return {};
-  
+
   const grouped: Record<string, InferenceSTTModel[]> = {};
   for (const model of models) {
     const provider = model.provider;
@@ -100,9 +108,9 @@ const modelsByProvider = computed(() => {
 const sortedModelsFlat = computed(() => {
   const models = sttInferenceModels.value?.models || [];
   if (!models.length) return [];
-  
+
   const sorted = [...models];
-  
+
   if (sortBy.value === 'price') {
     // Highest price first
     sorted.sort((a, b) => (b.pricing?.scale_per_min || 0) - (a.pricing?.scale_per_min || 0));
@@ -118,7 +126,7 @@ const sortedModelsFlat = computed(() => {
     const speedOrder: Record<string, number> = { fast: 0, standard: 1, slow: 2 };
     sorted.sort((a, b) => (speedOrder[a.speed] ?? 1) - (speedOrder[b.speed] ?? 1));
   }
-  
+
   return sorted;
 });
 
@@ -137,12 +145,12 @@ function getProviderIcon(provider: string): string {
 function selectModel(modelId: string, provider: string) {
   selectedProvider.value = provider;
   selectedModel.value = modelId;
-  
+
   voiceStore.updateSTT({
     provider: provider as STTProvider,
     model: modelId,
   });
-  
+
   if (isConnected.value && kwami.value) {
     kwami.value.agent.updateSttLive({
       provider,
@@ -151,11 +159,14 @@ function selectModel(modelId: string, provider: string) {
   }
 }
 
-watch(() => [stt.value.provider, stt.value.model], ([newProvider, newModel]) => {
-  selectedProvider.value = newProvider || '';
-  selectedModel.value = newModel || '';
-  expandSelectedProvider();
-});
+watch(
+  () => [stt.value.provider, stt.value.model],
+  ([newProvider, newModel]) => {
+    selectedProvider.value = newProvider || '';
+    selectedModel.value = newModel || '';
+    expandSelectedProvider();
+  },
+);
 </script>
 
 <template>
@@ -170,26 +181,26 @@ watch(() => [stt.value.provider, stt.value.model], ([newProvider, newModel]) => 
       <!-- Sort Controls -->
       <div class="sort-row">
         <span class="sort-label">{{ t('modelTabs.sort') }}</span>
-        <button 
-          class="sort-btn" 
+        <button
+          class="sort-btn"
           :class="{ active: sortBy === 'provider' }"
           @click="sortBy = 'provider'"
-        >{{ t('modelTabs.provider') }}</button>
-        <button 
-          class="sort-btn" 
-          :class="{ active: sortBy === 'price' }"
-          @click="sortBy = 'price'"
-        >{{ t('modelTabs.price') }}</button>
-        <button 
-          class="sort-btn" 
+        >
+          {{ t('modelTabs.provider') }}
+        </button>
+        <button class="sort-btn" :class="{ active: sortBy === 'price' }" @click="sortBy = 'price'">
+          {{ t('modelTabs.price') }}
+        </button>
+        <button
+          class="sort-btn"
           :class="{ active: sortBy === 'languages' }"
           @click="sortBy = 'languages'"
-        >{{ t('modelTabs.languages') }}</button>
-        <button 
-          class="sort-btn" 
-          :class="{ active: sortBy === 'speed' }"
-          @click="sortBy = 'speed'"
-        >{{ t('modelTabs.speed') }}</button>
+        >
+          {{ t('modelTabs.languages') }}
+        </button>
+        <button class="sort-btn" :class="{ active: sortBy === 'speed' }" @click="sortBy = 'speed'">
+          {{ t('modelTabs.speed') }}
+        </button>
       </div>
 
       <!-- Models by Provider (accordion view) -->
@@ -265,8 +276,12 @@ watch(() => [stt.value.provider, stt.value.model], ([newProvider, newModel]) => 
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .sort-row {
@@ -355,5 +370,4 @@ watch(() => [stt.value.provider, stt.value.model], ([newProvider, newModel]) => 
   flex-direction: column;
   gap: 6px;
 }
-
 </style>

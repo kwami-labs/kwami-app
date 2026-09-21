@@ -99,15 +99,31 @@ function openEnergyPanel() {
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
 }
 
 @keyframes flicker {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-  52% { opacity: 1; }
-  54% { opacity: 0.5; }
-  56% { opacity: 1; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  52% {
+    opacity: 1;
+  }
+  54% {
+    opacity: 0.5;
+  }
+  56% {
+    opacity: 1;
+  }
 }
 </style>

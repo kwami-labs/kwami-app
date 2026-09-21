@@ -1,0 +1,189 @@
+# Continuous delivery: cut the release, then publish the channel Worker.
+#
+# Called by `ci.yml` once every gate on that commit has gone green, so nothing
+# is released or deployed from a commit whose tests never passed.
+#
+# `workflow_call`, deliberately not `workflow_run`. A `workflow_run` trigger
+# always executes the copy of this file on the DEFAULT branch — so a fix to
+# this workflow could not take effect until it reached `main`.
+#
+# The order matters. semantic-release runs first, because it decides the
+# version. The Worker is then built from the SHA ci tested, not from the
+# changelog commit that lands one step later.
+#
+# The release tag is created with GITHUB_TOKEN, which by design triggers no
+# workflow. That is what stops `cd → tag → ci → cd`. `[skip actions]` in the
+# release commit message is the belt to that braces.
+name: cd
+
+on:
+  workflow_call:
+    inputs:
+      branch:
+        description: Branch whose ci run just passed (`main`, `stg` or `dev`)
+        required: true
+        type: string
+      sha:
+        description: Commit ci tested
+        required: true
+        type: string
+  workflow_dispatch:
+
+concurrency:
+  group: cd-${{ inputs.branch || github.ref_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  # Versions, tags, CHANGELOG.md and the GitHub Release, all derived from the
+  # Conventional Commits since the last tag. Nothing here is hand-maintained.
+  release:
+    name: release
+    if: >-
+      (inputs.branch || github.ref_name) == 'main'
+      || (inputs.branch || github.ref_name) == 'stg'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    outputs:
+      version: ${{ steps.semantic.outputs.version }}
+    env:
+      TESTED_SHA: ${{ inputs.sha || github.sha }}
+      BRANCH: ${{ inputs.branch || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.branch || github.ref_name }}
+          fetch-depth: 0
+
+      - name: Refuse to release an untested tip
+        run: |
+          set -euo pipefail
+          tip="$(git rev-parse HEAD)"
+          if [ -z "${TESTED_SHA:-}" ]; then
+            echo "::notice::Manual run on $BRANCH at $tip — no ci run to compare against."
+          elif [ "$tip" != "$TESTED_SHA" ]; then
+            echo "::notice::$BRANCH is at $tip, ahead of the tested commit $TESTED_SHA — its own run will release."
+            echo 'skip=true' >> "$GITHUB_ENV"
+          fi
+
+      - if: env.skip != 'true'
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+
+      - name: Ensure a release baseline exists
+        if: env.skip != 'true'
+        run: |
+          set -euo pipefail
+          if [ -n "$(git tag --list 'v*')" ]; then
+            echo "already released — no baseline needed"
+            exit 0
+          fi
+          echo "tagging v0.1.0 at $(git rev-parse --short HEAD) as the release baseline"
+          git tag v0.1.0
+          git push origin v0.1.0
+
+      - name: semantic-release
+        id: semantic
+        if: env.skip != 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git tag | sort > "$RUNNER_TEMP/tags-before.txt"
+          npx --yes \
+            -p semantic-release@25 \
+            -p @semantic-release/changelog@7 \
+            -p @semantic-release/exec@7 \
+            -p @semantic-release/git@11 \
+            semantic-release
+          git tag | sort > "$RUNNER_TEMP/tags-after.txt"
+          tag="$(comm -13 "$RUNNER_TEMP/tags-before.txt" "$RUNNER_TEMP/tags-after.txt" | head -1)"
+          version="${tag#v}"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          {
+            echo '### Release'
+            echo ''
+            echo "${tag:-No releasable changes.}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  deploy-production:
+    name: deploy · production
+    if: (inputs.branch || github.ref_name) == 'main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    env:
+      VITE_API_URL: ${{ vars.VITE_API_URL }}
+      VITE_LIVEKIT_URL: ${{ vars.VITE_LIVEKIT_URL }}
+      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      VITE_AUTH_PROVIDERS: ${{ vars.VITE_AUTH_PROVIDERS }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.sha || github.sha }}
+      - uses: ./.github/actions/cloudflare-deploy
+        with:
+          wrangler-env: production
+          api-token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          account-id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+  deploy-stg:
+    name: deploy · stg
+    if: (inputs.branch || github.ref_name) == 'stg'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: stg
+    concurrency:
+      group: deploy-stg
+      cancel-in-progress: false
+    env:
+      VITE_API_URL: ${{ vars.VITE_API_URL }}
+      VITE_LIVEKIT_URL: ${{ vars.VITE_LIVEKIT_URL }}
+      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      VITE_AUTH_PROVIDERS: ${{ vars.VITE_AUTH_PROVIDERS }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.sha || github.sha }}
+      - uses: ./.github/actions/cloudflare-deploy
+        with:
+          wrangler-env: stg
+          api-token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          account-id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+  deploy-dev:
+    name: deploy · dev
+    if: (inputs.branch || github.ref_name) == 'dev'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: dev
+    concurrency:
+      group: deploy-dev
+      cancel-in-progress: false
+    env:
+      VITE_API_URL: ${{ vars.VITE_API_URL }}
+      VITE_LIVEKIT_URL: ${{ vars.VITE_LIVEKIT_URL }}
+      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      VITE_AUTH_PROVIDERS: ${{ vars.VITE_AUTH_PROVIDERS }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.sha || github.sha }}
+      - uses: ./.github/actions/cloudflare-deploy
+        with:
+          wrangler-env: dev
+          api-token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          account-id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

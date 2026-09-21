@@ -41,7 +41,7 @@ export function useWelcomeAnimation(options: WelcomeAnimationOptions = {}) {
     initialScaleRatio = 0.4,
     finalScale = window.innerWidth <= 768 ? 7.5 : 7.8,
     scaleDurationMs = 2500,
-    targetSpikes = { x: 0.05, y: 5.2, z: 0.05 },
+    targetSpikes = { x: 3.1, y: 3.6, z: 2.8 },
     spikesDurationMs = 1250,
     rotation = { x: 0.003, y: 0.012, z: 0 },
     autoRotate = true,

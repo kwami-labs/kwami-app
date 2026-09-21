@@ -3,7 +3,6 @@ import { ref, computed } from 'vue';
 import { supabase } from '@/lib/supabase';
 import type { User, Session, AuthError } from '@supabase/supabase-js';
 
-
 export const useAuthStore = defineStore('auth', () => {
   // initAuth runs from AuthGuard's onMounted; a remount would otherwise stack
   // a second message listener and a second onAuthStateChange subscription.
@@ -29,7 +28,7 @@ export const useAuthStore = defineStore('auth', () => {
       // Send session info to parent window
       window.opener.postMessage(
         { type: 'supabase-auth-callback', session },
-        window.location.origin
+        window.location.origin,
       );
       // Close popup after small delay to ensure message is sent
       setTimeout(() => window.close(), 100);
@@ -89,13 +88,13 @@ export const useAuthStore = defineStore('auth', () => {
       session.value = newSession;
       user.value = newSession?.user ?? null;
       loading.value = false;
-      
+
       // If we're in a popup and just signed in, notify parent and close
       if (isInPopup() && event === 'SIGNED_IN' && newSession) {
         handlePopupCallback(newSession);
         return;
       }
-      
+
       // Clean up URL hash after auth state change
       if (window.location.hash) {
         window.history.replaceState({}, '', window.location.pathname);

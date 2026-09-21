@@ -55,7 +55,9 @@ function report(e: unknown) {
 }
 
 const selectedToken = computed(
-  () => tokenOptions.value.find((token) => token.symbol === fundingToken.value) || tokenOptions.value[0],
+  () =>
+    tokenOptions.value.find((token) => token.symbol === fundingToken.value) ||
+    tokenOptions.value[0],
 );
 
 async function loadWalletPanel() {
@@ -213,21 +215,13 @@ onMounted(() => {
               :options="tokenSelectOptions"
               :placeholder="t('wallet.noTokens')"
             />
-            <BaseInput
-              :label="t('wallet.amount')"
-              v-model="fundingAmount"
-              type="number"
-            />
+            <BaseInput :label="t('wallet.amount')" v-model="fundingAmount" type="number" />
           </div>
           <div class="actions">
             <BaseButton icon="simple-icons:phantom" @click="connectPhantom">
               {{ t('wallet.connectPhantom') }}
             </BaseButton>
-            <BaseButton
-              variant="primary"
-              :loading="walletStore.funding"
-              @click="fundWithPhantom"
-            >
+            <BaseButton variant="primary" :loading="walletStore.funding" @click="fundWithPhantom">
               {{ t('wallet.transferIn') }}
             </BaseButton>
             <BaseButton

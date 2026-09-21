@@ -1,6 +1,6 @@
 /**
  * BlobXyz Avatar Store
- * 
+ *
  * Dedicated store for blob renderer state with organized sections:
  * - SKIN: Visual appearance (skin type, colors, material properties)
  * - SHAPE: Geometry (scale, position, spikes, amplitude)
@@ -20,10 +20,28 @@ import { randomizeBlobState } from 'kwami';
 // =====================================================
 
 export type SkinType =
-  | 'radial' | 'banded' | 'striped' | 'marble' | 'fresnel' | 'iridescent' | 'spiral' | 'plasma' | 'gradient'
-  | 'matte' | 'glossy' | 'metallic' | 'subsurface'
-  | 'chrome' | 'clay' | 'jade' | 'toon-matcap' | 'hologram'
-  | 'flat' | 'stepped' | 'halftone' | 'outlined';
+  | 'radial'
+  | 'banded'
+  | 'striped'
+  | 'marble'
+  | 'fresnel'
+  | 'iridescent'
+  | 'spiral'
+  | 'plasma'
+  | 'gradient'
+  | 'matte'
+  | 'glossy'
+  | 'metallic'
+  | 'subsurface'
+  | 'chrome'
+  | 'clay'
+  | 'jade'
+  | 'toon-matcap'
+  | 'hologram'
+  | 'flat'
+  | 'stepped'
+  | 'halftone'
+  | 'outlined';
 
 export type InteractionAction =
   | 'none'
@@ -191,14 +209,14 @@ export function getDefaultShape(): BlobXyzShape {
       z: 0,
     },
     spikes: {
-      x: 0.2,
-      y: 0.2,
-      z: 0.2,
+      x: 3.1,
+      y: 3.6,
+      z: 2.8,
     },
     amplitude: {
-      x: 0.8,
-      y: 0.8,
-      z: 0.8,
+      x: 0.95,
+      y: 1.0,
+      z: 0.88,
     },
   };
 }

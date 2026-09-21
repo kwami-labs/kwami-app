@@ -47,13 +47,22 @@ export const useCommunicationsStore = defineStore('communications', () => {
 
   function applySnapshot(snapshot: Record<string, unknown>) {
     if (!snapshot) return;
-    if (typeof snapshot.preferredVoiceChannelId === 'string' || snapshot.preferredVoiceChannelId === null) {
+    if (
+      typeof snapshot.preferredVoiceChannelId === 'string' ||
+      snapshot.preferredVoiceChannelId === null
+    ) {
       preferredVoiceChannelId.value = snapshot.preferredVoiceChannelId as string | null;
     }
-    if (typeof snapshot.preferredWhatsappChannelId === 'string' || snapshot.preferredWhatsappChannelId === null) {
+    if (
+      typeof snapshot.preferredWhatsappChannelId === 'string' ||
+      snapshot.preferredWhatsappChannelId === null
+    ) {
       preferredWhatsappChannelId.value = snapshot.preferredWhatsappChannelId as string | null;
     }
-    if (typeof snapshot.preferredSmsChannelId === 'string' || snapshot.preferredSmsChannelId === null) {
+    if (
+      typeof snapshot.preferredSmsChannelId === 'string' ||
+      snapshot.preferredSmsChannelId === null
+    ) {
       preferredSmsChannelId.value = snapshot.preferredSmsChannelId as string | null;
     }
     if (snapshot.numberSearch && typeof snapshot.numberSearch === 'object') {
@@ -100,9 +109,19 @@ export const useCommunicationsStore = defineStore('communications', () => {
 
   loadSettings();
 
-  watch([preferredVoiceChannelId, preferredWhatsappChannelId, preferredSmsChannelId, numberSearch, compose], saveSettings, {
-    deep: true,
-  });
+  watch(
+    [
+      preferredVoiceChannelId,
+      preferredWhatsappChannelId,
+      preferredSmsChannelId,
+      numberSearch,
+      compose,
+    ],
+    saveSettings,
+    {
+      deep: true,
+    },
+  );
 
   return {
     preferredVoiceChannelId,

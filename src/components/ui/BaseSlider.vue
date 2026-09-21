@@ -1,21 +1,24 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 
-const props = withDefaults(defineProps<{
-  modelValue: number;
-  label?: string;
-  description?: string;
-  icon?: string;
-  min?: number;
-  max?: number;
-  step?: number;
-  unit?: string;
-  inline?: boolean;
-  hideValue?: boolean;
-  editValue?: boolean;
-}>(), {
-  editValue: true
-});
+const props = withDefaults(
+  defineProps<{
+    modelValue: number;
+    label?: string;
+    description?: string;
+    icon?: string;
+    min?: number;
+    max?: number;
+    step?: number;
+    unit?: string;
+    inline?: boolean;
+    hideValue?: boolean;
+    editValue?: boolean;
+  }>(),
+  {
+    editValue: true,
+  },
+);
 
 const emit = defineEmits(['update:modelValue']);
 
@@ -44,7 +47,7 @@ const fillPercent = computed(() => {
 });
 
 const trackStyle = computed(() => ({
-  '--fill-percent': `${fillPercent.value}%`
+  '--fill-percent': `${fillPercent.value}%`,
 }));
 
 function onInput(e: Event) {
@@ -84,10 +87,7 @@ function onEditKeydown(e: KeyboardEvent) {
 </script>
 
 <template>
-  <div 
-    class="slider-control" 
-    :class="{ inline, dragging: isDragging }"
-  >
+  <div class="slider-control" :class="{ inline, dragging: isDragging }">
     <div v-if="label" class="slider-header">
       <label class="slider-label">
         <iconify-icon v-if="icon" :icon="icon"></iconify-icon>
@@ -105,17 +105,12 @@ function onEditKeydown(e: KeyboardEvent) {
           ref="editInput"
           autofocus
         />
-        <span 
-          v-else 
-          class="slider-value" 
-          :class="{ editable: editValue }"
-          @click="startEditing"
-        >
+        <span v-else class="slider-value" :class="{ editable: editValue }" @click="startEditing">
           {{ displayValue }}<span v-if="unit" class="slider-unit">{{ unit }}</span>
         </span>
       </template>
     </div>
-    
+
     <div class="slider-track-wrapper" :style="trackStyle">
       <div class="slider-track">
         <div class="slider-fill"></div>
@@ -303,14 +298,14 @@ input[type='range']::-webkit-slider-thumb {
   border-radius: 50%;
   cursor: grab;
   transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 
+  box-shadow:
     0 2px 6px rgba(0, 0, 0, 0.2),
     0 0 0 3px var(--accent-glow);
 }
 
 input[type='range']::-webkit-slider-thumb:hover {
   transform: scale(1.15);
-  box-shadow: 
+  box-shadow:
     0 3px 10px rgba(0, 0, 0, 0.25),
     0 0 0 4px var(--accent-glow),
     0 0 20px var(--accent-glow);
@@ -319,7 +314,7 @@ input[type='range']::-webkit-slider-thumb:hover {
 input[type='range']:active::-webkit-slider-thumb {
   cursor: grabbing;
   transform: scale(1.1);
-  box-shadow: 
+  box-shadow:
     0 2px 8px rgba(0, 0, 0, 0.3),
     0 0 0 5px var(--accent-glow),
     0 0 24px var(--accent-glow);
@@ -334,14 +329,14 @@ input[type='range']::-moz-range-thumb {
   border-radius: 50%;
   cursor: grab;
   transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 
+  box-shadow:
     0 2px 6px rgba(0, 0, 0, 0.2),
     0 0 0 3px var(--accent-glow);
 }
 
 input[type='range']::-moz-range-thumb:hover {
   transform: scale(1.15);
-  box-shadow: 
+  box-shadow:
     0 3px 10px rgba(0, 0, 0, 0.25),
     0 0 0 4px var(--accent-glow),
     0 0 20px var(--accent-glow);

@@ -119,7 +119,8 @@ export const es = {
   email: {
     activation: {
       title: 'Activa Tu Email',
-      description: "Obtén tu propia dirección {'@'}kwami.io. Los correos se organizan automáticamente en tarjetas de acción inteligentes.",
+      description:
+        "Obtén tu propia dirección {'@'}kwami.io. Los correos se organizan automáticamente en tarjetas de acción inteligentes.",
       chooseUsername: 'Elige tu nombre de usuario',
       usernamePlaceholder: 'usuario',
       checking: 'Verificando disponibilidad...',
@@ -132,7 +133,8 @@ export const es = {
       activate: 'Activar Email',
       error: 'Error al activar el email',
       successTitle: '¡Email Activado!',
-      successDescription: 'Tu email está listo. Los correos entrantes aparecerán como tarjetas de acción inteligentes.',
+      successDescription:
+        'Tu email está listo. Los correos entrantes aparecerán como tarjetas de acción inteligentes.',
     },
     categories: {
       all: 'Todos',
@@ -155,8 +157,10 @@ export const es = {
     },
     release: {
       title: 'Liberar Dirección de Email',
-      warning: 'Esto eliminará permanentemente tu dirección de email y todos los mensajes asociados:',
-      permanent: 'Esta acción no se puede deshacer. Todos los emails se perderán y el nombre de usuario estará disponible para otros.',
+      warning:
+        'Esto eliminará permanentemente tu dirección de email y todos los mensajes asociados:',
+      permanent:
+        'Esta acción no se puede deshacer. Todos los emails se perderán y el nombre de usuario estará disponible para otros.',
       confirm: 'Liberar Email',
       cancel: 'Mantener Email',
     },
@@ -215,12 +219,14 @@ export const es = {
     languageSpanish: 'Espanol',
     installApp: 'Instalar app',
     installTitle: 'Usar como app nativa',
-    installHint: 'Descarga Kwami en este dispositivo y abralo desde la pantalla de inicio o el dock.',
+    installHint:
+      'Descarga Kwami en este dispositivo y abralo desde la pantalla de inicio o el dock.',
     downloadApp: 'Descargar app',
     installed: 'Instalada en este dispositivo',
     installIos: 'En Safari, toca Compartir, luego Anadir a pantalla de inicio y Anadir.',
     installAndroid: 'Toca Descargar app, o abre el menu del navegador y elige Instalar app.',
-    installDesktop: 'Haz clic en Descargar app o en el icono de instalacion de la barra de direcciones. En Safari o Firefox, abre este sitio en Chrome o Edge para instalarla.',
+    installDesktop:
+      'Haz clic en Descargar app o en el icono de instalacion de la barra de direcciones. En Safari o Firefox, abre este sitio en Chrome o Edge para instalarla.',
   },
   models: {
     title: 'Modelos',
@@ -244,6 +250,7 @@ export const es = {
     loginTypeTabs: 'Tipos de inicio de sesion',
     tabWeb2: 'Web2',
     tabWeb3: 'Web3',
+    tabMobile: 'Movil',
     continueWith: 'Continuar con {provider}',
     providerGoogle: 'Google',
     providerApple: 'Apple',
@@ -251,10 +258,38 @@ export const es = {
     providerGithub: 'GitHub',
     providerMetaMask: 'MetaMask',
     providerPhantom: 'Phantom',
-    walletNotFound: 'No se detecto {wallet}. Instala la extension e intentalo de nuevo.',
+    walletNotFound:
+      'No tienes {wallet} instalado. Abriendo la pagina de descarga: vuelve e intentalo cuando lo instales.',
+    walletInstall: 'Instalar {wallet}',
+    walletInstallOpen: 'Abrir la pagina de descarga',
+    walletDetected: 'Detectado',
+    walletMissing: 'No instalado',
+    walletOpenApp: 'Abrir en {wallet}',
+    walletActionInstall: 'Instalar',
+    walletActionOpenApp: 'Abrir app',
+    walletActionConnect: 'Conectar',
+    connectWallet: 'Conectar {wallet}',
+    connectWalletWithChain: 'Conectar {wallet} con {chain}',
+    walletOpenAppHint:
+      'Abriendo {wallet}. En el movil no hay extensiones, asi que instala la app si no pasa nada.',
+    walletConnecting: 'Aprueba en {wallet}',
+    chainSolana: 'Solana',
+    chainEthereum: 'Ethereum',
     web3Statement: 'Inicia sesion en Kwami con tu monedero.',
+    web3FormLabel: 'Inicia sesion con un monedero',
+    web3Hint: 'Aprueba un mensaje en tu monedero. Nunca te pediremos que envies fondos.',
+    web3Note: 'Tu direccion de monedero sera tu cuenta. No hace falta email.',
+    web3ProviderDisabled:
+      'El inicio con monedero no esta activo en este proyecto. Usa email o telefono, o activa Authentication → Providers → Web3.',
+    web3Rejected: 'La firma se cancelo en el monedero.',
+    web3Failed: 'No se pudo iniciar sesion con el monedero.',
+    web3WalletError:
+      '{wallet} no pudo terminar de firmar. Intentalo otra vez y reabre la extension si sigue fallando.',
+    web3NetworkFailed:
+      'No se pudo contactar con el servidor de inicio de sesion. Revisa tu conexion e intentalo otra vez.',
     configError: 'Error de configuracion',
-    configErrorHint: 'A esta compilacion le faltan variables de entorno necesarias: {vars}. Copia .env.sample a .env y completalas.',
+    configErrorHint:
+      'A esta compilacion le faltan variables de entorno necesarias: {vars}. Copia .env.sample a .env y completalas.',
     welcome: 'Bienvenido',
     signInContinue: 'Inicia sesion para continuar en Kwami App',
     orContinueWithEmail: 'o continua con email',
@@ -279,9 +314,48 @@ export const es = {
     failedSignIn: 'No se pudo iniciar sesion',
     alreadyHaveAccount: 'Ya tienes una cuenta?',
     noAccount: 'No tienes una cuenta?',
+    invalidEmail: 'Introduce un email valido',
+    emailNotConfirmed: 'Confirma tu email primero: busca el enlace en tu bandeja de entrada.',
+    accountExists: 'Ya existe una cuenta con este email. Inicia sesion.',
+    emailFormLabel: 'Inicia sesion con email y contrasena',
+    signingIn: 'Iniciando sesion...',
+    signingUp: 'Creando cuenta...',
+    phone: 'Numero de telefono',
+    phonePlaceholder: '+1 555 123 4567',
+    phoneHint: 'Te enviaremos un codigo por SMS. Incluye el codigo de pais.',
+    invalidPhone: 'Introduce un telefono valido con codigo de pais, como +1 555 123 4567',
+    sendCode: 'Enviar codigo',
+    sendingCode: 'Enviando codigo...',
+    codeSent: 'Codigo enviado a {phone}',
+    otp: 'Codigo de verificacion',
+    otpPlaceholder: 'Codigo de 6 digitos',
+    invalidOtp: 'Introduce el codigo de 6 digitos que te enviamos',
+    verifyCode: 'Verificar',
+    verifyingCode: 'Verificando...',
+    resendCode: 'Reenviar codigo',
+    resendCodeIn: 'Reenviar en {seconds}s',
+    changePhone: 'Usar otro numero',
+    otpExpired: 'Ese codigo ha caducado. Pide uno nuevo.',
+    otpInvalid: 'Ese codigo no es correcto. Compruebalo e intentalo de nuevo.',
+    smsRateLimit: 'Demasiados SMS. Espera un minuto e intentalo de nuevo.',
+    failedSendCode: 'No se pudo enviar el codigo',
+    failedVerifyCode: 'No se pudo verificar el codigo',
+    phoneFormLabel: 'Inicia sesion con tu numero de telefono',
+    preferences: 'Idioma y apariencia',
+    languageMenu: 'Cambiar idioma',
+    languageCurrent: 'Idioma: {language}',
+    switchToLight: 'Cambiar al modo claro',
+    switchToDark: 'Cambiar al modo oscuro',
+    backgroundMenu: 'Cambiar el fondo',
+    backgroundCurrent: 'Fondo: {name}',
+    backgroundGradient: 'Degradado',
+    backgroundShuffle: 'Sorpréndeme',
+    backgroundDblclickHint: 'Haz doble clic',
+    backgroundDblclickHintRest: 'para cambiar el vídeo',
   },
   welcomeScreen: {
     clickToSkip: 'Haz clic en cualquier lugar para omitir',
+    randomizeEvery: 'El avatar cambia cada {seconds}s. Haz clic para cambiar el ritmo.',
   },
   browser: {
     loading: 'Cargando…',
@@ -291,6 +365,17 @@ export const es = {
     timeout: 'La sesion del navegador ha expirado',
     errorHint: 'Puede que la sesion haya caducado o que el sitio no permita incrustarse.',
     retry: 'Reintentar',
+    panelLabel: 'Navegador en vivo',
+    expand: 'Ampliar a pantalla completa',
+    collapse: 'Salir de pantalla completa',
+    float: 'Convertir en ventana flotante',
+    dock: 'Acoplar el panel',
+    center: 'Centrar el panel',
+    moveHint: 'Arrastra para mover, o usa las flechas',
+    resizeHint: 'Arrastra para redimensionar, o usa las flechas',
+    ephemeral: 'Sin guardar',
+    signedInHint: 'Las sesiones iniciadas se mantendran la proxima vez.',
+    ephemeralHint: 'Esta sesion es temporal: los sitios donde inicies sesion no se recordaran.',
   },
   wallet: {
     title: 'Cartera',
@@ -321,7 +406,8 @@ export const es = {
       walletCreated: 'Cartera creada correctamente.',
       phantomConnected: 'Cartera Phantom conectada {pubkey}',
       phantomConnectedNoKey: 'Phantom conectado.',
-      transferIntentCreated: 'Intencion de transferencia creada ({id}). Envia {amount} {symbol} desde Phantom.',
+      transferIntentCreated:
+        'Intencion de transferencia creada ({id}). Envia {amount} {symbol} desde Phantom.',
       cardIntentCreated: 'Intencion de compra con tarjeta creada ({id}).',
       tokenAdded: 'Token anadido a la lista permitida.',
     },
@@ -334,7 +420,8 @@ export const es = {
   tools: {
     webhookUrl: 'URL del webhook',
     httpMethod: 'Metodo HTTP',
-    webhookHint: 'El agente llama a esta URL con los argumentos de la herramienta. Debe permitir peticiones de origen cruzado desde esta app; usa un servidor MCP para APIs que no lo permitan.',
+    webhookHint:
+      'El agente llama a esta URL con los argumentos de la herramienta. Debe permitir peticiones de origen cruzado desde esta app; usa un servidor MCP para APIs que no lo permitan.',
     invalidUrl: 'Introduce una URL de webhook http(s) valida',
     title: 'Herramientas',
     registeredTools: 'Herramientas registradas',
@@ -369,7 +456,8 @@ export const es = {
   },
   memory: {
     contextRetrieval: 'Recuperacion de contexto',
-    contextRetrievalHint: 'Cuanta conversacion previa y cuantos hechos guardados se envian con cada mensaje. Un contexto mayor recuerda mas pero consume mas tokens.',
+    contextRetrievalHint:
+      'Cuanta conversacion previa y cuantos hechos guardados se envian con cada mensaje. Un contexto mayor recuerda mas pero consume mas tokens.',
     contextSizePlaceholder: 'Selecciona el tamano del contexto',
     contextSizeLean: 'Ligero — 4 mensajes, solo coincidencias fuertes',
     contextSizeBalanced: 'Equilibrado — 10 mensajes',
@@ -437,11 +525,14 @@ export const es = {
     whatsappSenders: 'Remitentes de WhatsApp',
     smsSenders: 'Remitentes SMS',
     latestRuntime: 'Runtime mas reciente',
-    sharedInfraSummary: 'Los trunks compartidos impulsan la plataforma. Cada kwami mantiene su numero y remitente asignados.',
+    sharedInfraSummary:
+      'Los trunks compartidos impulsan la plataforma. Cada kwami mantiene su numero y remitente asignados.',
     createNumber: 'Crear numero',
-    createNumberHelp: 'Crea un numero para este kwami en 3 pasos: elige pais, busca disponible y compralo.',
+    createNumberHelp:
+      'Crea un numero para este kwami en 3 pasos: elige pais, busca disponible y compralo.',
     country: 'Pais',
-    provisionNote: 'Comprar un numero aqui lo aprovisiona para el kwami activo y lo sincroniza a la infraestructura compartida automaticamente.',
+    provisionNote:
+      'Comprar un numero aqui lo aprovisiona para el kwami activo y lo sincroniza a la infraestructura compartida automaticamente.',
     findAvailableNumber: 'Buscar numero disponible',
     refreshSuggestion: 'Actualizar sugerencia',
     refresh: 'Actualizar',
@@ -455,11 +546,13 @@ export const es = {
     ok: 'OK',
     noVoiceChannel: 'Aprovisiona un numero para habilitar llamadas en este kwami.',
     callRecipient: 'Destino de llamada',
-    callModesHelp: 'Probar solo Twilio aisla numero, cuenta y reglas geo. Llamar con agente usa LiveKit SIP y worker.',
+    callModesHelp:
+      'Probar solo Twilio aisla numero, cuenta y reglas geo. Llamar con agente usa LiveKit SIP y worker.',
     testCallTwilio: 'Llamada de prueba (solo Twilio)',
     callWithAgent: 'Llamar con agente',
     removeNumberFromKwami: 'Quitar numero del kwami',
-    phoneClaimedDetails: 'El telefono ya esta asignado a este kwami. WhatsApp y SMS quedaron activados.',
+    phoneClaimedDetails:
+      'El telefono ya esta asignado a este kwami. WhatsApp y SMS quedaron activados.',
     whatsapp: 'WhatsApp',
     sms: 'SMS',
     sender: 'Remitente',
@@ -486,7 +579,8 @@ export const es = {
     removePhoneTitle: 'Quitar numero telefonico?',
     confirmRemoveRelease: 'Quitar y liberar',
     cancel: 'Cancelar',
-    removePhoneDetails: 'Esto elimina canales de voz y WhatsApp para este kwami, actualiza trunks SIP compartidos de LiveKit, separa el numero de tu trunk SIP de Twilio cuando aplique, y libera el numero en Twilio.',
+    removePhoneDetails:
+      'Esto elimina canales de voz y WhatsApp para este kwami, actualiza trunks SIP compartidos de LiveKit, separa el numero de tu trunk SIP de Twilio cuando aplique, y libera el numero en Twilio.',
     removePhoneWarning: 'No puedes deshacer esto. Puedes aprovisionar otro numero despues.',
     numberLabel: 'Numero:',
     voiceOutboundStaleWarning:
@@ -602,7 +696,8 @@ export const es = {
     temperatureHint: 'Menor = mas preciso, Mayor = mas creativo',
     maxTokens: 'Max Tokens',
     maxTokensHint: 'Longitud maxima de respuesta',
-    realtimeInfo: 'Los modelos en tiempo real habilitan audio bidireccional con latencia ultrabaja. Algunos tambien soportan entrada de video en vivo.',
+    realtimeInfo:
+      'Los modelos en tiempo real habilitan audio bidireccional con latencia ultrabaja. Algunos tambien soportan entrada de video en vivo.',
     audio: 'Audio',
     video: 'Video',
     tools: 'Herramientas',
@@ -658,7 +753,8 @@ export const es = {
     light: 'Claro',
     quickPalettes: 'Paletas rapidas (igual que blob XYZ)',
     syncAvatarColors: 'Sincronizar colores del avatar',
-    randomizeHint: 'Toca una paleta para aplicarla, o usa el dado para generar una nueva con la paleta seleccionada. El brillo remapea colores para overlays oscuros o claros. La configuracion de escena se guarda localmente y con el boton Save del kwami.',
+    randomizeHint:
+      'Toca una paleta para aplicarla, o usa el dado para generar una nueva con la paleta seleccionada. El brillo remapea colores para overlays oscuros o claros. La configuracion de escena se guarda localmente y con el boton Save del kwami.',
     type: 'Tipo',
     overlayTypeAria: 'Tipo de superposicion',
     solid: 'Solido',
@@ -703,7 +799,8 @@ export const es = {
     maxSize: 'Tamano maximo',
     twinkleSpeed: 'Velocidad de brillo',
     rotationSpeed: 'Velocidad de rotacion',
-    starsHint: 'Las estrellas 3D se renderizan en el espacio de escena, creando profundidad y paralaje',
+    starsHint:
+      'Las estrellas 3D se renderizan en el espacio de escena, creando profundidad y paralaje',
   },
   sidebarModals: {
     switchKwami: 'Cambiar Kwami',
@@ -717,7 +814,8 @@ export const es = {
     unsavedDraftHint: 'Los cambios sin guardar se quedan locales hasta que presiones Save.',
     newKwamiTitle: 'Nuevo Kwami',
     create: 'Crear',
-    newKwamiHint: 'Dale un nombre a tu nuevo Kwami (opcional). Se sincroniza con el nombre del alma.',
+    newKwamiHint:
+      'Dale un nombre a tu nuevo Kwami (opcional). Se sincroniza con el nombre del alma.',
     name: 'Nombre',
     namePlaceholder: 'p.ej. Luna, Atlas...',
     randomize: 'Aleatorizar',
@@ -774,6 +872,11 @@ export const es = {
     stopTrack: 'Detener',
     progress: 'Progreso',
     volume: 'Volumen',
+    nowPlaying: 'Sonando ahora',
+    nextTrack: 'Poner otra cancion',
+    openOnYoutube: 'Abrir en YouTube',
+    playCrate: 'Reproducir de la coleccion',
+    helperCrate: 'Reproduciendo de la coleccion. Tu avatar sigue el ritmo.',
   },
   sttModelCard: {
     price: 'Precio',
@@ -830,9 +933,11 @@ export const es = {
   audioPanel: {
     title: 'Audio',
     unavailableTitle: 'Audio',
-    unavailableDesc: 'Los controles de audio estan disponibles por ahora para Blob XYZ y Black Hole.',
+    unavailableDesc:
+      'Los controles de audio estan disponibles por ahora para Blob XYZ y Black Hole.',
     playerTitle: 'Reproductor de audio',
-    playerDesc: 'Reproductor compartido para todos los avatares. Carga y reproduce pistas locales para animacion.',
+    playerDesc:
+      'Reproductor compartido para todos los avatares. Carga y reproduce pistas locales para animacion.',
     blobTitle: 'Audio de Blob XYZ',
     blobDesc: 'Configura como Blob XYZ reacciona al sonido.',
     audioReactivity: 'Reactividad de audio',
@@ -916,7 +1021,8 @@ export const es = {
     logFullState: 'Log estado completo',
     logConfig: 'Log configuracion',
     aboutKwami: 'Sobre Kwami',
-    aboutText: 'Kwami es una libreria de acompanante IA 3D con avatares visuales, pipelines de voz via LiveKit, memoria de largo plazo con Zep y herramientas extensibles via MCP.',
+    aboutText:
+      'Kwami es una libreria de acompanante IA 3D con avatares visuales, pipelines de voz via LiveKit, memoria de largo plazo con Zep y herramientas extensibles via MCP.',
     github: 'GitHub',
     docs: 'Docs',
   },
@@ -932,7 +1038,8 @@ export const es = {
     usage: 'Uso',
     energyPacks: 'Packs de energia',
     bestValue: 'Mejor valor',
-    energyInfo: 'La energia alimenta las conversaciones de voz de tu Kwami. Modelos de IA distintos consumen energia a ritmos distintos.',
+    energyInfo:
+      'La energia alimenta las conversaciones de voz de tu Kwami. Modelos de IA distintos consumen energia a ritmos distintos.',
     transactionHistory: 'Historial de transacciones',
     loading: 'Cargando...',
     noTransactions: 'Aun no hay transacciones',
@@ -964,7 +1071,8 @@ export const es = {
     medium: 'Media',
     long: 'Larga',
     emotionalTone: 'Tono emocional',
-    emotionalToneHint: 'Esto controla el tono de respuesta y la expresion de personalidad de Kwami.',
+    emotionalToneHint:
+      'Esto controla el tono de respuesta y la expresion de personalidad de Kwami.',
     neutral: 'Neutral',
     warm: 'Calido',
     enthusiastic: 'Entusiasta',
@@ -974,7 +1082,8 @@ export const es = {
     serious: 'Serio',
     compassionate: 'Compasivo',
     emotionalTraits: 'Rasgos emocionales',
-    emotionalTraitsHint: 'Cada control es bipolar: -100 inclina a la emocion izquierda, 0 neutral, +100 a la derecha.',
+    emotionalTraitsHint:
+      'Cada control es bipolar: -100 inclina a la emocion izquierda, 0 neutral, +100 a la derecha.',
     neutralPoint: 'Neutral',
     sadness: 'Tristeza',
     happiness: 'Felicidad',
@@ -1338,11 +1447,13 @@ export const es = {
     noData: 'No hay datos de grafo',
     userIdLine: 'ID de usuario:',
     apiLine: 'API:',
-    emptyHint: 'Si hay hechos pero el grafo esta vacio, la API de grafo Zep puede no estar en tu plan',
+    emptyHint:
+      'Si hay hechos pero el grafo esta vacio, la API de grafo Zep puede no estar en tu plan',
     linkingFromPrefix: 'Enlazando desde',
     linkingFromSuffix: '-- haz clic en un nodo destino',
     cancel: 'Cancelar',
-    footer3d: 'Arrastra para rotar - Rueda para zoom - Clic derecho para mover - Clic en nodos para detalles',
+    footer3d:
+      'Arrastra para rotar - Rueda para zoom - Clic derecho para mover - Clic en nodos para detalles',
     footer2d: 'Arrastra para pan - Rueda para zoom - Clic en nodos para detalles',
     nodesCount: '{n} nodos | {n} nodo | {n} nodos',
     edgesCount: '{n} aristas | {n} arista | {n} aristas',
@@ -1429,9 +1540,9 @@ export const es = {
     orphanHint: 'Nodos sin conexiones',
     duplicateTitle: 'Fusiones duplicadas ({selected}/{total})',
     duplicateHint: 'Similitud de nombre 95%+',
-    communitiesDetected:
-      '{n} comunidades | {n} comunidad detectada | {n} comunidades detectadas',
-    warningUndo: 'Las acciones seleccionadas no se pueden deshacer. Desmarca lo que quieras conservar.',
+    communitiesDetected: '{n} comunidades | {n} comunidad detectada | {n} comunidades detectadas',
+    warningUndo:
+      'Las acciones seleccionadas no se pueden deshacer. Desmarca lo que quieras conservar.',
     previewFailed: 'Vista previa fallida: {message}',
     applyFailed: 'Aplicacion fallida: {message}',
     doneReport: 'Listo! {orphans} huerfanos eliminados, {merges} fusiones',
@@ -1439,28 +1550,33 @@ export const es = {
   },
   memoryOps: {
     reorganizeTitle: 'Reorganizar',
-    reorganizeDesc: 'Elimina nodos huerfanos, fusiona duplicados de alta confianza y detecta comunidades.',
+    reorganizeDesc:
+      'Elimina nodos huerfanos, fusiona duplicados de alta confianza y detecta comunidades.',
     duplicatesTitle: 'Duplicados',
-    duplicatesDesc: 'Encuentra nodos con nombres similares que puedan ser la misma entidad. Fusiona para consolidar aristas.',
+    duplicatesDesc:
+      'Encuentra nodos con nombres similares que puedan ser la misma entidad. Fusiona para consolidar aristas.',
     scan: 'Escanear',
     noDuplicates: 'Sin duplicados',
     match: 'coincidencia',
     edges: 'aristas',
     merge: 'Fusionar',
     communitiesTitle: 'Comunidades',
-    communitiesDesc: 'Agrupa entidades fuertemente conectadas con Louvain. Muestra areas tematicas en tu memoria.',
+    communitiesDesc:
+      'Agrupa entidades fuertemente conectadas con Louvain. Muestra areas tematicas en tu memoria.',
     detect: 'Detectar',
     communitiesEmpty: 'Pulsa Detectar para buscar comunidades',
     communityNodes: '{n} nodos | {n} nodo | {n} nodos',
     moreMembers: '+{n} mas',
     dangerZone: 'Zona de peligro',
     destructiveTitle: 'Accion destructiva',
-    destructiveDesc: 'Elimina toda la memoria de este usuario. Incluye hilos, hechos, entidades y el grafo.',
+    destructiveDesc:
+      'Elimina toda la memoria de este usuario. Incluye hilos, hechos, entidades y el grafo.',
     deleteAllMemory: 'Eliminar toda la memoria del usuario',
     deleteDialogTitle: 'Eliminar toda la memoria?',
     deleteForever: 'Eliminar para siempre',
     deleteIntro: 'Vas a eliminar permanentemente toda la memoria de:',
-    deleteWarning: 'Esta accion no se puede deshacer. Hilos, hechos, entidades y grafo se borraran.',
+    deleteWarning:
+      'Esta accion no se puede deshacer. Hilos, hechos, entidades y grafo se borraran.',
   },
   kwamiActions: {
     created: 'Creado "{name}"{emoji}',
@@ -1541,7 +1657,7 @@ export const es = {
     importTheme: 'Importar tema',
     chooseFile: 'Elegir archivo',
     orPasteJson: 'o pega JSON',
-    importJsonPlaceholder: '{"mode": "dark", ...}',
+    importJsonPlaceholder: `{'{'}"mode": "dark", ...{'}'}`,
     cancel: 'Cancelar',
     invalidThemeFormat: 'Formato de tema invalido',
     modeDark: 'Oscuro',

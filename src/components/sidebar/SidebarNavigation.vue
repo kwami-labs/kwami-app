@@ -44,7 +44,10 @@ watch(
     if (!animating) return;
     const col = columnRef.value;
     const header = headerRef.value;
-    if (!col || !header) { navVisible.value = false; return; }
+    if (!col || !header) {
+      navVisible.value = false;
+      return;
+    }
 
     const fullHeight = col.scrollHeight;
     pinnedCompactHeight = header.offsetHeight;
@@ -130,7 +133,6 @@ watch(
 
 <template>
   <div class="switcher-column" ref="columnRef">
-
     <!-- Always-visible header: KwamiSelector + divider -->
     <div class="header-section" ref="headerRef">
       <SidebarKwamiSection />
@@ -139,7 +141,6 @@ watch(
 
     <!-- Nav groups: swapped on mode change -->
     <div v-if="navVisible" class="nav-groups" :key="displayMode">
-
       <!-- SETTINGS MODE -->
       <template v-if="displayMode === 'settings'">
         <div class="nav-group">
@@ -225,7 +226,6 @@ watch(
           </button>
         </div>
       </template>
-
     </div>
   </div>
 </template>
@@ -304,7 +304,9 @@ watch(
   background: var(--accent-glow);
   border-color: var(--accent-primary);
   color: var(--accent-primary);
-  box-shadow: 0 0 20px var(--accent-glow), 0 0 0 1px rgba(0, 217, 255, 0.2) inset;
+  box-shadow:
+    0 0 20px var(--accent-glow),
+    0 0 0 1px rgba(0, 217, 255, 0.2) inset;
 }
 
 .switcher-label {

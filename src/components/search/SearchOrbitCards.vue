@@ -140,7 +140,12 @@ onUnmounted(() => {
 
 <template>
   <div
-    v-if="searchStore.hasSearchData && !searchStore.error && results.length > 0"
+    v-if="
+      searchStore.hasSearchData &&
+      !searchStore.error &&
+      results.length > 0 &&
+      !searchStore.isWindowed
+    "
     ref="containerRef"
     class="deck-container"
     aria-label="Web search results"
@@ -195,7 +200,8 @@ onUnmounted(() => {
       </div>
       <div class="deck-card-body">
         <span class="deck-card-product-name">
-          {{ (r.product_name || r.title || '').slice(0, 52) }}{{ (r.product_name || r.title || '').length > 52 ? '…' : '' }}
+          {{ (r.product_name || r.title || '').slice(0, 52)
+          }}{{ (r.product_name || r.title || '').length > 52 ? '…' : '' }}
         </span>
         <span v-if="r.price" class="deck-card-price">{{ r.price }}</span>
         <p v-if="r.content && !r.price" class="deck-card-desc">
@@ -205,11 +211,7 @@ onUnmounted(() => {
           {{ (r.content || '').slice(0, 48) }}{{ (r.content || '').length > 48 ? '…' : '' }}
         </p>
         <div v-if="r.features && r.features.length" class="deck-card-features">
-          <span
-            v-for="(f, j) in (r.features || []).slice(0, 3)"
-            :key="j"
-            class="deck-card-tag"
-          >
+          <span v-for="(f, j) in (r.features || []).slice(0, 3)" :key="j" class="deck-card-tag">
             {{ (f || '').slice(0, 18) }}{{ (f || '').length > 18 ? '…' : '' }}
           </span>
         </div>
@@ -267,7 +269,9 @@ onUnmounted(() => {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  transition: background 0.2s, transform 0.2s;
+  transition:
+    background 0.2s,
+    transform 0.2s;
 }
 .deck-close:hover {
   background: rgba(255, 255, 255, 0.14);
@@ -426,7 +430,9 @@ onUnmounted(() => {
   border-radius: 6px;
   cursor: pointer;
   pointer-events: auto;
-  transition: opacity 0.2s, background 0.2s;
+  transition:
+    opacity 0.2s,
+    background 0.2s;
 }
 .deck-card-btn iconify-icon {
   font-size: 0.85rem;

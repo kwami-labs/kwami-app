@@ -1,0 +1,44 @@
+#!/usr/bin/env sh
+#
+# Refuses a push that would land directly on a promotion branch.
+#
+# Install with `bun run prepare`. Git passes one line per ref being pushed:
+#   <local ref> <local sha> <remote ref> <remote sha>
+set -eu
+
+if [ -n "${CI:-}" ]; then
+	exit 0
+fi
+
+while read -r _local_ref _local_sha remote_ref _remote_sha; do
+	case "$remote_ref" in
+	refs/heads/stg | refs/heads/main) ;;
+	*) continue ;;
+	esac
+
+	target="${remote_ref#refs/heads/}"
+	branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo HEAD)
+	cat >&2 <<MSG
+
+  Refusing to push directly to $target.
+
+      feature/* → dev → stg → main
+
+  stg  takes a pull request from any branch except main.
+  main takes a pull request from stg, at its current tip.
+
+  Every change reaches these branches through a pull request, so that CI has run and
+  someone has read it. See CONTRIBUTING.md#branches.
+
+      git switch -c feat/your-change      # you are on '$branch'
+      git push -u origin feat/your-change
+      gh pr create --base dev
+
+  If you genuinely have to bypass this, 'git push --no-verify' will let you, and
+  the history will show that you did.
+
+MSG
+	exit 1
+done
+
+exit 0

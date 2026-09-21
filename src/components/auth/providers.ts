@@ -12,6 +12,7 @@ import type { Provider } from '@supabase/supabase-js';
 
 export type Web2ProviderId = 'google' | 'apple' | 'azure' | 'github';
 export type Web3ProviderId = 'phantom' | 'metamask';
+export type Web3Chain = 'solana' | 'ethereum';
 export type ProviderId = Web2ProviderId | Web3ProviderId;
 
 export interface ProviderDef {
@@ -21,6 +22,10 @@ export interface ProviderDef {
   icon: string;
   /** i18n key for the provider's display name. */
   labelKey: string;
+  /** Wallet chain; only set on Web3 providers. */
+  chain?: Web3Chain;
+  /** i18n key for the chain name shown on the wallet card. */
+  chainKey?: string;
 }
 
 export const WEB2_PROVIDERS: ProviderDef[] = [
@@ -31,8 +36,20 @@ export const WEB2_PROVIDERS: ProviderDef[] = [
 ];
 
 export const WEB3_PROVIDERS: ProviderDef[] = [
-  { id: 'metamask', icon: 'simple-icons:metamask', labelKey: 'auth.providerMetaMask' },
-  { id: 'phantom', icon: 'simple-icons:phantom', labelKey: 'auth.providerPhantom' },
+  {
+    id: 'phantom',
+    icon: 'simple-icons:phantom',
+    labelKey: 'auth.providerPhantom',
+    chain: 'solana',
+    chainKey: 'auth.chainSolana',
+  },
+  {
+    id: 'metamask',
+    icon: 'simple-icons:metamask',
+    labelKey: 'auth.providerMetaMask',
+    chain: 'ethereum',
+    chainKey: 'auth.chainEthereum',
+  },
 ];
 
 function enabledIds(): Set<string> {

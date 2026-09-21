@@ -5,26 +5,34 @@ How a commit becomes a running client. This repo ships a **static Vite app** plu
 ```mermaid
 flowchart TB
   subgraph CI["GitHub Actions · ci.yml"]
-    V[verify: typecheck lint format unit coverage build]
-    E[e2e: Playwright Chromium]
+    L[lint]
+    U[unit]
+    E[e2e]
+    B[build]
   end
 
-  PR[pull_request / push main] --> V
+  PR[pull_request] --> L
+  PR --> U
   PR --> E
+  PR --> B
+  PushDev[push dev · fast lane] --> L
+  PushDev --> U
+  PushRel[push main / stg] --> L
+  PushRel --> U
+  PushRel --> E
+  PushRel --> B
 
-  subgraph Artifacts
-    Dist[dist/]
-    Cov[coverage/]
-    PW[playwright-report on failure]
+  subgraph CD["cd.yml"]
+    R[semantic-release]
+    D[wrangler deploy]
   end
 
-  V --> Dist
-  V --> Cov
-  E --> PW
+  PushRel --> R
+  PushRel --> D
+  PushDev --> D
 
-  Dist --> Host[Cloudflare Workers static assets]
+  D --> Host[Cloudflare Workers static assets]
   Host --> SW[Service worker + manifest]
-  Dist --> Tauri[Optional tauri build]
 ```
 
 ## CI
@@ -65,7 +73,7 @@ Channel Workers: `kwami-app` (main), `kwami-app-stg`, `kwami-app-dev`. `VITE_*` 
 
 ### GitHub Actions
 
-[`.github/workflows/deploy.yml`](../../.github/workflows/deploy.yml) deploys on push to `main` / `stg` / `dev` (and `workflow_dispatch`). It uses the matching GitHub Environment (`production`, `stg`, `dev`) for:
+[`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) is the test gate. On a green push to `main`, `stg` or `dev` it calls [`.github/workflows/cd.yml`](../../.github/workflows/cd.yml): `main` and `stg` cut the version, tag, changelog and GitHub Release; all three deploy their channel Worker. The matching GitHub Environment (`production`, `stg`, `dev`) supplies:
 
 | Kind | Names |
 | --- | --- |

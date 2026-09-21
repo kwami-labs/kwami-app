@@ -174,7 +174,8 @@ export function useCommunicationsPanel(mode: Ref<CommunicationsPanelMode>) {
     const previous = suggestedNumber.value?.phoneNumber;
     await searchNumbers();
     if (suggestedNumber.value && previous && suggestedNumber.value.phoneNumber === previous) {
-      statusMessage.value = 'Refreshed search. Twilio returned the same top candidate; refresh again for another try.';
+      statusMessage.value =
+        'Refreshed search. Twilio returned the same top candidate; refresh again for another try.';
     }
   }
 
@@ -212,7 +213,8 @@ export function useCommunicationsPanel(mode: Ref<CommunicationsPanelMode>) {
       await configureWhatsappChannel({
         channelId: selectedWhatsappChannel.value.id,
         status: 'active',
-        providerSender: whatsappSender.value || selectedWhatsappChannel.value.provider_sender || undefined,
+        providerSender:
+          whatsappSender.value || selectedWhatsappChannel.value.provider_sender || undefined,
         metadata: { configuredFromPanel: true },
       });
       statusMessage.value = 'Updated WhatsApp sender configuration.';
@@ -357,9 +359,8 @@ export function useCommunicationsPanel(mode: Ref<CommunicationsPanelMode>) {
     const caps = selectedVoiceChannel.value?.capabilities as Record<string, unknown> | undefined;
     return Boolean(caps && caps.outbound === false);
   });
-  const canPlaceOutboundCall = computed(
-    () =>
-      Boolean(selectedVoiceChannel.value && communicationsStore.compose.callTarget.trim()),
+  const canPlaceOutboundCall = computed(() =>
+    Boolean(selectedVoiceChannel.value && communicationsStore.compose.callTarget.trim()),
   );
   const anyCallInProgress = computed(() => callingTwilioDirect.value || callingWithAgent.value);
 

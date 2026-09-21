@@ -1,20 +1,20 @@
-import type { SoulPreset } from 'kwami'
+import type { SoulPreset } from 'kwami';
 import {
   soulPresets as librarySoulPresets,
   soulPresetCategories,
   getSoulPresetById,
   getSoulPresetsByCategory,
-} from 'kwami'
+} from 'kwami';
 
-export type { SoulPreset }
-export const soulPresets: SoulPreset[] = librarySoulPresets
+export type { SoulPreset };
+export const soulPresets: SoulPreset[] = librarySoulPresets;
 
 export function getTemplateById(id: string): SoulPreset | undefined {
-  return getSoulPresetById(id)
+  return getSoulPresetById(id);
 }
 
 export function getTemplatesByCategory(category: SoulPreset['category']): SoulPreset[] {
-  return getSoulPresetsByCategory(category)
+  return getSoulPresetsByCategory(category);
 }
 
-export const templateCategories = soulPresetCategories
+export const templateCategories = soulPresetCategories;

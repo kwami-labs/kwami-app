@@ -47,11 +47,11 @@ const panelStyle = computed(() => {
 // Start resize
 function startResize(e: MouseEvent) {
   if (!canResize.value) return;
-  
+
   isResizing.value = true;
   startX.value = e.clientX;
   startWidth.value = uiStore.panelWidth;
-  
+
   document.addEventListener('mousemove', onMouseMove);
   document.addEventListener('mouseup', stopResize);
   document.body.style.cursor = 'ew-resize';
@@ -61,7 +61,7 @@ function startResize(e: MouseEvent) {
 // Handle resize
 function onMouseMove(e: MouseEvent) {
   if (!isResizing.value) return;
-  
+
   // Check sidebar position for correct resize direction
   const isRight = themeStore.sidebarPosition === 'right';
   const delta = isRight ? startX.value - e.clientX : e.clientX - startX.value;
@@ -96,10 +96,10 @@ onUnmounted(() => {
     <div class="panel-content-wrapper">
       <slot></slot>
     </div>
-    
+
     <!-- Noise texture overlay -->
     <div class="noise-overlay"></div>
-    
+
     <!-- Resize handle -->
     <div
       v-if="canResize && uiStore.isPanelOpen"
@@ -155,11 +155,7 @@ onUnmounted(() => {
   left: 0;
   right: 0;
   height: 120px;
-  background: linear-gradient(
-    180deg,
-    rgba(0, 217, 255, 0.02) 0%,
-    transparent 100%
-  );
+  background: linear-gradient(180deg, rgba(0, 217, 255, 0.02) 0%, transparent 100%);
   pointer-events: none;
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
 }
@@ -220,7 +216,9 @@ onUnmounted(() => {
   background: var(--text-muted);
   border-radius: 2px;
   opacity: 0;
-  transition: opacity 0.2s ease, background 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    background 0.2s ease;
 }
 
 .resize-handle:hover .resize-indicator {

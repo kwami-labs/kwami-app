@@ -18,7 +18,14 @@ const calendarStore = useCalendarStore();
 const workspaceStore = useWorkspaceStore();
 
 const viewOptions: CalendarView[] = ['month', 'week', 'day', 'agenda'];
-const eventTypeOptions: CalendarEventType[] = ['meeting', 'task', 'personal', 'reminder', 'focus', 'other'];
+const eventTypeOptions: CalendarEventType[] = [
+  'meeting',
+  'task',
+  'personal',
+  'reminder',
+  'focus',
+  'other',
+];
 
 const showForm = ref(false);
 const editingEventId = ref<string | null>(null);
@@ -70,7 +77,11 @@ const headerLabel = computed(() => {
     const start = startOfWeek(referenceDate.value);
     const end = addDays(start, 6);
     const startText = start.toLocaleDateString(locale.value, { month: 'short', day: 'numeric' });
-    const endText = end.toLocaleDateString(locale.value, { month: 'short', day: 'numeric', year: 'numeric' });
+    const endText = end.toLocaleDateString(locale.value, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
     return `${startText} - ${endText}`;
   }
   if (viewMode.value === 'day') {
@@ -149,7 +160,11 @@ const selectedDateKey = computed(() => toDateKey(selectedDate.value));
 const selectedEvents = computed(() => eventsOn(selectedDate.value));
 
 const agendaEvents = computed(() => {
-  const start = new Date(referenceDate.value.getFullYear(), referenceDate.value.getMonth(), referenceDate.value.getDate());
+  const start = new Date(
+    referenceDate.value.getFullYear(),
+    referenceDate.value.getMonth(),
+    referenceDate.value.getDate(),
+  );
   const end = addDays(start, 14).getTime();
   return calendarStore.events
     .filter((event) => {
@@ -169,7 +184,11 @@ function hasEvents(date: Date) {
 
 function previousRange() {
   if (viewMode.value === 'month') {
-    referenceDate.value = new Date(referenceDate.value.getFullYear(), referenceDate.value.getMonth() - 1, 1);
+    referenceDate.value = new Date(
+      referenceDate.value.getFullYear(),
+      referenceDate.value.getMonth() - 1,
+      1,
+    );
     return;
   }
   if (viewMode.value === 'week') {
@@ -181,7 +200,11 @@ function previousRange() {
 
 function nextRange() {
   if (viewMode.value === 'month') {
-    referenceDate.value = new Date(referenceDate.value.getFullYear(), referenceDate.value.getMonth() + 1, 1);
+    referenceDate.value = new Date(
+      referenceDate.value.getFullYear(),
+      referenceDate.value.getMonth() + 1,
+      1,
+    );
     return;
   }
   if (viewMode.value === 'week') {
@@ -404,7 +427,9 @@ watch(
           <div class="agenda-card">
             <div class="agenda-header">
               <h4>{{ t('calendar.scheduleFor') }}</h4>
-              <span>{{ selectedDate.toLocaleDateString(locale, { month: 'short', day: 'numeric' }) }}</span>
+              <span>{{
+                selectedDate.toLocaleDateString(locale, { month: 'short', day: 'numeric' })
+              }}</span>
             </div>
 
             <div v-if="selectedEvents.length === 0" class="agenda-empty">
@@ -420,8 +445,12 @@ watch(
                   <small>{{ timeRange(event) }}</small>
                 </div>
                 <div class="event-actions">
-                  <button class="event-btn" @click="openEditForm(event)">{{ t('calendar.edit') }}</button>
-                  <button class="event-btn danger" @click="removeEvent(event.id)">{{ t('calendar.delete') }}</button>
+                  <button class="event-btn" @click="openEditForm(event)">
+                    {{ t('calendar.edit') }}
+                  </button>
+                  <button class="event-btn danger" @click="removeEvent(event.id)">
+                    {{ t('calendar.delete') }}
+                  </button>
                 </div>
               </li>
             </ul>
@@ -437,16 +466,26 @@ watch(
               <span :class="{ today: isToday(day) }">{{ day.getDate() }}</span>
             </button>
             <ul class="week-events">
-              <li v-for="event in eventsOn(day)" :key="event.id" :style="{ borderLeftColor: event.color }">
+              <li
+                v-for="event in eventsOn(day)"
+                :key="event.id"
+                :style="{ borderLeftColor: event.color }"
+              >
                 <strong>{{ event.title }}</strong>
                 <small>{{ t(`calendar.eventTypes.${event.event_type}`) }}</small>
                 <small>{{ timeRange(event) }}</small>
                 <div class="event-actions">
-                  <button class="event-btn" @click="openEditForm(event)">{{ t('calendar.edit') }}</button>
-                  <button class="event-btn danger" @click="removeEvent(event.id)">{{ t('calendar.delete') }}</button>
+                  <button class="event-btn" @click="openEditForm(event)">
+                    {{ t('calendar.edit') }}
+                  </button>
+                  <button class="event-btn danger" @click="removeEvent(event.id)">
+                    {{ t('calendar.delete') }}
+                  </button>
                 </div>
               </li>
-              <li v-if="eventsOn(day).length === 0" class="empty-day">{{ t('calendar.noEvents') }}</li>
+              <li v-if="eventsOn(day).length === 0" class="empty-day">
+                {{ t('calendar.noEvents') }}
+              </li>
             </ul>
           </div>
         </div>
@@ -455,7 +494,13 @@ watch(
       <template v-else-if="viewMode === 'day'">
         <div class="day-view">
           <div class="day-view-header">
-            {{ referenceDate.toLocaleDateString(locale, { weekday: 'long', month: 'long', day: 'numeric' }) }}
+            {{
+              referenceDate.toLocaleDateString(locale, {
+                weekday: 'long',
+                month: 'long',
+                day: 'numeric',
+              })
+            }}
           </div>
           <div class="day-hours">
             <div class="hour-row" v-for="hour in hours" :key="hour">
@@ -463,16 +508,27 @@ watch(
             </div>
           </div>
           <div class="day-events">
-            <div v-for="event in eventsOn(referenceDate)" :key="event.id" class="day-event" :style="{ borderLeftColor: event.color }">
+            <div
+              v-for="event in eventsOn(referenceDate)"
+              :key="event.id"
+              class="day-event"
+              :style="{ borderLeftColor: event.color }"
+            >
               <strong>{{ event.title }}</strong>
               <small>{{ t(`calendar.eventTypes.${event.event_type}`) }}</small>
               <small>{{ timeRange(event) }}</small>
               <div class="event-actions">
-                <button class="event-btn" @click="openEditForm(event)">{{ t('calendar.edit') }}</button>
-                <button class="event-btn danger" @click="removeEvent(event.id)">{{ t('calendar.delete') }}</button>
+                <button class="event-btn" @click="openEditForm(event)">
+                  {{ t('calendar.edit') }}
+                </button>
+                <button class="event-btn danger" @click="removeEvent(event.id)">
+                  {{ t('calendar.delete') }}
+                </button>
               </div>
             </div>
-            <div v-if="eventsOn(referenceDate).length === 0" class="agenda-empty">{{ t('calendar.noEvents') }}</div>
+            <div v-if="eventsOn(referenceDate).length === 0" class="agenda-empty">
+              {{ t('calendar.noEvents') }}
+            </div>
           </div>
         </div>
       </template>
@@ -500,8 +556,12 @@ watch(
                 </small>
               </div>
               <div class="event-actions">
-                <button class="event-btn" @click="openEditForm(event)">{{ t('calendar.edit') }}</button>
-                <button class="event-btn danger" @click="removeEvent(event.id)">{{ t('calendar.delete') }}</button>
+                <button class="event-btn" @click="openEditForm(event)">
+                  {{ t('calendar.edit') }}
+                </button>
+                <button class="event-btn danger" @click="removeEvent(event.id)">
+                  {{ t('calendar.delete') }}
+                </button>
               </div>
             </li>
           </ul>

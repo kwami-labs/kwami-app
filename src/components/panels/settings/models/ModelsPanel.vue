@@ -20,16 +20,18 @@ const panelIcon = panelIcons.models ?? 'ph:cpu-duotone';
 
 // Pipeline type - synced with store (converts between UI value and store value)
 const pipelineType = computed({
-  get: () => pipelineMode.value === 'realtime' ? 'realtime' : 'standard',
+  get: () => (pipelineMode.value === 'realtime' ? 'realtime' : 'standard'),
   set: (value: 'standard' | 'realtime') => {
     voiceStore.setPipelineMode(value === 'realtime' ? 'realtime' : 'stt-llm-tts');
-  }
+  },
 });
 
 // Active model type tab (for standard pipeline) - persisted in store
 const activeModelType = computed({
   get: () => modelsUI.value.activeModelType as ModelType,
-  set: (value: ModelType) => { modelsUI.value.activeModelType = value; }
+  set: (value: ModelType) => {
+    modelsUI.value.activeModelType = value;
+  },
 });
 
 // Provider icons
@@ -64,13 +66,13 @@ function getProviderIcon(provider: string): string {
       <!-- Model Type Tabs + Content in same section -->
       <PanelSection>
         <div class="models-section">
-          <ModelTypeTabs 
+          <ModelTypeTabs
             v-model="activeModelType"
             :llmModel="{ provider: llm.provider, model: llm.model }"
             :sttModel="{ provider: stt.provider, model: stt.model }"
             :ttsModel="{ provider: tts.provider, model: tts.model }"
           />
-          
+
           <div class="tab-content">
             <LLMTab v-if="activeModelType === 'llm'" />
             <STTTab v-if="activeModelType === 'stt'" />
@@ -91,11 +93,14 @@ function getProviderIcon(provider: string): string {
               <span class="realtime-label">{{ t('models.realtimeModel') }}</span>
             </div>
             <div class="realtime-model">
-              <iconify-icon :icon="getProviderIcon(realtime.provider)" class="realtime-provider-icon"></iconify-icon>
+              <iconify-icon
+                :icon="getProviderIcon(realtime.provider)"
+                class="realtime-provider-icon"
+              ></iconify-icon>
               <span class="realtime-model-name">{{ realtime.model }}</span>
             </div>
           </div>
-          
+
           <div class="tab-content">
             <RealtimeTab />
           </div>

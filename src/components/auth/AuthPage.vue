@@ -1,24 +1,59 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import WelcomeBlob from './WelcomeBlob.vue';
 import LoginButton from './LoginButton.vue';
+import SoundtrackPill from './SoundtrackPill.vue';
+import AuthPreferencesPill from './AuthPreferencesPill.vue';
+import WelcomeVideoBackground from './WelcomeVideoBackground.vue';
+import { useWelcomeBackground } from '@/composables/useWelcomeBackground';
+import { useWelcomeSoundtrack } from '@/composables/useSoundtrack';
+import { useWelcomeKwamiHit } from '@/composables/useWelcomeKwamiHit';
+import { isAuthChromeTarget } from '@/utils/blobHitTest';
 
 const { t } = useI18n();
 const loginOpen = ref(false);
+const { video, shuffle } = useWelcomeBackground();
+const { currentTrack } = useWelcomeSoundtrack();
+const { hitsKwami } = useWelcomeKwamiHit();
+const youtubeOn = computed(() => Boolean(currentTrack.value?.youtube));
+
+/**
+ * Double-click the empty backdrop to roll another clip. The same shuffle as
+ * the preferences pill — this is just a shorter reach. Clicks on the avatar,
+ * the login chrome, or an open panel are someone else's gesture.
+ */
+function onBackgroundDblClick(event: MouseEvent) {
+  if (loginOpen.value) return;
+  if (isAuthChromeTarget(event.target)) return;
+  if (hitsKwami(event.clientX, event.clientY)) return;
+  shuffle();
+}
 </script>
 
 <template>
-  <div class="page">
-    <div class="ambient" aria-hidden="true" />
+  <div class="page" @dblclick="onBackgroundDblClick">
+    <WelcomeVideoBackground />
 
-    <h1 class="hero-title" :class="{ 'hero-title--compact': loginOpen }" aria-label="kwami">
+    <!-- A blue glow tuned for the painted gradient; over a video it only
+         muddies whatever is playing. -->
+    <div v-if="!video && !youtubeOn" class="ambient" aria-hidden="true" />
+
+    <h1 v-if="!loginOpen" class="hero-title" aria-label="kwami">
       <span class="title-main">KWAMI</span>
     </h1>
 
     <p class="title-sub" :class="{ 'title-sub--hidden': loginOpen }">THE AI THAT FEELS ALIVE</p>
 
     <LoginButton v-model:open="loginOpen" />
+
+    <SoundtrackPill :login-open="loginOpen" />
+
+    <p class="video-hint" :class="{ 'video-hint--hidden': loginOpen }">
+      <span>{{ t('auth.backgroundDblclickHint') }}</span>
+      <span>{{ t('auth.backgroundDblclickHintRest') }}</span>
+    </p>
+    <AuthPreferencesPill />
 
     <div class="blob-zone">
       <WelcomeBlob />
@@ -36,11 +71,8 @@ const loginOpen = ref(false);
   inset: 0;
   overflow: hidden;
   z-index: 1000;
-  background:
-    radial-gradient(ellipse 120% 82% at 50% -20%, rgba(53, 158, 238, 0.1), transparent 55%),
-    radial-gradient(ellipse 76% 55% at 82% 32%, rgba(239, 71, 111, 0.08), transparent 52%),
-    radial-gradient(ellipse 76% 55% at 10% 70%, rgba(3, 206, 164, 0.08), transparent 50%),
-    #06070a;
+  background: var(--auth-bg);
+  transition: background 260ms ease;
 }
 
 .ambient {
@@ -51,7 +83,7 @@ const loginOpen = ref(false);
   width: 100%;
   max-width: 1000px;
   height: 52%;
-  background: radial-gradient(ellipse at center, rgba(53, 158, 238, 0.1) 0%, transparent 72%);
+  background: var(--auth-ambient);
   pointer-events: none;
   z-index: 0;
 }
@@ -66,13 +98,6 @@ const loginOpen = ref(false);
   text-align: center;
   white-space: nowrap;
   pointer-events: none;
-  transition: top 300ms ease, transform 300ms ease, z-index 300ms ease;
-}
-
-.hero-title--compact {
-  top: 32%;
-  transform: translate(-50%, -50%) scale(0.31);
-  z-index: 46;
 }
 
 .title-main {
@@ -81,8 +106,8 @@ const loginOpen = ref(false);
   font-weight: 900;
   line-height: 0.84;
   letter-spacing: 0.03em;
-  color: #f6f8ff;
-  text-shadow: 0 0 34px rgba(53, 158, 238, 0.22);
+  color: var(--auth-text);
+  text-shadow: var(--auth-title-glow);
 }
 
 .title-sub {
@@ -95,7 +120,7 @@ const loginOpen = ref(false);
   font-size: clamp(0.75rem, 1.9vw, 1.1rem);
   letter-spacing: 0.42em;
   font-weight: 700;
-  color: rgba(180, 188, 210, 0.9);
+  color: var(--auth-text-muted);
   text-align: center;
   white-space: nowrap;
   pointer-events: none;
@@ -125,20 +150,42 @@ const loginOpen = ref(false);
 
 .auth-footer p {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--auth-text-faint);
   margin: 0;
   letter-spacing: 0.5px;
 }
 
-@media (max-width: 900px) {
-  .hero-title--compact {
-    top: 31%;
-    transform: translate(-50%, -50%) scale(0.28);
-  }
+.video-hint {
+  /* Same corner as AuthPreferencesPill (right/bottom 20px, ~42px tall). */
+  position: fixed;
+  right: 20px;
+  bottom: 70px;
+  z-index: 47;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  margin: 0;
+  font-size: 10px;
+  line-height: 1.35;
+  letter-spacing: 0.12em;
+  text-transform: lowercase;
+  color: var(--auth-text-faint);
+  text-align: right;
+  pointer-events: none;
+  transition: opacity 220ms ease;
+}
 
+.video-hint span {
+  white-space: nowrap;
+}
+
+.video-hint--hidden {
+  opacity: 0;
+}
+
+@media (max-width: 900px) {
   .title-sub {
     top: 60%;
   }
-
 }
 </style>

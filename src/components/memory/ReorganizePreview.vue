@@ -1,107 +1,126 @@
 <script setup lang="ts">
-import { api } from '@/lib/apiClient'
-import { ref, computed } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { useToast } from 'vue-toastification'
-import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
-import { translateApiUserMessage } from '@/utils/translateApiMessage'
+import { api } from '@/lib/apiClient';
+import { ref, computed } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { useToast } from 'vue-toastification';
+import ConfirmDialog from '@/components/ui/ConfirmDialog.vue';
+import { translateApiUserMessage } from '@/utils/translateApiMessage';
 
-const { t } = useI18n()
+const { t } = useI18n();
 
 // apiBaseUrl is gone: the memory store owns the base URL now, so this
 // component can no longer be pointed at a different host than the rest of
 // the app by accident.
 const props = defineProps<{
-  userId: string
-}>()
+  userId: string;
+}>();
 
 const emit = defineEmits<{
-  (e: 'done'): void
-}>()
+  (e: 'done'): void;
+}>();
 
-const toast = useToast()
+const toast = useToast();
 
 // State
-interface OrphanPreview { uuid: string; name: string; summary: string | null; labels?: string[]; selected: boolean }
-interface MergePreview { score: number; keep: { uuid: string; name: string; edge_count: number }; remove: { uuid: string; name: string; edge_count: number }; selected: boolean }
+interface OrphanPreview {
+  uuid: string;
+  name: string;
+  summary: string | null;
+  labels?: string[];
+  selected: boolean;
+}
+interface MergePreview {
+  score: number;
+  keep: { uuid: string; name: string; edge_count: number };
+  remove: { uuid: string; name: string; edge_count: number };
+  selected: boolean;
+}
 
-const showDialog = ref(false)
-const loading = ref(false)
-const applying = ref(false)
-const previewOrphans = ref<OrphanPreview[]>([])
-const previewMerges = ref<MergePreview[]>([])
-const previewCommunities = ref(0)
+const showDialog = ref(false);
+const loading = ref(false);
+const applying = ref(false);
+const previewOrphans = ref<OrphanPreview[]>([]);
+const previewMerges = ref<MergePreview[]>([]);
+const previewCommunities = ref(0);
 
 async function fetchPreview() {
-  loading.value = true
+  loading.value = true;
   try {
     const data = await api.post<{
-      orphans?: OrphanPreview[]
-      duplicates?: MergePreview[]
-      communities_estimate?: number
-    }>(`/memory/${props.userId}/reorganize/preview`, undefined, { timeoutMs: 60_000 })
-    previewOrphans.value = (data.orphans || []).map((o: OrphanPreview) => ({ ...o, selected: true }))
-    previewMerges.value = (data.duplicates || []).map((d: MergePreview) => ({ ...d, selected: true }))
-    previewCommunities.value = data.communities_estimate || 0
-    showDialog.value = true
+      orphans?: OrphanPreview[];
+      duplicates?: MergePreview[];
+      communities_estimate?: number;
+    }>(`/memory/${props.userId}/reorganize/preview`, undefined, { timeoutMs: 60_000 });
+    previewOrphans.value = (data.orphans || []).map((o: OrphanPreview) => ({
+      ...o,
+      selected: true,
+    }));
+    previewMerges.value = (data.duplicates || []).map((d: MergePreview) => ({
+      ...d,
+      selected: true,
+    }));
+    previewCommunities.value = data.communities_estimate || 0;
+    showDialog.value = true;
   } catch (e) {
     toast.error(
       t('memoryReorg.previewFailed', { message: translateApiUserMessage((e as Error).message, t) }),
-    )
+    );
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 async function apply() {
-  const selectedOrphans = previewOrphans.value.filter(o => o.selected).map(o => o.uuid)
-  const selectedMerges = previewMerges.value.filter(m => m.selected).map(m => ({
-    keep_uuid: m.keep.uuid,
-    remove_uuid: m.remove.uuid,
-  }))
+  const selectedOrphans = previewOrphans.value.filter((o) => o.selected).map((o) => o.uuid);
+  const selectedMerges = previewMerges.value
+    .filter((m) => m.selected)
+    .map((m) => ({
+      keep_uuid: m.keep.uuid,
+      remove_uuid: m.remove.uuid,
+    }));
 
   if (selectedOrphans.length === 0 && selectedMerges.length === 0) {
-    toast.info(t('memoryReorg.noActionsSelected'))
-    showDialog.value = false
-    return
+    toast.info(t('memoryReorg.noActionsSelected'));
+    showDialog.value = false;
+    return;
   }
 
-  applying.value = true
+  applying.value = true;
   try {
     const result = await api.post<{
-      report: { orphans_removed: number; merges_performed: number }
+      report: { orphans_removed: number; merges_performed: number };
     }>(
       `/memory/${props.userId}/reorganize/apply`,
       { orphan_uuids: selectedOrphans, merge_pairs: selectedMerges },
       // Destructive graph surgery: never retried, and it can run long.
       { retry: false, timeoutMs: 120_000 },
-    )
-    const r = result.report
+    );
+    const r = result.report;
     toast.success(
       t('memoryReorg.doneReport', { orphans: r.orphans_removed, merges: r.merges_performed }),
       { timeout: 5000 },
-    )
-    showDialog.value = false
-    emit('done')
+    );
+    showDialog.value = false;
+    emit('done');
   } catch (e) {
     toast.error(
       t('memoryReorg.applyFailed', { message: translateApiUserMessage((e as Error).message, t) }),
-    )
+    );
   } finally {
-    applying.value = false
+    applying.value = false;
   }
 }
 
 const selectedCount = () =>
-  previewOrphans.value.filter(o => o.selected).length +
-  previewMerges.value.filter(m => m.selected).length
+  previewOrphans.value.filter((o) => o.selected).length +
+  previewMerges.value.filter((m) => m.selected).length;
 
 const applyConfirmLabel = computed(() =>
   t('memoryReorg.applyWithCount', { count: selectedCount() }),
-)
+);
 
 // Expose trigger method for parent
-defineExpose({ fetchPreview, loading, applying })
+defineExpose({ fetchPreview, loading, applying });
 </script>
 
 <template>
@@ -233,7 +252,7 @@ defineExpose({ fetchPreview, loading, applying })
 .reorg-check-item:hover {
   background: var(--surface-3);
 }
-.reorg-check-item input[type="checkbox"] {
+.reorg-check-item input[type='checkbox'] {
   margin-top: 2px;
   accent-color: var(--accent-primary);
   flex-shrink: 0;

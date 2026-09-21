@@ -1,48 +1,73 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
-import { useI18n } from 'vue-i18n'
-import type { MemoryNode, MemoryEdge, MemoryGraph, UpdateNodePayload, UpdateEdgePayload } from './types'
-import { getNodeColorHex, formatDate } from './utils'
-import BaseSelect from '@/components/ui/BaseSelect.vue'
+import { ref, watch, computed } from 'vue';
+import { useI18n } from 'vue-i18n';
+import type {
+  MemoryNode,
+  MemoryEdge,
+  MemoryGraph,
+  UpdateNodePayload,
+  UpdateEdgePayload,
+} from './types';
+import { getNodeColorHex, formatDate } from './utils';
+import BaseSelect from '@/components/ui/BaseSelect.vue';
 
-const { t } = useI18n()
+const { t } = useI18n();
 
 const props = defineProps<{
-  node: MemoryNode | null
-  edges: MemoryEdge[]
-  graph: MemoryGraph
-}>()
+  node: MemoryNode | null;
+  edges: MemoryEdge[];
+  graph: MemoryGraph;
+}>();
 
 const emit = defineEmits<{
-  (e: 'close'): void
-  (e: 'update-node', nodeUuid: string, data: UpdateNodePayload): void
-  (e: 'update-edge', edgeIndex: number, edge: MemoryEdge, data: UpdateEdgePayload): void
-  (e: 'delete-edge', edgeIndex: number, edge: MemoryEdge): void
-}>()
+  (e: 'close'): void;
+  (e: 'update-node', nodeUuid: string, data: UpdateNodePayload): void;
+  (e: 'update-edge', edgeIndex: number, edge: MemoryEdge, data: UpdateEdgePayload): void;
+  (e: 'delete-edge', edgeIndex: number, edge: MemoryEdge): void;
+}>();
 
 // Edit mode state
-const isEditing = ref(false)
+const isEditing = ref(false);
 const editData = ref({
   name: '',
   summary: '',
   type: '',
   labels: [] as string[],
   newLabel: '',
-})
+});
 
 // Edge editing
-const editingEdgeIndex = ref<number | null>(null)
-const editEdgeRelation = ref('')
+const editingEdgeIndex = ref<number | null>(null);
+const editEdgeRelation = ref('');
 
 const entityTypeKeys = [
-  'user', 'assistant', 'person', 'pet', 'location', 'place',
-  'preference', 'topic', 'skill', 'project', 'organization',
-  'product', 'event', 'activity', 'goal', 'procedure',
-  'attribute', 'genre', 'artist', 'fact', 'tool', 'venue', 'entity',
-] as const
+  'user',
+  'assistant',
+  'person',
+  'pet',
+  'location',
+  'place',
+  'preference',
+  'topic',
+  'skill',
+  'project',
+  'organization',
+  'product',
+  'event',
+  'activity',
+  'goal',
+  'procedure',
+  'attribute',
+  'genre',
+  'artist',
+  'fact',
+  'tool',
+  'venue',
+  'entity',
+] as const;
 
 function titleCaseEntityKey(key: string): string {
-  return key.charAt(0).toUpperCase() + key.slice(1)
+  return key.charAt(0).toUpperCase() + key.slice(1);
 }
 
 const entityTypeOptions = computed(() =>
@@ -50,7 +75,7 @@ const entityTypeOptions = computed(() =>
     label: t(`memoryNode.entityTypes.${key}`),
     value: key,
   })),
-)
+);
 
 const labelAddOptions = computed(() =>
   entityTypeKeys
@@ -59,99 +84,102 @@ const labelAddOptions = computed(() =>
       label: t(`memoryNode.entityTypes.${key}`),
       value: titleCaseEntityKey(key),
     })),
-)
+);
 
 function getConnectedNodeLabel(nodeId: string): string {
-  const node = props.graph.nodes.find(n => n.id === nodeId)
-  return node?.label || nodeId
+  const node = props.graph.nodes.find((n) => n.id === nodeId);
+  return node?.label || nodeId;
 }
 
 function startEditing() {
-  if (!props.node) return
-  isEditing.value = true
+  if (!props.node) return;
+  isEditing.value = true;
   editData.value = {
     name: props.node.label || '',
     summary: props.node.summary || '',
     type: props.node.type || 'entity',
     labels: [...(props.node.labels || [])],
     newLabel: '',
-  }
+  };
 }
 
 function cancelEditing() {
-  isEditing.value = false
-  editingEdgeIndex.value = null
+  isEditing.value = false;
+  editingEdgeIndex.value = null;
 }
 
 function saveNode() {
-  if (!props.node?.uuid) return
-  const payload: UpdateNodePayload = {}
-  
+  if (!props.node?.uuid) return;
+  const payload: UpdateNodePayload = {};
+
   if (editData.value.name.trim() && editData.value.name !== props.node.label) {
-    payload.name = editData.value.name.trim()
+    payload.name = editData.value.name.trim();
   }
   if (editData.value.summary !== (props.node.summary || '')) {
-    payload.summary = editData.value.summary.trim()
+    payload.summary = editData.value.summary.trim();
   }
   if (JSON.stringify(editData.value.labels) !== JSON.stringify(props.node.labels || [])) {
-    payload.labels = editData.value.labels
+    payload.labels = editData.value.labels;
   }
-  
+
   // Only emit if there are changes
   if (Object.keys(payload).length > 0) {
-    emit('update-node', props.node.uuid, payload)
+    emit('update-node', props.node.uuid, payload);
   }
-  
-  isEditing.value = false
+
+  isEditing.value = false;
 }
 
 function removeLabel(index: number) {
-  editData.value.labels.splice(index, 1)
+  editData.value.labels.splice(index, 1);
 }
 
 function addLabel(val: string | number) {
-  const label = String(val).trim()
+  const label = String(val).trim();
   if (label && !editData.value.labels.includes(label)) {
-    editData.value.labels.push(label)
+    editData.value.labels.push(label);
   }
-  editData.value.newLabel = ''
+  editData.value.newLabel = '';
 }
 
 // Edge editing
 function startEditEdge(index: number) {
-  editingEdgeIndex.value = index
-  editEdgeRelation.value = props.edges[index]?.relation || ''
+  editingEdgeIndex.value = index;
+  editEdgeRelation.value = props.edges[index]?.relation || '';
 }
 
 function cancelEditEdge() {
-  editingEdgeIndex.value = null
-  editEdgeRelation.value = ''
+  editingEdgeIndex.value = null;
+  editEdgeRelation.value = '';
 }
 
 function saveEdge(index: number) {
-  const edge = props.edges[index]
-  if (!edge) return
-  
-  const newRelation = editEdgeRelation.value.trim()
+  const edge = props.edges[index];
+  if (!edge) return;
+
+  const newRelation = editEdgeRelation.value.trim();
   if (newRelation && newRelation !== edge.relation) {
-    emit('update-edge', index, edge, { name: newRelation })
+    emit('update-edge', index, edge, { name: newRelation });
   }
-  
-  editingEdgeIndex.value = null
+
+  editingEdgeIndex.value = null;
 }
 
 function handleDeleteEdge(index: number) {
-  const edge = props.edges[index]
+  const edge = props.edges[index];
   if (edge) {
-    emit('delete-edge', index, edge)
+    emit('delete-edge', index, edge);
   }
 }
 
 // Reset editing state when node changes
-watch(() => props.node, () => {
-  isEditing.value = false
-  editingEdgeIndex.value = null
-})
+watch(
+  () => props.node,
+  () => {
+    isEditing.value = false;
+    editingEdgeIndex.value = null;
+  },
+);
 </script>
 
 <template>
@@ -159,18 +187,18 @@ watch(() => props.node, () => {
     <div v-if="node" class="node-details-panel">
       <div class="panel-header">
         <h3 class="panel-title">{{ t('memoryNode.title') }}</h3>
-        <span 
+        <span
           v-if="!isEditing"
-          class="type-badge-header" 
+          class="type-badge-header"
           :style="{ background: getNodeColorHex(node.type) }"
         >
           {{ node.type }}
         </span>
         <div class="header-actions">
-          <button 
+          <button
             v-if="!isEditing"
-            class="header-btn edit-btn" 
-            @click="startEditing" 
+            class="header-btn edit-btn"
+            @click="startEditing"
             :title="t('memoryNode.editNode')"
           >
             <iconify-icon icon="ph:pencil-simple-duotone"></iconify-icon>
@@ -180,7 +208,7 @@ watch(() => props.node, () => {
           </button>
         </div>
       </div>
-      
+
       <div class="panel-content">
         <!-- ======== Read Mode ======== -->
         <template v-if="!isEditing">
@@ -189,39 +217,35 @@ watch(() => props.node, () => {
             <span class="detail-label">{{ t('memoryNode.nameColon') }}</span>
             <span class="detail-value name-value">{{ node.label }}</span>
           </div>
-          
+
           <!-- UUID -->
           <div v-if="node.uuid" class="detail-section">
             <span class="detail-label">{{ t('memoryNode.uuid') }}</span>
             <span class="detail-value mono uuid-value">{{ node.uuid }}</span>
           </div>
-          
+
           <!-- Created date -->
           <div v-if="node.created_at" class="detail-section">
             <span class="detail-label">{{ t('memoryNode.created') }}</span>
             <span class="detail-value">{{ formatDate(node.created_at) }}</span>
           </div>
-          
+
           <!-- Summary -->
           <div v-if="node.summary" class="detail-section summary-section">
             <span class="detail-label">{{ t('memoryNode.summaryColon') }}</span>
             <p class="summary-text">{{ node.summary }}</p>
           </div>
-          
+
           <!-- Labels -->
           <div v-if="node.labels && node.labels.length > 0" class="detail-section">
             <span class="detail-label">{{ t('memoryNode.labelsColon') }}</span>
             <div class="labels-container">
-              <span 
-                v-for="label in node.labels" 
-                :key="label" 
-                class="label-badge"
-              >
+              <span v-for="label in node.labels" :key="label" class="label-badge">
                 {{ label }}
               </span>
             </div>
           </div>
-          
+
           <!-- Connections -->
           <div v-if="edges.length > 0" class="connections-section">
             <span class="section-title">
@@ -229,11 +253,7 @@ watch(() => props.node, () => {
               {{ t('memoryNode.connections', { count: edges.length }) }}
             </span>
             <div class="connections-list">
-              <div 
-                v-for="(edge, idx) in edges" 
-                :key="idx" 
-                class="connection-item"
-              >
+              <div v-for="(edge, idx) in edges" :key="idx" class="connection-item">
                 <span class="connection-direction">
                   <template v-if="edge.source === node?.id">
                     <iconify-icon icon="ph:arrow-right"></iconify-icon>
@@ -244,21 +264,22 @@ watch(() => props.node, () => {
                 </span>
                 <span class="connection-relation">{{ edge.relation }}</span>
                 <span class="connection-target">
-                  {{ edge.source === node?.id 
-                    ? getConnectedNodeLabel(edge.target) 
-                    : getConnectedNodeLabel(edge.source) 
+                  {{
+                    edge.source === node?.id
+                      ? getConnectedNodeLabel(edge.target)
+                      : getConnectedNodeLabel(edge.source)
                   }}
                 </span>
               </div>
             </div>
           </div>
-          
+
           <div v-else class="no-connections">
             <iconify-icon icon="ph:link-break"></iconify-icon>
             {{ t('memoryNode.noConnections') }}
           </div>
         </template>
-        
+
         <!-- ======== Edit Mode ======== -->
         <template v-else>
           <!-- Name -->
@@ -270,7 +291,7 @@ watch(() => props.node, () => {
               :placeholder="t('memoryNode.namePlaceholder')"
             />
           </div>
-          
+
           <!-- Type -->
           <div class="edit-field">
             <BaseSelect
@@ -280,7 +301,7 @@ watch(() => props.node, () => {
               icon="ph:tag-duotone"
             />
           </div>
-          
+
           <!-- Summary -->
           <div class="edit-field">
             <label class="edit-field-label">{{ t('memoryNode.summary') }}</label>
@@ -291,16 +312,12 @@ watch(() => props.node, () => {
               rows="3"
             ></textarea>
           </div>
-          
+
           <!-- Labels -->
           <div class="edit-field">
             <label class="edit-field-label">{{ t('memoryNode.labels') }}</label>
             <div class="edit-labels-wrap">
-              <span 
-                v-for="(label, li) in editData.labels" 
-                :key="li" 
-                class="edit-chip"
-              >
+              <span v-for="(label, li) in editData.labels" :key="li" class="edit-chip">
                 {{ label }}
                 <button class="chip-x" @click="removeLabel(li)">
                   <iconify-icon icon="ph:x-bold"></iconify-icon>
@@ -316,7 +333,7 @@ watch(() => props.node, () => {
               </div>
             </div>
           </div>
-          
+
           <!-- Connections (editable) -->
           <div v-if="edges.length > 0" class="connections-section">
             <span class="section-title">
@@ -324,11 +341,7 @@ watch(() => props.node, () => {
               {{ t('memoryNode.connections', { count: edges.length }) }}
             </span>
             <div class="connections-list">
-              <div 
-                v-for="(edge, idx) in edges" 
-                :key="idx" 
-                class="connection-item editable"
-              >
+              <div v-for="(edge, idx) in edges" :key="idx" class="connection-item editable">
                 <template v-if="editingEdgeIndex !== idx">
                   <span class="connection-direction">
                     <template v-if="edge.source === node?.id">
@@ -340,16 +353,25 @@ watch(() => props.node, () => {
                   </span>
                   <span class="connection-relation">{{ edge.relation }}</span>
                   <span class="connection-target">
-                    {{ edge.source === node?.id 
-                      ? getConnectedNodeLabel(edge.target) 
-                      : getConnectedNodeLabel(edge.source) 
+                    {{
+                      edge.source === node?.id
+                        ? getConnectedNodeLabel(edge.target)
+                        : getConnectedNodeLabel(edge.source)
                     }}
                   </span>
                   <div class="connection-actions">
-                    <button class="conn-btn" @click="startEditEdge(idx)" :title="t('memoryNode.editRelation')">
+                    <button
+                      class="conn-btn"
+                      @click="startEditEdge(idx)"
+                      :title="t('memoryNode.editRelation')"
+                    >
                       <iconify-icon icon="ph:pencil-simple"></iconify-icon>
                     </button>
-                    <button class="conn-btn danger" @click="handleDeleteEdge(idx)" :title="t('memoryNode.deleteConnection')">
+                    <button
+                      class="conn-btn danger"
+                      @click="handleDeleteEdge(idx)"
+                      :title="t('memoryNode.deleteConnection')"
+                    >
                       <iconify-icon icon="ph:trash-simple"></iconify-icon>
                     </button>
                   </div>
@@ -374,7 +396,7 @@ watch(() => props.node, () => {
               </div>
             </div>
           </div>
-          
+
           <!-- Save / Cancel -->
           <div class="edit-footer">
             <button class="footer-btn save" @click="saveNode">

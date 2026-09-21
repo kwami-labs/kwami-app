@@ -4,10 +4,7 @@ import type { ComposerTranslation } from 'vue-i18n';
  * Map common English API / fetch error text to user-facing i18n keys.
  * Unknown messages pass through unchanged (often English backend detail).
  */
-export function translateApiUserMessage(
-  raw: unknown,
-  t: ComposerTranslation,
-): string {
+export function translateApiUserMessage(raw: unknown, t: ComposerTranslation): string {
   const s = typeof raw === 'string' ? raw.trim() : String(raw ?? '').trim();
   if (!s) return t('apiErrors.generic');
 

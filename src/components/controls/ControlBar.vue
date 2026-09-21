@@ -36,7 +36,7 @@ function updateDuration() {
 
 async function handleToggle() {
   if (isLoading.value) return;
-  
+
   isLoading.value = true;
   try {
     if (isConnected.value) {
@@ -132,10 +132,10 @@ onUnmounted(() => {
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
-  
+
   /* Default state (disconnected) - accent glow */
   background: linear-gradient(135deg, var(--accent-primary) 0%, #0099cc 100%);
-  box-shadow: 
+  box-shadow:
     0 4px 20px rgba(0, 217, 255, 0.4),
     0 0 0 0 rgba(0, 217, 255, 0);
 }
@@ -148,7 +148,7 @@ onUnmounted(() => {
 
 .control-btn:hover:not(:disabled) {
   transform: scale(1.08);
-  box-shadow: 
+  box-shadow:
     0 6px 28px rgba(0, 217, 255, 0.5),
     0 0 0 4px rgba(0, 217, 255, 0.15);
 }
@@ -160,13 +160,13 @@ onUnmounted(() => {
 /* Connected state - red/stop */
 .control-btn.connected {
   background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-  box-shadow: 
+  box-shadow:
     0 4px 20px rgba(239, 68, 68, 0.4),
     0 0 0 0 rgba(239, 68, 68, 0);
 }
 
 .control-btn.connected:hover:not(:disabled) {
-  box-shadow: 
+  box-shadow:
     0 6px 28px rgba(239, 68, 68, 0.5),
     0 0 0 4px rgba(239, 68, 68, 0.15);
 }
@@ -188,14 +188,20 @@ onUnmounted(() => {
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Fade transition */
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
 }
 
 .fade-enter-from,
@@ -203,5 +209,4 @@ onUnmounted(() => {
   opacity: 0;
   transform: translateX(8px);
 }
-
 </style>
