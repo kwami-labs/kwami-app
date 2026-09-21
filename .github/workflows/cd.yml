@@ -56,7 +56,7 @@ jobs:
       TESTED_SHA: ${{ inputs.sha || github.sha }}
       BRANCH: ${{ inputs.branch || github.ref_name }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.branch || github.ref_name }}
           fetch-depth: 0
@@ -73,7 +73,7 @@ jobs:
           fi
 
       - if: env.skip != 'true'
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v7
         with:
           node-version: 24
 
@@ -129,7 +129,7 @@ jobs:
       VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
       VITE_AUTH_PROVIDERS: ${{ vars.VITE_AUTH_PROVIDERS }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.sha || github.sha }}
       - uses: ./.github/actions/cloudflare-deploy
@@ -154,7 +154,7 @@ jobs:
       VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
       VITE_AUTH_PROVIDERS: ${{ vars.VITE_AUTH_PROVIDERS }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.sha || github.sha }}
       - uses: ./.github/actions/cloudflare-deploy
@@ -179,7 +179,7 @@ jobs:
       VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
       VITE_AUTH_PROVIDERS: ${{ vars.VITE_AUTH_PROVIDERS }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.sha || github.sha }}
       - uses: ./.github/actions/cloudflare-deploy
