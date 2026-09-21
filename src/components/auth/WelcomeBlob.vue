@@ -21,6 +21,17 @@ import {
   smoothstep,
 } from '@/utils/blobTween';
 import { createMusicPulse } from '@/utils/musicPulse';
+import {
+  boostEyeLevels,
+  eyePatternFlow,
+  eyePupilRadius,
+  eyeReactivity,
+  eyeShimmerSpeed,
+  eyeShimmerStrength,
+  EYE_AUDIO_SMOOTHING,
+  EYE_PUPIL_RESPONSE,
+  EYE_SHIMMER_RESPONSE,
+} from '@/utils/welcomeEyeAudio';
 import { useWalletApproval } from '@/composables/useWalletApproval';
 import { fitKwamiInView, type KwamiHeroRenderer } from '@/utils/kwamiViewportFit';
 import { pickWelcomeWireframe } from '@/utils/welcomeBlobLook';
@@ -164,14 +175,13 @@ const BOB_ATTACK_MS = 45;
 const BOB_RELEASE_MS = 190;
 
 /**
- * The eye collapses the three bands to one level and lerps by `1 - smoothing`,
- * so higher is slower. Above the stock 0.82 because the app pushes this one by
- * hand and the bands arrive enveloped already.
+ * Eye only — the blob reads `musicPulse` and never this envelope.
+ *
+ * Faster than the workspace 45/320 so a kick still has a rising edge after
+ * the analyser and before the eye's own lerp. The pulse term in
+ * `boostEyeLevels` is what actually lands the beat; this is the fall.
  */
-const EYE_AUDIO_SMOOTHING = 0.88;
-
-/** A short attack keeps the hit; a long release is what reads as dancing. */
-const BAND_ENVELOPE = { attackMs: 45, releaseMs: 320 } as const;
+const BAND_ENVELOPE = { attackMs: 22, releaseMs: 160 } as const;
 
 /**
  * How long a renderer has to stay up before the next roll may replace it.
@@ -393,6 +403,35 @@ onMounted(async () => {
     Object.assign(effects, BLOB_AUDIO_EFFECTS);
   };
 
+  type WelcomeEye = {
+    getMesh: () => { rotation: { x: number; y: number } };
+    getConfig?: () => { geometry?: { pupilRadius?: number } };
+    setColors?: (colors: EyeColorPalette) => void;
+    setAudioLevels?: (bass: number, mid: number, high: number) => void;
+    setAudioSmoothing?: (value: number) => void;
+    setAudioEnabled?: (enabled: boolean) => void;
+    setAudioReactivity?: (value: number) => void;
+    setPupilResponse?: (value: number) => void;
+    setShimmerResponse?: (value: number) => void;
+    setPatternFlow?: (value: number) => void;
+    setShimmerStrength?: (value: number) => void;
+    setShimmerSpeed?: (value: number) => void;
+    setPupilRadius?: (value: number) => void;
+  };
+
+  /**
+   * The static half of the eye's audio path: enable it, and set the knobs the
+   * SDK multiplies `audioDrive` by. Re-applied whenever the eye is built or
+   * `randomize()` runs, because a new instance comes back at the SDK defaults
+   * — 1.0 / 0.22 / 0.35 / 0.82 — which is the look this is undoing.
+   */
+  const applyEyeAudioLook = (eye: WelcomeEye) => {
+    try { eye.setAudioEnabled?.(true); } catch {}
+    try { eye.setAudioSmoothing?.(EYE_AUDIO_SMOOTHING); } catch {}
+    try { eye.setPupilResponse?.(EYE_PUPIL_RESPONSE); } catch {}
+    try { eye.setShimmerResponse?.(EYE_SHIMMER_RESPONSE); } catch {}
+  };
+
   /**
    * Stop the SDK integrating a rotation of its own.
    *
@@ -440,6 +479,7 @@ onMounted(async () => {
     let pupilMotionTarget = 0;
     let pupilMotionCurrent = 0;
     let eyeBasePupilRadius: number | null = null;
+    let eyeAudioApplied = false;
     let lastBlobSubtype: Subtype | null = null;
     let lastEyePalette: EyeColorPalette | null = null;
     const eyeFollowRange = 0.35;
@@ -657,28 +697,32 @@ onMounted(async () => {
       }
 
       const eye = (kwami.avatar as unknown as {
-        getEyeIris?: () => {
-          getMesh: () => { rotation: { x: number; y: number } };
-          setAudioLevels?: (bass: number, mid: number, high: number) => void;
-          setAudioSmoothing?: (value: number) => void;
-        } | null;
+        getEyeIris?: () => WelcomeEye | null;
       }).getEyeIris?.();
       if (eye) {
         const eyeMesh = eye.getMesh();
 
         // blob-xyz reads the shared analyser inside the SDK. eye-iris does not,
-        // so the music's levels have to be pushed at it once a frame, the way
-        // `MusicPlayer.vue` does for the renderers that are not the blob.
-        // Enveloped first: the eye lerps what it is handed, but symmetrically
-        // and over a single combined level, so it cannot put the attack back.
-        // Silence is pushed through too, or a pause would freeze the envelope
-        // at whatever it held rather than letting it fall away.
+        // so the music has to be pushed at it once a frame. Loudness alone is
+        // not enough — `getBandLevels` barely moves on a kick — so the pulse
+        // the blob already computed is poured back into the bands and into
+        // reactivity, pupil, shimmer and flow. Silence is pushed through too,
+        // or a pause would freeze every envelope where it stood.
+        if (!eyeAudioApplied) {
+          applyEyeAudioLook(eye);
+          eyeAudioApplied = true;
+        }
+
         const raw = playing ? getBandLevels(audio.getFrequencyData()) : SILENCE;
-        const levels = bandEnvelope.follow(raw, deltaMs);
+        const levels = boostEyeLevels(bandEnvelope.follow(raw, deltaMs), pulse);
         eye.setAudioLevels?.(levels.bass, levels.mid, levels.high);
+        eye.setAudioReactivity?.(eyeReactivity(level, pulse));
+        eye.setPatternFlow?.(eyePatternFlow(level, pulse));
+        eye.setShimmerStrength?.(eyeShimmerStrength(level, pulse));
+        eye.setShimmerSpeed?.(eyeShimmerSpeed(pulse));
 
         if (eyeBasePupilRadius == null) {
-          const base = (eye as unknown as { getConfig?: () => { geometry?: { pupilRadius?: number } } }).getConfig?.()?.geometry?.pupilRadius;
+          const base = eye.getConfig?.()?.geometry?.pupilRadius;
           eyeBasePupilRadius = typeof base === 'number' ? base : 0.26;
         }
 
@@ -689,10 +733,20 @@ onMounted(async () => {
 
         pupilMotionTarget *= pupilMotionDecay;
         pupilMotionCurrent += (pupilMotionTarget - pupilMotionCurrent) * pupilSmoothing;
-        const pupilRadius = (eyeBasePupilRadius ?? 0.26) + (pupilMotionCurrent * pupilMaxBoost);
-        (eye as unknown as { setPupilRadius?: (value: number) => void }).setPupilRadius?.(pupilRadius);
+        // Pointer and the beat share this write. The SDK's own update also
+        // dilates from `audioDrive`, and whoever runs last wins — so the
+        // pulse has to be in *this* write, or a later pointer-only radius
+        // would erase the hit the visitor just heard.
+        eye.setPupilRadius?.(
+          eyePupilRadius(
+            eyeBasePupilRadius ?? 0.26,
+            pupilMotionCurrent * pupilMaxBoost,
+            pulse,
+          ),
+        );
       } else {
         eyeBasePupilRadius = null;
+        eyeAudioApplied = false;
       }
 
       rafId = requestAnimationFrame(animate);
@@ -879,14 +933,12 @@ onMounted(async () => {
         // The eye has no geometry to rebuild, so `randomize()` is cheap here:
         // it is palette and fibre uniforms and nothing else.
         try { kwami.avatar.randomize(); } catch {}
-        const eye = kwami.avatar.getEyeIris();
+        const eye = kwami.avatar.getEyeIris() as WelcomeEye | null;
         if (eye) {
           lastEyePalette = pickEyeColors(lastEyePalette);
-          try { eye.setColors(lastEyePalette); } catch {}
-          try {
-            (eye as unknown as { setAudioSmoothing?: (value: number) => void })
-              .setAudioSmoothing?.(EYE_AUDIO_SMOOTHING);
-          } catch {}
+          try { eye.setColors?.(lastEyePalette); } catch {}
+          applyEyeAudioLook(eye);
+          eyeAudioApplied = true;
         }
         if (switched) bandEnvelope.reset();
       }
