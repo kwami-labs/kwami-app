@@ -1,22 +1,29 @@
-## Summary
+<!-- Security issues: do not use this template. Report privately — see SECURITY.md. -->
 
-<!-- Why this change exists. Not a file list. -->
+## What
 
-## Type
+<!-- What changes, and why. Link the issue if there is one: Closes #123 -->
 
-- [ ] `feat`
-- [ ] `fix`
-- [ ] `docs`
-- [ ] `refactor` / `perf` / `test` / `chore` / `ci`
+## How
 
-## Test plan
+<!-- The approach, and anything a reviewer would otherwise have to reverse-engineer from the diff. -->
+
+## Testing
+
+<!-- Which lane covers this, and what it asserts. -->
 
 - [ ] `bun run typecheck && bun run lint:check && bun run format:check && bun run test:unit`
+- [ ] Unit coverage for the new behaviour
+- [ ] E2E updated if this changes a user-visible flow
 - [ ] UI: which panels, signed-in / signed-out, empty / error states
-- [ ] Changelog updated if this is user-visible ([CHANGELOG.md](../CHANGELOG.md))
 
-## Checklist
+## Notes
 
-- [ ] No new `fetch()` wrapper around the Kwami API
-- [ ] No secrets or `VITE_` provider keys
-- [ ] Routes documented in [docs/reference/api.md](../docs/reference/api.md) if the contract changed
+<!--
+Anything the reviewer should know. Delete the section if there is nothing.
+-->
+
+---
+
+<!-- The PR title must be a Conventional Commit — it becomes the squash commit on main.
+     e.g. feat(auth): follow the pointer during wallet approval -->

@@ -18,6 +18,9 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
+    "test:ci-scripts": "node --test scripts/ci/*.test.mjs",
+    "commitlint": "commitlint",
+    "prepare": "husky",
     "cf:preview": "wrangler dev --config infra/wrangler.jsonc --env production",
     "cf:deploy": "bun run build && wrangler deploy --config infra/wrangler.jsonc --env production",
     "cf:deploy:dry": "bun run build && wrangler deploy --config infra/wrangler.jsonc --env production --dry-run",
@@ -35,6 +38,8 @@
     "vue-toastification": "2.0.0-rc.5"
   },
   "devDependencies": {
+    "@commitlint/cli": "^21.2.3",
+    "@commitlint/config-conventional": "^21.2.3",
     "@pinia/testing": "^1.0.3",
     "@playwright/test": "^1.63.0",
     "@tauri-apps/cli": "^2.10.1",
@@ -48,6 +53,7 @@
     "@vue/tsconfig": "^0.8.1",
     "eslint": "^9.39.2",
     "eslint-plugin-vue": "^10.7.0",
+    "husky": "^9.1.7",
     "jsdom": "^26.1.0",
     "msw": "^2.15.0",
     "prettier": "^3.8.0",
@@ -61,7 +67,6 @@
   "overrides": {
     "rollup": "4.59.0",
     "minimatch": "9.0.7",
-    "serialize-javascript": "7.0.3",
-    "ajv": "6.14.0"
+    "serialize-javascript": "7.0.3"
   }
 }

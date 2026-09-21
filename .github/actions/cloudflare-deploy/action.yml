@@ -1,0 +1,87 @@
+name: Deploy to Cloudflare Workers
+description: >-
+  Build the Vite app with the Environment's VITE_* values, then publish the
+  matching channel Worker from infra/wrangler.jsonc.
+
+# A missing token is the "not wired up yet" state and stays green so the
+# pipeline is usable before Cloudflare credentials exist. Everything else is a
+# misconfiguration and fails: a green deploy that shipped nothing is worse than
+# a red one.
+
+inputs:
+  wrangler-env:
+    description: Wrangler environment name (`production`, `stg`, or `dev`).
+    required: true
+  api-token:
+    description: Cloudflare API token. Absent means Cloudflare is not configured yet, and the deploy is skipped.
+    required: true
+  account-id:
+    description: Cloudflare account ID that owns the Worker.
+    required: true
+
+outputs:
+  deployed:
+    description: '"true" when a deploy actually happened.'
+    value: ${{ steps.check.outputs.configured }}
+
+runs:
+  using: composite
+  steps:
+    - name: Check Cloudflare configuration
+      id: check
+      shell: bash
+      env:
+        TOKEN: ${{ inputs.api-token }}
+        ACCOUNT: ${{ inputs.account-id }}
+        WRANGLER_ENV: ${{ inputs.wrangler-env }}
+      run: |
+        set -euo pipefail
+        if [ -z "${TOKEN:-}" ]; then
+          echo '::warning::CLOUDFLARE_API_TOKEN is not set on this Environment — nothing was deployed.'
+          echo "- **Deploy skipped**: \`CLOUDFLARE_API_TOKEN\` is not set on this Environment (\`${WRANGLER_ENV}\`)." >> "$GITHUB_STEP_SUMMARY"
+          echo 'configured=false' >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        if [ -z "${ACCOUNT:-}" ]; then
+          echo '::error::CLOUDFLARE_API_TOKEN is set but CLOUDFLARE_ACCOUNT_ID is not — set it on this Environment'
+          exit 1
+        fi
+        echo 'configured=true' >> "$GITHUB_OUTPUT"
+
+    - uses: oven-sh/setup-bun@v2
+      if: steps.check.outputs.configured == 'true'
+      with:
+        bun-version: "1.2.21"
+
+    - name: Install dependencies
+      if: steps.check.outputs.configured == 'true'
+      shell: bash
+      env:
+        HUSKY: "0"
+      run: bun install --frozen-lockfile
+
+    - name: Build
+      if: steps.check.outputs.configured == 'true'
+      shell: bash
+      run: bun run build
+
+    - name: Deploy to Cloudflare Workers
+      if: steps.check.outputs.configured == 'true'
+      uses: cloudflare/wrangler-action@v3
+      with:
+        apiToken: ${{ inputs.api-token }}
+        accountId: ${{ inputs.account-id }}
+        packageManager: bun
+        command: deploy --config infra/wrangler.jsonc --env ${{ inputs.wrangler-env }}
+
+    - name: Summary
+      if: steps.check.outputs.configured == 'true'
+      shell: bash
+      env:
+        WRANGLER_ENV: ${{ inputs.wrangler-env }}
+      run: |
+        {
+          echo '### Deployed'
+          echo ''
+          echo "Worker environment \`${WRANGLER_ENV}\` via \`infra/wrangler.jsonc\`"
+        } >> "$GITHUB_STEP_SUMMARY"

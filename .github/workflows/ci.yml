@@ -1,69 +1,164 @@
-name: CI
+# The test gate. Every job here is a required status check on `main`.
+#
+# The lanes are separate jobs rather than one `bun run check` because the PR
+# checks UI is where a failure gets read: "e2e" going red says something
+# different from "unit" going red. They also run in parallel.
+name: ci
 
+# `dev` is tested and deployed (Cloudflare Worker `kwami-app-dev`). `main` and
+# `stg` run ci then cut a version and deploy their channel Workers.
+#
+# A push to `dev` runs the FAST LANE only: lint and unit. `dev` is the branch
+# people push to repeatedly, and Playwright plus a full production build cost
+# minutes per push. The full suite still runs on every pull request, so nothing
+# reaches `stg` or `main` without it.
+#
+# The condition is spelled out on each job rather than hoisted into one, because
+# GitHub does not expand YAML anchors in workflows. They are all in this file:
+# grep FAST LANE.
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, stg, dev]
 
+# A force-push should cancel the run it superseded. `main` and `stg` are
+# excluded: those runs are what the release job keys off, so they always finish.
+# `dev` may cancel — a superseded push should not deploy.
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/stg' }}
+
+permissions:
+  contents: read
+
+env:
+  HUSKY: "0"
+  BUN_VERSION: "1.2.21"
 
 jobs:
-  verify:
-    name: Verify
+  # Conventional Commits, checked on the PR title rather than on every commit
+  # in the branch. A squash merge means the PR title IS the commit message
+  # that lands on main.
+  pr-title:
+    name: pr-title
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - name: Check Conventional Commits format
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        shell: bash
+        run: |
+          # The pattern lives in a variable: an inline regex in [[ =~ ]] loses
+          # its backslashes to quote removal, which silently turns \( into a
+          # capture group and lets "feature: x" pass.
+          pattern='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9._/-]+\))?!?: .+$'
+          if [[ ! "$TITLE" =~ $pattern ]]; then
+            echo "::error::PR title is not a Conventional Commit: $TITLE"
+            echo "Expected: <type>(<optional scope>): <description>"
+            echo "Types: feat fix docs style refactor perf test build ci chore revert"
+            echo "See CONTRIBUTING.md"
+            exit 1
+          fi
+          echo "ok: $TITLE"
+
+  # semantic-release derives the version, the tag and every CHANGELOG entry
+  # from these subjects, so a commit that does not parse is unreleasable work.
+  commits:
+    name: commits
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: "1.2.21"
+          bun-version: ${{ env.BUN_VERSION }}
 
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
+      - run: bun install --frozen-lockfile
+
+      - name: Lint the commits this branch adds
+        env:
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${BASE_SHA}" || "${BASE_SHA}" =~ ^0+$ ]]; then
+            git log -1 --pretty=%B "${HEAD_SHA}" | bunx commitlint --verbose
+            exit 0
+          fi
+          while IFS= read -r sha; do
+            git log -1 --pretty=%B "$sha" | bunx commitlint --verbose
+          done < <(git rev-list --first-parent "${BASE_SHA}..${HEAD_SHA}")
+
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - run: bun install --frozen-lockfile
 
       - name: Typecheck
         run: bun run typecheck
 
-      - name: Lint
+      - name: ESLint
         run: bun run lint:check
 
-      - name: Format check
+      - name: Prettier
         run: bun run format:check
 
-      - name: Unit + integration tests
-        run: bun run test:unit --coverage
+      - name: CI script tests
+        run: bun run test:ci-scripts
 
-      - name: Build
-        run: bun run build
+  unit:
+    name: unit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - run: bun install --frozen-lockfile
+
+      - name: Vitest + coverage floors
+        run: bun run test:unit --coverage
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: coverage
+          name: coverage-unit
           path: coverage/
           retention-days: 7
 
   e2e:
-    name: E2E
+    name: e2e
+    # FAST LANE: skipped on a push to `dev` — see the note on `on:` above.
+    if: github.event_name != 'push' || github.ref != 'refs/heads/dev'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: "1.2.21"
+          bun-version: ${{ env.BUN_VERSION }}
 
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
+      - run: bun install --frozen-lockfile
 
       - name: Install Playwright browsers
         run: bunx playwright install --with-deps chromium
 
-      - name: Run e2e tests
+      - name: Playwright
         run: bun run test:e2e
 
       - uses: actions/upload-artifact@v4
@@ -72,3 +167,67 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+
+  vuln:
+    name: vuln
+    # FAST LANE: skipped on a push to `dev` — see the note on `on:` above.
+    if: github.event_name != 'push' || github.ref != 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - run: bun install --frozen-lockfile
+
+      - name: bun audit
+        run: bun audit --prod
+
+  build:
+    name: build
+    # FAST LANE: skipped on a push to `dev` — see the note on `on:` above.
+    if: github.event_name != 'push' || github.ref != 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - run: bun install --frozen-lockfile
+
+      - name: Production build
+        run: bun run build
+
+  # Continuous delivery, called from the commit that just passed rather than
+  # triggered by it.
+  #
+  # `uses:` a local workflow rather than `workflow_run` in cd.yml: that trigger
+  # always runs the copy of the workflow on the DEFAULT branch, so a change to
+  # the delivery pipeline could not take effect until it reached `main`. Called
+  # this way, the cd.yml that runs is the one from this commit.
+  #
+  # `!failure() && !cancelled()` rather than `success()`: the FAST LANE above
+  # skips most gates on a push to `dev`, and `success()` treats a skipped need
+  # as unmet, which would mean `dev` never delivers.
+  cd:
+    name: cd
+    needs: [pr-title, commits, lint, unit, e2e, vuln, build]
+    if: >-
+      always()
+      && !failure()
+      && !cancelled()
+      && github.event_name == 'push'
+      && contains(fromJSON('["main","stg","dev"]'), github.ref_name)
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    uses: ./.github/workflows/cd.yml
+    with:
+      branch: ${{ github.ref_name }}
+      sha: ${{ github.sha }}
+    secrets: inherit
