@@ -100,6 +100,15 @@ const MAX_HISTORY = 50;
 export const useThemeStore = defineStore('theme', () => {
   // State - Grouped settings
   const mode = ref<ThemeMode>(defaultSettings.mode);
+  /**
+   * What `mode` actually resolves to once `system` and `auto` are evaluated --
+   * i.e. the value `applyTheme` writes to `data-theme`. `mode` alone cannot
+   * answer "is the UI light right now?", which is what a two-state toggle and
+   * any canvas that paints itself against the chrome need to know.
+   */
+  const resolvedMode = ref<'dark' | 'light'>(
+    defaultSettings.mode === 'light' ? 'light' : 'dark',
+  );
   const autoStartTime = ref(defaultSettings.autoStartTime);
   const autoEndTime = ref(defaultSettings.autoEndTime);
   const accentPrimary = ref(defaultSettings.accentPrimary);
@@ -461,6 +470,7 @@ export const useThemeStore = defineStore('theme', () => {
     }
 
     root.setAttribute('data-theme', effectiveMode);
+    resolvedMode.value = effectiveMode === 'light' ? 'light' : 'dark';
 
     // Glass tint calculation
     const tintAmount = glassTint.value / 100;
@@ -850,6 +860,7 @@ export const useThemeStore = defineStore('theme', () => {
   return {
     // State
     mode,
+    resolvedMode,
     autoStartTime,
     autoEndTime,
     accentPrimary,

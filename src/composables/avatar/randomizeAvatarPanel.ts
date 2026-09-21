@@ -11,10 +11,24 @@ export interface RandomizeAvatarPanelDeps {
   applyEyeIris: () => void;
 }
 
+const NO_DEPS: RandomizeAvatarPanelDeps = {
+  applyBlob: () => {},
+  applyBlackHole: () => {},
+  applyParticles: () => {},
+  applyEyeIris: () => {},
+};
+
 /**
  * Randomizes all avatar panel parameters for the active renderer, applies to Kwami, and persists.
+ *
+ * `deps` is optional. App.vue registers the always-on store-to-renderer
+ * watchers (see `composables/avatar/sync/*`), so a store mutation reaches the
+ * renderer whether or not the avatar panel is mounted; the callbacks are an
+ * immediate push for the panel, which owns them. Callers outside a component
+ * -- the agent's `randomize_appearance` tool -- have no such callbacks to
+ * pass and do not need them.
  */
-export function randomizeAvatarPanel(deps: RandomizeAvatarPanelDeps): void {
+export function randomizeAvatarPanel(deps: RandomizeAvatarPanelDeps = NO_DEPS): void {
   const avatarStore = useAvatarStore();
   const blobStore = useBlobXyzStore();
   const blackHoleStore = useBlackHoleStore();

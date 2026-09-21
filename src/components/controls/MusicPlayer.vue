@@ -2,6 +2,8 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useKwami } from '@/composables/useKwami';
+import { useWorkspaceSoundtrack } from '@/composables/useSoundtrack';
+import { createBandEnvelope, getBandLevels, SILENCE } from '@/utils/audioBands';
 import { hexToRgb } from '@/utils/color';
 
 const { t } = useI18n();
@@ -16,14 +18,34 @@ const isDraggingSeek = ref(false);
 const trackName = ref('');
 const currentTime = ref(0);
 const duration = ref(0);
-const volume = ref(0.8);
 const bass = ref(0);
 const mid = ref(0);
 const high = ref(0);
 const errorMessage = ref('');
 
+// The same record crate the login screen plays, through this avatar's audio
+// object. A local file and a crate track share one element, so whichever was
+// asked for last owns it. The crate outlives this panel, so the player picks up
+// whatever is already on rather than starting its own.
+const { soundtrack: crate, level: volume } = useWorkspaceSoundtrack();
+const crateTrack = crate.currentTrack;
+
 let audioElement: HTMLAudioElement | null = null;
 let animationFrameId: number | null = null;
+
+/**
+ * FFT magnitudes jitter frame to frame, and the renderers below are handed
+ * them raw. The bars could live with that — a spectrum analyser is meant to
+ * flicker — but `setAudioLevels` drives geometry, and unsmoothed levels read
+ * as twitching rather than dancing. Matches the login screen's envelope so the
+ * same track moves both avatars the same way.
+ *
+ * Only the analyser's `smoothingTimeConstant` would be cheaper, and it is
+ * deliberately left alone here: this kwami's analyser is shared with the
+ * agent's voice, where the SDK's fast 0.35 is what keeps a mouth on syllables.
+ */
+const bandEnvelope = createBandEnvelope({ attackMs: 45, releaseMs: 320 });
+let lastFrameAt = 0;
 
 const progress = computed(() => {
   if (!duration.value) return 0;
@@ -47,8 +69,15 @@ const playbackLabel = computed(() => {
 const helperText = computed(() => {
   if (errorMessage.value) return errorMessage.value;
   if (!isLoaded.value) return t('musicPlayer.helperNoFile');
+  if (crateTrack.value && isPlaying.value) return t('musicPlayer.helperCrate');
   if (isPlaying.value) return t('musicPlayer.helperPlaying');
   return t('musicPlayer.helperLoaded');
+});
+
+const displayTitle = computed(() => {
+  const track = crateTrack.value;
+  if (track) return `${track.title} \u00b7 ${track.artist}`;
+  return trackName.value || t('musicPlayer.dropInTrack');
 });
 
 const bandLevels = computed(() => [
@@ -119,30 +148,6 @@ function syncThemePalette() {
   themePalette.accentPrimary = readCssVar('--accent-primary', '#00d9ff');
   themePalette.accentSecondary = readCssVar('--accent-secondary', '#a855f7');
   themePalette.accentGlow = withAlpha(themePalette.accentPrimary, 0.28);
-}
-
-function getBandLevels(frequencyData: Uint8Array) {
-  if (!frequencyData.length) {
-    return { bass: 0, mid: 0, high: 0 };
-  }
-
-  const length = frequencyData.length;
-  const bassEnd = Math.max(1, Math.floor(length * 0.1));
-  const midEnd = Math.max(bassEnd + 1, Math.floor(length * 0.4));
-
-  let bassSum = 0;
-  let midSum = 0;
-  let highSum = 0;
-
-  for (let i = 0; i < bassEnd; i += 1) bassSum += frequencyData[i] ?? 0;
-  for (let i = bassEnd; i < midEnd; i += 1) midSum += frequencyData[i] ?? 0;
-  for (let i = midEnd; i < length; i += 1) highSum += frequencyData[i] ?? 0;
-
-  return {
-    bass: (bassSum / bassEnd) / 255,
-    mid: (midSum / Math.max(1, midEnd - bassEnd)) / 255,
-    high: (highSum / Math.max(1, length - midEnd)) / 255,
-  };
 }
 
 function syncFromAudioElement() {
@@ -261,6 +266,7 @@ async function onFileSelected(event: Event) {
   if (!file || !audio) return;
 
   errorMessage.value = '';
+  crate.release();
   trackName.value = file.name.replace(/\.[^.]+$/, '');
 
   try {
@@ -293,11 +299,19 @@ function stopPlayback() {
   if (!audio) return;
 
   audio.stop();
+  crate.release();
   currentTime.value = 0;
   bass.value = 0;
   mid.value = 0;
   high.value = 0;
   syncAvatarMusicState(false);
+}
+
+function playFromCrate() {
+  errorMessage.value = '';
+  trackName.value = '';
+  if (crateTrack.value) crate.next();
+  else crate.toggle();
 }
 
 function onSeekStart() {
@@ -317,10 +331,6 @@ function onSeekEnd() {
   isDraggingSeek.value = false;
 }
 
-watch(volume, (nextVolume) => {
-  getAudio()?.setVolume(nextVolume);
-});
-
 watch(kwami, () => {
   bindAudioElement();
 }, { immediate: true });
@@ -339,7 +349,15 @@ function drawVisualizerFrame() {
   const audio = getAudio();
   const frequencyData = audio?.getFrequencyData() ?? new Uint8Array();
   const hasSignal = isPlaying.value && frequencyData.length > 0;
-  const levels = hasSignal ? getBandLevels(frequencyData) : { bass: 0, mid: 0, high: 0 };
+  const now = performance.now();
+  // First frame has no predecessor: no elapsed time, so the envelope holds.
+  const deltaMs = lastFrameAt === 0 ? 0 : now - lastFrameAt;
+  lastFrameAt = now;
+
+  // Silence goes through the envelope too, so pausing falls away rather than
+  // dropping to zero between one frame and the next.
+  const raw = hasSignal ? getBandLevels(frequencyData) : SILENCE;
+  const levels = bandEnvelope.follow(raw, deltaMs);
 
   bass.value = levels.bass;
   mid.value = levels.mid;
@@ -432,13 +450,25 @@ onUnmounted(() => {
             <span>{{ playbackLabel }}</span>
           </div>
           <span class="player-kicker">{{ t('musicPlayer.kicker') }}</span>
-          <strong class="player-title">{{ trackName || t('musicPlayer.dropInTrack') }}</strong>
+          <strong class="player-title">{{ displayTitle }}</strong>
           <span class="player-subtitle">
             {{ isLoaded ? t('musicPlayer.subtitleLoaded') : t('musicPlayer.subtitleEmpty') }}
           </span>
         </div>
 
         <div class="header-actions">
+          <a
+            v-if="crateTrack?.youtube"
+            class="icon-btn"
+            :href="crateTrack.youtube"
+            target="_blank"
+            rel="noopener noreferrer"
+            :title="t('musicPlayer.openOnYoutube')"
+            :aria-label="t('musicPlayer.openOnYoutube')"
+          >
+            <iconify-icon icon="ph:youtube-logo-fill"></iconify-icon>
+          </a>
+
           <button class="icon-btn" :title="t('musicPlayer.loadMusic')" @click="openFilePicker">
             <iconify-icon icon="ph:upload-simple-bold"></iconify-icon>
           </button>
@@ -490,6 +520,17 @@ onUnmounted(() => {
           @click="stopPlayback"
         >
           <iconify-icon icon="ph:stop-fill"></iconify-icon>
+        </button>
+
+        <button
+          class="transport-btn transport-btn--crate"
+          :title="crateTrack ? t('musicPlayer.nextTrack') : t('musicPlayer.playCrate')"
+          :aria-label="crateTrack ? t('musicPlayer.nextTrack') : t('musicPlayer.playCrate')"
+          @click="playFromCrate"
+        >
+          <iconify-icon
+            :icon="crateTrack ? 'ph:skip-forward-fill' : 'ph:vinyl-record-fill'"
+          ></iconify-icon>
         </button>
       </div>
 
@@ -712,6 +753,12 @@ onUnmounted(() => {
   border-color: transparent;
   color: white;
   box-shadow: 0 10px 26px var(--accent-glow);
+}
+
+.transport-btn--crate {
+  margin-left: auto;
+  border-color: color-mix(in srgb, var(--accent-secondary) 24%, var(--glass-border));
+  background: color-mix(in srgb, var(--accent-secondary) 10%, var(--surface-2));
 }
 
 .transport-btn:disabled {

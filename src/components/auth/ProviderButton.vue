@@ -25,6 +25,19 @@ const isLoading = computed(() =>
 );
 const error = computed(() => (isWeb3.value ? web3.error.value : oauth.error.value));
 const label = computed(() => t('auth.continueWith', { provider: t(props.provider.labelKey) }));
+/** Only set for a wallet that is not installed; see useWeb3SignIn. */
+const installUrl = computed(() => (isWeb3.value ? web3.installUrl.value : null));
+const installLabel = computed(() =>
+  t('auth.walletInstall', { wallet: t(props.provider.labelKey) }),
+);
+/**
+ * Per-provider brand styling, applied to BaseButton's root via class
+ * fallthrough. Phantom gets the app's blue accent rather than the shared
+ * secondary grey.
+ */
+const brandClass = computed(() =>
+  props.provider.id === 'phantom' ? 'provider-btn--phantom' : null,
+);
 
 function onClick() {
   if (props.provider.oauth) {
@@ -40,6 +53,7 @@ function onClick() {
     <BaseButton
       variant="secondary"
       block
+      :class="brandClass"
       :loading="isLoading"
       :icon="provider.icon"
       :aria-label="label"
@@ -48,6 +62,17 @@ function onClick() {
       {{ label }}
     </BaseButton>
     <p v-if="error" class="provider-error" role="alert">{{ error }}</p>
+    <!-- The tab is opened for them on click; this is the fallback for a blocked
+         pop-up, and it gives keyboard and screen-reader users a real link. -->
+    <a
+      v-if="installUrl"
+      class="provider-install"
+      :href="installUrl"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      {{ installLabel }}
+    </a>
   </div>
 </template>
 
@@ -62,5 +87,27 @@ function onClick() {
   font-size: 12px;
   color: var(--danger, #ef4444);
   text-align: center;
+}
+/* Two classes so this outranks BaseButton's own single-class `.variant-secondary`,
+   whose scoped stylesheet may be ordered after this one in the bundle. */
+.provider-slot .provider-btn--phantom {
+  background: var(--auth-phantom-bg);
+  border-color: var(--auth-phantom-border);
+  color: var(--auth-phantom-text);
+}
+
+.provider-slot .provider-btn--phantom:hover:not(:disabled) {
+  background: var(--auth-phantom-bg-hover);
+  border-color: var(--auth-phantom-border-hover);
+  color: var(--auth-phantom-text);
+}
+
+.provider-install {
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--auth-text);
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 </style>

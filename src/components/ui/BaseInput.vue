@@ -11,6 +11,12 @@ const props = defineProps<{
   error?: string;
   block?: boolean;
   mono?: boolean;
+  /** Forwarded to the inner <input>: the wrapper div is this component's root,
+   *  so a fallthrough attribute would land there instead of on the field. */
+  name?: string;
+  autocomplete?: string;
+  inputmode?: 'none' | 'text' | 'tel' | 'url' | 'email' | 'numeric' | 'decimal' | 'search';
+  maxlength?: number | string;
 }>();
 
 const emit = defineEmits(['update:modelValue', 'focus', 'blur']);
@@ -57,6 +63,10 @@ function onBlur(e: FocusEvent) {
         :value="modelValue"
         :placeholder="placeholder"
         :disabled="disabled"
+        :name="name"
+        :autocomplete="autocomplete"
+        :inputmode="inputmode"
+        :maxlength="maxlength"
         :class="{ mono }"
         @input="onInput"
         @focus="onFocus"

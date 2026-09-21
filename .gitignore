@@ -8,7 +8,8 @@ dist-ssr/
 dev-dist/
 *.local
 
-# Tests — Vitest coverage and Playwright artifacts
+# Tests — Vitest coverage, JSON reporter dump, and Playwright artifacts
+.vitest/
 coverage/
 playwright-report/
 blob-report/
