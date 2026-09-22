@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/kwami-labs/kwami-app/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/kwami-labs/kwami-app/actions/workflows/ci.yml)
 [![CD](https://github.com/kwami-labs/kwami-app/actions/workflows/cd.yml/badge.svg)](https://github.com/kwami-labs/kwami-app/actions/workflows/cd.yml)
-[![Release](https://img.shields.io/badge/release-v1.0.0-stg.1)](https://github.com/kwami-labs/kwami-app/releases/latest)
+[![Release](https://img.shields.io/badge/release-v1.0.0-stg.2)](https://github.com/kwami-labs/kwami-app/releases/latest)
 [![Node](https://img.shields.io/badge/node-22-339933?logo=nodedotjs&logoColor=white)](.nvmrc)
 [![bun](https://img.shields.io/badge/bun-1.2+-f472b6?logo=bun&logoColor=white)](https://bun.sh)
 [![Vue](https://img.shields.io/badge/Vue-3-42b883?logo=vuedotjs&logoColor=white)](https://vuejs.org/)
