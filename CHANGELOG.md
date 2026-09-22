@@ -4,6 +4,18 @@ All notable changes to this client are documented here. This file is generated f
 
 `v0.1.0` is a baseline tag placed at the commit that introduced this automation. Everything before it lives in the git log rather than here: it shipped before there was a release line to put it on.
 
+## [0.1.1](https://github.com/kwami-labs/kwami-app/compare/v0.1.0...v0.1.1) (2026-09-22)
+
+
+### Bug Fixes
+
+* **ci:** pin TypeScript to 5.9 so vue-tsc can typecheck ([db591d7](https://github.com/kwami-labs/kwami-app/commit/db591d7c672ba286b5e1b5b871d55e5c48164901))
+
+
+### Features
+
+* **auth:** record the screen from the welcome soundtrack pill ([fb22f7a](https://github.com/kwami-labs/kwami-app/commit/fb22f7a83e02b9f940a497258421994392838e90))
+
 # [1.0.0-stg.2](https://github.com/kwami-labs/kwami-app/compare/v1.0.0-stg.1...v1.0.0-stg.2) (2026-09-22)
 
 
