@@ -18,6 +18,11 @@ updates:
     groups:
       minor-and-patch:
         update-types: [minor, patch]
+    # vue-tsc still patches `typescript/lib/tsc`, which TS 7 dropped from
+    # its exports. Leave this ignore until language-tools ships a 7.1 API.
+    ignore:
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /
