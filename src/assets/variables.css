@@ -168,6 +168,13 @@
 
   --auth-focus-ring: rgba(53, 158, 238, 0.85);
 
+  /* The screen recorder's dot. Red is the one colour the control cannot
+     borrow from the rest of the palette: a record button in the pill's own
+     off-white is indistinguishable from play until it is rolling. */
+  --auth-record: #ff6b66;
+  --auth-record-strong: #ff8d88;
+  --auth-record-fill: rgba(255, 107, 102, 0.2);
+
   /* Laid over a chosen video backdrop. The clips are arbitrary photography --
      a snowy peak is near-white, a night city near-black -- so the scrim pins
      whatever is playing to a known luminance and the text tokens above keep
@@ -255,6 +262,12 @@
   --auth-wallet-metamask-ink: #fff7ef;
   --auth-wallet-metamask-icon: #ffffff;
   --auth-wallet-metamask-icon-bg: rgba(255, 255, 255, 0.18);
+
+  /* Deeper red on frosted white: the dark mode dot is lifted for contrast
+     against a near-black page and washes out against this one. */
+  --auth-record: #d93a3f;
+  --auth-record-strong: #b52a2f;
+  --auth-record-fill: rgba(217, 58, 63, 0.14);
 
   /* Light mode wants the mirror of the dark scrim: a white veil, not a dark
      one, or the screen's dark ink lands on a dimmed photo and disappears. */

@@ -354,6 +354,10 @@ export const en = {
     clickToSkip: 'Click anywhere to skip',
     randomizeEvery: 'Avatar shifts every {seconds}s. Click for another rate.',
   },
+  screenRecorder: {
+    start: 'Record the screen',
+    stop: 'Stop recording and download the video',
+  },
   browser: {
     loading: 'Loading…',
     connecting: 'Connecting to browser…',
