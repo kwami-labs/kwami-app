@@ -13,10 +13,10 @@ Also read the [Code of Conduct](CODE_OF_CONDUCT.md) and [Development](docs/guide
 Changes promote in one direction:
 
 ```
-feature/* → dev → stg → main
+feature/* → dev → main
 ```
 
-`stg` takes a pull request from any branch except `main`. `main` takes a pull request from `stg`, and it must be `stg`'s current tip on this repository — not a fork, and not a namesake branch. Back-merges into lower channels are pushed by `cd.yml`, never merged by pull request.
+`dev` takes a pull request from any branch except `main`. `main` takes a pull request from `dev`, and it must be `dev`'s current tip on this repository — not a fork, and not a namesake branch. A pull request from `main` into `dev` is rejected.
 
 Three things enforce that, in increasing order of authority:
 
@@ -36,20 +36,19 @@ chore/bump-vitest
 
 The type prefix matches the Conventional Commit types below. Branches are deleted on merge.
 
-### `dev` and `stg`
+### `dev` and `main`
 
-**All three channels deploy.** `dev` ships to Worker `kwami-app-dev`, `stg` to `kwami-app-stg`, and `main` to `kwami-app`. `stg` is also a prerelease channel (`vX.Y.Z-stg.N`) so it cannot collide with a stable tag on `main`.
+**Both channels deploy.** `dev` ships to Worker `kwami-app-dev` at `dev.kwami.io` and calls `https://api.dev.kwami.io`. `main` ships to Worker `kwami-app` at `kwami.io` and calls `https://api.kwami.io`. Releases are cut only on `main`.
 
 A push to `dev` runs the **fast lane** — `lint` and `unit` — and skips `e2e`, `vuln` and `build`. `dev` is the branch you push to repeatedly, and those three cost minutes each. The full suite still runs on every pull request, so nothing reaches `main` without it. The fast lane is a shorter feedback loop, not a lower bar.
 
 | | `lint` `unit` | `e2e` `vuln` `build` | `cd` |
 |---|---|---|---|
 | pull request | yes | yes | no |
-| push `dev` | yes | **no** | deploy `kwami-app-dev` |
-| push `stg` | yes | yes | release (prerelease), deploy `kwami-app-stg` |
-| push `main` | yes | yes | **release**, deploy `kwami-app` |
+| push `dev` | yes | **no** | deploy `kwami-app-dev` → `dev.kwami.io` |
+| push `main` | yes | yes | **release**, deploy `kwami-app` → `kwami.io` |
 
-`cd.yml` is called by `ci.yml` once every gate on that commit has gone green. Create GitHub Environments `production`, `stg` and `dev` with their own `CLOUDFLARE_*` and `VITE_*` values.
+`cd.yml` is called by `ci.yml` once every gate on that commit has gone green. Create GitHub Environments `production` and `dev` with their own `CLOUDFLARE_*` and `VITE_*` values. `VITE_API_URL` is fixed in `cd.yml`, not a variable.
 
 ## Commits and pull request titles
 
@@ -96,14 +95,14 @@ Every job in [`ci.yml`](.github/workflows/ci.yml) is a status check:
 | `vuln` | `bun audit --prod` |
 | `build` | `bun run build` |
 
-[`cd.yml`](.github/workflows/cd.yml) is called by `ci.yml` from the commit that just passed, on `main`, `stg` or `dev`: `main` and `stg` cut the release; all three deploy their Cloudflare Worker. It can also be run by hand from the Actions tab to retry a delivery without re-running the whole suite.
+[`cd.yml`](.github/workflows/cd.yml) is called by `ci.yml` from the commit that just passed, on `main` or `dev`: `main` cuts the release; both deploy their Cloudflare Worker. It can also be run by hand from the Actions tab to retry a delivery without re-running the whole suite.
 
 ## Releases
 
 Versions, tags, the GitHub Release and [`CHANGELOG.md`](CHANGELOG.md) are generated from the commit history by [semantic-release](https://semantic-release.gitbook.io). Nothing is hand-maintained, nothing needs a version bump in a pull request, and no tag is ever pushed by hand.
 
 ```text
-merge a PR into main or stg
+merge a PR into main
         │
         ▼
       ci.yml ── red ──▶ nothing
@@ -133,4 +132,4 @@ The client is pre-1.0, so [`.releaserc.json`](.releaserc.json) maps **breaking �
 - Zep or provider secrets in `VITE_*`
 - Coverage threshold decreases
 - Drive-by reformatting of unrelated files
-- A PR into `main` that is not the current tip of `stg`
+- A PR into `main` that is not the current tip of `dev`

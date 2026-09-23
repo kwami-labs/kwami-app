@@ -10,7 +10,7 @@ description: >-
 
 inputs:
   wrangler-env:
-    description: Wrangler environment name (`production`, `stg`, or `dev`).
+    description: Wrangler environment name (`production` or `dev`).
     required: true
   api-token:
     description: Cloudflare API token. Absent means Cloudflare is not configured yet, and the deploy is skipped.
