@@ -20,7 +20,7 @@ on:
   workflow_call:
     inputs:
       branch:
-        description: Branch whose ci run just passed (`main`, `stg` or `dev`)
+        description: Branch whose ci run just passed (`main` or `dev`)
         required: true
         type: string
       sha:
@@ -41,9 +41,7 @@ jobs:
   # Conventional Commits since the last tag. Nothing here is hand-maintained.
   release:
     name: release
-    if: >-
-      (inputs.branch || github.ref_name) == 'main'
-      || (inputs.branch || github.ref_name) == 'stg'
+    if: (inputs.branch || github.ref_name) == 'main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -123,7 +121,7 @@ jobs:
       group: deploy-production
       cancel-in-progress: false
     env:
-      VITE_API_URL: ${{ vars.VITE_API_URL }}
+      VITE_API_URL: https://api.kwami.io
       VITE_LIVEKIT_URL: ${{ vars.VITE_LIVEKIT_URL }}
       VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
       VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
@@ -138,31 +136,6 @@ jobs:
           api-token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           account-id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
-  deploy-stg:
-    name: deploy · stg
-    if: (inputs.branch || github.ref_name) == 'stg'
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    environment: stg
-    concurrency:
-      group: deploy-stg
-      cancel-in-progress: false
-    env:
-      VITE_API_URL: ${{ vars.VITE_API_URL }}
-      VITE_LIVEKIT_URL: ${{ vars.VITE_LIVEKIT_URL }}
-      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
-      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
-      VITE_AUTH_PROVIDERS: ${{ vars.VITE_AUTH_PROVIDERS }}
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ inputs.sha || github.sha }}
-      - uses: ./.github/actions/cloudflare-deploy
-        with:
-          wrangler-env: stg
-          api-token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          account-id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-
   deploy-dev:
     name: deploy · dev
     if: (inputs.branch || github.ref_name) == 'dev'
@@ -173,7 +146,7 @@ jobs:
       group: deploy-dev
       cancel-in-progress: false
     env:
-      VITE_API_URL: ${{ vars.VITE_API_URL }}
+      VITE_API_URL: https://api.dev.kwami.io
       VITE_LIVEKIT_URL: ${{ vars.VITE_LIVEKIT_URL }}
       VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
       VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}

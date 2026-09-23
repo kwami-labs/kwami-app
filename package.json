@@ -24,7 +24,6 @@
     "cf:preview": "wrangler dev --config infra/wrangler.jsonc --env production",
     "cf:deploy": "bun run build && wrangler deploy --config infra/wrangler.jsonc --env production",
     "cf:deploy:dry": "bun run build && wrangler deploy --config infra/wrangler.jsonc --env production --dry-run",
-    "cf:deploy:stg": "bun run build && wrangler deploy --config infra/wrangler.jsonc --env stg",
     "cf:deploy:dev": "bun run build && wrangler deploy --config infra/wrangler.jsonc --env dev"
   },
   "dependencies": {

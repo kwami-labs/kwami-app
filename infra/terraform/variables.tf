@@ -5,11 +5,11 @@ variable "account_id" {
 
 variable "environment" {
   type        = string
-  description = "Tier this stack configures: development, staging, or production."
+  description = "Tier this stack configures: development or production."
 
   validation {
-    condition     = contains(["development", "staging", "production"], var.environment)
-    error_message = "environment must be development, staging, or production."
+    condition     = contains(["development", "production"], var.environment)
+    error_message = "environment must be development or production."
   }
 }
 
@@ -33,7 +33,7 @@ variable "zone_name" {
 variable "app_hostname" {
   type        = string
   default     = ""
-  description = "Public hostname, e.g. app.kwami.io. Do not use the apex — kwami-waitlist owns kwami.io."
+  description = "Public hostname. Production is kwami.io. Development is dev.kwami.io."
 }
 
 variable "enable_custom_domain" {

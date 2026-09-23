@@ -5,7 +5,7 @@
 #   Terraform — custom domain attachment, optional zone TLS
 #
 # Apply order: `wrangler deploy` first (Worker must exist), then `terraform apply`.
-# Apex kwami.io stays on kwami-waitlist. This stack attaches a subdomain only.
+# Production attaches the apex kwami.io. Development attaches dev.kwami.io.
 
 locals {
   attach_domain = var.enable_custom_domain && var.app_hostname != "" && var.zone_id != ""

@@ -15,6 +15,8 @@ Narrative: [Environment guide](../guides/environment.md). Sample file: [`.env.sa
 
 All `VITE_*` values are public (inlined by Vite). Never put provider secrets here. There is **no** `VITE_LIVEKIT_TOKEN_ENDPOINT`; see [ADR 0005](../adr/0005-token-minting-via-api-client.md).
 
+Deployed builds set `VITE_API_URL` in `cd.yml`: `https://api.kwami.io` on `main` (`https://kwami.io`) and `https://api.dev.kwami.io` on `dev` (`https://dev.kwami.io`).
+
 ## Test injection
 
 | Context | How |
