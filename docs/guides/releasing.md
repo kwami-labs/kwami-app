@@ -1,9 +1,9 @@
 # Releasing
 
-Versions, tags, the GitHub Release and [`CHANGELOG.md`](../../CHANGELOG.md) are cut automatically by [semantic-release](https://semantic-release.gitbook.io) after `ci` goes green on `main` or `stg`. Nothing is hand-maintained. See [CONTRIBUTING.md#releases](../../CONTRIBUTING.md#releases).
+Versions, tags, the GitHub Release and [`CHANGELOG.md`](../../CHANGELOG.md) are cut automatically by [semantic-release](https://semantic-release.gitbook.io) after `ci` goes green on `main`. Nothing is hand-maintained. See [CONTRIBUTING.md#releases](../../CONTRIBUTING.md#releases).
 
 ```text
-merge a PR into main or stg
+merge a PR into main
         │
         ▼
       ci.yml ── red ──▶ nothing
@@ -36,4 +36,4 @@ Before a signed Tauri ship: change `identifier` from `com.tauri.dev`, replace ic
 
 ## Security releases
 
-Fixes land on `dev`, then promote `dev → stg → main`. Credit reporters in the changelog if they want. Process: [SECURITY.md](../../SECURITY.md).
+Fixes land on `dev`, then promote `dev → main`. Credit reporters in the changelog if they want. Process: [SECURITY.md](../../SECURITY.md).

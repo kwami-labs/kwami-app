@@ -12,7 +12,7 @@ fi
 
 while read -r _local_ref _local_sha remote_ref _remote_sha; do
 	case "$remote_ref" in
-	refs/heads/stg | refs/heads/main) ;;
+	refs/heads/main) ;;
 	*) continue ;;
 	esac
 
@@ -22,10 +22,10 @@ while read -r _local_ref _local_sha remote_ref _remote_sha; do
 
   Refusing to push directly to $target.
 
-      feature/* → dev → stg → main
+      feature/* → dev → main
 
-  stg  takes a pull request from any branch except main.
-  main takes a pull request from stg, at its current tip.
+  dev  takes a pull request from any branch except main.
+  main takes a pull request from dev, at its current tip.
 
   Every change reaches these branches through a pull request, so that CI has run and
   someone has read it. See CONTRIBUTING.md#branches.

@@ -5,13 +5,14 @@
 # different from "unit" going red. They also run in parallel.
 name: ci
 
-# `dev` is tested and deployed (Cloudflare Worker `kwami-app-dev`). `main` and
-# `stg` run ci then cut a version and deploy their channel Workers.
+# `dev` is tested and deployed (Cloudflare Worker `kwami-app-dev` at
+# dev.kwami.io). `main` runs ci, cuts a version, and deploys `kwami-app` at
+# kwami.io.
 #
 # A push to `dev` runs the FAST LANE only: lint and unit. `dev` is the branch
 # people push to repeatedly, and Playwright plus a full production build cost
 # minutes per push. The full suite still runs on every pull request, so nothing
-# reaches `stg` or `main` without it.
+# reaches `main` without it.
 #
 # The condition is spelled out on each job rather than hoisted into one, because
 # GitHub does not expand YAML anchors in workflows. They are all in this file:
@@ -19,14 +20,14 @@ name: ci
 on:
   pull_request:
   push:
-    branches: [main, stg, dev]
+    branches: [main, dev]
 
-# A force-push should cancel the run it superseded. `main` and `stg` are
-# excluded: those runs are what the release job keys off, so they always finish.
-# `dev` may cancel — a superseded push should not deploy.
+# A force-push should cancel the run it superseded. `main` is excluded: that
+# run is what the release job keys off, so it always finishes. `dev` may
+# cancel — a superseded push should not deploy.
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/stg' }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 permissions:
   contents: read
@@ -221,7 +222,7 @@ jobs:
       && !failure()
       && !cancelled()
       && github.event_name == 'push'
-      && contains(fromJSON('["main","stg","dev"]'), github.ref_name)
+      && contains(fromJSON('["main","dev"]'), github.ref_name)
     permissions:
       contents: write
       issues: write
