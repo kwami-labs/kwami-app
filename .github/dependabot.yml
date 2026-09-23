@@ -1,5 +1,5 @@
 # Version updates open against `dev`, not `main`. They still go through the same
-# CI gate as everything else. Promote `dev` to `stg` to `main` the usual way.
+# CI gate as everything else. Promote `dev` to `main` the usual way.
 #
 # Dependabot reads this file from the default branch, so this setting only takes
 # effect once it is on `main`.

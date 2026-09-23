@@ -4,16 +4,15 @@
  *
  * Keeps the promote path one-directional:
  *
- *   feature/* → dev → stg → main
+ *   feature/* → dev → main
  *
- * `stg` takes pull requests from any branch except `main` (back-merges are pushed
- * by cd.yml). Direct pushes are a different gate
- * (`assert-push-allowed.mjs`).
+ * `dev` takes pull requests from any branch except `main`. Direct pushes are a
+ * different gate (`assert-push-allowed.mjs`).
  *
  * For PRs into `main`, name matching is not enough: the head must be this
- * repository's current tip of `stg`. Forks can share a tip SHA when they are
+ * repository's current tip of `dev`. Forks can share a tip SHA when they are
  * fully synced, so the same-repo check is load-bearing. PRs into `dev` still
- * allow forks; only back-merges from `stg`/`main` via PR are rejected.
+ * allow forks; a pull request from `main` into `dev` is rejected.
  *
  * Usage (CI sets the env vars):
  *   BASE HEAD HEAD_SHA HEAD_REPO BASE_REPO GITHUB_TOKEN \
@@ -25,7 +24,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const CHANNEL_TARGETS = new Set(['main']);
-const REQUIRED_HEAD = { main: 'stg' };
+const REQUIRED_HEAD = { main: 'dev' };
 
 /**
  * @param {{
@@ -55,20 +54,10 @@ export function evaluatePromotion(input) {
   }
 
   if (base === 'dev') {
-    if (head === 'stg' || head === 'main') {
-      return {
-        ok: false,
-        reason: `'${head}' is downstream of dev; back-merges are pushed by cd.yml, not merged by PR.`,
-      };
-    }
-    return { ok: true };
-  }
-
-  if (base === 'stg') {
     if (head === 'main') {
       return {
         ok: false,
-        reason: `'main' is downstream of stg; back-merges are pushed by cd.yml, not merged by PR.`,
+        reason: `'main' cannot be merged into dev by pull request. Promote feature branches into dev, then promote dev into main.`,
       };
     }
     return { ok: true };
@@ -89,7 +78,7 @@ export function evaluatePromotion(input) {
   if (head !== required) {
     return {
       ok: false,
-      reason: `PRs into main must come from stg (got '${head}' → main). Promote through stg first.`,
+      reason: `PRs into main must come from dev (got '${head}' → main). Promote through dev first.`,
     };
   }
 

@@ -2,12 +2,12 @@ name: branch promotion
 
 # Keeps the promote path one-directional:
 #
-#   feature/* → dev → stg → main
+#   feature/* → dev → main
 #
-# Rules live in scripts/ci/assert-promotion-path.mjs (unit-tested). `stg` takes
+# Rules live in scripts/ci/assert-promotion-path.mjs (unit-tested). `dev` takes
 # PRs from any branch except `main`. PRs into `main` must be this repository's
-# current tip of `stg` — not a fork and not a namesake branch. Back-merges into
-# lower channels are pushed by cd.yml, not merged by PR.
+# current tip of `dev` — not a fork and not a namesake branch. A pull request
+# from `main` into `dev` is rejected.
 #
 # `pull_request_target` so the check runs from the base branch's copy of this
 # workflow even when the head branch predates it. Only the base ref is checked
@@ -15,7 +15,7 @@ name: branch promotion
 on:
   pull_request_target:
     types: [opened, edited, synchronize, reopened, ready_for_review]
-    branches: [main, stg, dev]
+    branches: [main, dev]
 
 permissions:
   contents: read
@@ -67,11 +67,11 @@ jobs:
             '' \
             "$REASON" \
             '' \
-            'Allowed path: `feature/* → dev → stg → main`.' \
+            'Allowed path: `feature/* → dev → main`.' \
             '' \
-            '- PRs into `stg` may come from any branch except `main`.' \
-            '- PRs into `main` must be from this repo'\''s current tip of `stg`.' \
-            '- Back-merges into `dev` are done by `cd.yml`, not by PR.' \
+            '- PRs into `dev` may come from any branch except `main`.' \
+            '- PRs into `main` must be from this repo'\''s current tip of `dev`.' \
+            '- A pull request from `main` into `dev` is rejected.' \
             '' \
             'Rules: `scripts/ci/assert-promotion-path.mjs`.')
           existing=$(gh api "repos/${REPO}/issues/${PR}/comments" --paginate \

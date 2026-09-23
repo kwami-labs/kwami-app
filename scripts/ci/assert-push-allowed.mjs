@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * Reject a direct push to `stg` or `main`.
+ * Reject a direct push to `main`.
  *
- * Those two branches are promotion targets: `stg` takes merged PRs (any head except `main`),
- * `main` only one from `stg`. GitHub's own branch protection is the right place to enforce that, and
+ * `main` takes a merged pull request from the current tip of `dev`. GitHub's own branch
+ * protection is the right place to enforce that, and
  * `scripts/ci/apply-branch-rules.mjs` configures it — but it needs an admin and, on a private
  * repository, a paid plan. Until that is in place (and afterwards, as a second pair of eyes for
  * anything holding a bypass) this turns a direct push into a red check on the branch.
@@ -11,7 +11,7 @@
  * Allowed:
  *   - the merge commit of a pull request whose base is this branch
  *   - a push whose every commit comes from the release automation: semantic-release's
- *     `chore(release):` commits, and the `chore: sync …` back-merges cd.yml pushes downstream
+ *     `chore(release):` commits, and `chore: sync …` subjects
  *
  * Everything else is somebody pushing straight at a protected branch.
  *
@@ -61,7 +61,7 @@ export function evaluatePush(input) {
     reason: [
       `Direct push to \`${branch}\`.`,
       '',
-      `\`${branch}\` only takes merged pull requests${branch === 'main' ? ' from `stg`' : ''}, plus the release automation's own commits.`,
+      `\`${branch}\` only takes merged pull requests from \`dev\`, plus the release automation's own commits.`,
       subjects.length > 0 ? `\nPushed: ${subjects.map((s) => `\`${s}\``).join(', ')}` : '',
     ]
       .filter(Boolean)
