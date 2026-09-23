@@ -6,7 +6,7 @@ name: branch-guard
 
 on:
   push:
-    branches: [main, stg]
+    branches: [main]
 
 permissions:
   contents: read

@@ -23,16 +23,15 @@
     "enabled": true
   },
 
-  // Channel Workers match the repo's promotion path (dev → stg → main).
+  // Channel Workers match the repo's promotion path (dev → main).
   // Each environment is a distinct Worker so a bake of VITE_* for one
   // channel cannot overwrite another. Always pass --env so Wrangler
   // does not guess the top-level config.
+  //
+  // Hostnames (Terraform): production → kwami.io, dev → dev.kwami.io.
   "env": {
     "dev": {
       "name": "kwami-app-dev"
-    },
-    "stg": {
-      "name": "kwami-app-stg"
     },
     "production": {
       "name": "kwami-app"
