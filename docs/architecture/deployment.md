@@ -17,7 +17,7 @@ flowchart TB
   PR --> B
   PushDev[push dev · fast lane] --> L
   PushDev --> U
-  PushRel[push main / stg] --> L
+  PushRel[push main] --> L
   PushRel --> U
   PushRel --> E
   PushRel --> B
@@ -62,23 +62,27 @@ The host is an **assets-only Cloudflare Worker** ([`infra/wrangler.jsonc`](../..
 bun run build
 bun run cf:preview          # wrangler dev against dist/
 bun run cf:deploy:dry       # validate upload, do not publish
-bun run cf:deploy           # production Worker `kwami-app`
-bun run cf:deploy:stg
-bun run cf:deploy:dev
+bun run cf:deploy           # production Worker `kwami-app` → kwami.io
+bun run cf:deploy:dev       # dev Worker `kwami-app-dev` → dev.kwami.io
 ```
 
-Channel Workers: `kwami-app` (main), `kwami-app-stg`, `kwami-app-dev`. `VITE_*` is baked at build time, so each channel must be built with its own values.
+| Branch | App | API | Worker |
+| --- | --- | --- | --- |
+| `main` | `https://kwami.io` | `https://api.kwami.io` | `kwami-app` |
+| `dev` | `https://dev.kwami.io` | `https://api.dev.kwami.io` | `kwami-app-dev` |
 
-`cf:deploy:dry` and `wrangler deploy --dry-run` **do not publish**. A real deploy needs the Cloudflare account that owns `kwami.io` (not a personal/Nexow login). After the Worker exists, Terraform in [`infra/terraform`](../../infra/terraform) attaches `app.kwami.io` — the apex stays on `kwami-waitlist`.
+`VITE_*` is baked at build time. `VITE_API_URL` is fixed per channel in `cd.yml`. The app host and the API host are different: this Worker only serves static assets.
+
+`cf:deploy:dry` and `wrangler deploy --dry-run` **do not publish**. A real deploy needs the Cloudflare account that owns `kwami.io`. After the Worker exists, Terraform in [`infra/terraform`](../../infra/terraform) attaches `kwami.io` or `dev.kwami.io`.
 
 ### GitHub Actions
 
-[`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) is the test gate. On a green push to `main`, `stg` or `dev` it calls [`.github/workflows/cd.yml`](../../.github/workflows/cd.yml): `main` and `stg` cut the version, tag, changelog and GitHub Release; all three deploy their channel Worker. The matching GitHub Environment (`production`, `stg`, `dev`) supplies:
+[`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) is the test gate. On a green push to `main` or `dev` it calls [`.github/workflows/cd.yml`](../../.github/workflows/cd.yml): `main` cuts the version, tag, changelog and GitHub Release; both deploy their channel Worker. The matching GitHub Environment (`production`, `dev`) supplies:
 
 | Kind | Names |
 | --- | --- |
 | Secrets | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `VITE_SUPABASE_PUBLISHABLE_KEY` |
-| Variables | `VITE_API_URL`, `VITE_LIVEKIT_URL`, `VITE_SUPABASE_URL`, `VITE_AUTH_PROVIDERS` |
+| Variables | `VITE_LIVEKIT_URL`, `VITE_SUPABASE_URL`, `VITE_AUTH_PROVIDERS` |
 
 Alternatively, connect the repo in Cloudflare Workers Builds with **Build command** `bun run build`, **Deploy command** `npx wrangler deploy --config infra/wrangler.jsonc`, and the same `VITE_*` env.
 

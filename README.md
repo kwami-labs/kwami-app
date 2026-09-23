@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/kwami-labs/kwami-app/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/kwami-labs/kwami-app/actions/workflows/ci.yml)
 [![CD](https://github.com/kwami-labs/kwami-app/actions/workflows/cd.yml/badge.svg)](https://github.com/kwami-labs/kwami-app/actions/workflows/cd.yml)
-[![Release](https://img.shields.io/badge/release-v0.1.0-2088FF)](https://github.com/kwami-labs/kwami-app/releases/latest)
+[![Release](https://img.shields.io/badge/release-v0.1.1)](https://github.com/kwami-labs/kwami-app/releases/latest)
 [![Node](https://img.shields.io/badge/node-22-339933?logo=nodedotjs&logoColor=white)](.nvmrc)
 [![bun](https://img.shields.io/badge/bun-1.2+-f472b6?logo=bun&logoColor=white)](https://bun.sh)
 [![Vue](https://img.shields.io/badge/Vue-3-42b883?logo=vuedotjs&logoColor=white)](https://vuejs.org/)
@@ -16,9 +16,9 @@ This repository is the **frontend**. The voice agent, token issuer, memory servi
 
 | | |
 |---|---|
-| Version | [Latest release](https://github.com/kwami-labs/kwami-app/releases/latest) — semantic-release on `main` / `stg` |
+| Version | [Latest release](https://github.com/kwami-labs/kwami-app/releases/latest) — semantic-release on `main` |
 | Runtime | Vue 3, TypeScript 5.9, Vite 7, bun 1.2 |
-| Host | Cloudflare Workers (`kwami-app`, `kwami-app-stg`, `kwami-app-dev`) |
+| Host | Cloudflare Workers — `kwami.io` (`kwami-app`), `dev.kwami.io` (`kwami-app-dev`) |
 | Auth | [Supabase](https://supabase.com/) — email, phone OTP, Google, Phantom, MetaMask |
 | License | [Apache License 2.0](./LICENSE) |
 | Security | [SECURITY.md](./SECURITY.md) |
@@ -30,7 +30,7 @@ This repository is the **frontend**. The voice agent, token issuer, memory servi
 |---|---|
 | [docs/](./docs/README.md) | Architecture, guides, concepts, and reference. |
 | [Architecture](./docs/architecture/overview.md) | System design, data flow, backend integration. |
-| [Deployment](./docs/architecture/deployment.md) | CI, semantic-release, and the three Cloudflare Workers. |
+| [Deployment](./docs/architecture/deployment.md) | CI, semantic-release, and the two Cloudflare Workers. |
 | [Environment](./docs/guides/environment.md) | `VITE_*` variables and what must never ship in the bundle. |
 | [LICENSE](./LICENSE) | Apache 2.0 terms. |
 | [SECURITY.md](./SECURITY.md) | Vulnerability reporting and secret handling. |
@@ -110,7 +110,7 @@ Deep dive: [Architecture overview](docs/architecture/overview.md) · [Data flow]
 | Tests | Vitest + MSW, Playwright |
 | Lint / format | ESLint 9, Prettier |
 | Host | Cloudflare Workers (`infra/wrangler.jsonc`) |
-| Release | semantic-release on `main` / `stg` |
+| Release | semantic-release on `main` |
 
 ---
 
@@ -160,7 +160,7 @@ cd ../kwami-app && bun link kwami
 | `bun run tauri dev` | Desktop shell |
 | `bun run cf:preview` | Preview `dist/` on a local Worker |
 | `bun run cf:deploy` / `cf:deploy:dry` | Publish (or dry-run) production Worker |
-| `bun run cf:deploy:stg` / `cf:deploy:dev` | Publish channel Workers |
+| `bun run cf:deploy:dev` | Publish the dev Worker (`dev.kwami.io`) |
 
 ---
 
@@ -214,22 +214,18 @@ That is the local stand-in for CI. Reach for a single lane while iterating.
 
 Cloudflare Workers, assets-only, no migrations. Channel Workers match the promotion path:
 
-| Branch | Worker | GitHub Environment |
-|---|---|---|
-| `main` | `kwami-app` | `production` |
-| `stg` | `kwami-app-stg` | `stg` |
-| `dev` | `kwami-app-dev` | `dev` |
+| Branch | App | API (`VITE_API_URL`) | Worker | GitHub Environment |
+|---|---|---|---|---|
+| `main` | `https://kwami.io` | `https://api.kwami.io` | `kwami-app` | `production` |
+| `dev` | `https://dev.kwami.io` | `https://api.dev.kwami.io` | `kwami-app-dev` | `dev` |
 
-`VITE_*` is baked at build time, so each channel must be built with its own values.
+`VITE_*` is baked at build time. `VITE_API_URL` is set in `cd.yml`. The other values come from the GitHub Environment.
 
 ```
 push main ──► ci ──► cd ─┬─ release   semantic-release: version, tag, CHANGELOG, GitHub Release
-                         └─ deploy    wrangler --env production  →  kwami-app
+                         └─ deploy    wrangler --env production  →  kwami-app (kwami.io)
 
-push stg  ──► ci ──► cd ─┬─ release   semantic-release: vX.Y.Z-stg.N (prerelease)
-                         └─ deploy    wrangler --env stg          →  kwami-app-stg
-
-push dev  ──► ci ──► cd ─── deploy    wrangler --env dev          →  kwami-app-dev
+push dev  ──► ci ──► cd ─── deploy    wrangler --env dev          →  kwami-app-dev (dev.kwami.io)
                           (fast lane: lint + unit only)
 ```
 
@@ -243,21 +239,22 @@ It is a `workflow_call`, deliberately not a `workflow_run`: that trigger always 
 
 The deploy **skips with a warning** while `CLOUDFLARE_API_TOKEN` is unset, so the pipeline is green before the account is connected. Once the token is set, a missing `CLOUDFLARE_ACCOUNT_ID` is a hard failure — a green deploy that shipped nothing is worse than a red one.
 
-Create GitHub Environments named `production`, `stg` and `dev` (Settings → Environments) holding:
+Create GitHub Environments named `production` and `dev` (Settings → Environments) holding:
 
 | kind | name | value |
 |---|---|---|
 | secret | `CLOUDFLARE_API_TOKEN` | a token with Workers edit on this account |
 | secret | `CLOUDFLARE_ACCOUNT_ID` | the account that owns `kwami.io` |
 | secret | `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase anon / publishable key |
-| variable | `VITE_API_URL` | Kwami API origin for that channel |
 | variable | `VITE_LIVEKIT_URL` | LiveKit WebSocket URL |
 | variable | `VITE_SUPABASE_URL` | Supabase project URL |
 | variable | `VITE_AUTH_PROVIDERS` | Comma-separated provider list |
 
-After the production Worker exists, Terraform in [`infra/terraform`](infra/terraform) attaches `app.kwami.io` — the apex stays on `kwami-waitlist`.
+`VITE_API_URL` is not an Environment variable. `cd.yml` bakes `https://api.kwami.io` for `main` and `https://api.dev.kwami.io` for `dev`.
 
-Versions, tags, the GitHub Release and [`CHANGELOG.md`](./CHANGELOG.md) are cut automatically by semantic-release after `ci` goes green on `main` or `stg` — see [Releases](./CONTRIBUTING.md#releases).
+After the Worker exists, Terraform in [`infra/terraform`](infra/terraform) attaches `kwami.io` (production) or `dev.kwami.io` (development).
+
+Versions, tags, the GitHub Release and [`CHANGELOG.md`](./CHANGELOG.md) are cut automatically by semantic-release after `ci` goes green on `main` — see [Releases](./CONTRIBUTING.md#releases).
 
 ---
 

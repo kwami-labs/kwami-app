@@ -15,7 +15,7 @@ cp .env.sample .env
 | `VITE_SUPABASE_URL` | `https://xxx.supabase.co` | Auth + `user_kwamis` / `user_app_settings` |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | `sb_publishable_…` | Supabase JS client |
 
-`VITE_API_URL` trailing slashes are stripped. If unset, the client falls back to `http://localhost:8080`.
+`VITE_API_URL` trailing slashes are stripped. If unset, the client falls back to `http://localhost:8080`. Deployed builds bake it in `cd.yml`: `https://api.kwami.io` for `main`, `https://api.dev.kwami.io` for `dev`.
 
 Missing Supabase values fail boot (`isEnvValid` in [`src/lib/env.ts`](../../src/lib/env.ts)). Room JWTs are `POST {VITE_API_URL}/token` — there is no separate token-endpoint env var.
 
