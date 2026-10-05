@@ -1,10 +1,12 @@
 # Environment
 
-Copy [`.env.sample`](../../.env.sample) to `.env`. Vite only exposes variables prefixed with `VITE_` to the browser bundle. Treat them as public.
+`.env` is in git, encrypted with git-crypt. The committed blob is ciphertext; the working tree stays plaintext after unlock. On a new machine, install git-crypt and run this once:
 
 ```bash
-cp .env.sample .env
+git-crypt unlock ~/.config/git-crypt/kwami.io/kwami-app.key
 ```
+
+The key file is not in the repo. Without it, copy [`.env.sample`](../../.env.sample) to `.env` and fill it in. Vite only exposes variables prefixed with `VITE_` to the browser bundle. Treat them as public. Plaintext `.env.*` overrides stay gitignored. [`.env.test`](../../.env.test) is the tracked e2e file and stays plaintext.
 
 ## Required
 
