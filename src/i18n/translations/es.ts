@@ -235,6 +235,10 @@ export const es = {
     standardPipelineDesc: 'LLM + STT + TTS',
     realtimeMultimodal: 'Multimodal en tiempo real',
     realtimeMultimodalDesc: 'Audio + Video',
+    voiceNoKey: 'El agente no tiene clave para este proveedor de voz.',
+    jarvisVoiceHint:
+      'La voz de Jarvis es Gemini TTS con Charon (o Gemini Live, más rápido, desde el panel de Voz).',
+    useJarvisVoice: 'Usar voz de Jarvis',
   },
   ui: {
     closePanel: 'Cerrar panel',

@@ -336,9 +336,37 @@ describe('renderer', () => {
 });
 
 describe('pipeline switching', () => {
+  /** A character voice locks the engine; these tests are about the switch itself. */
+  function unlockVoice() {
+    const voice = useVoiceStore();
+    voice.updateTTS({ style: '' });
+    voice.updateRealtime({ style: '' });
+  }
+
+  it('refuses to switch the engine or the voice while a character voice is on', async () => {
+    isConnected.value = true;
+    for (const [control, value] of [
+      ['pipelineMode', 'realtime'],
+      ['ttsVoice', 'Kore'],
+      ['realtimeVoice', 'Puck'],
+    ]) {
+      const result = await call('set_ui_control', {
+        domain: 'voice',
+        control,
+        value,
+        confirm: true,
+      });
+      expect(result.success).toBe(false);
+      expect(String(result.message)).toContain('Jarvis');
+    }
+    expect(sentConfigUpdates).toHaveLength(0);
+    expect(useVoiceStore().tts.voice).toBe('Charon');
+  });
+
   it('sends the switch over the data channel when connected', async () => {
     // Without this the backend never heard about the switch at all: the old
     // code only mutated the local config object.
+    unlockVoice();
     isConnected.value = true;
 
     const result = await call('set_ui_control', {
@@ -356,6 +384,7 @@ describe('pipeline switching', () => {
   });
 
   it('does not claim a live switch while disconnected', async () => {
+    unlockVoice();
     isConnected.value = false;
     await call('set_ui_control', {
       domain: 'voice',

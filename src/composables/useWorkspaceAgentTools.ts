@@ -11,6 +11,7 @@ import type {
 } from 'kwami';
 import { useKwami } from '@/composables/useKwami';
 import { sendRawConfigUpdate } from '@/lib/agentConfigUpdate';
+import { voiceLock } from '@/lib/voicePersonas';
 import { useUIStore, type PanelSizePreset } from '@/stores/ui';
 import { useSearchStore } from '@/stores/search';
 import { useVoiceStore } from '@/stores/voice';
@@ -44,6 +45,15 @@ import { soulPresets } from '@/presets/agent/soul-presets';
 import { sceneImagePresets } from '@/presets/scene/image-presets';
 import { sceneVideoPresets } from '@/presets/scene/video-presets';
 import { sceneHdriPresets } from '@/presets/scene/hdri-presets';
+
+/** Controls that would change the voice or its engine: refused while one is locked. */
+const VOICE_SWITCH_CONTROLS = new Set([
+  'pipelinemode',
+  'ttsvoice',
+  'realtimevoice',
+  'ttsmodel',
+  'realtimemodel',
+]);
 
 const WORKSPACE_PANELS = [
   'avatar',
@@ -1125,6 +1135,15 @@ export function useWorkspaceAgentTools() {
     }
 
     const normalized = normalizeKey(control);
+    const lock = voiceLock(voiceStore.pipelineMode, voiceStore.realtime, voiceStore.tts);
+    if (lock && VOICE_SWITCH_CONTROLS.has(normalized)) {
+      return {
+        success: false,
+        message: t('workspaceAgentTools.voiceLocked', {
+          name: lock.persona?.name ?? lock.voice,
+        }),
+      };
+    }
     const approved = await confirmIfNeeded(
       ADVANCED_VOICE_CONTROLS.has(normalized),
       confirm,
