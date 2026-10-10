@@ -19,6 +19,9 @@ const kwamiInstance = shallowRef<Kwami | null>(null);
 const rendererType = ref<AvatarRendererType>('blob-xyz');
 const isConnected = ref(false);
 
+/** One listener for the app's lifetime, however many components call useKwami(). */
+let agentRejoinListener: ((event: Event) => void) | null = null;
+
 export function useKwami() {
   const authStore = useAuthStore();
   const workspaceStore = useWorkspaceStore();
@@ -354,8 +357,21 @@ export function useKwami() {
       );
       console.log(`✅ Connected to agent as user: ${memoryUserId.value}`);
 
-      // Sync all persisted panel configs to the backend agent after connecting
+      // Sync all persisted panel configs to the backend agent after connecting.
+      // The SDK holds these until the agent joins the room.
       syncAllConfigToBackend(kwamiInstance.value, voiceStore);
+
+      // A restarted or replaced agent gets the base config again from the SDK, but
+      // not these updates, which went to the agent it replaced: send them again.
+      if (!agentRejoinListener) {
+        agentRejoinListener = (event: Event) => {
+          const rejoin = (event as CustomEvent<{ rejoin?: boolean }>).detail?.rejoin;
+          if (rejoin && isConnected.value && kwamiInstance.value) {
+            syncAllConfigToBackend(kwamiInstance.value, useVoiceStore());
+          }
+        };
+        window.addEventListener('kwami:agent_joined', agentRejoinListener);
+      }
     } catch (error: unknown) {
       console.error('Failed to connect:', error);
       isConnected.value = false;
