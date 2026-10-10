@@ -304,6 +304,7 @@ function applySavedSoulState() {
   const saved = voiceStore.soulConfig;
   const soulConfig = {
     name: saved.name,
+    language: saved.language,
     personality: saved.personality,
     systemPrompt: saved.systemPrompt,
     traits: [...saved.traits],
@@ -311,6 +312,8 @@ function applySavedSoulState() {
     responseLength: saved.responseLength,
     emotionalTone: saved.emotionalTone,
     emotionalTraits: { ...saved.emotionalTraits },
+    // Behaviour rules and the user profile; see src/lib/charter.ts.
+    charter: { ...saved.charter, watch: [...saved.charter.watch] },
   };
   kwami.value.soul.updateConfig(soulConfig);
 

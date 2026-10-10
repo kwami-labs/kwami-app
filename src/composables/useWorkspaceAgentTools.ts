@@ -36,6 +36,7 @@ import { useKwamiConfigSync } from '@/composables/useKwamiConfigSync';
 import { useSearchPanelAgentTools } from '@/composables/useSearchPanelAgentTools';
 import { useCommsAgentTools } from '@/composables/useCommsAgentTools';
 import { useLocaleAgentTools } from '@/composables/useLocaleAgentTools';
+import { useCharterAgentTools } from '@/composables/useCharterAgentTools';
 import { useRecallAgentTools } from '@/composables/useRecallAgentTools';
 import { useKwamiAdminAgentTools } from '@/composables/useKwamiAdminAgentTools';
 import { useWorkspaceExtrasAgentTools } from '@/composables/useWorkspaceExtrasAgentTools';
@@ -250,6 +251,7 @@ export function useWorkspaceAgentTools() {
   const searchPanelTools = useSearchPanelAgentTools();
   const commsTools = useCommsAgentTools();
   const localeTools = useLocaleAgentTools();
+  const charterTools = useCharterAgentTools();
   const recallTools = useRecallAgentTools();
   const kwamiAdminTools = useKwamiAdminAgentTools();
   const extrasTools = useWorkspaceExtrasAgentTools();
@@ -2448,6 +2450,7 @@ export function useWorkspaceAgentTools() {
     searchPanelTools.registerSearchPanelTools(instance);
     commsTools.registerCommsTools(instance);
     localeTools.registerLocaleTools(instance);
+    charterTools.registerCharterTools(instance);
     recallTools.registerRecallTools(instance);
     kwamiAdminTools.registerKwamiAdminTools(instance);
     extrasTools.registerWorkspaceExtrasTools(instance);

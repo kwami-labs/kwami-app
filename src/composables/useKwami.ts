@@ -207,6 +207,7 @@ export function useKwami() {
     const soulConfig = kwami.soul.getConfig();
     agent.syncConfigToBackend('soul', {
       name: soulConfig.name,
+      language: soulConfig.language,
       personality: soulConfig.personality,
       systemPrompt: soulConfig.systemPrompt,
       traits: soulConfig.traits || [],
@@ -214,6 +215,9 @@ export function useKwami() {
       responseLength: soulConfig.responseLength,
       emotionalTone: soulConfig.emotionalTone,
       emotionalTraits: soulConfig.emotionalTraits,
+      // The store, not the SDK soul, is where the charter lives between
+      // sessions; the SDK only passes it through.
+      charter: { ...voiceStore.soulConfig.charter },
     });
 
     // 2. Enhancements + VAD config

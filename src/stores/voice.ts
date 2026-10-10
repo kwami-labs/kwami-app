@@ -13,6 +13,7 @@ import type {
   RealtimeModality,
   VoicePipelineConfig,
 } from 'kwami';
+import { defaultCharter, normalizeCharter, type CharterConfig } from '@/lib/charter';
 
 const STORAGE_KEY = 'kwami-voice-config';
 
@@ -141,6 +142,7 @@ export const useVoiceStore = defineStore('voice', () => {
       curiosity: 0,
       creativity: 0,
     },
+    charter: defaultCharter() as CharterConfig,
   });
 
   // Memory panel UI state
@@ -240,6 +242,9 @@ export const useVoiceStore = defineStore('voice', () => {
         soulConfig.value = {
           ...soulConfig.value,
           ...soulConfigFromSettings,
+          // Saves from before the charter existed have none; older charters
+          // lack newer fields. Either way, fill from the defaults.
+          charter: normalizeCharter(soulConfigFromSettings.charter),
         } as typeof soulConfig.value;
       if (settings.memoryUI && typeof settings.memoryUI === 'object')
         memoryUI.value = { ...memoryUI.value, ...settings.memoryUI };
@@ -278,7 +283,11 @@ export const useVoiceStore = defineStore('voice', () => {
       modelsUI: { ...modelsUI.value },
       voiceUI: { ...voiceUI.value },
       soulUI: { ...soulUI.value },
-      soulConfig: { ...soulConfig.value, emotionalTraits: { ...soulConfig.value.emotionalTraits } },
+      soulConfig: {
+        ...soulConfig.value,
+        emotionalTraits: { ...soulConfig.value.emotionalTraits },
+        charter: { ...soulConfig.value.charter, watch: [...soulConfig.value.charter.watch] },
+      },
       memoryUI: { ...memoryUI.value },
       enhancementsState: {
         turnDetection: { ...enhancementsState.value.turnDetection },
