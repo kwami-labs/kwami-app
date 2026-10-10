@@ -111,7 +111,13 @@ const PANEL_ALIASES: Record<string, WorkspacePanel> = {
  * `applySnapshot` have all supported it from the start -- so it was selectable
  * by hand and unreachable by voice, for no reason anyone had decided.
  */
-const AVATAR_RENDERERS = ['blob-xyz', 'black-hole', 'particles-face', 'eye-iris'] as const;
+const AVATAR_RENDERERS = [
+  'blob-xyz',
+  'black-hole',
+  'particles-face',
+  'eye-iris',
+  'jarvis',
+] as const;
 type AvatarRenderer = (typeof AVATAR_RENDERERS)[number];
 
 const ADVANCED_VOICE_CONTROLS = new Set([

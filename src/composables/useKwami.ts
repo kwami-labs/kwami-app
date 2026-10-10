@@ -61,7 +61,7 @@ export function useKwami() {
 
   function init(
     canvas: HTMLCanvasElement,
-    renderer: 'blob-xyz' | 'black-hole' | 'particles-face' | 'eye-iris' = 'blob-xyz',
+    renderer: AvatarRendererType = 'blob-xyz',
     options?: {
       onSearchResults?: (data: {
         query: string;

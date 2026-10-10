@@ -3,12 +3,14 @@ import { useBlobXyzStore } from '@/stores/avatar.blob-xyz';
 import { useBlackHoleStore } from '@/stores/avatar.black-hole';
 import { useParticlesFaceStore } from '@/stores/avatar.particles-face';
 import { useEyeIrisStore } from '@/stores/avatar.eye-iris';
+import { useJarvisStore } from '@/stores/avatar.jarvis';
 
 export interface RandomizeAvatarPanelDeps {
   applyBlob: () => void;
   applyBlackHole: () => void;
   applyParticles: () => void;
   applyEyeIris: () => void;
+  applyJarvis?: () => void;
 }
 
 const NO_DEPS: RandomizeAvatarPanelDeps = {
@@ -34,6 +36,7 @@ export function randomizeAvatarPanel(deps: RandomizeAvatarPanelDeps = NO_DEPS): 
   const blackHoleStore = useBlackHoleStore();
   const particlesFaceStore = useParticlesFaceStore();
   const eyeIrisStore = useEyeIrisStore();
+  const jarvisStore = useJarvisStore();
 
   switch (avatarStore.rendererType) {
     case 'blob-xyz':
@@ -51,6 +54,10 @@ export function randomizeAvatarPanel(deps: RandomizeAvatarPanelDeps = NO_DEPS): 
     case 'eye-iris':
       eyeIrisStore.randomizeAll();
       deps.applyEyeIris();
+      break;
+    case 'jarvis':
+      jarvisStore.randomizeAll();
+      deps.applyJarvis?.();
       break;
     default:
       break;

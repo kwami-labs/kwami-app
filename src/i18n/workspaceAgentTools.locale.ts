@@ -34,7 +34,8 @@ export const workspaceAgentToolsEn = {
     openedPanel: 'Opened the {panel} panel.',
     panelAlreadyClosed: 'The workspace panel is already closed.',
     closedPanel: 'Closed the workspace panel.',
-    unknownRenderer: 'Unknown renderer. Use blob-xyz, black-hole, particles-face, or eye-iris.',
+    unknownRenderer:
+      'Unknown renderer. Use blob-xyz, black-hole, particles-face, eye-iris, or jarvis.',
     soulControlString: 'Provide the soul control name as a string.',
     soulNameRequired: 'Provide a name for the companion.',
     soulNameSet: "I'm called {name} now.",
@@ -414,7 +415,7 @@ export const workspaceAgentToolsEs = {
     panelAlreadyClosed: 'El panel lateral ya esta cerrado.',
     closedPanel: 'Se cerro el panel lateral.',
     unknownRenderer:
-      'Renderizador desconocido. Usa blob-xyz, black-hole, particles-face o eye-iris.',
+      'Renderizador desconocido. Usa blob-xyz, black-hole, particles-face, eye-iris o jarvis.',
     soulControlString: 'Indica el nombre del control del alma como texto.',
     soulNameRequired: 'Indica un nombre para el companero.',
     soulNameSet: 'Ahora me llamo {name}.',

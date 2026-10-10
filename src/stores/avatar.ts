@@ -5,6 +5,7 @@ import {
   getBlobXyzPresets,
   getBlackHolePresets,
   getEyeIrisPresets,
+  getJarvisPresets,
   getPresetById,
   type AvatarPreset,
 } from '@/presets/avatar/avatar-presets';
@@ -12,6 +13,7 @@ import { useBlobXyzStore } from './avatar.blob-xyz';
 import { useBlackHoleStore } from './avatar.black-hole';
 import { useParticlesFaceStore } from './avatar.particles-face';
 import { useEyeIrisStore } from './avatar.eye-iris';
+import { useJarvisStore } from './avatar.jarvis';
 import type { AvatarRendererType } from 'kwami';
 
 // Re-export AvatarPreset for backwards compatibility
@@ -325,6 +327,7 @@ export const useAvatarStore = defineStore('avatar', () => {
   const blobXyzPresets = computed(() => getBlobXyzPresets());
   const blackHolePresets = computed(() => getBlackHolePresets());
   const eyeIrisPresets = computed(() => getEyeIrisPresets());
+  const jarvisPresets = computed(() => getJarvisPresets());
 
   // Actions
   function setRendererType(type: RendererType) {
@@ -365,6 +368,8 @@ export const useAvatarStore = defineStore('avatar', () => {
       resetParticlesFace();
     } else if (rendererType.value === 'eye-iris') {
       useEyeIrisStore().resetAll();
+    } else if (rendererType.value === 'jarvis') {
+      useJarvisStore().resetAll();
     }
   }
 
@@ -388,6 +393,8 @@ export const useAvatarStore = defineStore('avatar', () => {
       useEyeIrisStore().importState(
         preset.eyeIris as Parameters<ReturnType<typeof useEyeIrisStore>['importState']>[0],
       );
+    } else if (preset.renderer === 'jarvis' && preset.jarvis) {
+      useJarvisStore().importState(preset.jarvis);
     }
 
     return true;
@@ -468,12 +475,14 @@ export const useAvatarStore = defineStore('avatar', () => {
     const blackHoleStore = useBlackHoleStore();
     const pfStore = useParticlesFaceStore();
     const eyeIrisStore = useEyeIrisStore();
+    const jarvisStore = useJarvisStore();
     return {
       rendererType: rendererType.value,
       blobXyz: blobStore.exportState(),
       blackHole: blackHoleStore.exportState(),
       particlesFace: pfStore.exportState(),
       eyeIris: eyeIrisStore.exportState(),
+      jarvis: jarvisStore.exportState(),
     };
   }
 
@@ -483,6 +492,7 @@ export const useAvatarStore = defineStore('avatar', () => {
     blackHole?: unknown;
     particlesFace?: unknown;
     eyeIris?: unknown;
+    jarvis?: unknown;
   }) {
     if (!settings) return;
     isLoading.value = true;
@@ -505,6 +515,10 @@ export const useAvatarStore = defineStore('avatar', () => {
       if (settings.eyeIris)
         eyeIrisStore.importState(
           settings.eyeIris as Parameters<typeof eyeIrisStore.importState>[0],
+        );
+      if (settings.jarvis)
+        useJarvisStore().importState(
+          settings.jarvis as Parameters<ReturnType<typeof useJarvisStore>['importState']>[0],
         );
     } catch (e) {
       console.warn('Failed to apply avatar snapshot:', e);
@@ -553,6 +567,7 @@ export const useAvatarStore = defineStore('avatar', () => {
     blobXyzPresets,
     blackHolePresets,
     eyeIrisPresets,
+    jarvisPresets,
     // Actions
     setRendererType,
     setActiveState,
