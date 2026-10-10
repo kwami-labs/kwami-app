@@ -28,6 +28,7 @@ import { useBlackHoleSync } from '@/composables/avatar/sync/useBlackHoleSync';
 import { useParticlesFaceSync } from '@/composables/avatar/sync/useParticlesFaceSync';
 import { useEyeIrisSync } from '@/composables/avatar/sync/useEyeIrisSync';
 import { useJarvisSync } from '@/composables/avatar/sync/useJarvisSync';
+import { useBrainSync } from '@/composables/useBrainSync';
 import { randomizeAvatarPanel } from '@/composables/avatar/randomizeAvatarPanel';
 import { useBlobXyzStore } from '@/stores/avatar.blob-xyz';
 import { useEyeIrisStore } from '@/stores/avatar.eye-iris';
@@ -41,6 +42,7 @@ const {
   isConnected,
   dispose: disposeKwami,
 } = useKwami();
+useBrainSync(kwami, isConnected);
 const { initialize: initSceneBackground } = useSceneBackground();
 import { useVoiceStore } from '@/stores/voice';
 import { useCreditsStore } from '@/stores/credits';

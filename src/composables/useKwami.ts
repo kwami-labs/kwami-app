@@ -5,6 +5,7 @@ import { useVoiceStore } from '@/stores/voice';
 import { useAuthStore } from '@/stores/auth';
 import { api, ApiError } from '@/lib/apiClient';
 import { env } from '@/lib/env';
+import { sendBrainConfig } from '@/composables/useBrainSync';
 import { isPersistedKwamiId, useWorkspaceStore } from '@/stores/workspace';
 
 declare global {
@@ -292,6 +293,9 @@ export function useKwami() {
 
     // 7. Memory runtime retrieval settings
     agent.syncConfigToBackend('memory', getMemoryRuntimeConfig(voiceStore.memoryUI));
+
+    // 8. The brain: which models the voice hands work to (lib/brain.ts)
+    sendBrainConfig(kwami, voiceStore);
 
     console.log(
       '📤 Synced all configs to backend on connect (including',

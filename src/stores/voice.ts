@@ -14,8 +14,18 @@ import type {
   VoicePipelineConfig,
 } from 'kwami';
 import { defaultCharter, normalizeCharter, type CharterConfig } from '@/lib/charter';
+import {
+  brainPayload,
+  defaultBrain,
+  normalizeBrain,
+  parseBrainStatus,
+  type BrainConfig,
+  type BrainStatus,
+} from '@/lib/brain';
 
 const STORAGE_KEY = 'kwami-voice-config';
+/** What the agent last said about its brain: which keys it has, spend, tasks. */
+const BRAIN_STATUS_KEY = 'kwami-brain-status';
 
 // Extended store configs with required fields for UI
 export interface STTConfig extends Omit<LibSTTConfig, 'provider' | 'language'> {
@@ -145,6 +155,30 @@ export const useVoiceStore = defineStore('voice', () => {
     charter: defaultCharter() as CharterConfig,
   });
 
+  // The brain: the models the voice hands work to (lib/brain.ts).
+  const brain = ref<BrainConfig>(defaultBrain());
+
+  // Runtime report from the agent. Cached locally so the panel can show which
+  // providers have keys before a session starts; never saved with the kwami.
+  const brainStatus = ref<BrainStatus | null>(null);
+  try {
+    const cached = localStorage.getItem(BRAIN_STATUS_KEY);
+    if (cached) brainStatus.value = JSON.parse(cached) as BrainStatus;
+  } catch {
+    brainStatus.value = null;
+  }
+
+  function applyBrainStatus(raw: unknown) {
+    const parsed = parseBrainStatus(raw);
+    if (!parsed) return;
+    brainStatus.value = parsed;
+    try {
+      localStorage.setItem(BRAIN_STATUS_KEY, JSON.stringify(parsed));
+    } catch {
+      // Storage full or blocked: the status is still live in memory.
+    }
+  }
+
   // Memory panel UI state
   const memoryUI = ref({
     activeTab: 'facts' as 'facts' | 'entities' | 'messages',
@@ -246,6 +280,8 @@ export const useVoiceStore = defineStore('voice', () => {
           // lack newer fields. Either way, fill from the defaults.
           charter: normalizeCharter(soulConfigFromSettings.charter),
         } as typeof soulConfig.value;
+      if (settings.brain && typeof settings.brain === 'object')
+        brain.value = normalizeBrain(settings.brain);
       if (settings.memoryUI && typeof settings.memoryUI === 'object')
         memoryUI.value = { ...memoryUI.value, ...settings.memoryUI };
       if (settings.enhancementsState && typeof settings.enhancementsState === 'object') {
@@ -288,6 +324,7 @@ export const useVoiceStore = defineStore('voice', () => {
         emotionalTraits: { ...soulConfig.value.emotionalTraits },
         charter: { ...soulConfig.value.charter, watch: [...soulConfig.value.charter.watch] },
       },
+      brain: brainPayload(brain.value),
       memoryUI: { ...memoryUI.value },
       enhancementsState: {
         turnDetection: { ...enhancementsState.value.turnDetection },
@@ -329,6 +366,7 @@ export const useVoiceStore = defineStore('voice', () => {
       activePreset,
       soulUI,
       soulConfig,
+      brain,
       memoryUI,
       enhancementsState,
     ],
@@ -349,6 +387,9 @@ export const useVoiceStore = defineStore('voice', () => {
     voiceUI,
     soulUI,
     soulConfig,
+    brain,
+    brainStatus,
+    applyBrainStatus,
     memoryUI,
     enhancementsState,
     updateSTT,
