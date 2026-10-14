@@ -1,6 +1,8 @@
 import { createI18n } from 'vue-i18n';
 import { workspaceAgentToolsEn, workspaceAgentToolsEs } from './workspaceAgentTools.locale';
 import { appLocaleEn, appLocaleEs } from './appLocale.locale';
+import { charterEn, charterEs } from './charter.locale';
+import { brainEn, brainEs } from './brain.locale';
 import { commsAgentToolsEn, commsAgentToolsEs } from './commsAgentTools.locale';
 import { kwamiAdminEn, kwamiAdminEs } from './kwamiAdmin.locale';
 import { extrasEn, extrasEs } from './extras.locale';
@@ -52,6 +54,8 @@ export const messages = {
     ...kwamiAdminEn,
     ...recallEn,
     ...extrasEn,
+    ...charterEn,
+    ...brainEn,
   },
   es: {
     ...es,
@@ -62,6 +66,8 @@ export const messages = {
     ...kwamiAdminEs,
     ...recallEs,
     ...extrasEs,
+    ...charterEs,
+    ...brainEs,
   },
 } as const;
 

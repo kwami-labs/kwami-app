@@ -10,6 +10,8 @@ import type {
   RealtimeProvider,
 } from 'kwami';
 import { useKwami } from '@/composables/useKwami';
+import { sendRawConfigUpdate } from '@/lib/agentConfigUpdate';
+import { voiceLock } from '@/lib/voicePersonas';
 import { useUIStore, type PanelSizePreset } from '@/stores/ui';
 import { useSearchStore } from '@/stores/search';
 import { useVoiceStore } from '@/stores/voice';
@@ -35,6 +37,7 @@ import { useKwamiConfigSync } from '@/composables/useKwamiConfigSync';
 import { useSearchPanelAgentTools } from '@/composables/useSearchPanelAgentTools';
 import { useCommsAgentTools } from '@/composables/useCommsAgentTools';
 import { useLocaleAgentTools } from '@/composables/useLocaleAgentTools';
+import { useCharterAgentTools } from '@/composables/useCharterAgentTools';
 import { useRecallAgentTools } from '@/composables/useRecallAgentTools';
 import { useKwamiAdminAgentTools } from '@/composables/useKwamiAdminAgentTools';
 import { useWorkspaceExtrasAgentTools } from '@/composables/useWorkspaceExtrasAgentTools';
@@ -42,6 +45,15 @@ import { soulPresets } from '@/presets/agent/soul-presets';
 import { sceneImagePresets } from '@/presets/scene/image-presets';
 import { sceneVideoPresets } from '@/presets/scene/video-presets';
 import { sceneHdriPresets } from '@/presets/scene/hdri-presets';
+
+/** Controls that would change the voice or its engine: refused while one is locked. */
+const VOICE_SWITCH_CONTROLS = new Set([
+  'pipelinemode',
+  'ttsvoice',
+  'realtimevoice',
+  'ttsmodel',
+  'realtimemodel',
+]);
 
 const WORKSPACE_PANELS = [
   'avatar',
@@ -111,7 +123,13 @@ const PANEL_ALIASES: Record<string, WorkspacePanel> = {
  * `applySnapshot` have all supported it from the start -- so it was selectable
  * by hand and unreachable by voice, for no reason anyone had decided.
  */
-const AVATAR_RENDERERS = ['blob-xyz', 'black-hole', 'particles-face', 'eye-iris'] as const;
+const AVATAR_RENDERERS = [
+  'blob-xyz',
+  'black-hole',
+  'particles-face',
+  'eye-iris',
+  'jarvis',
+] as const;
 type AvatarRenderer = (typeof AVATAR_RENDERERS)[number];
 
 const ADVANCED_VOICE_CONTROLS = new Set([
@@ -202,37 +220,6 @@ function getErrorMessage(error: unknown): string {
   return 'unknown error';
 }
 
-/**
- * Send a config update whose `updateType` the installed SDK does not name.
- *
- * `Agent.syncConfigToBackend`'s union is
- * `'voice' | 'soul' | 'tools' | 'full' | 'llm' | 'memory'`, and the backend
- * also understands `'pipeline'` for switching between the standard and
- * realtime pipelines mid-session. The app depends on the published `kwami`
- * package rather than the workspace source, so widening that union means
- * republishing the SDK; this reaches the same `sendConfigUpdate` the typed
- * method does, via the pipeline the SDK already exposes for exactly this.
- *
- * Returns false when there is no connected pipeline to send on, so callers can
- * tell the user the truth instead of reporting a switch that never left.
- */
-function sendRawConfigUpdate(
-  instance: Kwami,
-  updateType: string,
-  config: Record<string, unknown>,
-): boolean {
-  const pipeline = instance.agent.getPipeline() as {
-    sendConfigUpdate?: (type: string, config: unknown) => void;
-  } | null;
-  if (!pipeline || typeof pipeline.sendConfigUpdate !== 'function') return false;
-  try {
-    pipeline.sendConfigUpdate(updateType, config);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 function buildSoulConfig(voiceStore: ReturnType<typeof useVoiceStore>) {
   const saved = voiceStore.soulConfig;
   return {
@@ -274,6 +261,7 @@ export function useWorkspaceAgentTools() {
   const searchPanelTools = useSearchPanelAgentTools();
   const commsTools = useCommsAgentTools();
   const localeTools = useLocaleAgentTools();
+  const charterTools = useCharterAgentTools();
   const recallTools = useRecallAgentTools();
   const kwamiAdminTools = useKwamiAdminAgentTools();
   const extrasTools = useWorkspaceExtrasAgentTools();
@@ -1147,6 +1135,15 @@ export function useWorkspaceAgentTools() {
     }
 
     const normalized = normalizeKey(control);
+    const lock = voiceLock(voiceStore.pipelineMode, voiceStore.realtime, voiceStore.tts);
+    if (lock && VOICE_SWITCH_CONTROLS.has(normalized)) {
+      return {
+        success: false,
+        message: t('workspaceAgentTools.voiceLocked', {
+          name: lock.persona?.name ?? lock.voice,
+        }),
+      };
+    }
     const approved = await confirmIfNeeded(
       ADVANCED_VOICE_CONTROLS.has(normalized),
       confirm,
@@ -2472,6 +2469,7 @@ export function useWorkspaceAgentTools() {
     searchPanelTools.registerSearchPanelTools(instance);
     commsTools.registerCommsTools(instance);
     localeTools.registerLocaleTools(instance);
+    charterTools.registerCharterTools(instance);
     recallTools.registerRecallTools(instance);
     kwamiAdminTools.registerKwamiAdminTools(instance);
     extrasTools.registerWorkspaceExtrasTools(instance);

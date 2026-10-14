@@ -13,3 +13,4 @@ export type BlackHoleHandle = NonNullable<ReturnType<Avatar['getBlackHole']>>;
 export type ParticlesFaceHandle = NonNullable<ReturnType<Avatar['getParticlesFace']>>;
 export type EyeIrisHandle = NonNullable<ReturnType<Avatar['getEyeIris']>>;
 export type BlobXyzHandle = NonNullable<ReturnType<Avatar['getBlob']>>;
+export type JarvisHandle = NonNullable<ReturnType<Avatar['getJarvis']>>;

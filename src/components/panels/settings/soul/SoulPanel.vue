@@ -13,7 +13,9 @@ import BaseInput from '@/components/ui/BaseInput.vue';
 import BaseSlider from '@/components/ui/BaseSlider.vue';
 import BaseTagInput from '@/components/ui/BaseTagInput.vue';
 import PanelHeaderControls from '@/components/ui/PanelHeaderControls.vue';
+import CharterSettings from './CharterSettings.vue';
 import { soulPresets, templateCategories, type SoulPreset } from '@/presets/agent/soul-presets';
+import { charterForPreset } from '@/lib/charter';
 import { panelIcons } from '@/constants/panel-icons';
 import { useThemeStore } from '@/stores/theme';
 import { translateApiUserMessage } from '@/utils/translateApiMessage';
@@ -68,8 +70,17 @@ function applyTemplate(template: SoulPreset) {
 
   selectedTemplateId.value = template.id;
 
+  // The English presets are language-neutral templates and leave the user's
+  // language alone. A preset written for another language (Jarvis, es-ES) only
+  // works in it, so it brings the language along and persists it.
+  const language = template.language !== 'en' ? template.language : savedSoulConfig.value.language;
+  const charter = charterForPreset(template.charter, savedSoulConfig.value.charter);
+  savedSoulConfig.value = { ...savedSoulConfig.value, language, charter };
+
   const soulConfig = {
     name: template.name,
+    language,
+    charter: { ...charter },
     personality: template.personality,
     systemPrompt: template.systemPrompt,
     traits: [...template.traits],
@@ -100,6 +111,7 @@ function syncSoulToBackend(soulConfig?: Record<string, unknown>) {
 
   const configToSync = soulConfig ?? {
     name: config.name,
+    language: savedSoulConfig.value.language,
     personality: config.personality,
     systemPrompt: config.systemPrompt,
     traits: traits.value,
@@ -107,6 +119,7 @@ function syncSoulToBackend(soulConfig?: Record<string, unknown>) {
     responseLength: config.responseLength,
     emotionalTone: config.emotionalTone,
     emotionalTraits: { ...emotionalTraits },
+    charter: { ...savedSoulConfig.value.charter },
   };
 
   kwami.value.agent.syncConfigToBackend('soul', configToSync);
@@ -267,11 +280,14 @@ function saveToStore() {
 function restoreSavedSoulToKwami() {
   if (!kwami.value) return;
   const saved = savedSoulConfig.value;
+  // The charter is restored on its own: it can be on with a default persona.
+  kwami.value.soul.updateConfig({ charter: { ...saved.charter } } as Record<string, unknown>);
   // Only restore if it looks like a non-default config
   if (!saved.personality && saved.name === 'Kwami' && saved.traits.length === 0) return;
 
   kwami.value.soul.updateConfig({
     name: saved.name,
+    language: saved.language,
     personality: saved.personality,
     systemPrompt: saved.systemPrompt,
     traits: [...saved.traits],
@@ -507,6 +523,9 @@ onMounted(() => {
           </div>
         </div>
       </PanelSection>
+
+      <!-- Charter: behaviour rules and the user profile -->
+      <CharterSettings />
 
       <!-- Identity -->
       <PanelSection :title="t('soulPanel.identity')">

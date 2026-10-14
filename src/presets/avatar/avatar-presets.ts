@@ -9,6 +9,8 @@ import type { RendererType } from '../../stores/avatar';
 import type { BlobXyzState } from '../../stores/avatar.blob-xyz';
 import type { BlackHoleState } from '../../stores/avatar.black-hole';
 import type { EyeIrisState } from '../../stores/avatar.eye-iris';
+import type { JarvisState } from '../../stores/avatar.jarvis';
+import { getJarvisPalette, type JarvisPalettePreset } from 'kwami';
 import { blobPresetsData, type BlobXyzPreset } from './blob-xyz-presets';
 import { blackHolePresetsData, type BlackHolePreset } from './black-hole-presets';
 import { eyeIrisPresetsData, type EyeIrisPreset } from './eye-iris-presets';
@@ -32,6 +34,7 @@ export interface AvatarPreset {
   blobXyz?: Partial<BlobXyzState>;
   blackHole?: Partial<BlackHoleState>;
   eyeIris?: Partial<EyeIrisState>;
+  jarvis?: Partial<JarvisState>;
 }
 
 // Convert specific presets to unified format
@@ -65,11 +68,55 @@ function toEyeIrisAvatarPreset(preset: EyeIrisPreset): AvatarPreset {
   };
 }
 
+/** Jarvis presets are its palettes, each with a behaviour that suits it. */
+const JARVIS_PRESETS: Array<{
+  id: JarvisPalettePreset;
+  name: string;
+  icon: string;
+  extra: Partial<JarvisState>;
+}> = [
+  {
+    id: 'holo-cyan',
+    name: 'Holo Cyan',
+    icon: 'ph:crosshair-duotone',
+    extra: { intensity: 1, rotationSpeed: 1 },
+  },
+  {
+    id: 'neon-violet',
+    name: 'Neon Violet',
+    icon: 'ph:aperture-duotone',
+    extra: { intensity: 1.15, rotationSpeed: 1.2 },
+  },
+  {
+    id: 'arc-white',
+    name: 'Arc White',
+    icon: 'ph:lightning-duotone',
+    extra: { intensity: 0.9, rotationSpeed: 0.8 },
+  },
+  {
+    id: 'alert-amber',
+    name: 'Alert Amber',
+    icon: 'ph:warning-diamond-duotone',
+    extra: { intensity: 1.05, rotationSpeed: 1.4 },
+  },
+];
+
+function toJarvisAvatarPreset(preset: (typeof JARVIS_PRESETS)[number]): AvatarPreset {
+  return {
+    id: `jarvis-${preset.id}`,
+    name: preset.name,
+    icon: preset.icon,
+    renderer: 'jarvis',
+    jarvis: { palettePreset: preset.id, color: getJarvisPalette(preset.id), ...preset.extra },
+  };
+}
+
 // Combine all presets into a unified array
 const _avatarPresetsData: AvatarPreset[] = [
   ...blobPresetsData.map(toBlobAvatarPreset),
   ...blackHolePresetsData.map(toBlackHoleAvatarPreset),
   ...eyeIrisPresetsData.map(toEyeIrisAvatarPreset),
+  ...JARVIS_PRESETS.map(toJarvisAvatarPreset),
 ];
 
 // Persist reactive ref across HMR updates using import.meta.hot.data
@@ -117,4 +164,8 @@ export function getBlackHolePresets(): AvatarPreset[] {
 
 export function getEyeIrisPresets(): AvatarPreset[] {
   return avatarPresetsRef.value.filter((p) => p.renderer === 'eye-iris');
+}
+
+export function getJarvisPresets(): AvatarPreset[] {
+  return avatarPresetsRef.value.filter((p) => p.renderer === 'jarvis');
 }

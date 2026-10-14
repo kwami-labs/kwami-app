@@ -10,6 +10,37 @@ import { vi } from 'vitest';
  * Each sub-API is a plain object of `vi.fn()`s so tests can assert on calls
  * (e.g. that a slider change reaches `avatar.setScale`) without a real renderer.
  */
+const jarvisPalette = {
+  primary: '#7ee7ff',
+  secondary: '#3d8bfd',
+  accent: '#ffffff',
+  alert: '#ffb020',
+  background: '#02060c',
+  backgroundGlow: '#063044',
+};
+
+/**
+ * The published `kwami` package these tests resolve does not export the Jarvis
+ * helpers until the SDK release that adds the renderer. The app already imports
+ * them, so the mock has to provide them or Vitest refuses the import.
+ */
+export const jarvisSdkStubs = {
+  getJarvisPalette: vi.fn(() => ({ ...jarvisPalette })),
+  getDefaultJarvisConfig: vi.fn(() => ({
+    palettePreset: 'holo-cyan' as const,
+    color: { ...jarvisPalette },
+    intensity: 1,
+    reactivity: 1,
+    rotationSpeed: 1,
+    parallax: 0.2,
+    quality: 'high' as const,
+    backdrop: true,
+    labels: true,
+    title: 'KWAMI',
+    scale: 1,
+  })),
+};
+
 export function createAvatarStub() {
   return {
     switchRenderer: vi.fn(),
@@ -17,6 +48,7 @@ export function createAvatarStub() {
     getBlob: vi.fn(() => null),
     getBlackHole: vi.fn(() => null),
     getEyeIris: vi.fn(() => null),
+    getJarvis: vi.fn(() => null),
     getParticlesFace: vi.fn(() => null),
     getScene: vi.fn(() => null),
     randomize: vi.fn(),
