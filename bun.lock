@@ -6,7 +6,7 @@
       "dependencies": {
         "@supabase/supabase-js": "^2.93.1",
         "iconify-icon": "^3.0.2",
-        "kwami": "2.2.0-dev.1",
+        "kwami": "file:vendor/kwami-2.2.0-dev.1.tgz",
         "pinia": "^4.0.3",
         "three": "^0.186.0",
         "vue": "^3.5.30",
@@ -46,6 +46,7 @@
     "minimatch": "9.0.7",
     "rollup": "4.59.0",
     "serialize-javascript": "7.0.3",
+    "source-map-js": "1.2.2",
   },
   "packages": {
     "@apideck/better-ajv-errors": ["@apideck/better-ajv-errors@0.3.7", "", { "dependencies": { "jsonpointer": "^5.0.1", "leven": "^3.1.0" }, "peerDependencies": { "ajv": ">=8" } }, "sha512-TajUJwGWbDwkCx/CZi7tRE8PVB7simCvKJfHUsSdvps+aTM/PDPP4gkLmKnc+x3CE//y9i/nj74GqdL/hwk7Iw=="],
@@ -1202,7 +1203,7 @@
 
     "kleur": ["kleur@4.1.5", "", {}, "sha512-o+NO+8WrRiQEE4/7nwRJhN1HWpVmJm511pBHUxPLtp0BUISzlBplORYSmTclCnJvQq2tKu/sgl3xVpkc7ZWuQQ=="],
 
-    "kwami": ["kwami@2.2.0-dev.1", "", { "dependencies": { "livekit-client": "^2.6.0", "simplex-noise": "^4.0.3" }, "peerDependencies": { "@types/three": ">=0.183.0", "husky": "^9.1.7", "jiti": "2.7.0", "three": ">=0.183.2" }, "optionalPeers": ["@types/three"] }, "sha512-yGq00ffTiduRnajR3j1M+EhW6ifOwNmbhZCVaJt5OBnmqePa4Dbg4bDkqG2Vey3NO/bMrSiE6Bigz6cC0SpX5Q=="],
+    "kwami": ["kwami@vendor/kwami-2.2.0-dev.1.tgz", { "dependencies": { "livekit-client": "^2.6.0", "simplex-noise": "^4.0.3" }, "peerDependencies": { "@types/three": ">=0.183.0", "husky": "^9.1.7", "jiti": "2.7.0", "three": ">=0.183.2" }, "optionalPeers": ["@types/three"] }],
 
     "leven": ["leven@3.1.0", "", {}, "sha512-qsda+H8jTaUaN/x5vzW2rzc+8Rw4TAQ/4KjB46IwK5VH+IlVeeeje/EoZRpiXvIqjFgK84QffqPztGI3VBLG1A=="],
 
@@ -1446,7 +1447,7 @@
 
     "source-map": ["source-map@0.8.0", "", {}, "sha512-d8EqvL+k/SOXCreS/SUzg2ciyHqBBLcN/yuRjFsbvVhHTE2pgei7oAhmPM7kWFbkX6OSMQfUq4KbkF3au9lhYQ=="],
 
-    "source-map-js": ["source-map-js@1.2.1", "", {}, "sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA=="],
+    "source-map-js": ["source-map-js@1.2.2", "", {}, "sha512-KGj/8Y43x35aZVDtt+J4mK1hoLGHULMYfSkODJNQjNDC3oW1PqPoxMwo0pLUsWM/UEGzON/NxeHywEfNXNP3Vw=="],
 
     "source-map-support": ["source-map-support@0.5.21", "", { "dependencies": { "buffer-from": "^1.0.0", "source-map": "^0.6.0" } }, "sha512-uBHU3L3czsIyYXKX88fdrGovxdSCoTGDRZ6SYXtSRxLZUzHg5P/66Ht6uoUlHu9EZod+inXhKo3qQgwXUT/y1w=="],
 

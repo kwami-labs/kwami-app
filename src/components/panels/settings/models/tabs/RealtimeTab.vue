@@ -10,7 +10,19 @@ import PanelSection from '@/components/ui/PanelSection.vue';
 const { fetchRealtimeModels, realtimeModels, isLoading } = useModelsApi();
 const { t } = useI18n();
 const voiceStore = useVoiceStore();
-const { realtime, modelsUI } = storeToRefs(voiceStore);
+const { realtime, modelsUI, brainStatus } = storeToRefs(voiceStore);
+
+/** Key env var per realtime provider on the agent, for the "no key" hint. */
+const VOICE_KEY: Record<string, string> = {
+  google: 'GOOGLE_API_KEY',
+  openai: 'OPENAI_API_KEY',
+  aws: 'AWS_ACCESS_KEY_ID',
+};
+
+/** False only when the agent has reported the key missing; unknown is allowed. */
+function providerHasKey(provider: string): boolean {
+  return brainStatus.value?.voiceProviders?.[provider] !== false;
+}
 
 // Persisted UI state via store
 const videoEnabled = computed({
@@ -67,9 +79,18 @@ function getProviderIcon(provider: string): string {
 }
 
 function selectModel(modelId: string, provider: string) {
+  if (!providerHasKey(provider)) return;
+  // Voice names are per provider: Gemini's are capitalised star names
+  // (Charon), OpenAI's lowercase (alloy). Carrying one across gives the agent
+  // a voice the new model rejects.
+  const voice = realtime.value.voice ?? '';
+  const keepsVoice =
+    provider === realtime.value.provider ||
+    (provider === 'google' ? /^[A-Z]/.test(voice) : /^[a-z]/.test(voice));
   voiceStore.updateRealtime({
     provider: provider as RealtimeProvider,
     model: modelId,
+    ...(keepsVoice ? {} : { voice: provider === 'google' ? 'Charon' : 'alloy' }),
   });
   expandSelectedProvider();
 }
@@ -86,13 +107,49 @@ const modelInfo: Record<string, { name: string; features: string[]; video: boole
     features: ['audio', 'function_calling'],
     video: false,
   },
+  'gpt-realtime': { name: 'GPT Realtime', features: ['audio', 'function_calling'], video: true },
+  'gpt-realtime-1.5': {
+    name: 'GPT Realtime 1.5',
+    features: ['audio', 'function_calling'],
+    video: true,
+  },
+  'gpt-realtime-2': {
+    name: 'GPT Realtime 2',
+    features: ['audio', 'function_calling'],
+    video: true,
+  },
+  'gpt-realtime-2025-08-28': {
+    name: 'GPT Realtime (2025-08-28)',
+    features: ['audio', 'function_calling'],
+    video: true,
+  },
+  'gemini-3.1-flash-live-preview': {
+    name: 'Gemini 3.1 Flash Live',
+    features: ['audio', 'function_calling'],
+    video: true,
+  },
+  'gemini-3.8-live': {
+    name: 'Gemini 3.8 Live',
+    features: ['audio', 'function_calling'],
+    video: true,
+  },
+  'gemini-3.8-live-extended-thinking': {
+    name: 'Gemini 3.8 Live (razonamiento)',
+    features: ['audio', 'function_calling'],
+    video: true,
+  },
+  'gemini-2.5-flash-native-audio-preview-12-2025': {
+    name: 'Gemini 2.5 Native Audio',
+    features: ['audio', 'function_calling'],
+    video: true,
+  },
   'gemini-2.0-flash-exp': {
     name: 'Gemini 2.0 Flash',
     features: ['audio', 'function_calling'],
     video: true,
   },
   'gemini-live-2.5-flash-native-audio': {
-    name: 'Gemini Live 2.5',
+    name: 'Gemini Live 2.5 (Vertex)',
     features: ['audio', 'native_audio'],
     video: true,
   },
@@ -132,11 +189,19 @@ function getModelInfo(modelId: string) {
         @toggle="handleAccordionToggle"
       >
         <div class="models-list">
+          <p v-if="!providerHasKey(String(provider))" class="no-key">
+            <iconify-icon icon="ph:key-duotone"></iconify-icon>
+            {{ t('brainPanel.noKeyHint', { key: VOICE_KEY[String(provider)] ?? 'API key' }) }}
+          </p>
           <button
             v-for="model in models"
             :key="model"
             class="realtime-model-card"
-            :class="{ selected: realtime.model === model }"
+            :class="{
+              selected: realtime.model === model,
+              locked: !providerHasKey(String(provider)),
+            }"
+            :disabled="!providerHasKey(String(provider))"
             @click="selectModel(model, String(provider))"
           >
             <div class="model-header">
@@ -295,7 +360,24 @@ function getModelInfo(modelId: string) {
   font-family: inherit;
 }
 
-.realtime-model-card:hover:not(.selected) {
+.realtime-model-card.locked {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.no-key {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.1);
+}
+
+.realtime-model-card:hover:not(.selected):not(.locked) {
   background: var(--surface-2);
   border-color: var(--accent-primary);
   box-shadow: 0 2px 12px var(--accent-glow);

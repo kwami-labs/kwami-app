@@ -5,6 +5,7 @@ import { useVoiceStore } from '@/stores/voice';
 import { useAuthStore } from '@/stores/auth';
 import { api, ApiError } from '@/lib/apiClient';
 import { env } from '@/lib/env';
+import { sendBrainConfig } from '@/composables/useBrainSync';
 import { isPersistedKwamiId, useWorkspaceStore } from '@/stores/workspace';
 
 declare global {
@@ -17,6 +18,9 @@ declare global {
 const kwamiInstance = shallowRef<Kwami | null>(null);
 const rendererType = ref<AvatarRendererType>('blob-xyz');
 const isConnected = ref(false);
+
+/** One listener for the app's lifetime, however many components call useKwami(). */
+let agentRejoinListener: ((event: Event) => void) | null = null;
 
 export function useKwami() {
   const authStore = useAuthStore();
@@ -61,7 +65,7 @@ export function useKwami() {
 
   function init(
     canvas: HTMLCanvasElement,
-    renderer: 'blob-xyz' | 'black-hole' | 'particles-face' | 'eye-iris' = 'blob-xyz',
+    renderer: AvatarRendererType = 'blob-xyz',
     options?: {
       onSearchResults?: (data: {
         query: string;
@@ -207,6 +211,7 @@ export function useKwami() {
     const soulConfig = kwami.soul.getConfig();
     agent.syncConfigToBackend('soul', {
       name: soulConfig.name,
+      language: soulConfig.language,
       personality: soulConfig.personality,
       systemPrompt: soulConfig.systemPrompt,
       traits: soulConfig.traits || [],
@@ -214,6 +219,9 @@ export function useKwami() {
       responseLength: soulConfig.responseLength,
       emotionalTone: soulConfig.emotionalTone,
       emotionalTraits: soulConfig.emotionalTraits,
+      // The store, not the SDK soul, is where the charter lives between
+      // sessions; the SDK only passes it through.
+      charter: { ...voiceStore.soulConfig.charter },
     });
 
     // 2. Enhancements + VAD config
@@ -289,6 +297,9 @@ export function useKwami() {
     // 7. Memory runtime retrieval settings
     agent.syncConfigToBackend('memory', getMemoryRuntimeConfig(voiceStore.memoryUI));
 
+    // 8. The brain: which models the voice hands work to (lib/brain.ts)
+    sendBrainConfig(kwami, voiceStore);
+
     console.log(
       '📤 Synced all configs to backend on connect (including',
       toolDefs.length,
@@ -346,8 +357,21 @@ export function useKwami() {
       );
       console.log(`✅ Connected to agent as user: ${memoryUserId.value}`);
 
-      // Sync all persisted panel configs to the backend agent after connecting
+      // Sync all persisted panel configs to the backend agent after connecting.
+      // The SDK holds these until the agent joins the room.
       syncAllConfigToBackend(kwamiInstance.value, voiceStore);
+
+      // A restarted or replaced agent gets the base config again from the SDK, but
+      // not these updates, which went to the agent it replaced: send them again.
+      if (!agentRejoinListener) {
+        agentRejoinListener = (event: Event) => {
+          const rejoin = (event as CustomEvent<{ rejoin?: boolean }>).detail?.rejoin;
+          if (rejoin && isConnected.value && kwamiInstance.value) {
+            syncAllConfigToBackend(kwamiInstance.value, useVoiceStore());
+          }
+        };
+        window.addEventListener('kwami:agent_joined', agentRejoinListener);
+      }
     } catch (error: unknown) {
       console.error('Failed to connect:', error);
       isConnected.value = false;

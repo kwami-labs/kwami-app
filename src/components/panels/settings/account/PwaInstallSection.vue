@@ -5,6 +5,12 @@ import BaseButton from '@/components/ui/BaseButton.vue';
 import { usePwaInstall } from '@/composables/usePwaInstall';
 
 const { t } = useI18n();
+
+// Bound rather than written as a literal src: the SFC compiler turns a literal
+// absolute path into a module import under Vitest, which on Windows resolves
+// public/sphere.svg to 'file:///sphere.svg' and fails the whole suite. As a
+// bound value it stays a plain URL, served from public/ as before.
+const installIcon = '/sphere.svg';
 const { canPrompt, isInstalled, isPrompting, platform, showManualSteps, install } = usePwaInstall();
 
 async function handleDownload() {
@@ -16,7 +22,7 @@ async function handleDownload() {
   <PanelSection :title="t('account.installApp')" icon="ph:device-mobile-duotone">
     <div class="install-card">
       <div class="install-copy">
-        <img src="/sphere.svg" alt="" class="install-icon" width="40" height="40" />
+        <img :src="installIcon" alt="" class="install-icon" width="40" height="40" />
         <div class="install-text">
           <span class="install-title">{{ t('account.installTitle') }}</span>
           <span class="install-hint">{{ t('account.installHint') }}</span>

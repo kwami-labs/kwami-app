@@ -34,7 +34,8 @@ export const workspaceAgentToolsEn = {
     openedPanel: 'Opened the {panel} panel.',
     panelAlreadyClosed: 'The workspace panel is already closed.',
     closedPanel: 'Closed the workspace panel.',
-    unknownRenderer: 'Unknown renderer. Use blob-xyz, black-hole, particles-face, or eye-iris.',
+    unknownRenderer:
+      'Unknown renderer. Use blob-xyz, black-hole, particles-face, eye-iris, or jarvis.',
     soulControlString: 'Provide the soul control name as a string.',
     soulNameRequired: 'Provide a name for the companion.',
     soulNameSet: "I'm called {name} now.",
@@ -237,6 +238,8 @@ export const workspaceAgentToolsEn = {
     gradientBlendInvalid: 'Gradient blend mode is invalid.',
     unknownSceneControl: 'Unknown scene control "{control}".',
     updatedSceneControl: 'Updated scene control {control}.',
+    voiceLocked:
+      'The voice is fixed on {name} by the user. It can only be changed from the Voice panel, by choosing another character.',
     voiceControlString: 'Voice control must be a string.',
     cancelledVoiceControl: 'Cancelled voice control {control}.',
     pipelineModeInvalid: 'Pipeline mode must be realtime or stt-llm-tts.',
@@ -414,7 +417,7 @@ export const workspaceAgentToolsEs = {
     panelAlreadyClosed: 'El panel lateral ya esta cerrado.',
     closedPanel: 'Se cerro el panel lateral.',
     unknownRenderer:
-      'Renderizador desconocido. Usa blob-xyz, black-hole, particles-face o eye-iris.',
+      'Renderizador desconocido. Usa blob-xyz, black-hole, particles-face, eye-iris o jarvis.',
     soulControlString: 'Indica el nombre del control del alma como texto.',
     soulNameRequired: 'Indica un nombre para el companero.',
     soulNameSet: 'Ahora me llamo {name}.',
@@ -617,6 +620,8 @@ export const workspaceAgentToolsEs = {
     gradientBlendInvalid: 'Modo mezcla gradiente invalido.',
     unknownSceneControl: 'Control escena desconocido "{control}".',
     updatedSceneControl: 'Escena actualizada: {control}.',
+    voiceLocked:
+      'La voz está fijada en {name} por el usuario. Solo se cambia desde el panel de Voz, eligiendo otro personaje.',
     voiceControlString: 'Control voz: cadena.',
     cancelledVoiceControl: 'Control voz cancelado: {control}.',
     pipelineModeInvalid: 'Pipeline: realtime o stt-llm-tts.',

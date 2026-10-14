@@ -8,18 +8,21 @@ import { useAvatarStore, type AvatarState } from '@/stores/avatar';
 import { useBlobXyzStore } from '@/stores/avatar.blob-xyz';
 import { useBlackHoleStore } from '@/stores/avatar.black-hole';
 import { useEyeIrisStore } from '@/stores/avatar.eye-iris';
+import { useJarvisStore } from '@/stores/avatar.jarvis';
 import BasePanel from '@/components/ui/BasePanel.vue';
 import PanelSection from '@/components/ui/PanelSection.vue';
 import { panelIcons } from '@/constants/panel-icons';
 import BlobXyzSettings from './BlobXyzSettings.vue';
 import BlackHoleSettings from './BlackHoleSettings.vue';
 import EyeIrisSettings from './EyeIrisSettings.vue';
+import JarvisSettings from './JarvisSettings.vue';
 import ParticlesFaceSettings from './ParticlesFaceSettings.vue';
 
 // Sync composables
 import { useBlobXyzSync } from '@/composables/avatar/sync/useBlobXyzSync';
 import { useBlackHoleSync } from '@/composables/avatar/sync/useBlackHoleSync';
 import { useEyeIrisSync } from '@/composables/avatar/sync/useEyeIrisSync';
+import { useJarvisSync } from '@/composables/avatar/sync/useJarvisSync';
 import { useParticlesFaceSync } from '@/composables/avatar/sync/useParticlesFaceSync';
 import { randomizeAvatarPanel } from '@/composables/avatar/randomizeAvatarPanel';
 import { useWorkspaceStore } from '@/stores/workspace';
@@ -35,9 +38,11 @@ const avatarStore = useAvatarStore();
 const blobStore = useBlobXyzStore();
 const blackHoleStore = useBlackHoleStore();
 const eyeIrisStore = useEyeIrisStore();
+const jarvisStore = useJarvisStore();
 
 // Use store state
-const { rendererType, blobXyzPresets, blackHolePresets, eyeIrisPresets } = storeToRefs(avatarStore);
+const { rendererType, blobXyzPresets, blackHolePresets, eyeIrisPresets, jarvisPresets } =
+  storeToRefs(avatarStore);
 
 // =====================================================
 // HELPERS
@@ -54,6 +59,9 @@ function getEyeIris() {
 }
 function getParticlesFace() {
   return kwami.value?.avatar.getParticlesFace() ?? undefined;
+}
+function getJarvis() {
+  return kwami.value?.avatar.getJarvis() ?? undefined;
 }
 
 // =====================================================
@@ -80,6 +88,11 @@ const { syncFromKwami: syncEyeIrisFromKwami, applyToKwami: applyEyeIrisToKwami }
   getEyeIris,
   registerWatchers: false,
 });
+const { syncFromKwami: syncJarvisFromKwami, applyToKwami: applyJarvisToKwami } = useJarvisSync({
+  kwami,
+  getJarvis,
+  registerWatchers: false,
+});
 const { syncFromKwami: syncParticlesFromKwami, applyToKwami: applyParticlesToKwami } =
   useParticlesFaceSync({
     kwami,
@@ -99,6 +112,8 @@ const currentPresets = computed(() => {
       return blackHolePresets.value;
     case 'eye-iris':
       return eyeIrisPresets.value;
+    case 'jarvis':
+      return jarvisPresets.value;
     default:
       // No presets for this renderer. Returning blob's would show the wrong
       // grid, and clicking one sets preset.renderer — silently switching the
@@ -117,11 +132,10 @@ function syncFromKwami() {
   syncBlobFromKwami();
   syncBlackHoleFromKwami();
   syncEyeIrisFromKwami();
+  syncJarvisFromKwami();
   syncParticlesFromKwami();
 
-  avatarStore.setRendererType(
-    kwamiRendererType.value as 'blob-xyz' | 'black-hole' | 'particles-face' | 'eye-iris',
-  );
+  avatarStore.setRendererType(kwamiRendererType.value as RendererType);
 }
 
 /** Apply the current store state to the kwami instance for the specified renderer */
@@ -135,6 +149,9 @@ function applyCurrentRendererToKwami(type: string) {
       break;
     case 'eye-iris':
       applyEyeIrisToKwami();
+      break;
+    case 'jarvis':
+      applyJarvisToKwami();
       break;
     case 'particles-face':
       applyParticlesToKwami();
@@ -196,6 +213,12 @@ watch(
   { deep: true },
 );
 
+watch(
+  () => jarvisStore.state,
+  () => avatarStore.saveSettings(),
+  { deep: true },
+);
+
 // Save renderer type changes
 watch(rendererType, () => avatarStore.saveSettings());
 
@@ -215,6 +238,7 @@ function handleRandomize() {
     applyBlackHole: applyBlackHoleToKwami,
     applyParticles: applyParticlesToKwami,
     applyEyeIris: applyEyeIrisToKwami,
+    applyJarvis: applyJarvisToKwami,
   });
   window.dispatchEvent(new CustomEvent('kwami:randomized'));
 }
@@ -233,7 +257,7 @@ function handleReset() {
   }
 
   if (kwamiRendererType.value !== rendererType.value) {
-    switchRenderer(rendererType.value as 'blob-xyz' | 'black-hole' | 'particles-face' | 'eye-iris');
+    switchRenderer(rendererType.value);
   }
   applyCurrentRendererToKwami(rendererType.value);
 
@@ -259,6 +283,9 @@ function handleApplyPreset(presetId: string) {
         break;
       case 'eye-iris':
         applyEyeIrisToKwami();
+        break;
+      case 'jarvis':
+        applyJarvisToKwami();
         break;
     }
   }
@@ -477,6 +504,20 @@ onUnmounted(() => {
             <span class="renderer-desc">{{ t('avatar.rendererEyeIrisDesc') }}</span>
           </div>
         </label>
+        <label class="renderer-option" :class="{ active: rendererType === 'jarvis' }">
+          <input
+            type="radio"
+            name="renderer"
+            value="jarvis"
+            :checked="rendererType === 'jarvis'"
+            @change="handleSwitchRenderer('jarvis')"
+          />
+          <iconify-icon icon="ph:crosshair-duotone" class="renderer-icon"></iconify-icon>
+          <div class="renderer-content">
+            <span class="renderer-label">{{ t('avatar.rendererJarvis') }}</span>
+            <span class="renderer-desc">{{ t('avatar.rendererJarvisDesc') }}</span>
+          </div>
+        </label>
         <label class="renderer-option" :class="{ active: rendererType === 'particles-face' }">
           <input
             type="radio"
@@ -533,6 +574,7 @@ onUnmounted(() => {
     <BlobXyzSettings v-if="rendererType === 'blob-xyz'" />
     <BlackHoleSettings v-if="rendererType === 'black-hole'" />
     <EyeIrisSettings v-if="rendererType === 'eye-iris'" />
+    <JarvisSettings v-if="rendererType === 'jarvis'" />
     <ParticlesFaceSettings v-if="rendererType === 'particles-face'" />
   </BasePanel>
 </template>
