@@ -12,10 +12,23 @@ import BaseSelect from '@/components/ui/BaseSelect.vue';
 import BaseInput from '@/components/ui/BaseInput.vue';
 import { useVoicesApi, type Voice } from '@/composables/useVoicesApi';
 import { useLanguagesApi, type Language } from '@/composables/useLanguagesApi';
+import VoicePersonas from './VoicePersonas.vue';
+import { GEMINI_CHARACTER_ES, catalogProvider, voiceLock } from '@/lib/voicePersonas';
 
 const voiceStore = useVoiceStore();
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const { pipelineMode, tts, realtime, voiceUI } = storeToRefs(voiceStore);
+
+/** Set while a character voice is in use: the voice list is then off. */
+const lock = computed(() => voiceLock(pipelineMode.value, realtime.value, tts.value));
+
+/** Gemini's one-word character for a voice, in the panel's language. */
+function describeVoice(description: string | null | undefined): string {
+  if (!description) return '';
+  return locale.value.startsWith('es')
+    ? (GEMINI_CHARACTER_ES[description] ?? description)
+    : description;
+}
 const { kwami, isConnected } = useKwami();
 const panelIcon = panelIcons.voice ?? 'mdi:account-voice';
 
@@ -71,7 +84,11 @@ function getProviderIcon(provider: string): string {
 
 // Fetch voices for TTS provider
 async function loadTTSVoices() {
-  const result = await fetchTTSVoicesByProvider(tts.value.provider);
+  // Gemini TTS uses the same 30 prebuilt voices as Gemini Live.
+  const result =
+    tts.value.provider === 'gemini'
+      ? await fetchRealtimeVoicesByProvider('gemini')
+      : await fetchTTSVoicesByProvider(tts.value.provider);
   if (result?.voices) {
     ttsVoices.value = result.voices;
   }
@@ -79,7 +96,7 @@ async function loadTTSVoices() {
 
 // Fetch voices for Realtime provider
 async function loadRealtimeVoices() {
-  const result = await fetchRealtimeVoicesByProvider(realtime.value.provider);
+  const result = await fetchRealtimeVoicesByProvider(catalogProvider(realtime.value.provider));
   if (result?.voices) {
     realtimeVoices.value = result.voices;
   }
@@ -87,7 +104,10 @@ async function loadRealtimeVoices() {
 
 // Fetch languages for TTS provider
 async function loadTTSLanguages() {
-  const result = await fetchTTSLanguagesByProvider(tts.value.provider);
+  const result =
+    tts.value.provider === 'gemini'
+      ? await fetchRealtimeLanguagesByProvider('gemini')
+      : await fetchTTSLanguagesByProvider(tts.value.provider);
   if (result?.languages) {
     ttsLanguages.value = result.languages;
   }
@@ -95,7 +115,7 @@ async function loadTTSLanguages() {
 
 // Fetch languages for Realtime provider
 async function loadRealtimeLanguages() {
-  const result = await fetchRealtimeLanguagesByProvider(realtime.value.provider);
+  const result = await fetchRealtimeLanguagesByProvider(catalogProvider(realtime.value.provider));
   if (result?.languages) {
     realtimeLanguages.value = result.languages;
   }
@@ -210,6 +230,13 @@ const filteredVoices = computed(() => {
 
   return voices;
 });
+
+/** Male/Female come from the catalogue in English. */
+function categoryLabel(category: string): string {
+  if (category === 'Male') return t('voicePersonas.male');
+  if (category === 'Female') return t('voicePersonas.female');
+  return category;
+}
 
 // Group voices by category
 const groupedVoices = computed(() => {
@@ -377,129 +404,146 @@ watch(
       </div>
     </PanelSection>
 
-    <!-- Filters -->
-    <PanelSection :title="t('voice.filterVoices')" icon="ph:funnel-duotone" collapsible>
-      <div class="filters">
-        <BaseInput
-          v-model="searchQuery"
-          :label="t('voice.search')"
-          icon="ph:magnifying-glass-duotone"
-          :placeholder="t('voice.searchPlaceholder')"
-        />
+    <!-- Character voices: Jarvis and Friday -->
+    <PanelSection :title="t('voicePersonas.title')" icon="ph:mask-happy-duotone" collapsible>
+      <VoicePersonas />
+    </PanelSection>
 
-        <BaseSelect
-          v-if="languageOptions.length > 1"
-          v-model="languageFilter"
-          :label="t('voice.language')"
-          icon="ph:globe-duotone"
-          :options="languageOptions"
-        />
-
-        <BaseSelect
-          v-if="genderOptions.length > 1"
-          v-model="genderFilter"
-          :label="t('voice.gender')"
-          icon="ph:users-duotone"
-          :options="genderOptions"
-        />
+    <!-- One voice on: while a character is set, every other voice is off. -->
+    <PanelSection v-if="lock">
+      <div class="locked-note">
+        <iconify-icon icon="ph:lock-simple-duotone"></iconify-icon>
+        <p>{{ t('voicePersonas.locked', { name: lock.persona?.name ?? lock.voice }) }}</p>
       </div>
     </PanelSection>
 
-    <!-- Multilingual Info Banner -->
-    <PanelSection
-      v-if="
-        languageFilter !== 'all' &&
-        providerSupportsLanguage &&
-        !currentVoices.some((v) => v.language === languageFilter)
-      "
-    >
-      <div class="multilingual-banner">
-        <iconify-icon icon="ph:translate-duotone"></iconify-icon>
-        <div class="banner-content">
-          <span class="banner-title">{{ t('voice.multilingualVoices') }}</span>
-          <span class="banner-text">{{
-            t('voice.multilingualSupport', {
-              provider: currentProvider,
-              language:
-                languageOptions.find((l) => l.value === languageFilter)?.label || languageFilter,
-            })
-          }}</span>
+    <template v-else>
+      <!-- Filters -->
+      <PanelSection :title="t('voice.filterVoices')" icon="ph:funnel-duotone" collapsible>
+        <div class="filters">
+          <BaseInput
+            v-model="searchQuery"
+            :label="t('voice.search')"
+            icon="ph:magnifying-glass-duotone"
+            :placeholder="t('voice.searchPlaceholder')"
+          />
+
+          <BaseSelect
+            v-if="languageOptions.length > 1"
+            v-model="languageFilter"
+            :label="t('voice.language')"
+            icon="ph:globe-duotone"
+            :options="languageOptions"
+          />
+
+          <BaseSelect
+            v-if="genderOptions.length > 1"
+            v-model="genderFilter"
+            :label="t('voice.gender')"
+            icon="ph:users-duotone"
+            :options="genderOptions"
+          />
         </div>
-      </div>
-    </PanelSection>
+      </PanelSection>
 
-    <!-- Voice Selection -->
-    <PanelSection
-      v-for="(voices, category) in groupedVoices"
-      :key="category"
-      :title="String(category)"
-      :icon="
-        category === 'Male'
-          ? 'ph:gender-male-duotone'
-          : category === 'Female'
-            ? 'ph:gender-female-duotone'
-            : 'ph:user-duotone'
-      "
-      collapsible
-    >
-      <div class="voices-grid">
-        <button
-          v-for="voice in voices"
-          :key="voice.id"
-          class="voice-card"
-          :class="{ selected: selectedVoice === voice.id }"
-          @click="selectVoice(voice.id)"
-        >
-          <div class="voice-header">
-            <span class="voice-name">{{ voice.name }}</span>
-            <div class="selected-check" v-if="selectedVoice === voice.id">
-              <iconify-icon icon="ph:check-circle-duotone"></iconify-icon>
+      <!-- Multilingual Info Banner -->
+      <PanelSection
+        v-if="
+          languageFilter !== 'all' &&
+          providerSupportsLanguage &&
+          !currentVoices.some((v) => v.language === languageFilter)
+        "
+      >
+        <div class="multilingual-banner">
+          <iconify-icon icon="ph:translate-duotone"></iconify-icon>
+          <div class="banner-content">
+            <span class="banner-title">{{ t('voice.multilingualVoices') }}</span>
+            <span class="banner-text">{{
+              t('voice.multilingualSupport', {
+                provider: currentProvider,
+                language:
+                  languageOptions.find((l) => l.value === languageFilter)?.label || languageFilter,
+              })
+            }}</span>
+          </div>
+        </div>
+      </PanelSection>
+
+      <!-- Voice Selection -->
+      <PanelSection
+        v-for="(voices, category) in groupedVoices"
+        :key="category"
+        :title="categoryLabel(String(category))"
+        :icon="
+          category === 'Male'
+            ? 'ph:gender-male-duotone'
+            : category === 'Female'
+              ? 'ph:gender-female-duotone'
+              : 'ph:user-duotone'
+        "
+        collapsible
+      >
+        <div class="voices-grid">
+          <button
+            v-for="voice in voices"
+            :key="voice.id"
+            class="voice-card"
+            :class="{ selected: selectedVoice === voice.id }"
+            @click="selectVoice(voice.id)"
+          >
+            <div class="voice-header">
+              <span class="voice-name">{{ voice.name }}</span>
+              <div class="selected-check" v-if="selectedVoice === voice.id">
+                <iconify-icon icon="ph:check-circle-duotone"></iconify-icon>
+              </div>
             </div>
-          </div>
-          <div class="voice-meta">
-            <span v-if="voice.gender" class="voice-tag gender">
-              <iconify-icon
-                :icon="
-                  voice.gender === 'male'
-                    ? 'ph:gender-male'
-                    : voice.gender === 'female'
-                      ? 'ph:gender-female'
-                      : 'ph:gender-nonbinary'
-                "
-              ></iconify-icon>
-            </span>
-            <span v-if="voice.language" class="voice-tag lang">
-              <iconify-icon :icon="getFlagIcon(voice.language)" class="flag-icon"></iconify-icon>
-              {{ voice.language }}
-            </span>
-          </div>
-          <p v-if="voice.description" class="voice-description">{{ voice.description }}</p>
-        </button>
-      </div>
-    </PanelSection>
+            <div class="voice-meta">
+              <span v-if="voice.gender" class="voice-tag gender">
+                <iconify-icon
+                  :icon="
+                    voice.gender === 'male'
+                      ? 'ph:gender-male'
+                      : voice.gender === 'female'
+                        ? 'ph:gender-female'
+                        : 'ph:gender-nonbinary'
+                  "
+                ></iconify-icon>
+              </span>
+              <span v-if="voice.language" class="voice-tag lang">
+                <iconify-icon :icon="getFlagIcon(voice.language)" class="flag-icon"></iconify-icon>
+                {{ voice.language }}
+              </span>
+            </div>
+            <p v-if="voice.description" class="voice-description">
+              {{ describeVoice(voice.description) }}
+            </p>
+          </button>
+        </div>
+      </PanelSection>
 
-    <!-- Loading State -->
-    <PanelSection v-if="voicesLoading">
-      <div class="loading-state">
-        <iconify-icon icon="ph:spinner-duotone" class="spinner"></iconify-icon>
-        <span>{{ t('voice.loadingVoices') }}</span>
-      </div>
-    </PanelSection>
+      <!-- Loading State -->
+      <PanelSection v-if="voicesLoading">
+        <div class="loading-state">
+          <iconify-icon icon="ph:spinner-duotone" class="spinner"></iconify-icon>
+          <span>{{ t('voice.loadingVoices') }}</span>
+        </div>
+      </PanelSection>
 
-    <!-- Empty State -->
-    <PanelSection v-if="!voicesLoading && filteredVoices.length === 0">
-      <div class="empty-state">
-        <iconify-icon icon="ph:speaker-slash-duotone"></iconify-icon>
-        <span>{{ t('voice.noVoicesMatch') }}</span>
-        <button class="reset-btn" @click="resetFilters">
-          {{ t('voice.resetFilters') }}
-        </button>
-      </div>
-    </PanelSection>
+      <!-- Empty State -->
+      <PanelSection v-if="!voicesLoading && filteredVoices.length === 0">
+        <div class="empty-state">
+          <iconify-icon icon="ph:speaker-slash-duotone"></iconify-icon>
+          <span>{{ t('voice.noVoicesMatch') }}</span>
+          <button class="reset-btn" @click="resetFilters">
+            {{ t('voice.resetFilters') }}
+          </button>
+        </div>
+      </PanelSection>
+    </template>
 
     <!-- TTS Speed Control (only for standard pipeline) -->
     <PanelSection
-      v-if="pipelineMode !== 'realtime'"
+      v-if="pipelineMode !== 'realtime' && tts.provider !== 'gemini'"
       :title="t('voice.voiceSettings')"
       icon="ph:sliders-duotone"
     >
@@ -519,6 +563,26 @@ watch(
 </template>
 
 <style scoped>
+.locked-note {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border-radius: var(--radius-lg);
+  background: var(--surface-1);
+  border: 1px solid var(--surface-2);
+}
+.locked-note iconify-icon {
+  font-size: 18px;
+  color: var(--accent-primary);
+  flex-shrink: 0;
+}
+.locked-note p {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
 .model-context {
   display: flex;
   align-items: center;

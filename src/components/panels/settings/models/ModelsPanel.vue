@@ -12,10 +12,37 @@ import LLMTab from './tabs/LLMTab.vue';
 import STTTab from './tabs/STTTab.vue';
 import TTSTab from './tabs/TTSTab.vue';
 import RealtimeTab from './tabs/RealtimeTab.vue';
+import BrainFlow from './BrainFlow.vue';
+import BrainSettings from './BrainSettings.vue';
+import { JARVIS_VOICE } from '@/lib/brain';
+import { GEMINI_STANDARD, VOICE_PERSONAS } from '@/lib/voicePersonas';
 
 const voiceStore = useVoiceStore();
 const { t } = useI18n();
-const { llm, stt, tts, realtime, pipelineMode, modelsUI } = storeToRefs(voiceStore);
+const { llm, stt, tts, realtime, pipelineMode, modelsUI, brainStatus } = storeToRefs(voiceStore);
+
+// Jarvis's voice (2026-10-09): Gemini TTS on the all-Gemini standard pipeline,
+// or Gemini Live as the faster option -- both are fine. Offered when the
+// voice is neither, or when its provider has no key on the agent.
+const voiceIsJarvis = computed(() =>
+  pipelineMode.value === 'realtime'
+    ? realtime.value.provider === JARVIS_VOICE.provider
+    : stt.value.provider === GEMINI_STANDARD.stt.provider &&
+      llm.value.provider === GEMINI_STANDARD.llm.provider &&
+      tts.value.provider === GEMINI_STANDARD.tts.provider,
+);
+const voiceProviderMissingKey = computed(() => {
+  const provider = pipelineMode.value === 'realtime' ? realtime.value.provider : 'google';
+  return voiceIsJarvis.value && brainStatus.value?.voiceProviders?.[provider] === false;
+});
+function useJarvisVoice() {
+  const jarvis = VOICE_PERSONAS[0];
+  voiceStore.updateSTT({ ...GEMINI_STANDARD.stt });
+  voiceStore.updateLLM({ ...GEMINI_STANDARD.llm });
+  voiceStore.updateTTS({ ...GEMINI_STANDARD.tts, voice: jarvis.voice, style: jarvis.style });
+  voiceStore.updateRealtime({ ...JARVIS_VOICE, style: jarvis.style });
+  voiceStore.setPipelineMode('stt-llm-tts');
+}
 const panelIcon = panelIcons.models ?? 'ph:cpu-duotone';
 
 // Pipeline type - synced with store (converts between UI value and store value)
@@ -56,9 +83,24 @@ function getProviderIcon(provider: string): string {
 
 <template>
   <BasePanel :icon="panelIcon" :title="t('models.title')">
-    <!-- Pipeline Selector -->
-    <PanelSection>
+    <!-- Who does what: voice -> bridge -> brain -->
+    <PanelSection :title="t('brainPanel.flowTitle')" icon="ph:flow-arrow-duotone" collapsible>
+      <BrainFlow />
+    </PanelSection>
+
+    <!-- Voice -->
+    <PanelSection :title="t('brainPanel.voiceSectionTitle')" icon="ph:microphone-duotone">
       <PipelineSelector v-model="pipelineType" />
+      <div v-if="!voiceIsJarvis || voiceProviderMissingKey" class="voice-hint">
+        <iconify-icon icon="ph:warning-duotone"></iconify-icon>
+        <p>
+          <template v-if="voiceProviderMissingKey">{{ t('models.voiceNoKey') }} </template>
+          {{ t('models.jarvisVoiceHint') }}
+        </p>
+        <button class="voice-hint-btn" @click="useJarvisVoice">
+          {{ t('models.useJarvisVoice') }}
+        </button>
+      </div>
     </PanelSection>
 
     <!-- Standard Pipeline -->
@@ -107,6 +149,11 @@ function getProviderIcon(provider: string): string {
         </div>
       </PanelSection>
     </template>
+
+    <!-- Brain -->
+    <PanelSection :title="t('brainPanel.brainSectionTitle')" icon="ph:brain-duotone">
+      <BrainSettings />
+    </PanelSection>
   </BasePanel>
 </template>
 
@@ -115,6 +162,42 @@ function getProviderIcon(provider: string): string {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.voice-hint {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-lg);
+  background: rgba(251, 191, 36, 0.08);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+}
+
+.voice-hint iconify-icon {
+  color: #fbbf24;
+  font-size: 16px;
+}
+
+.voice-hint p {
+  flex: 1;
+  min-width: 160px;
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+.voice-hint-btn {
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--accent-primary);
+  background: var(--accent-glow);
+  color: var(--text-primary);
+  font-size: 11px;
+  cursor: pointer;
 }
 
 .realtime-section {

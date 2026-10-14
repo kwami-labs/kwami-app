@@ -27,6 +27,8 @@ import { useBlobXyzSync } from '@/composables/avatar/sync/useBlobXyzSync';
 import { useBlackHoleSync } from '@/composables/avatar/sync/useBlackHoleSync';
 import { useParticlesFaceSync } from '@/composables/avatar/sync/useParticlesFaceSync';
 import { useEyeIrisSync } from '@/composables/avatar/sync/useEyeIrisSync';
+import { useJarvisSync } from '@/composables/avatar/sync/useJarvisSync';
+import { useBrainSync } from '@/composables/useBrainSync';
 import { randomizeAvatarPanel } from '@/composables/avatar/randomizeAvatarPanel';
 import { useBlobXyzStore } from '@/stores/avatar.blob-xyz';
 import { useEyeIrisStore } from '@/stores/avatar.eye-iris';
@@ -40,6 +42,7 @@ const {
   isConnected,
   dispose: disposeKwami,
 } = useKwami();
+useBrainSync(kwami, isConnected);
 const { initialize: initSceneBackground } = useSceneBackground();
 import { useVoiceStore } from '@/stores/voice';
 import { useCreditsStore } from '@/stores/credits';
@@ -197,6 +200,10 @@ const { applyToKwami: applyEyeIrisToKwami } = useEyeIrisSync({
   kwami,
   getEyeIris: () => kwami.value?.avatar.getEyeIris() ?? undefined,
 });
+const { applyToKwami: applyJarvisToKwami } = useJarvisSync({
+  kwami,
+  getJarvis: () => kwami.value?.avatar.getJarvis() ?? undefined,
+});
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 
@@ -240,6 +247,7 @@ function onRandomizeAvatarPanel() {
     applyBlackHole: applyBlackHoleToKwami,
     applyParticles: applyParticlesFaceToKwami,
     applyEyeIris: applyEyeIrisToKwami,
+    applyJarvis: applyJarvisToKwami,
   });
   window.dispatchEvent(new CustomEvent('kwami:randomized'));
 }
@@ -283,6 +291,9 @@ function applySavedAvatarState() {
     case 'eye-iris':
       applyEyeIrisToKwami();
       break;
+    case 'jarvis':
+      applyJarvisToKwami();
+      break;
   }
 
   // Saved scale can overflow a phone; re-frame after the store values land.
@@ -295,6 +306,7 @@ function applySavedSoulState() {
   const saved = voiceStore.soulConfig;
   const soulConfig = {
     name: saved.name,
+    language: saved.language,
     personality: saved.personality,
     systemPrompt: saved.systemPrompt,
     traits: [...saved.traits],
@@ -302,6 +314,8 @@ function applySavedSoulState() {
     responseLength: saved.responseLength,
     emotionalTone: saved.emotionalTone,
     emotionalTraits: { ...saved.emotionalTraits },
+    // Behaviour rules and the user profile; see src/lib/charter.ts.
+    charter: { ...saved.charter, watch: [...saved.charter.watch] },
   };
   kwami.value.soul.updateConfig(soulConfig);
 
@@ -342,7 +356,7 @@ function initializeKwami() {
   // Console info
   console.log('🎮 Kwami App (🫧 blob renderer)');
   console.log('Shortcuts: R=randomize, L=listening, T=thinking, I=idle, P=toggle panel');
-  console.log('Renderer: B=blob, H=black-hole');
+  console.log('Renderer: B=blob, H=black-hole, J=jarvis');
   console.log('Access kwami via window.kwami in console');
 }
 
@@ -416,6 +430,12 @@ function onGlobalKeydown(e: KeyboardEvent) {
       break;
     case 'h':
       switchRenderer('black-hole');
+      break;
+    case 'j':
+      avatarStore.setRendererType('jarvis');
+      switchRenderer('jarvis');
+      applyJarvisToKwami();
+      avatarStore.saveSettings();
       break;
     case 'r':
       onRandomizeAvatarPanel();

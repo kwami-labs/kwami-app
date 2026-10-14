@@ -6,7 +6,7 @@
       "dependencies": {
         "@supabase/supabase-js": "^2.93.1",
         "iconify-icon": "^3.0.2",
-        "kwami": "2.2.0-dev.1",
+        "kwami": "file:vendor/kwami-2.2.0-dev.1.tgz",
         "pinia": "^4.0.3",
         "three": "^0.186.0",
         "vue": "^3.5.30",
@@ -1203,7 +1203,7 @@
 
     "kleur": ["kleur@4.1.5", "", {}, "sha512-o+NO+8WrRiQEE4/7nwRJhN1HWpVmJm511pBHUxPLtp0BUISzlBplORYSmTclCnJvQq2tKu/sgl3xVpkc7ZWuQQ=="],
 
-    "kwami": ["kwami@2.2.0-dev.1", "", { "dependencies": { "livekit-client": "^2.6.0", "simplex-noise": "^4.0.3" }, "peerDependencies": { "@types/three": ">=0.183.0", "husky": "^9.1.7", "jiti": "2.7.0", "three": ">=0.183.2" }, "optionalPeers": ["@types/three"] }, "sha512-yGq00ffTiduRnajR3j1M+EhW6ifOwNmbhZCVaJt5OBnmqePa4Dbg4bDkqG2Vey3NO/bMrSiE6Bigz6cC0SpX5Q=="],
+    "kwami": ["kwami@vendor/kwami-2.2.0-dev.1.tgz", { "dependencies": { "livekit-client": "^2.6.0", "simplex-noise": "^4.0.3" }, "peerDependencies": { "@types/three": ">=0.183.0", "husky": "^9.1.7", "jiti": "2.7.0", "three": ">=0.183.2" }, "optionalPeers": ["@types/three"] }],
 
     "leven": ["leven@3.1.0", "", {}, "sha512-qsda+H8jTaUaN/x5vzW2rzc+8Rw4TAQ/4KjB46IwK5VH+IlVeeeje/EoZRpiXvIqjFgK84QffqPztGI3VBLG1A=="],
 
