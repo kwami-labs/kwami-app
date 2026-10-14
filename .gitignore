@@ -62,3 +62,9 @@ Thumbs.db
 *.sln
 *.sw?
 *~
+
+# This repo uses bun (bun.lock). Ignore npm lockfiles from accidental installs.
+package-lock.json
+
+# Supabase CLI local cache (migrations remain tracked)
+supabase/.temp/
