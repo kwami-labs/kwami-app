@@ -56,8 +56,8 @@ const kwamiStub = {
 // runtime class, which is the part that wants WebGL and LiveKit.
 vi.mock('kwami', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
-  const { Kwami } = await import('../mocks/kwami');
-  return { ...actual, Kwami };
+  const { Kwami, jarvisSdkStubs } = await import('../mocks/kwami');
+  return { ...actual, Kwami, ...jarvisSdkStubs };
 });
 
 vi.mock('@/composables/useKwami', () => ({

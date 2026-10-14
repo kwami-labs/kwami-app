@@ -40,8 +40,8 @@ const approve = { value: true };
 // the part that wants WebGL and LiveKit.
 vi.mock('kwami', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
-  const { Kwami } = await import('../mocks/kwami');
-  return { ...actual, Kwami };
+  const { Kwami, jarvisSdkStubs } = await import('../mocks/kwami');
+  return { ...actual, Kwami, ...jarvisSdkStubs };
 });
 const confirmations: { title: string; message: string }[] = [];
 
@@ -146,10 +146,7 @@ describe('create_kwami', () => {
     // to describe from scratch.
     // First arg is the user id, which is null when nobody is signed in --
     // `expect.anything()` would not match that.
-    expect(store.addKwami).toHaveBeenCalledWith(
-      null,
-      expect.objectContaining({ randomize: true }),
-    );
+    expect(store.addKwami).toHaveBeenCalledWith(null, expect.objectContaining({ randomize: true }));
   });
 
   it('can be told not to switch', async () => {
@@ -370,20 +367,25 @@ describe('locale messages', () => {
     it(`compiles every ${locale} message without losing a branch`, () => {
       const i18n = createI18n({ legacy: false, locale, messages: { [locale]: bundle } });
       for (const key of leafKeys(bundle)) {
-        const raw = key.split('.').reduce<unknown>(
-          (node, part) => (node as Record<string, unknown> | undefined)?.[part],
-          bundle,
-        ) as string;
+        const raw = key
+          .split('.')
+          .reduce<unknown>(
+            (node, part) => (node as Record<string, unknown> | undefined)?.[part],
+            bundle,
+          ) as string;
         let rendered = '';
         expect(() => {
           rendered = i18n.global.t(key, {
-            name: 'x', previous: 'x', error: 'x', list: 'x', display: 'x', background: 'x',
+            name: 'x',
+            previous: 'x',
+            error: 'x',
+            list: 'x',
+            display: 'x',
+            background: 'x',
           });
         }, key).not.toThrow();
         // A bare pipe does not throw, it silently keeps one branch.
-        expect(rendered.length, `${key} lost characters`).toBeGreaterThanOrEqual(
-          raw.length - 40,
-        );
+        expect(rendered.length, `${key} lost characters`).toBeGreaterThanOrEqual(raw.length - 40);
       }
     });
   }
