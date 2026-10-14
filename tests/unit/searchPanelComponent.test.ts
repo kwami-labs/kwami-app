@@ -7,6 +7,7 @@
  * layouts and not in the docked one, that the orbit cards and the window are
  * never both on screen, and that a drag on the header moves it.
  */
+import { nextTick } from 'vue';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import { mount } from '@vue/test-utils';
@@ -15,7 +16,11 @@ import { useSearchStore } from '@/stores/search';
 
 function setViewport(width: number, height: number) {
   Object.defineProperty(window, 'innerWidth', { value: width, writable: true, configurable: true });
-  Object.defineProperty(window, 'innerHeight', { value: height, writable: true, configurable: true });
+  Object.defineProperty(window, 'innerHeight', {
+    value: height,
+    writable: true,
+    configurable: true,
+  });
 }
 
 function seed(count = 2) {
@@ -42,6 +47,14 @@ function stubPointerCapture(el: Element) {
     releasePointerCapture: vi.fn(),
     hasPointerCapture: vi.fn(() => true),
   });
+}
+
+// jsdom 30 makes MouseEvent.button read-only. @vue/test-utils assigns options
+// after constructing the event, which throws. Build the event ourselves so
+// `button` is set in the constructor.
+async function pointer(el: Element, type: string, init: PointerEventInit) {
+  el.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, ...init }));
+  await nextTick();
 }
 
 beforeEach(() => {
@@ -105,9 +118,14 @@ describe('dragging', () => {
     const header = wrapper.find('.search-panel__header');
     stubPointerCapture(header.element);
 
-    await header.trigger('pointerdown', { pointerId: 1, button: 0, clientX: 300, clientY: 300 });
-    await header.trigger('pointermove', { pointerId: 1, clientX: 360, clientY: 340 });
-    await header.trigger('pointerup', { pointerId: 1 });
+    await pointer(header.element, 'pointerdown', {
+      pointerId: 1,
+      button: 0,
+      clientX: 300,
+      clientY: 300,
+    });
+    await pointer(header.element, 'pointermove', { pointerId: 1, clientX: 360, clientY: 340 });
+    await pointer(header.element, 'pointerup', { pointerId: 1 });
 
     expect(store.rect.x).toBe(260);
     expect(store.rect.y).toBe(240);
@@ -126,8 +144,13 @@ describe('dragging', () => {
     const header = wrapper.find('.search-panel__header');
     stubPointerCapture(header.element);
     // A right-click on a title bar is a context menu, not a drag.
-    await header.trigger('pointerdown', { pointerId: 1, button: 2, clientX: 300, clientY: 300 });
-    await header.trigger('pointermove', { pointerId: 1, clientX: 400, clientY: 400 });
+    await pointer(header.element, 'pointerdown', {
+      pointerId: 1,
+      button: 2,
+      clientX: 300,
+      clientY: 300,
+    });
+    await pointer(header.element, 'pointermove', { pointerId: 1, clientX: 400, clientY: 400 });
 
     expect(store.rect.x).toBe(200);
     wrapper.unmount();
@@ -155,9 +178,14 @@ describe('dragging', () => {
 
     const handle = wrapper.find('.search-panel__resize');
     stubPointerCapture(handle.element);
-    await handle.trigger('pointerdown', { pointerId: 2, button: 0, clientX: 800, clientY: 600 });
-    await handle.trigger('pointermove', { pointerId: 2, clientX: 850, clientY: 640 });
-    await handle.trigger('pointerup', { pointerId: 2 });
+    await pointer(handle.element, 'pointerdown', {
+      pointerId: 2,
+      button: 0,
+      clientX: 800,
+      clientY: 600,
+    });
+    await pointer(handle.element, 'pointermove', { pointerId: 2, clientX: 850, clientY: 640 });
+    await pointer(handle.element, 'pointerup', { pointerId: 2 });
 
     expect(store.rect.width).toBe(650);
     expect(store.rect.height).toBe(540);

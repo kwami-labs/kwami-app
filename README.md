@@ -120,8 +120,8 @@ Deep dive: [Architecture overview](docs/architecture/overview.md) · [Data flow]
 git clone git@github.com:kwami-labs/kwami-app.git
 cd kwami-app
 bun install
-cp .env.sample .env
-# Edit .env — see docs/guides/environment.md
+git-crypt unlock ~/.config/git-crypt/kwami.io/kwami-app.key
+# .env is committed encrypted — see docs/guides/environment.md
 bun run dev
 ```
 

@@ -19,12 +19,11 @@ test-results/
 # TypeScript incremental builds
 *.tsbuildinfo
 
-# Environment — keep committed samples and the fake e2e file
-.env
-.env.local
-.env.*.local
+# Environment — `.env` is tracked with git-crypt. Samples and the fake e2e file stay plaintext.
+.env.*
 !.env.sample
 !.env.test
+!.env.example
 
 # Logs
 logs/

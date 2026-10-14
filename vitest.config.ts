@@ -1,6 +1,6 @@
 import { fileURLToPath } from 'node:url';
 import { mergeConfig, defineConfig, configDefaults } from 'vitest/config';
-import viteConfig from './vite.config';
+import viteConfig from './vite.config.ts';
 
 // Reuses vite.config.ts so the `@` alias and the `iconify-icon` custom-element
 // compiler option apply to tests exactly as they do to the app.
