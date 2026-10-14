@@ -66,6 +66,7 @@
   "overrides": {
     "rollup": "4.59.0",
     "minimatch": "9.0.7",
-    "serialize-javascript": "7.0.3"
+    "serialize-javascript": "7.0.3",
+    "source-map-js": "1.2.2"
   }
 }
