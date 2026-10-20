@@ -234,7 +234,7 @@ export const en = {
     realtimeMultimodalDesc: 'Audio + Video',
     voiceNoKey: 'The agent has no key for this voice provider.',
     jarvisVoiceHint:
-      "Jarvis's voice is Gemini TTS with Charon (or Gemini Live, faster, from the Voice panel).",
+      "Jarvis's voice is ElevenLabs Flash with George (or Gemini TTS or Gemini Live, from the Voice panel).",
     useJarvisVoice: 'Use Jarvis voice',
   },
   ui: {
@@ -1146,6 +1146,7 @@ export const en = {
     allLanguages: 'All Languages',
     allGenders: 'All Genders',
     categoryOther: 'Other',
+    categoryCustom: 'My voices',
     multilingualVoices: 'Multilingual Voices',
     multilingualSupport: 'All {provider} voices support {language}',
     loadingVoices: 'Loading voices...',

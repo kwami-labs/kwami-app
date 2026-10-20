@@ -6,14 +6,37 @@ import { useModelsApi, type InferenceModel } from '@/composables/useModelsApi';
 import { useVoiceStore } from '@/stores/voice';
 import { useKwami } from '@/composables/useKwami';
 import { storeToRefs } from 'pinia';
+import { voiceKeyName, voiceProviderHasKey } from '@/lib/brain';
+import { mergeModels, sameModel, voiceProviderServed } from '@/lib/voiceCatalog';
 import PanelSection from '@/components/ui/PanelSection.vue';
 import ModelCard from '@/components/ui/ModelCard.vue';
 import BaseSlider from '@/components/ui/BaseSlider.vue';
 
-const { fetchLLMInferenceModels, llmInferenceModels, isLoading } = useModelsApi();
+const {
+  fetchLLMInferenceModels,
+  fetchLLMPluginModels,
+  llmInferenceModels,
+  llmPluginModels,
+  isLoading,
+} = useModelsApi();
 const { t } = useI18n();
 const voiceStore = useVoiceStore();
-const { llm, modelsUI } = storeToRefs(voiceStore);
+const { llm, modelsUI, brainStatus } = storeToRefs(voiceStore);
+
+/** False only when the agent reported this provider's key missing. */
+function providerHasKey(provider: string): boolean {
+  return voiceProviderHasKey(brainStatus.value, 'llm', provider);
+}
+/** False when the agent has no factory for it and would build another one. */
+function providerServed(provider: string): boolean {
+  return voiceProviderServed(brainStatus.value, 'llm', provider);
+}
+function providerUsable(provider: string): boolean {
+  return providerServed(provider) && providerHasKey(provider);
+}
+function unusableTitle(provider: string): string {
+  return providerServed(provider) ? t('brainPanel.noKey') : t('brainPanel.notServed');
+}
 const { kwami, isConnected } = useKwami();
 
 // Local state (synced from store)
@@ -52,17 +75,21 @@ function handleAccordionToggle(sectionId: string | undefined, wasCollapsed: bool
 
 // Fetch models on mount and expand selected provider (only if no stored state)
 onMounted(async () => {
-  await fetchLLMInferenceModels();
+  await Promise.all([fetchLLMInferenceModels(), fetchLLMPluginModels()]);
   if (expandedProvider.value === null) {
     expandSelectedProvider();
   }
 });
 
-// All models flat list
-const allModels = computed(() => {
-  if (!llmInferenceModels.value?.models) return [];
-  return llmInferenceModels.value.models;
-});
+// Inference models plus those only our own keys reach (Gemini 3.5 Flash, Claude...)
+const allModels = computed<InferenceModel[]>(() =>
+  mergeModels(
+    'llm',
+    llmInferenceModels.value?.models ?? [],
+    llmPluginModels.value?.providers,
+    (m) => ({ ...m, description: null, providers: {} }),
+  ),
+);
 
 // Min/max calculations for range bars
 const minContext = computed(() => {
@@ -160,6 +187,9 @@ function getProviderIcon(provider: string): string {
 }
 
 function selectModel(modelId: string, provider: string) {
+  // Without its key, or without a factory, the agent would build another
+  // provider instead.
+  if (!providerUsable(provider)) return;
   selectedProvider.value = provider;
   selectedModel.value = modelId;
 
@@ -268,16 +298,27 @@ function updateMaxTokens(value: number) {
           :collapsed="expandedProvider !== 'llm-' + String(provider)"
           @toggle="handleAccordionToggle"
         >
+          <p v-if="!providerServed(String(provider))" class="no-key">
+            <iconify-icon icon="ph:prohibit-duotone"></iconify-icon>
+            {{ t('brainPanel.notServedHint') }}
+          </p>
+          <p v-else-if="!providerHasKey(String(provider))" class="no-key">
+            <iconify-icon icon="ph:key-duotone"></iconify-icon>
+            {{ t('brainPanel.noKeyHint', { key: voiceKeyName('llm', String(provider)) }) }}
+          </p>
           <div class="models-grid">
             <ModelCard
               v-for="model in models"
               :key="model.model_id"
               :model="model"
-              :selected="llm.model === model.model_id"
+              :selected="llm.provider === model.provider && sameModel(llm.model, model.model_id)"
               :minContext="minContext"
               :maxContext="maxContext"
               :minPrice="minPrice"
               :maxPrice="maxPrice"
+              :class="{ locked: !providerUsable(model.provider) }"
+              :disabled="!providerUsable(model.provider)"
+              :title="providerUsable(model.provider) ? undefined : unusableTitle(model.provider)"
               @select="selectModel"
             />
           </div>
@@ -291,11 +332,16 @@ function updateMaxTokens(value: number) {
             v-for="model in sortedModelsFlat"
             :key="model.model_id"
             :model="model"
-            :selected="selectedModel === model.model_id"
+            :selected="
+              selectedProvider === model.provider && sameModel(selectedModel, model.model_id)
+            "
             :minContext="minContext"
             :maxContext="maxContext"
             :minPrice="minPrice"
             :maxPrice="maxPrice"
+            :class="{ locked: !providerUsable(model.provider) }"
+            :disabled="!providerUsable(model.provider)"
+            :title="providerUsable(model.provider) ? undefined : unusableTitle(model.provider)"
             @select="selectModel"
           />
         </div>
@@ -342,6 +388,23 @@ function updateMaxTokens(value: number) {
 </template>
 
 <style scoped>
+.no-key {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.1);
+}
+
+.locked {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .tab-content {
   display: flex;
   flex-direction: column;

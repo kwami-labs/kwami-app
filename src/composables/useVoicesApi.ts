@@ -11,12 +11,15 @@ export interface Voice {
   gender: 'male' | 'female' | 'neutral' | null;
   language: string | null;
   description: string | null;
+  /** A sample to listen to (ElevenLabs lists one per voice). */
+  preview_url?: string | null;
 }
 
 export interface ProviderVoicesResponse {
   provider: string;
   voices: Voice[];
-  source: 'sdk' | 'yaml';
+  /** live: the provider's own account (ElevenLabs, with the API's key). */
+  source: 'sdk' | 'yaml' | 'live';
   count: number;
 }
 

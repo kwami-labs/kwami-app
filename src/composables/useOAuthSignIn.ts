@@ -1,12 +1,19 @@
 /**
  * Supabase OAuth sign-in with popup, and redirect fallback when blocked.
  *
- * Extracted from GoogleButton so the other providers do not each re-implement
- * the popup / blocked-popup / poll-for-close / timeout dance.
+ * Shared by every OAuth button so none re-implements the popup / blocked-popup /
+ * poll-for-close / timeout dance. Inside the Tauri desktop shell neither works (see
+ * desktopAuth.ts): the provider opens in the system browser and the deep link returns.
  */
 import { onUnmounted, ref } from 'vue';
 import type { Provider } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
+import { isTauri } from '@/lib/platform';
+import {
+  AUTH_CALLBACK_EVENT,
+  openOAuthInBrowser,
+  type AuthCallbackDetail,
+} from '@/lib/desktopAuth';
 import { useAuthStore } from '@/stores/auth';
 
 const POPUP_WIDTH = 500;
@@ -15,6 +22,11 @@ const POPUP_POLL_MS = 500;
 const POPUP_TIMEOUT_MS = 300_000;
 /** Some browsers hand back a window reference and still block the popup. */
 const BLOCKED_POPUP_GRACE_MS = 250;
+/**
+ * Back in the desktop window with no session yet: the deep link, if one is coming, focuses
+ * the window before its code is exchanged, so wait that long before calling it abandoned.
+ */
+const DESKTOP_RETURN_GRACE_MS = 3_000;
 
 export function useOAuthSignIn() {
   const authStore = useAuthStore();
@@ -48,9 +60,36 @@ export function useOAuthSignIn() {
     if (redirectError) throw redirectError;
   }
 
+  function onDesktopFocus() {
+    setTimeout(() => {
+      if (!authStore.isAuthenticated) isLoading.value = false;
+    }, DESKTOP_RETURN_GRACE_MS);
+  }
+
+  async function signInDesktop(provider: Provider) {
+    try {
+      await openOAuthInBrowser(provider);
+      // Closing the browser tab sends nothing back; returning to the window ends the wait.
+      window.addEventListener('focus', onDesktopFocus, { once: true });
+      timeoutTimer = setTimeout(() => {
+        clearTimers();
+        isLoading.value = false;
+      }, POPUP_TIMEOUT_MS);
+    } catch (e) {
+      console.error(`${provider} desktop sign-in error:`, e);
+      error.value = 'Unable to start sign-in. Please try again.';
+      isLoading.value = false;
+    }
+  }
+
   async function signIn(provider: Provider) {
     isLoading.value = true;
     error.value = null;
+
+    if (isTauri()) {
+      await signInDesktop(provider);
+      return;
+    }
 
     try {
       const { data, error: authError } = await supabase.auth.signInWithOAuth({
@@ -126,9 +165,20 @@ export function useOAuthSignIn() {
     }
   }
 
+  function handleDesktopCallback(event: Event) {
+    const { error: callbackError } = (event as CustomEvent<AuthCallbackDetail>).detail;
+    isLoading.value = false;
+    clearTimers();
+    window.removeEventListener('focus', onDesktopFocus);
+    if (callbackError) error.value = callbackError;
+  }
+
   window.addEventListener('message', handleMessage);
+  window.addEventListener(AUTH_CALLBACK_EVENT, handleDesktopCallback);
   onUnmounted(() => {
     window.removeEventListener('message', handleMessage);
+    window.removeEventListener(AUTH_CALLBACK_EVENT, handleDesktopCallback);
+    window.removeEventListener('focus', onDesktopFocus);
     clearTimers();
   });
 

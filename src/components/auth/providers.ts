@@ -7,6 +7,8 @@
  *
  * Set VITE_AUTH_PROVIDERS to a comma-separated list, e.g.
  *   VITE_AUTH_PROVIDERS=google,github,phantom
+ * Empty counts as unset: `VITE_AUTH_PROVIDERS=` in a .env, or a CD build whose
+ * repository variable is not defined, would otherwise offer no sign-in at all.
  */
 import type { Provider } from '@supabase/supabase-js';
 
@@ -53,7 +55,7 @@ export const WEB3_PROVIDERS: ProviderDef[] = [
 ];
 
 function enabledIds(): Set<string> {
-  const raw = (import.meta.env.VITE_AUTH_PROVIDERS as string | undefined) ?? 'google';
+  const raw = (import.meta.env.VITE_AUTH_PROVIDERS as string | undefined)?.trim() || 'google';
   return new Set(
     raw
       .split(',')

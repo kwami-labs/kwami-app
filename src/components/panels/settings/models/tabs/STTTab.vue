@@ -6,13 +6,36 @@ import { useModelsApi, type InferenceSTTModel } from '@/composables/useModelsApi
 import { useVoiceStore } from '@/stores/voice';
 import { useKwami } from '@/composables/useKwami';
 import { storeToRefs } from 'pinia';
+import { voiceKeyName, voiceProviderHasKey } from '@/lib/brain';
+import { mergeModels, sameModel, voiceProviderServed } from '@/lib/voiceCatalog';
 import PanelSection from '@/components/ui/PanelSection.vue';
 import STTModelCard from '@/components/ui/STTModelCard.vue';
 
-const { fetchSTTInferenceModels, sttInferenceModels, isLoading } = useModelsApi();
+const {
+  fetchSTTInferenceModels,
+  fetchSTTPluginModels,
+  sttInferenceModels,
+  sttPluginModels,
+  isLoading,
+} = useModelsApi();
 const { t } = useI18n();
 const voiceStore = useVoiceStore();
-const { stt, modelsUI } = storeToRefs(voiceStore);
+const { stt, modelsUI, brainStatus } = storeToRefs(voiceStore);
+
+/** False only when the agent reported this provider's key missing. */
+function providerHasKey(provider: string): boolean {
+  return voiceProviderHasKey(brainStatus.value, 'stt', provider);
+}
+/** False when the agent has no factory for it and would build another one. */
+function providerServed(provider: string): boolean {
+  return voiceProviderServed(brainStatus.value, 'stt', provider);
+}
+function providerUsable(provider: string): boolean {
+  return providerServed(provider) && providerHasKey(provider);
+}
+function unusableTitle(provider: string): string {
+  return providerServed(provider) ? t('brainPanel.noKey') : t('brainPanel.notServed');
+}
 const { kwami, isConnected } = useKwami();
 
 // Local state (synced from store)
@@ -43,7 +66,7 @@ function handleAccordionToggle(sectionId: string | undefined, wasCollapsed: bool
 }
 
 onMounted(async () => {
-  await fetchSTTInferenceModels();
+  await Promise.all([fetchSTTInferenceModels(), fetchSTTPluginModels()]);
   if (expandedProvider.value === null) {
     expandSelectedProvider();
   }
@@ -61,9 +84,17 @@ onMounted(async () => {
 //   return grouped;
 // });
 
-const hasInferenceModels = computed(() => {
-  return sttInferenceModels.value?.models && sttInferenceModels.value.models.length > 0;
-});
+/** Inference models plus those only our own keys reach (Gemini transcription). */
+const allModels = computed<InferenceSTTModel[]>(() =>
+  mergeModels(
+    'stt',
+    sttInferenceModels.value?.models ?? [],
+    sttPluginModels.value?.providers,
+    (m) => ({ ...m, description: null }),
+  ),
+);
+
+const hasInferenceModels = computed(() => allModels.value.length > 0);
 
 // Persisted sorting via store
 const sortBy = computed({
@@ -75,7 +106,7 @@ const sortBy = computed({
 
 // Min/max calculations
 const minPrice = computed(() => {
-  const models = sttInferenceModels.value?.models || [];
+  const models = allModels.value;
   const prices = models
     .map((m) => m.pricing?.scale_per_min)
     .filter((p) => p !== undefined) as number[];
@@ -83,7 +114,7 @@ const minPrice = computed(() => {
 });
 
 const maxPrice = computed(() => {
-  const models = sttInferenceModels.value?.models || [];
+  const models = allModels.value;
   const prices = models
     .map((m) => m.pricing?.scale_per_min)
     .filter((p) => p !== undefined) as number[];
@@ -92,7 +123,7 @@ const maxPrice = computed(() => {
 
 // Models grouped by provider (for accordion view)
 const modelsByProvider = computed(() => {
-  const models = sttInferenceModels.value?.models || [];
+  const models = allModels.value;
   if (!models.length) return {};
 
   const grouped: Record<string, InferenceSTTModel[]> = {};
@@ -106,7 +137,7 @@ const modelsByProvider = computed(() => {
 
 // Flat sorted list (for price/languages view)
 const sortedModelsFlat = computed(() => {
-  const models = sttInferenceModels.value?.models || [];
+  const models = allModels.value;
   if (!models.length) return [];
 
   const sorted = [...models];
@@ -136,13 +167,18 @@ function getProviderIcon(provider: string): string {
     cartesia: 'ph:speaker-high-duotone',
     deepgram: 'simple-icons:deepgram',
     elevenlabs: 'simple-icons:elevenlabs',
-    google: 'simple-icons:googlegemini',
+    google: 'simple-icons:googlecloud',
+    gemini: 'simple-icons:googlegemini',
     groq: 'ph:lightning-duotone',
+    mistralai: 'ph:wind-duotone',
   };
   return icons[provider.toLowerCase()] || 'ph:microphone-duotone';
 }
 
 function selectModel(modelId: string, provider: string) {
+  // Without its key, or without a factory, the agent would build another
+  // provider instead.
+  if (!providerUsable(provider)) return;
   selectedProvider.value = provider;
   selectedModel.value = modelId;
 
@@ -216,14 +252,25 @@ watch(
           :collapsed="expandedProvider !== 'stt-' + String(provider)"
           @toggle="handleAccordionToggle"
         >
+          <p v-if="!providerServed(String(provider))" class="no-key">
+            <iconify-icon icon="ph:prohibit-duotone"></iconify-icon>
+            {{ t('brainPanel.notServedHint') }}
+          </p>
+          <p v-else-if="!providerHasKey(String(provider))" class="no-key">
+            <iconify-icon icon="ph:key-duotone"></iconify-icon>
+            {{ t('brainPanel.noKeyHint', { key: voiceKeyName('stt', String(provider)) }) }}
+          </p>
           <div class="models-grid">
             <STTModelCard
               v-for="model in models"
               :key="model.model_id"
               :model="model"
-              :selected="stt.model === model.model_id"
+              :selected="stt.provider === model.provider && sameModel(stt.model, model.model_id)"
               :minPrice="minPrice"
               :maxPrice="maxPrice"
+              :class="{ locked: !providerUsable(model.provider) }"
+              :disabled="!providerUsable(model.provider)"
+              :title="providerUsable(model.provider) ? undefined : unusableTitle(model.provider)"
               @select="selectModel"
             />
           </div>
@@ -237,9 +284,14 @@ watch(
             v-for="model in sortedModelsFlat"
             :key="model.model_id"
             :model="model"
-            :selected="selectedModel === model.model_id"
+            :selected="
+              selectedProvider === model.provider && sameModel(selectedModel, model.model_id)
+            "
             :minPrice="minPrice"
             :maxPrice="maxPrice"
+            :class="{ locked: !providerUsable(model.provider) }"
+            :disabled="!providerUsable(model.provider)"
+            :title="providerUsable(model.provider) ? undefined : unusableTitle(model.provider)"
             @select="selectModel"
           />
         </div>
@@ -254,6 +306,23 @@ watch(
 </template>
 
 <style scoped>
+.no-key {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.1);
+}
+
+.locked {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .tab-content {
   display: flex;
   flex-direction: column;

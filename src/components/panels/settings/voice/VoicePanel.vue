@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, onBeforeUnmount, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useVoiceStore } from '@/stores/voice';
 import { useKwami } from '@/composables/useKwami';
@@ -231,12 +231,33 @@ const filteredVoices = computed(() => {
   return voices;
 });
 
-/** Male/Female come from the catalogue in English. */
+/** Male/Female come from the catalogue in English; Custom is the account's own voices. */
 function categoryLabel(category: string): string {
   if (category === 'Male') return t('voicePersonas.male');
   if (category === 'Female') return t('voicePersonas.female');
+  if (category === 'Custom') return t('voice.categoryCustom');
   return category;
 }
+
+// A voice's own sample, where the catalogue has one (ElevenLabs lists them).
+const previewing = ref<string | null>(null);
+let previewAudio: HTMLAudioElement | null = null;
+function stopPreview() {
+  previewAudio?.pause();
+  previewAudio = null;
+  previewing.value = null;
+}
+function togglePreview(voice: Voice) {
+  if (!voice.preview_url) return;
+  if (previewing.value === voice.id) return stopPreview();
+  stopPreview();
+  previewAudio = new Audio(voice.preview_url);
+  previewing.value = voice.id;
+  previewAudio.onended = stopPreview;
+  previewAudio.onerror = stopPreview;
+  void previewAudio.play().catch(stopPreview);
+}
+onBeforeUnmount(stopPreview);
 
 // Group voices by category
 const groupedVoices = computed(() => {
@@ -493,6 +514,19 @@ watch(
           >
             <div class="voice-header">
               <span class="voice-name">{{ voice.name }}</span>
+              <span
+                v-if="voice.preview_url"
+                class="voice-preview"
+                role="button"
+                tabindex="0"
+                :aria-label="t('voicePersonas.listen', { voice: voice.name })"
+                @click.stop="togglePreview(voice)"
+                @keydown.enter.stop.prevent="togglePreview(voice)"
+              >
+                <iconify-icon
+                  :icon="previewing === voice.id ? 'ph:stop-fill' : 'ph:play-fill'"
+                ></iconify-icon>
+              </span>
               <div class="selected-check" v-if="selectedVoice === voice.id">
                 <iconify-icon icon="ph:check-circle-duotone"></iconify-icon>
               </div>
@@ -733,6 +767,25 @@ watch(
 .voice-name {
   font-size: 13px;
   font-weight: 600;
+  color: var(--text-primary);
+}
+
+.voice-preview {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-left: auto;
+  margin-right: 6px;
+  border-radius: 50%;
+  font-size: 11px;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+}
+
+.voice-preview:hover {
   color: var(--text-primary);
 }
 
