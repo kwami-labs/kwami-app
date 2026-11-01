@@ -209,16 +209,23 @@ describe('the welcome blob timer', () => {
   });
 
   it('recenters and rescales when the canvas is resized', async () => {
-    await mountBlob();
-    avatar.setScale.mockClear();
-    position.reset.mockClear();
-    scene.resize.mockClear();
+    // Stay on blob-xyz: eye-iris has no `position.reset()`, and a 1-in-20 roll
+    // onto the eye is what made this fail in CI.
+    const random = vi.spyOn(Math, 'random').mockReturnValue(0);
+    try {
+      await mountBlob();
+      avatar.setScale.mockClear();
+      position.reset.mockClear();
+      scene.resize.mockClear();
 
-    window.dispatchEvent(new Event('resize'));
+      window.dispatchEvent(new Event('resize'));
 
-    expect(position.reset).toHaveBeenCalled();
-    expect(scene.resize).toHaveBeenCalled();
-    expect(avatar.setScale).toHaveBeenCalled();
+      expect(position.reset).toHaveBeenCalled();
+      expect(scene.resize).toHaveBeenCalled();
+      expect(avatar.setScale).toHaveBeenCalled();
+    } finally {
+      random.mockRestore();
+    }
   });
 
   it('does not leave a watcher driving a disposed kwami', async () => {
