@@ -15,6 +15,8 @@ import SearchOrbitCards from '@/components/search/SearchOrbitCards.vue';
 import SearchPanel from '@/components/search/SearchPanel.vue';
 import SidebarModeSwitch from '@/components/sidebar/SidebarModeSwitch.vue';
 import BrowserPanel from '@/components/panels/BrowserPanel.vue';
+import AvatarUnavailable from '@/components/AvatarUnavailable.vue';
+import { isWebGLAvailable, type AvatarUnavailableReason } from '@/lib/webgl';
 
 import { useWorkspaceStore } from '@/stores/workspace';
 import { useKwamiConfigWatchers } from '@/composables/useKwamiConfigSync';
@@ -267,6 +269,8 @@ onUnmounted(() => {
 
 // Track if Kwami has been initialized
 const isInitialized = ref(false);
+// Set when the avatar could not start; a notice replaces the black canvas.
+const avatarUnavailable = ref<AvatarUnavailableReason | null>(null);
 
 // Apply saved avatar state to kwami instance
 function applySavedAvatarState() {
@@ -327,14 +331,28 @@ function applySavedSoulState() {
 
 // Initialize Kwami when canvas becomes available (after auth)
 function initializeKwami() {
-  if (isInitialized.value || !canvasRef.value) return;
+  if (isInitialized.value || avatarUnavailable.value || !canvasRef.value) return;
 
   // Default to blob renderer (will be overridden by saved state if available)
   const rendererType = 'blob-xyz';
 
-  init(canvasRef.value, rendererType, {
-    onSearchResults: (data) => searchResults.setResults(data),
-  });
+  // Without WebGL, `new Kwami()` throws from inside Three.js. Uncaught, that
+  // left a black canvas and skipped the rest of this setup, and production
+  // strips console output, so nothing said why. Fail visibly instead; the
+  // panels, auth and everything that does not draw keep working.
+  if (!isWebGLAvailable()) {
+    avatarUnavailable.value = 'webgl';
+    return;
+  }
+  try {
+    init(canvasRef.value, rendererType, {
+      onSearchResults: (data) => searchResults.setResults(data),
+    });
+  } catch (error) {
+    console.error('Kwami avatar failed to start:', error);
+    avatarUnavailable.value = isWebGLAvailable() ? 'error' : 'webgl';
+    return;
+  }
   isInitialized.value = true;
 
   // Initialize scene background from saved settings
@@ -497,6 +515,10 @@ onUnmounted(() => {
       <!-- Main area: canvas + overlays (no nav sidebar) -->
       <div class="main-area" :style="isSplitWithBrowser ? { flex: `0 0 ${splitRatio}%` } : {}">
         <canvas id="kwami-canvas" ref="canvasRef"></canvas>
+        <AvatarUnavailable
+          v-if="avatarUnavailable && authStore.isAuthenticated"
+          :reason="avatarUnavailable"
+        />
 
         <!-- UI controls only shown when authenticated and welcome complete -->
         <template v-if="authStore.isAuthenticated">
