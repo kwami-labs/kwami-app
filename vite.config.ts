@@ -41,6 +41,9 @@ export default defineConfig({
     },
     VitePWA({
       registerType: 'autoUpdate',
+      // Registered from src/lib/registerServiceWorker.ts, which also reloads open tabs
+      // onto a new deploy. The injected registerSW.js only registered the worker.
+      injectRegister: false,
       includeAssets: [
         'sphere.svg',
         'welcome.mp3',

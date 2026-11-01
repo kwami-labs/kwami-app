@@ -13,6 +13,9 @@ import { useAvatarStore } from './stores/avatar';
 import { useVoiceStore } from './stores/voice';
 import { i18n } from './i18n';
 import { initPwaInstall } from './composables/usePwaInstall';
+import { useKwami } from './composables/useKwami';
+import { installStaleChunkRecovery } from './lib/staleVersion';
+import { registerServiceWorker } from './lib/registerServiceWorker';
 
 const app = createApp(App);
 const pinia = createPinia();
@@ -37,6 +40,13 @@ app.use(i18n);
 
 // Capture beforeinstallprompt before Settings is opened.
 initPwaInstall();
+
+// Keep an open tab on the deployed build (lib/staleVersion.ts): reload when a lazy
+// chunk from an older deploy is gone, or when a new service worker takes over, but
+// never mid voice session. Read lazily: pinia is active by the time either fires.
+const staleVersion = { isBusy: () => useKwami().isConnected.value };
+installStaleChunkRecovery(staleVersion);
+registerServiceWorker(staleVersion);
 
 // Initialize theme settings
 const themeStore = useThemeStore();
