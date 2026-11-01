@@ -48,8 +48,10 @@ test.describe('login screen recorder', () => {
 
     await record.click();
     await expect(record).toHaveClass(/pill-btn--rolling/);
-    // Wait out a tick of the timer so the take has frames in it.
-    await expect(record).toContainText('0:01', { timeout: 5_000 });
+    // Wait out a tick of the timer so the take has frames in it. Any count of a
+    // second or more: under a contended suite the first frame the poll sees can
+    // already read 0:02, and waiting for exactly 0:01 then never succeeds.
+    await expect(record).toContainText(/0:(0[1-9]|[1-5]\d)/, { timeout: 5_000 });
 
     const saved = page.waitForEvent('download');
     await record.click();
