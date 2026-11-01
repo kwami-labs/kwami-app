@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { supabase } from '@/lib/supabase';
+import { isTauri } from '@/lib/platform';
+import { listenForAuthCallbacks } from '@/lib/desktopAuth';
 import type { User, Session, AuthError } from '@supabase/supabase-js';
 
 export const useAuthStore = defineStore('auth', () => {
@@ -103,6 +105,13 @@ export const useAuthStore = defineStore('auth', () => {
 
     // Listen for messages from OAuth popup (if we're the parent)
     window.addEventListener('message', onPopupMessage);
+
+    // The desktop shell has no popup: OAuth and email links come back as kwami:// deep links.
+    if (isTauri()) {
+      listenForAuthCallbacks().catch((e: unknown) => {
+        console.error('Failed to listen for sign-in deep links:', e);
+      });
+    }
   }
 
   /** Detach the popup relay. Paired with initAuth for tests and HMR. */

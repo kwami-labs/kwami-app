@@ -146,11 +146,15 @@ onUnmounted(() => {
   transition: transform 0.2s ease;
 }
 
-.control-btn:hover:not(:disabled) {
-  transform: scale(1.08);
-  box-shadow:
-    0 6px 28px rgba(0, 217, 255, 0.5),
-    0 0 0 4px rgba(0, 217, 255, 0.15);
+/* Hover effects under a mouse only: a touch screen keeps :hover on whatever was
+   tapped last, so the call button stayed enlarged after every tap. */
+@media (hover: hover) {
+  .control-btn:hover:not(:disabled) {
+    transform: scale(1.08);
+    box-shadow:
+      0 6px 28px rgba(0, 217, 255, 0.5),
+      0 0 0 4px rgba(0, 217, 255, 0.15);
+  }
 }
 
 .control-btn:active:not(:disabled) {

@@ -22,7 +22,13 @@ import {
   type BrainConfig,
   type BrainStatus,
 } from '@/lib/brain';
-import { GEMINI_STANDARD, VOICE_PERSONAS, upgradeStyle } from '@/lib/voicePersonas';
+import {
+  FAST_STT,
+  GEMINI_STANDARD,
+  LEGACY_DEFAULT_STT,
+  VOICE_PERSONAS,
+  upgradeStyle,
+} from '@/lib/voicePersonas';
 
 const STORAGE_KEY = 'kwami-voice-config';
 /** What the agent last said about its brain: which keys it has, spend, tasks. */
@@ -271,8 +277,16 @@ export const useVoiceStore = defineStore('voice', () => {
     try {
       if (settings.pipelineMode != null)
         pipelineMode.value = settings.pipelineMode as typeof pipelineMode.value;
-      if (settings.stt && typeof settings.stt === 'object')
+      if (settings.stt && typeof settings.stt === 'object') {
         stt.value = { ...stt.value, ...settings.stt } as STTConfig;
+        // The old default ear, Gemini transcribe-live, finalised 1.24 s after
+        // the end of speech (2026-10-20): saves still on it move to the fast one.
+        if (
+          stt.value.provider === LEGACY_DEFAULT_STT.provider &&
+          stt.value.model === LEGACY_DEFAULT_STT.model
+        )
+          stt.value = { ...stt.value, ...FAST_STT } as STTConfig;
+      }
       if (settings.llm && typeof settings.llm === 'object')
         llm.value = { ...llm.value, ...settings.llm } as LLMConfig;
       if (settings.tts && typeof settings.tts === 'object') {

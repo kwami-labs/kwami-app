@@ -4,11 +4,15 @@ import { useUIStore } from '@/stores/ui';
 import { useThemeStore } from '@/stores/theme';
 import SidebarNavigation from './SidebarNavigation.vue';
 import SidebarContent from './SidebarContent.vue';
+import { useBackClosesSheet } from '@/composables/useBackClosesSheet';
 
 const uiStore = useUIStore();
 const themeStore = useThemeStore();
 
 const sidebarRef = ref<HTMLElement | null>(null);
+
+// On a phone the open panel is a sheet, and Back closes it.
+useBackClosesSheet();
 
 // Computed class for sidebar position
 const isRight = computed(() => themeStore.sidebarPosition === 'right');

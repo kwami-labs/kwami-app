@@ -1,135 +1,14 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
-import { useAuthStore } from '@/stores/auth';
-import { supabase } from '@/lib/supabase';
+// Google keeps its own component only for the inline multi-colour logo; the sign-in itself
+// (popup on the web, system browser + deep link on desktop) is the shared useOAuthSignIn.
 import BaseButton from '@/components/ui/BaseButton.vue';
+import { useOAuthSignIn } from '@/composables/useOAuthSignIn';
 
-const authStore = useAuthStore();
-const isLoading = ref(false);
-const error = ref<string | null>(null);
-let popupRef: Window | null = null;
+const { signIn, isLoading, error } = useOAuthSignIn();
 
-async function fallbackToRedirect(oauthUrl?: string) {
-  // Keep UX clear when popup is blocked: continue with redirect auth.
-  error.value = 'Popup blocked. Redirecting to Google sign-in...';
-
-  if (oauthUrl) {
-    window.location.assign(oauthUrl);
-    return;
-  }
-
-  const { error: redirectError } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: window.location.origin,
-    },
-  });
-
-  if (redirectError) {
-    throw redirectError;
-  }
+function handleGoogleClick() {
+  void signIn('google');
 }
-
-// Use Supabase OAuth with popup by default, fallback to redirect if blocked
-async function handleGoogleClick() {
-  isLoading.value = true;
-  error.value = null;
-
-  try {
-    const { data, error: authError } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: window.location.origin,
-        skipBrowserRedirect: true, // Don't redirect, we'll handle it
-      },
-    });
-
-    if (authError) {
-      error.value = authError.message;
-      isLoading.value = false;
-      return;
-    }
-
-    if (data?.url) {
-      // Open Google auth in a popup window
-      const width = 500;
-      const height = 600;
-      const left = window.screenX + (window.outerWidth - width) / 2;
-      const top = window.screenY + (window.outerHeight - height) / 2;
-
-      popupRef = window.open(
-        data.url,
-        'google-auth-popup',
-        `width=${width},height=${height},left=${left},top=${top},popup=true`,
-      );
-
-      if (!popupRef) {
-        await fallbackToRedirect(data.url);
-        return;
-      }
-
-      // Some browsers return a reference but still block the popup.
-      setTimeout(async () => {
-        if (popupRef && popupRef.closed && !authStore.isAuthenticated && isLoading.value) {
-          try {
-            await fallbackToRedirect(data.url);
-          } catch (fallbackError) {
-            console.error('Google redirect fallback error:', fallbackError);
-            error.value = 'Unable to start Google sign-in. Please try again.';
-            isLoading.value = false;
-          }
-        }
-      }, 250);
-
-      // Poll for popup close (as backup if message passing fails)
-      const checkPopup = setInterval(() => {
-        if (popupRef?.closed) {
-          clearInterval(checkPopup);
-          // Give a moment for auth state to update
-          setTimeout(() => {
-            if (!authStore.isAuthenticated) {
-              isLoading.value = false;
-            }
-          }, 500);
-        }
-      }, 500);
-
-      // Timeout after 5 minutes
-      setTimeout(() => {
-        clearInterval(checkPopup);
-        if (popupRef && !popupRef.closed) {
-          popupRef.close();
-        }
-        isLoading.value = false;
-      }, 300000);
-    }
-  } catch (e) {
-    console.error('Google sign-in error:', e);
-    error.value = 'An error occurred. Please try again.';
-    isLoading.value = false;
-  }
-}
-
-// Handle message from popup
-function handleMessage(event: MessageEvent) {
-  if (event.origin !== window.location.origin) return;
-
-  if (event.data?.type === 'supabase-auth-callback') {
-    isLoading.value = false;
-    // Auth store will handle the session update
-  }
-}
-
-onMounted(() => {
-  window.addEventListener('message', handleMessage);
-});
-
-onUnmounted(() => {
-  window.removeEventListener('message', handleMessage);
-  if (popupRef && !popupRef.closed) {
-    popupRef.close();
-  }
-});
 </script>
 
 <template>

@@ -15,6 +15,8 @@ import SearchOrbitCards from '@/components/search/SearchOrbitCards.vue';
 import SearchPanel from '@/components/search/SearchPanel.vue';
 import SidebarModeSwitch from '@/components/sidebar/SidebarModeSwitch.vue';
 import BrowserPanel from '@/components/panels/BrowserPanel.vue';
+import AvatarUnavailable from '@/components/AvatarUnavailable.vue';
+import { isWebGLAvailable, type AvatarUnavailableReason } from '@/lib/webgl';
 
 import { useWorkspaceStore } from '@/stores/workspace';
 import { useKwamiConfigWatchers } from '@/composables/useKwamiConfigSync';
@@ -33,6 +35,7 @@ import { randomizeAvatarPanel } from '@/composables/avatar/randomizeAvatarPanel'
 import { useBlobXyzStore } from '@/stores/avatar.blob-xyz';
 import { useEyeIrisStore } from '@/stores/avatar.eye-iris';
 import { fitKwamiInView, measureKwamiCanvas } from '@/utils/kwamiViewportFit';
+import { bridgeCanvasTouch } from '@/utils/canvasTouchBridge';
 
 const {
   kwami,
@@ -132,13 +135,17 @@ const eyeIrisStore = useEyeIrisStore();
 const splitRatio = ref(50);
 const isDraggingSplitter = ref(false);
 
-function startDrag() {
+// Pointer events, not mouse events, so a finger can drag the split on a tablet.
+function startDrag(e: PointerEvent) {
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
+  e.preventDefault();
   isDraggingSplitter.value = true;
-  document.addEventListener('mousemove', onDrag);
-  document.addEventListener('mouseup', stopDrag);
+  document.addEventListener('pointermove', onDrag);
+  document.addEventListener('pointerup', stopDrag);
+  document.addEventListener('pointercancel', stopDrag);
 }
 
-function onDrag(e: MouseEvent) {
+function onDrag(e: PointerEvent) {
   if (!isDraggingSplitter.value) return;
   const isRight = themeStore.sidebarPosition === 'right';
   let newRatio = (e.clientX / window.innerWidth) * 100;
@@ -152,8 +159,9 @@ function onDrag(e: MouseEvent) {
 
 function stopDrag() {
   isDraggingSplitter.value = false;
-  document.removeEventListener('mousemove', onDrag);
-  document.removeEventListener('mouseup', stopDrag);
+  document.removeEventListener('pointermove', onDrag);
+  document.removeEventListener('pointerup', stopDrag);
+  document.removeEventListener('pointercancel', stopDrag);
 }
 
 // Navigation: extension opens tab/split; no sidebar
@@ -267,6 +275,8 @@ onUnmounted(() => {
 
 // Track if Kwami has been initialized
 const isInitialized = ref(false);
+// Set when the avatar could not start; a notice replaces the black canvas.
+const avatarUnavailable = ref<AvatarUnavailableReason | null>(null);
 
 // Apply saved avatar state to kwami instance
 function applySavedAvatarState() {
@@ -327,14 +337,28 @@ function applySavedSoulState() {
 
 // Initialize Kwami when canvas becomes available (after auth)
 function initializeKwami() {
-  if (isInitialized.value || !canvasRef.value) return;
+  if (isInitialized.value || avatarUnavailable.value || !canvasRef.value) return;
 
   // Default to blob renderer (will be overridden by saved state if available)
   const rendererType = 'blob-xyz';
 
-  init(canvasRef.value, rendererType, {
-    onSearchResults: (data) => searchResults.setResults(data),
-  });
+  // Without WebGL, `new Kwami()` throws from inside Three.js. Uncaught, that
+  // left a black canvas and skipped the rest of this setup, and production
+  // strips console output, so nothing said why. Fail visibly instead; the
+  // panels, auth and everything that does not draw keep working.
+  if (!isWebGLAvailable()) {
+    avatarUnavailable.value = 'webgl';
+    return;
+  }
+  try {
+    init(canvasRef.value, rendererType, {
+      onSearchResults: (data) => searchResults.setResults(data),
+    });
+  } catch (error) {
+    console.error('Kwami avatar failed to start:', error);
+    avatarUnavailable.value = isWebGLAvailable() ? 'error' : 'webgl';
+    return;
+  }
   isInitialized.value = true;
 
   // Initialize scene background from saved settings
@@ -379,7 +403,12 @@ function handleResize() {
 
 // Watch for canvas to become available (happens after auth guard shows slot)
 let resizeObserver: ResizeObserver | null = null;
+// Finger drags spin the avatar and a double-tap toggles the conversation, as the
+// mouse does (utils/canvasTouchBridge.ts).
+let releaseTouchBridge: (() => void) | null = null;
 watch(canvasRef, (canvas) => {
+  releaseTouchBridge?.();
+  releaseTouchBridge = canvas ? bridgeCanvasTouch(canvas) : null;
   if (canvas) {
     initializeKwami();
     if (canvas.parentElement) {
@@ -477,6 +506,8 @@ onUnmounted(() => {
     resizeObserver.disconnect();
     resizeObserver = null;
   }
+  releaseTouchBridge?.();
+  releaseTouchBridge = null;
   // Releases the WebGL context, the LiveKit room and the audio graph.
   void disposeKwami();
   isInitialized.value = false;
@@ -497,6 +528,10 @@ onUnmounted(() => {
       <!-- Main area: canvas + overlays (no nav sidebar) -->
       <div class="main-area" :style="isSplitWithBrowser ? { flex: `0 0 ${splitRatio}%` } : {}">
         <canvas id="kwami-canvas" ref="canvasRef"></canvas>
+        <AvatarUnavailable
+          v-if="avatarUnavailable && authStore.isAuthenticated"
+          :reason="avatarUnavailable"
+        />
 
         <!-- UI controls only shown when authenticated and welcome complete -->
         <template v-if="authStore.isAuthenticated">
@@ -514,7 +549,7 @@ onUnmounted(() => {
         </template>
       </div>
 
-      <div v-if="isSplitWithBrowser" class="layout-splitter" @mousedown="startDrag">
+      <div v-if="isSplitWithBrowser" class="layout-splitter" @pointerdown="startDrag">
         <div class="splitter-handle"></div>
       </div>
 
@@ -573,6 +608,9 @@ onUnmounted(() => {
   display: flex;
   flex-direction: row;
   height: 100vh;
+  /* Mobile browsers' 100vh is the height with their toolbars hidden, which puts
+     the bottom of the layout under the toolbar while it is showing. */
+  height: 100dvh;
   overflow: hidden;
 }
 
@@ -610,6 +648,8 @@ onUnmounted(() => {
   transition: background 0.2s;
   /* Prevent text selection while dragging */
   user-select: none;
+  /* or a touch drag scrolls instead of moving the split */
+  touch-action: none;
 }
 .layout-splitter:hover,
 .layout-splitter:active {
@@ -632,6 +672,36 @@ onUnmounted(() => {
   inset: 0;
   width: 100%;
   height: 100%;
+  /* Drags on the avatar spin it (canvasTouchBridge); the browser must not take
+     them as a pan or a pinch-zoom of the page. */
+  touch-action: none;
+}
+
+/* A portrait phone has no room for two columns: the split stacks, the avatar
+   above and the browser below, and the browser stops short of the dock, which
+   floats over the bottom of the screen (main.css, PHONES). Dragging the split
+   sideways means nothing here, so the splitter goes. */
+@media (max-width: 767px) and (orientation: portrait) {
+  .root-layout.split-layout,
+  .root-layout.split-layout.sidebar-right {
+    flex-direction: column;
+  }
+
+  .root-layout.split-layout .main-area {
+    flex: 0 0 38% !important;
+  }
+
+  .root-layout.split-layout .layout-splitter {
+    display: none;
+  }
+
+  .root-layout.split-layout :deep(.browser-panel--docked) {
+    height: auto;
+    min-height: 0;
+    border-left: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding-bottom: calc(var(--phone-bottom) + var(--phone-dock-h) + 8px);
+  }
 }
 
 /* Control Bar: positioned at top-right of main area (moves with canvas) */

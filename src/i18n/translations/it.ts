@@ -6,6 +6,7 @@ export const it = {
     energy: 'Energia',
     account: 'Account',
     apps: 'App',
+    settings: 'Impostazioni',
     panels: {
       avatar: 'Avatar',
       audio: 'Audio',
@@ -349,6 +350,7 @@ export const it = {
     backgroundGradient: 'Gradiente',
     backgroundShuffle: 'Sorprendimi',
     backgroundDblclickHint: 'Fai doppio clic',
+    backgroundDoubleTapHint: 'Tocca due volte',
     backgroundDblclickHintRest: 'per cambiare il video',
   },
   welcomeScreen: {

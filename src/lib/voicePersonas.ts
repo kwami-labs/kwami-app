@@ -18,24 +18,152 @@
  *
  * Samples in `public/voices/` were generated with Gemini TTS, which uses the
  * same prebuilt voices, reading the same sentence under each `style`.
+ *
+ * Each character also has ElevenLabs voices (`elevenlabs`), for the third
+ * engine. The account is on the free plan, which cannot speak with library
+ * voices through the API (402) nor design voices through it (403), checked
+ * 2026-10-19: so they are stock voices, picked by measuring a Spanish sample
+ * of each on Flash v2.5 (pitch, contour, pace) against the character. The
+ * `*-elevenlabs-*` samples are those very takes. ElevenLabs reads no
+ * direction; the style stays set anyway, because a set direction is what
+ * locks the voice against the agent's own switching.
  */
 
 export type VoiceGender = 'male' | 'female';
 
 /**
- * gemini-tts: standard pipeline, Gemini STT -> Gemini Flash -> Gemini TTS, the
- * sound the user chose (2026-10-09). gemini-live: one realtime model, faster.
+ * Every engine a character can speak on. The standard ones (STT -> LLM -> TTS)
+ * are named after the TTS that speaks; the realtime ones are one
+ * speech-to-speech model each. Measured on 2026-10-20, end of speech to first
+ * audio on the agent: about 1.3 s on the standard pipeline with a fast ear,
+ * about 2 s on either realtime model.
+ *
+ * - elevenlabs: Flash v2.5, the fastest TTS (0.24 s to first audio);
+ * - cartesia: Sonic 3 with Spanish voices of its own (0.44 s);
+ * - deepgram: Aura 2, whose Spanish voices are models (0.74 s);
+ * - openai-tts: tts-1, about 1 s;
+ * - gemini-tts: the sound the user chose on 2026-10-09 -- but a free-tier key
+ *   allows ten requests a day, after which the agent's fallback speaks;
+ * - gemini-live / openai-realtime: one model that hears and speaks, and the
+ *   only engines that can see the camera or a shared screen.
  */
-export type VoiceEngine = 'gemini-tts' | 'gemini-live';
+export type VoiceEngine =
+  | 'elevenlabs'
+  | 'cartesia'
+  | 'deepgram'
+  | 'openai-tts'
+  | 'gemini-tts'
+  | 'gemini-live'
+  | 'openai-realtime';
+
+export const VOICE_ENGINES: readonly VoiceEngine[] = [
+  'elevenlabs',
+  'cartesia',
+  'deepgram',
+  'openai-tts',
+  'gemini-tts',
+  'gemini-live',
+  'openai-realtime',
+];
 
 export const GEMINI_LIVE_MODEL = 'gemini-3.1-flash-live-preview';
+export const OPENAI_REALTIME_MODEL = 'gpt-realtime';
 
-/** The all-Gemini standard pipeline: only GOOGLE_API_KEY is needed. */
+export interface EngineSpec {
+  kind: 'standard' | 'realtime';
+  /** The TTS provider (standard) or the realtime provider, as the agent names it. */
+  provider: string;
+  model: string;
+  /** Whether the engine reads the voice direction (`style`). */
+  readsDirection: boolean;
+}
+
+export const ENGINE_SPECS: Record<VoiceEngine, EngineSpec> = {
+  elevenlabs: {
+    kind: 'standard',
+    provider: 'elevenlabs',
+    model: 'eleven_flash_v2_5',
+    readsDirection: false,
+  },
+  cartesia: { kind: 'standard', provider: 'cartesia', model: 'sonic-3', readsDirection: false },
+  // A Deepgram Aura voice *is* a model ("aura-2-nestor-es"): see `ttsFor`.
+  deepgram: { kind: 'standard', provider: 'deepgram', model: 'aura-2', readsDirection: false },
+  // tts-1, not gpt-4o-mini-tts: the latter took 7-9 s for a sentence on
+  // 2026-10-20, tts-1 a steady second.
+  'openai-tts': {
+    kind: 'standard',
+    provider: 'openai',
+    model: 'tts-1',
+    readsDirection: false,
+  },
+  'gemini-tts': {
+    kind: 'standard',
+    provider: 'gemini',
+    model: 'gemini-3.1-flash-tts-preview',
+    readsDirection: true,
+  },
+  'gemini-live': {
+    kind: 'realtime',
+    provider: 'google',
+    model: GEMINI_LIVE_MODEL,
+    readsDirection: true,
+  },
+  'openai-realtime': {
+    kind: 'realtime',
+    provider: 'openai',
+    model: OPENAI_REALTIME_MODEL,
+    readsDirection: true,
+  },
+};
+
+export const isRealtimeEngine = (engine: VoiceEngine) => ENGINE_SPECS[engine].kind === 'realtime';
+
+/**
+ * The ear of every standard engine: Deepgram Nova 3 in Spanish. Gemini's
+ * transcriber took 1.24 s after the end of speech to give its final text
+ * (2026-10-20) and misheard "Jarvis"; Nova 3 took 0.3 s and heard it.
+ */
+export const FAST_STT = { provider: 'deepgram', model: 'nova-3', language: 'es' } as const;
+
+/** The STT the app shipped with before FAST_STT, upgraded on load. */
+export const LEGACY_DEFAULT_STT = {
+  provider: 'gemini',
+  model: 'gemini-3.5-transcribe-live',
+} as const;
+
+/**
+ * The standard pipeline: Deepgram listens, Gemini thinks, Gemini speaks. The
+ * agent backs each stage with another provider when one fails (a spent
+ * free-tier quota, an outage), so a dead Gemini never leaves Jarvis mute.
+ */
 export const GEMINI_STANDARD = {
-  stt: { provider: 'gemini', model: 'gemini-3.5-transcribe-live', language: 'es' },
+  stt: FAST_STT,
   llm: { provider: 'google', model: 'gemini-3.5-flash' },
   tts: { provider: 'gemini', model: 'gemini-3.1-flash-tts-preview' },
 } as const;
+
+/**
+ * Jarvis on the standard pipeline (2026-10-19): Gemini listens and thinks,
+ * ElevenLabs speaks. Flash v2.5 was the fastest TTS measured (0.19 s to first
+ * audio) and is billed per use; Gemini TTS on a free-tier key allows ten
+ * requests a day, and a spent quota leaves Jarvis mute. George is a mature
+ * British male voice, the nearest stock voice to the butler register.
+ */
+export const JARVIS_ELEVENLABS_VOICE = 'JBFqnCBsd6RMkjVDRZzb';
+export const ELEVENLABS_TTS = { provider: 'elevenlabs', model: 'eleven_flash_v2_5' } as const;
+export const JARVIS_STANDARD = {
+  stt: GEMINI_STANDARD.stt,
+  llm: GEMINI_STANDARD.llm,
+  tts: { ...ELEVENLABS_TTS, voice: JARVIS_ELEVENLABS_VOICE },
+} as const;
+
+/** A provider's voice by its id, with the name the panel shows. */
+export interface EngineVoice {
+  id: string;
+  name: string;
+}
+/** Kept for older imports. */
+export type ElevenLabsVoice = EngineVoice;
 
 export interface VoicePersona {
   id: 'jarvis' | 'friday';
@@ -47,6 +175,13 @@ export interface VoicePersona {
   alternatives: string[];
   /** Direction for the realtime model, in the language it will speak. */
   style: string;
+  /** ElevenLabs stock voices for the character; the first is the suggested one. */
+  elevenlabs: readonly EngineVoice[];
+  /** Voices on the other engines, suggested first (Spanish ones where they exist). */
+  cartesia: readonly EngineVoice[];
+  deepgram: readonly EngineVoice[];
+  openai: readonly EngineVoice[];
+  openaiRealtime: readonly EngineVoice[];
   /** For a voice-design TTS later on. */
   designPrompt: string;
   /** One-line summary for the panel, per locale. */
@@ -63,6 +198,30 @@ export const VOICE_PERSONAS: readonly VoicePersona[] = [
     provider: 'google',
     voice: 'Charon',
     alternatives: ['Orus', 'Iapetus', 'Algieba'],
+    // Measured in Spanish on Flash v2.5: George 124 Hz with a flat contour and
+    // an unhurried pace, the butler register; Roger the deepest and flattest
+    // (101 Hz) but casual in manner; Daniel formal and slow; Brian deep.
+    elevenlabs: [
+      { id: JARVIS_ELEVENLABS_VOICE, name: 'George' },
+      { id: 'CwhRBWXzGAHq8TQ4Fs17', name: 'Roger' },
+      { id: 'onwK4e9ZLuTAKqWW03F9', name: 'Daniel' },
+      { id: 'nPczCjzI2devNBz1zQrb', name: 'Brian' },
+    ],
+    // Cartesia's own Spanish (Spain) male voices: Marcos calm and measured,
+    // Gonzalo warmer. Deepgram's Spanish Aura voice for a man is Néstor.
+    cartesia: [
+      { id: '13ff5deb-2591-42ad-a356-63a04e524411', name: 'Marcos' },
+      { id: '58e531e3-b212-49df-adee-c335a19c2429', name: 'Gonzalo' },
+    ],
+    deepgram: [{ id: 'aura-2-nestor-es', name: 'Néstor' }],
+    openai: [
+      { id: 'onyx', name: 'Onyx' },
+      { id: 'ash', name: 'Ash' },
+    ],
+    openaiRealtime: [
+      { id: 'cedar', name: 'Cedar' },
+      { id: 'ash', name: 'Ash' },
+    ],
     style:
       'Habla como JARVIS, el mayordomo digital de Tony Stark en Iron Man, en castellano de ' +
       'España culto y neutro. Perfil: mayordomo británico de la vieja escuela convertido en ' +
@@ -105,6 +264,27 @@ export const VOICE_PERSONAS: readonly VoicePersona[] = [
     provider: 'google',
     voice: 'Aoede',
     alternatives: ['Kore', 'Sulafat', 'Despina'],
+    // Jessica: young, bright and warm (205 Hz), the closest in character;
+    // Alice the most melodic and quickest, Sarah bright, Lily velvety.
+    elevenlabs: [
+      { id: 'cgSgspJ2msm6clMCkdW9', name: 'Jessica' },
+      { id: 'Xb7hH8MSUJpSbSDYk0k2', name: 'Alice' },
+      { id: 'EXAVITQu4vr4xnSDxMaL', name: 'Sarah' },
+      { id: 'pFZP5JQG7iQjIQuC4Bku', name: 'Lily' },
+    ],
+    cartesia: [
+      { id: 'de38f545-c574-44e8-9b54-a7d6fec1c6b1', name: 'Marta' },
+      { id: '1cc00672-e9d4-455e-b3fb-31dfb7aad231', name: 'Laura' },
+    ],
+    deepgram: [{ id: 'aura-2-celeste-es', name: 'Celeste' }],
+    openai: [
+      { id: 'nova', name: 'Nova' },
+      { id: 'coral', name: 'Coral' },
+    ],
+    openaiRealtime: [
+      { id: 'marin', name: 'Marin' },
+      { id: 'shimmer', name: 'Shimmer' },
+    ],
     style:
       'Habla como FRIDAY, la asistente digital de Tony Stark en Iron Man, en castellano de ' +
       'España. Perfil: copiloto joven, despierta y de total confianza; voz femenina de ' +
@@ -143,6 +323,120 @@ export function sampleUrl(persona: VoicePersona['id'], voice: string): string {
   return `/voices/${persona}-${voice.toLowerCase()}.wav`;
 }
 
+/** The persona's Spanish take on Flash v2.5 with one of its ElevenLabs voices. */
+export function elevenlabsSampleUrl(persona: VoicePersona['id'], voiceName: string): string {
+  return engineSampleUrl(persona, 'elevenlabs', voiceName);
+}
+
+/** A persona's Spanish sample on a TTS engine, by the voice's panel name. */
+export function engineSampleUrl(
+  persona: VoicePersona['id'],
+  engine: string,
+  voiceName: string,
+): string {
+  const slug = voiceName.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  return `/voices/${persona}-${engine}-${slug}.wav`;
+}
+
+/** Where a persona's voice on an engine can be heard, or null (no sample). */
+export function voiceSampleUrl(
+  persona: VoicePersona,
+  engine: VoiceEngine,
+  voice: string,
+): string | null {
+  switch (engine) {
+    case 'gemini-tts':
+    case 'gemini-live':
+      return sampleUrl(persona.id, voice);
+    case 'elevenlabs':
+    case 'cartesia':
+    case 'deepgram':
+      return engineSampleUrl(persona.id, engine, voiceLabel(voice));
+    case 'openai-tts':
+      return engineSampleUrl(persona.id, 'openai', voiceLabel(voice));
+    default:
+      return null;
+  }
+}
+
+/** The non-Gemini voice list a persona has for an engine. */
+function engineVoices(persona: VoicePersona, engine: VoiceEngine): readonly EngineVoice[] | null {
+  switch (engine) {
+    case 'elevenlabs':
+      return persona.elevenlabs;
+    case 'cartesia':
+      return persona.cartesia;
+    case 'deepgram':
+      return persona.deepgram;
+    case 'openai-tts':
+      return persona.openai;
+    case 'openai-realtime':
+      return persona.openaiRealtime;
+    default:
+      return null;
+  }
+}
+
+const TTS_ENGINE_BY_PROVIDER: Record<string, VoiceEngine> = {
+  elevenlabs: 'elevenlabs',
+  cartesia: 'cartesia',
+  deepgram: 'deepgram',
+  openai: 'openai-tts',
+};
+
+/** The engine a voice config is on, as the character panel sees it. */
+export function voiceEngine(
+  pipelineMode: string,
+  ttsProvider: string,
+  realtimeProvider = 'google',
+): VoiceEngine {
+  if (pipelineMode === 'realtime') {
+    return realtimeProvider === 'openai' ? 'openai-realtime' : 'gemini-live';
+  }
+  return TTS_ENGINE_BY_PROVIDER[ttsProvider] ?? 'gemini-tts';
+}
+
+/** The voice a persona speaks with on an engine: its suggested one there. */
+export function personaVoice(persona: VoicePersona, engine: VoiceEngine): string {
+  return engineVoices(persona, engine)?.[0]?.id ?? persona.voice;
+}
+
+/** The voices a persona offers on an engine, suggested first. */
+export function personaVoices(persona: VoicePersona, engine: VoiceEngine): string[] {
+  const voices = engineVoices(persona, engine);
+  return voices ? voices.map((v) => v.id) : [persona.voice, ...persona.alternatives];
+}
+
+/**
+ * The TTS settings that make a voice speak on a standard engine. Deepgram
+ * names its Spanish voices as models, so the voice goes in both fields.
+ */
+export function ttsFor(
+  engine: VoiceEngine,
+  voice: string,
+): { provider: string; model: string; voice: string } {
+  const spec = ENGINE_SPECS[engine];
+  if (engine === 'deepgram') return { provider: spec.provider, model: voice, voice };
+  return { provider: spec.provider, model: spec.model, voice };
+}
+
+/** A voice id as the panel shows it: provider ids by their name. */
+export function voiceLabel(voice: string): string {
+  for (const persona of VOICE_PERSONAS) {
+    for (const list of [
+      persona.elevenlabs,
+      persona.cartesia,
+      persona.deepgram,
+      persona.openai,
+      persona.openaiRealtime,
+    ]) {
+      const match = list.find((v) => v.id === voice);
+      if (match) return match.name;
+    }
+  }
+  return voice;
+}
+
 /**
  * A real Gemini Live turn (gemini-3.1-flash-live-preview) with the persona's
  * suggested voice and its direction in the instructions, as the agent sends it.
@@ -177,7 +471,13 @@ export function voiceLock(
 export function activePersona(voice: string, style: string): VoicePersona | null {
   return (
     VOICE_PERSONAS.find(
-      (p) => p.style === style && (p.voice === voice || p.alternatives.includes(voice)),
+      (p) =>
+        p.style === style &&
+        (p.voice === voice ||
+          p.alternatives.includes(voice) ||
+          [p.elevenlabs, p.cartesia, p.deepgram, p.openai, p.openaiRealtime].some((list) =>
+            list.some((v) => v.id === voice),
+          )),
     ) ?? null
   );
 }

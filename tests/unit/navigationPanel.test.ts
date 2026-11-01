@@ -22,7 +22,11 @@ import {
 
 function setViewport(width: number, height: number) {
   Object.defineProperty(window, 'innerWidth', { value: width, writable: true, configurable: true });
-  Object.defineProperty(window, 'innerHeight', { value: height, writable: true, configurable: true });
+  Object.defineProperty(window, 'innerHeight', {
+    value: height,
+    writable: true,
+    configurable: true,
+  });
 }
 
 beforeEach(() => {
@@ -55,6 +59,13 @@ describe('clampRect', () => {
     const rect = clampRect({ x: 0, y: 0, width: 4000, height: 3000 });
     expect(rect.width).toBe(800);
     expect(rect.height).toBe(600);
+  });
+
+  it('fits a phone narrower than the minimum width', () => {
+    setViewport(320, 568);
+    const rect = clampRect({ x: 40, y: 0, width: 720, height: 520 });
+    expect(rect.width).toBe(320);
+    expect(rect.x).toBe(0);
   });
 
   it('never returns a rect that starts off-screen after shrinking', () => {
@@ -139,11 +150,9 @@ describe('persistence', () => {
   });
 
   it('works when storage throws, as it does in private mode', () => {
-    const setItem = vi
-      .spyOn(Storage.prototype, 'setItem')
-      .mockImplementation(() => {
-        throw new Error('QuotaExceededError');
-      });
+    const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('QuotaExceededError');
+    });
 
     const store = useNavigationStore();
     expect(() => store.setLayout('floating')).not.toThrow();
@@ -154,7 +163,7 @@ describe('persistence', () => {
 });
 
 describe('session lifecycle', () => {
-  it('records whether the browser carries the user\'s saved logins', () => {
+  it("records whether the browser carries the user's saved logins", () => {
     const store = useNavigationStore();
     store.updateState({ url: 'https://example.com', vendor: 'browserbase', persistent: false });
     expect(store.vendor).toBe('browserbase');

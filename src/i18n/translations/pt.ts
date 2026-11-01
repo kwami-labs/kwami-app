@@ -6,6 +6,7 @@ export const pt = {
     energy: 'Energia',
     account: 'Conta',
     apps: 'Apps',
+    settings: 'Ajustes',
     panels: {
       avatar: 'Avatar',
       audio: 'Áudio',
@@ -351,6 +352,7 @@ export const pt = {
     backgroundGradient: 'Gradiente',
     backgroundShuffle: 'Surpreenda-me',
     backgroundDblclickHint: 'Clique duas vezes',
+    backgroundDoubleTapHint: 'Toque duas vezes',
     backgroundDblclickHintRest: 'para mudar o vídeo',
   },
   welcomeScreen: {

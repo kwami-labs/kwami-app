@@ -480,6 +480,13 @@ body.compact-mode .panel-column {
   width: 280px !important;
 }
 
+/* Compact mode fixes the panel's width (above, and the full screen width on a
+   phone), so the small/medium/large size presets do nothing, and in a 280px
+   header they crowded the panel title out altogether. */
+body.compact-mode .panel-header-controls .header-control-group:not(.close-group) {
+  display: none !important;
+}
+
 body.compact-mode .control-bar-container {
   top: 12px !important;
   right: 12px !important;
@@ -549,4 +556,398 @@ body.sidebar-right .control-bar-container {
 
 body.sidebar-right.compact-mode .control-bar-container {
   left: 12px !important;
+}
+
+/* =====================================================
+   TOUCH SCREENS
+   ===================================================== */
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  /* The grey flash Safari and Chrome paint over anything tapped. Every control
+     here has its own pressed state. */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* No double-tap-to-zoom wait on controls: a tap is a click straight away. */
+button,
+a,
+label,
+summary,
+[role='button'] {
+  touch-action: manipulation;
+}
+
+/* iOS Safari zooms the page into any focused field whose text is smaller than
+   16px, and leaves it zoomed after the field loses focus. The panels' fields are
+   12-14px, so on a phone every text box threw the layout off-screen. */
+@media (pointer: coarse) {
+  input:not([type='range']):not([type='checkbox']):not([type='radio']):not([type='color']):not(
+      [type='file']
+    ),
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
+/* =====================================================
+   PHONES - the workspace on a portrait phone
+   Keep the query identical to PHONE_LAYOUT_QUERY (src/utils/phoneLayout.ts).
+
+   The desktop layout, a nav rail with a fixed-width panel beside it, does not fit a
+   phone: fifteen rail buttons are taller than the screen, and a panel next to the
+   rail is too narrow to use. Here instead:
+   - the call controls keep a row of their own at the top, never covered;
+   - the nav rail is a dock along the bottom, under the thumb, with a label under
+     each button, scrolling sideways, and the settings/apps switch at its end;
+   - an open panel is a sheet that fills the space between the two, and slides
+     down out of the way when closed (drag its handle or header down to close);
+   - the unsaved-changes chip sits at the top left, opposite the call controls.
+   The doubled selectors match the specificity of the compact-mode rules above
+   (also !important; a phone is always in compact mode), and come later, so they
+   win on a phone.
+   ===================================================== */
+
+@media (max-width: 767px) and (orientation: portrait) {
+  :root {
+    --phone-edge: 8px;
+    /* Top row: 10px gap + 48px call button + 8px gap. */
+    --phone-top: calc(var(--safe-top) + 66px);
+    /* A floating dock clears the home indicator without doubling the gap. */
+    --phone-bottom: max(8px, var(--safe-bottom));
+    /* 6px padding + 52px buttons + 6px padding + 2px border. */
+    --phone-dock-h: 66px;
+  }
+
+  /* ── Top row ── */
+
+  body .control-bar-container,
+  body.compact-mode .control-bar-container,
+  body.sidebar-right .control-bar-container,
+  body.sidebar-right.compact-mode .control-bar-container {
+    top: calc(var(--safe-top) + 10px) !important;
+    right: calc(var(--safe-right) + 12px) !important;
+    left: auto !important;
+  }
+
+  body .mode-switch-container,
+  body .mode-switch-container.sidebar-right {
+    top: calc(var(--safe-top) + 14px) !important;
+    left: calc(var(--safe-left) + 12px) !important;
+    right: auto !important;
+    bottom: auto !important;
+    flex-direction: row !important;
+  }
+
+  /* The dock has its own settings/apps switch (SidebarNavigation). */
+  body .mode-switch-container .mode-btn {
+    display: none !important;
+  }
+
+  /* At the top of the screen the save/undo popover opens downwards. */
+  body .mode-switch-container .save-actions {
+    top: calc(100% + 10px) !important;
+    bottom: auto !important;
+    left: 0 !important;
+    right: auto !important;
+  }
+
+  /* ── Sidebar: the dock at the bottom, the sheet above it ── */
+
+  body .sidebar,
+  body .sidebar.sidebar-right,
+  body.compact-mode .sidebar,
+  body.sidebar-right.compact-mode .sidebar {
+    top: var(--phone-top) !important;
+    left: calc(var(--safe-left) + var(--phone-edge)) !important;
+    right: calc(var(--safe-right) + var(--phone-edge)) !important;
+    bottom: var(--phone-bottom) !important;
+    flex-direction: column-reverse !important;
+    gap: 8px !important;
+  }
+
+  /* ── Dock ── */
+
+  body .sidebar .switcher-column,
+  body.compact-mode .sidebar .switcher-column {
+    flex: 0 0 auto;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 4px !important;
+    /* SidebarNavigation animates the rail's height on a mode switch. A dock's
+       height never changes, and the overflow it sets mid-animation would clip the
+       kwami tray, which opens upwards out of the dock. */
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 6px !important;
+    border-radius: 22px !important;
+  }
+
+  body .sidebar .header-section {
+    flex-direction: row !important;
+    align-items: center;
+    gap: 4px !important;
+  }
+
+  body .sidebar .nav-divider,
+  body.compact-mode .sidebar .nav-divider {
+    width: 1px;
+    height: 32px;
+    margin: 0 2px !important;
+    align-self: center;
+  }
+
+  body .sidebar .nav-groups {
+    flex: 1 1 auto;
+    flex-direction: row !important;
+    align-items: center;
+    gap: 2px !important;
+    min-width: 0;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    margin: -6px 0 !important;
+    padding: 6px 2px !important;
+    scroll-snap-type: x proximity;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  /* Buttons fade out at an end with more of them past it, rather than being cut,
+     which also says the row scrolls (SidebarNavigation sets the classes). */
+  body .sidebar .nav-groups.more-before {
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 20px);
+    mask-image: linear-gradient(to right, transparent, #000 20px);
+  }
+
+  body .sidebar .nav-groups.more-after {
+    -webkit-mask-image: linear-gradient(to left, transparent, #000 20px);
+    mask-image: linear-gradient(to left, transparent, #000 20px);
+  }
+
+  body .sidebar .nav-groups.more-before.more-after {
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 20px,
+      #000 calc(100% - 20px),
+      transparent
+    );
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 20px,
+      #000 calc(100% - 20px),
+      transparent
+    );
+  }
+
+  body .sidebar .nav-group {
+    display: contents !important;
+  }
+
+  body .sidebar .switcher-label,
+  body.compact-mode .sidebar .switcher-label,
+  body .sidebar .nav-spacer {
+    display: none !important;
+  }
+
+  body .sidebar .nav-btn,
+  body.compact-mode .sidebar .nav-btn {
+    width: 56px !important;
+    height: 52px !important;
+    flex-direction: column;
+    gap: 3px;
+    border-radius: 14px !important;
+    font-size: 21px !important;
+    scroll-snap-align: start;
+  }
+
+  body .sidebar .nav-btn:not(.active) {
+    background: transparent;
+  }
+
+  body .sidebar .nav-label {
+    display: block !important;
+    max-width: 52px;
+    font-size: 10px;
+    font-weight: 500;
+    line-height: 1.15;
+    letter-spacing: 0.1px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* The settings/apps switch changes what the dock holds, so it reads as a
+     control of its own rather than one more panel. */
+  body .sidebar .dock-mode-btn,
+  body .sidebar .dock-mode-btn:not(.active) {
+    display: flex !important;
+    flex-shrink: 0;
+    background: var(--surface-2);
+    border-color: var(--glass-border);
+  }
+
+  body .sidebar .kwami-active-btn,
+  body.compact-mode .sidebar .kwami-active-btn {
+    width: 46px !important;
+    height: 46px !important;
+    border-radius: 14px !important;
+  }
+
+  body .sidebar .kwami-preview,
+  body.compact-mode .sidebar .kwami-preview {
+    width: 30px !important;
+    height: 30px !important;
+    border-radius: 8px !important;
+  }
+
+  /* The kwami tray opens upwards out of the dock instead of sideways off the rail. */
+  body .sidebar .kwami-tray {
+    top: auto;
+    bottom: calc(100% + 16px);
+    left: -7px;
+    width: min(320px, calc(100vw - 2 * var(--phone-edge) - var(--safe-left) - var(--safe-right)));
+    min-width: 0;
+    max-width: none;
+    transform: translateY(8px);
+  }
+
+  body .sidebar .kwami-tray.visible {
+    transform: translateY(0);
+  }
+
+  body .sidebar .kwami-list {
+    max-height: min(45vh, 360px);
+  }
+
+  body .sidebar .kwami-item {
+    min-height: 48px;
+  }
+
+  body .sidebar .kwami-add-btn {
+    min-height: 48px;
+  }
+
+  /* ── Sheet ── */
+
+  body .sidebar .panel-column,
+  body.compact-mode .sidebar .panel-column {
+    flex: 1 1 0 !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    display: flex;
+    flex-direction: column;
+    border-radius: 22px;
+    transition:
+      transform 0.38s var(--ease-out),
+      opacity 0.28s ease !important;
+  }
+
+  /* Closed, the sheet slides down behind the dock (which stacks above it). */
+  body .sidebar.collapsed .panel-column {
+    transform: translateY(calc(100% + 120px));
+    pointer-events: none !important;
+  }
+
+  body .sidebar .panel-content-wrapper {
+    flex: 1 1 0;
+    min-height: 0;
+    height: auto;
+  }
+
+  body .sidebar .sheet-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    height: 18px;
+    touch-action: none;
+    cursor: grab;
+  }
+
+  body .sidebar .sheet-handle span {
+    width: 38px;
+    height: 5px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--text-secondary) 45%, transparent);
+  }
+
+  /* The panel's own header doubles as the drag surface (SidebarContent). */
+  body .sidebar .panel-content-wrapper > .panel-inner > .panel-header,
+  body.compact-mode .sidebar .panel-content-wrapper > .panel-inner > .panel-header {
+    padding: 4px 16px 12px !important;
+    touch-action: none;
+  }
+
+  /* Dragging a panel edge needs a mouse and a screen wider than the panel. */
+  body .sidebar .resize-handle {
+    display: none !important;
+  }
+
+  /* ── Toasts: above the dock, not over it ── */
+
+  .Vue-Toastification__container.bottom-left,
+  .Vue-Toastification__container.bottom-right,
+  .Vue-Toastification__container.bottom-center {
+    bottom: calc(var(--phone-bottom) + var(--phone-dock-h) + 8px) !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 var(--phone-edge) !important;
+  }
+
+  .Vue-Toastification__container .Vue-Toastification__toast {
+    margin-bottom: 8px !important;
+    border-radius: var(--radius-xl) !important;
+  }
+}
+
+/* =====================================================
+   NARROW PANELS - any screen under the compact-mode breakpoint
+   Panels were laid out for 280-680px. Flex and grid children default to
+   min-width: auto, so on a phone a row of options, a stats grid or a text input
+   (which has an intrinsic width) pushed the panel's content past its right edge,
+   and long unbroken strings (model ids, @kwami.io) did the same. Let them shrink
+   and wrap instead. :where() keeps this at zero specificity, so any component
+   that sets its own min-width or white-space still wins.
+   break-word, not anywhere: `anywhere` also shrinks every flex item's min-content
+   to a single character, which wrapped panel titles one letter per line.
+   ===================================================== */
+
+@media (max-width: 767px) {
+  :where(.sidebar .panel-column)
+    :where(
+      div,
+      section,
+      header,
+      footer,
+      form,
+      fieldset,
+      ul,
+      ol,
+      li,
+      label,
+      p,
+      input,
+      textarea,
+      select
+    ) {
+    min-width: 0;
+  }
+
+  :where(.sidebar .panel-column) {
+    overflow-wrap: break-word;
+  }
 }

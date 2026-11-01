@@ -925,12 +925,15 @@ onUnmounted(() => {
   color: var(--error);
 }
 
-:global(body.compact-mode) .player-content {
+/* Plain `body.compact-mode .x`, not `:global(body.compact-mode) .x`: Vue compiles
+   the latter to bare `body.compact-mode`, which put 10px of padding round the whole
+   app on every phone (tests/unit/scopedGlobalSelectors.test.ts). */
+body.compact-mode .player-content {
   gap: 10px;
 }
 
-:global(body.compact-mode) .slider-block,
-:global(body.compact-mode) .visualizer-card {
+body.compact-mode .slider-block,
+body.compact-mode .visualizer-card {
   padding: 10px;
 }
 

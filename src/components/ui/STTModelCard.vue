@@ -81,7 +81,7 @@ const providerIcon = computed(() => {
 // Get price per minute
 const pricePerMin = computed(() => {
   if (!hasPricing.value) return null;
-  return (props.model as InferenceSTTModel).pricing.scale_per_min;
+  return (props.model as InferenceSTTModel).pricing?.scale_per_min ?? null;
 });
 
 // Format price (per minute)

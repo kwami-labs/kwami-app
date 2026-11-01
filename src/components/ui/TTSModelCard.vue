@@ -83,7 +83,7 @@ const providerIcon = computed(() => {
 // Get price per million chars
 const pricePer1M = computed(() => {
   if (!hasPricing.value) return null;
-  return (props.model as InferenceTTSModel).pricing.scale_per_1m_chars;
+  return (props.model as InferenceTTSModel).pricing?.scale_per_1m_chars ?? null;
 });
 
 // Format price

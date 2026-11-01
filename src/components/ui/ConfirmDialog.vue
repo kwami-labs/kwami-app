@@ -80,12 +80,18 @@ function handleCancel() {
   -webkit-backdrop-filter: blur(8px);
   z-index: 10000;
   display: flex;
-  align-items: center;
   justify-content: center;
   padding: 24px;
+  /* A dialog taller than the screen (New Kwami on a landscape phone) scrolls.
+     Centred with align-items it overflowed upwards too, past the top edge, where
+     its header could not be scrolled back to; margin: auto centres it only while
+     it fits. */
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .confirm-dialog {
+  margin: auto;
   width: 100%;
   max-width: 420px;
   background: var(--surface-1);
@@ -93,6 +99,12 @@ function handleCancel() {
   border: 1px solid var(--glass-border);
   overflow: hidden;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+@media (max-width: 480px) {
+  .confirm-dialog-overlay {
+    padding: calc(var(--safe-top) + 16px) 12px calc(var(--safe-bottom) + 16px);
+  }
 }
 
 .confirm-dialog-header {

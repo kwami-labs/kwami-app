@@ -6,6 +6,7 @@ export const en = {
     energy: 'Energy',
     account: 'Account',
     apps: 'Apps',
+    settings: 'Settings',
     panels: {
       avatar: 'Avatar',
       audio: 'Audio',
@@ -234,7 +235,7 @@ export const en = {
     realtimeMultimodalDesc: 'Audio + Video',
     voiceNoKey: 'The agent has no key for this voice provider.',
     jarvisVoiceHint:
-      "Jarvis's voice is Gemini TTS with Charon (or Gemini Live, faster, from the Voice panel).",
+      "Jarvis's voice is ElevenLabs Flash with George (or Gemini TTS or Gemini Live, from the Voice panel).",
     useJarvisVoice: 'Use Jarvis voice',
   },
   ui: {
@@ -352,6 +353,7 @@ export const en = {
     backgroundGradient: 'Gradient',
     backgroundShuffle: 'Surprise me',
     backgroundDblclickHint: 'Double-click',
+    backgroundDoubleTapHint: 'Double-tap',
     backgroundDblclickHintRest: 'to change the video',
   },
   welcomeScreen: {
@@ -1146,6 +1148,7 @@ export const en = {
     allLanguages: 'All Languages',
     allGenders: 'All Genders',
     categoryOther: 'Other',
+    categoryCustom: 'My voices',
     multilingualVoices: 'Multilingual Voices',
     multilingualSupport: 'All {provider} voices support {language}',
     loadingVoices: 'Loading voices...',

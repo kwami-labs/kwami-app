@@ -78,7 +78,7 @@ const selStyle = computed(() => ({
 
 const pxInfo = computed(() => `${Math.round(sel.value.w)} × ${Math.round(sel.value.h)}`);
 
-// ── Mouse events ──────────────────────────────────────────────
+// ── Pointer events (mouse, pen and touch alike) ──────────────
 
 function onBoxDown(e: MouseEvent) {
   e.preventDefault();
@@ -197,14 +197,16 @@ function confirm() {
 
 onMounted(() => {
   initSel();
-  window.addEventListener('mousemove', onMouseMove);
-  window.addEventListener('mouseup', onMouseUp);
+  window.addEventListener('pointermove', onMouseMove);
+  window.addEventListener('pointerup', onMouseUp);
+  window.addEventListener('pointercancel', onMouseUp);
   window.addEventListener('resize', onResize);
 });
 
 onUnmounted(() => {
-  window.removeEventListener('mousemove', onMouseMove);
-  window.removeEventListener('mouseup', onMouseUp);
+  window.removeEventListener('pointermove', onMouseMove);
+  window.removeEventListener('pointerup', onMouseUp);
+  window.removeEventListener('pointercancel', onMouseUp);
   window.removeEventListener('resize', onResize);
 });
 </script>
@@ -219,7 +221,7 @@ onUnmounted(() => {
     <div class="dim-panel" :style="panelRight"></div>
 
     <!-- Selection box (transparent center — the real canvas shows through) -->
-    <div class="sel-box" :style="selStyle" @mousedown="onBoxDown">
+    <div class="sel-box" :style="selStyle" @pointerdown="onBoxDown">
       <!-- Rule-of-thirds guide lines -->
       <div class="grid-h" style="top: 33.33%"></div>
       <div class="grid-h" style="top: 66.66%"></div>
@@ -227,10 +229,10 @@ onUnmounted(() => {
       <div class="grid-v" style="left: 66.66%"></div>
 
       <!-- Corner handles -->
-      <div class="handle nw" @mousedown.stop="onCornerDown($event, 'nw')"></div>
-      <div class="handle ne" @mousedown.stop="onCornerDown($event, 'ne')"></div>
-      <div class="handle sw" @mousedown.stop="onCornerDown($event, 'sw')"></div>
-      <div class="handle se" @mousedown.stop="onCornerDown($event, 'se')"></div>
+      <div class="handle nw" @pointerdown.stop="onCornerDown($event, 'nw')"></div>
+      <div class="handle ne" @pointerdown.stop="onCornerDown($event, 'ne')"></div>
+      <div class="handle sw" @pointerdown.stop="onCornerDown($event, 'sw')"></div>
+      <div class="handle se" @pointerdown.stop="onCornerDown($event, 'se')"></div>
 
       <!-- Info badge above the box -->
       <div class="sel-info">
@@ -308,6 +310,19 @@ onUnmounted(() => {
 }
 
 /* Corner handles */
+.sel-box,
+.handle {
+  /* or a touch drag pans the page instead of moving the selection */
+  touch-action: none;
+}
+
+/* A 14px square is too small to land a finger on; widen the hit area, not the look. */
+.handle::before {
+  content: '';
+  position: absolute;
+  inset: -12px;
+}
+
 .handle {
   position: absolute;
   width: 14px;
