@@ -8,6 +8,7 @@ import { kwamiAdminEn, kwamiAdminEs } from './kwamiAdmin.locale';
 import { extrasEn, extrasEs } from './extras.locale';
 import { recallEn, recallEs } from './recall.locale';
 import { searchPanelEn, searchPanelEs } from './searchPanel.locale';
+import { avatarUnavailableEn, avatarUnavailableEs } from './avatarUnavailable.locale';
 import { en } from './translations/en';
 import { es } from './translations/es';
 
@@ -56,6 +57,7 @@ export const messages = {
     ...extrasEn,
     ...charterEn,
     ...brainEn,
+    ...avatarUnavailableEn,
   },
   es: {
     ...es,
@@ -68,6 +70,7 @@ export const messages = {
     ...extrasEs,
     ...charterEs,
     ...brainEs,
+    ...avatarUnavailableEs,
   },
 } as const;
 
