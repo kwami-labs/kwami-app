@@ -230,13 +230,13 @@ onUnmounted(() => {
 }
 
 /* Focus indicators styles */
-:global(body.focus-visible) .glass-panel:focus-within {
+body.focus-visible .glass-panel:focus-within {
   outline: 2px solid var(--accent-primary);
   outline-offset: 2px;
 }
 
 /* High contrast mode adjustments */
-:global(body.high-contrast) .glass-panel {
+body.high-contrast .glass-panel {
   border-width: 2px;
 }
 </style>
