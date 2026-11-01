@@ -351,4 +351,23 @@ input[type='range']::-moz-range-track {
   background: transparent;
   height: 6px;
 }
+
+/* Fingers: an 18px thumb on a 24px strip is hard to land on and hides under the
+   fingertip. A taller strip and a bigger thumb; the track itself keeps its look. */
+@media (pointer: coarse) {
+  .slider-track-wrapper,
+  input[type='range'] {
+    height: 36px;
+  }
+
+  input[type='range']::-webkit-slider-thumb {
+    width: 24px;
+    height: 24px;
+  }
+
+  input[type='range']::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+  }
+}
 </style>

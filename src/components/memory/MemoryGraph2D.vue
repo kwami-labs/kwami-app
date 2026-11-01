@@ -344,6 +344,69 @@ function findNodeAtPosition(canvasPos: Position2D): MemoryNode | null {
   return null;
 }
 
+/*
+ * Pointer input: a mouse, a pen or fingers. One pointer pans (or hovers); two
+ * fingers pinch to zoom about their midpoint, as the wheel zooms about the
+ * cursor. These were mouse events, so on a phone the graph could be tapped but
+ * never moved or zoomed.
+ */
+const activePointers = new Map<number, { x: number; y: number }>();
+let pinch: { distance: number; scale: number } | null = null;
+
+function pinchSpan() {
+  const [a, b] = [...activePointers.values()];
+  if (!a || !b) return null;
+  return {
+    distance: Math.hypot(a.x - b.x, a.y - b.y),
+    midX: (a.x + b.x) / 2,
+    midY: (a.y + b.y) / 2,
+  };
+}
+
+function onPointerDown(e: PointerEvent) {
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
+  canvasRef.value?.setPointerCapture?.(e.pointerId);
+  activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (activePointers.size === 2) {
+    const span = pinchSpan();
+    isDragging = false;
+    pinch = span ? { distance: Math.max(1, span.distance), scale: transform.value.scale } : null;
+    return;
+  }
+  onMouseDown(e);
+}
+
+function onPointerMove(e: PointerEvent) {
+  if (activePointers.has(e.pointerId)) {
+    activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  }
+  if (pinch && activePointers.size >= 2) {
+    const span = pinchSpan();
+    const rect = canvasRef.value?.getBoundingClientRect();
+    if (!span || !rect) return;
+    zoomAt(
+      span.midX - rect.left,
+      span.midY - rect.top,
+      pinch.scale * (span.distance / pinch.distance),
+    );
+    return;
+  }
+  onMouseMove(e);
+}
+
+function onPointerUp(e: PointerEvent) {
+  activePointers.delete(e.pointerId);
+  if (activePointers.size < 2) pinch = null;
+  // Lifting one finger of a pinch carries on as a pan from where the other is.
+  const rest = [...activePointers.values()][0];
+  if (rest) {
+    isDragging = true;
+    lastMousePos = { ...rest };
+    return;
+  }
+  onMouseUp();
+}
+
 function onMouseDown(e: MouseEvent) {
   isDragging = true;
   lastMousePos = { x: e.clientX, y: e.clientY };
@@ -434,12 +497,15 @@ function onWheel(e: WheelEvent) {
   const mouseY = e.clientY - rect.top;
 
   const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
-  const newScale = Math.max(0.2, Math.min(3, transform.value.scale * zoomFactor));
+  zoomAt(mouseX, mouseY, transform.value.scale * zoomFactor);
+}
 
-  // Zoom toward mouse position
+/** Zoom to `scale` (clamped) keeping the canvas point at (x, y) where it is. */
+function zoomAt(x: number, y: number, scale: number) {
+  const newScale = Math.max(0.2, Math.min(3, scale));
   const scaleDiff = newScale - transform.value.scale;
-  transform.value.x -= (mouseX * scaleDiff) / transform.value.scale;
-  transform.value.y -= (mouseY * scaleDiff) / transform.value.scale;
+  transform.value.x -= (x * scaleDiff) / transform.value.scale;
+  transform.value.y -= (y * scaleDiff) / transform.value.scale;
   transform.value.scale = newScale;
 }
 
@@ -489,10 +555,11 @@ onUnmounted(() => {
   <div ref="containerRef" class="graph-2d-container">
     <canvas
       ref="canvasRef"
-      @mousedown="onMouseDown"
-      @mousemove="onMouseMove"
-      @mouseup="onMouseUp"
-      @mouseleave="onMouseUp"
+      @pointerdown="onPointerDown"
+      @pointermove="onPointerMove"
+      @pointerup="onPointerUp"
+      @pointercancel="onPointerUp"
+      @pointerleave="onPointerUp"
       @click="onClick"
       @dblclick="onDoubleClick"
       @wheel="onWheel"
@@ -511,6 +578,8 @@ onUnmounted(() => {
 .graph-2d-container canvas {
   display: block;
   cursor: grab;
+  /* The graph takes drags and pinches itself; the page must not pan or zoom. */
+  touch-action: none;
 }
 
 .graph-2d-container canvas:active {

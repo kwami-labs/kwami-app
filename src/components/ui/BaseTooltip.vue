@@ -19,6 +19,13 @@ function showTooltip() {
   }, showDelay.value);
 }
 
+// Hover only means something to a mouse or pen. A tap fires the same enter
+// event and no leave, so on a phone the tooltip opened and stayed open.
+function onPointerEnter(e: PointerEvent) {
+  if (e.pointerType === 'touch') return;
+  showTooltip();
+}
+
 function hideTooltip() {
   if (showTimeout) {
     clearTimeout(showTimeout);
@@ -31,8 +38,8 @@ function hideTooltip() {
 <template>
   <div
     class="tooltip-wrapper"
-    @mouseenter="showTooltip"
-    @mouseleave="hideTooltip"
+    @pointerenter="onPointerEnter"
+    @pointerleave="hideTooltip"
     @focus="showTooltip"
     @blur="hideTooltip"
   >
