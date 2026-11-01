@@ -5,7 +5,6 @@ import { useKwami } from '@/composables/useKwami';
 
 const searchStore = useSearchStore();
 const { kwami } = useKwami();
-const containerRef = ref<HTMLElement | null>(null);
 
 const CARD_WIDTH = 280;
 const CARD_IMAGE_HEIGHT = 140;
@@ -52,14 +51,40 @@ watch(batchId, () => {
   cardPositions.value = {};
 });
 
+/**
+ * Fit the deck to the screen. At 280px a card plus the stagger of the cards
+ * behind it was wider than a phone, so the deck ran off the right edge; cards
+ * narrow to what the screen holds, and the deck is centred on its full spread.
+ */
+const EDGE = 16;
+// Image plus body, roughly; only used to keep the deck clear of the bottom.
+const CARD_HEIGHT_ESTIMATE = CARD_IMAGE_HEIGHT + 210;
+const viewportWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1280);
+const viewportHeight = ref(typeof window !== 'undefined' ? window.innerHeight : 800);
+const deckSpread = computed(() => Math.max(0, results.value.length - 1) * DECK_OFFSET);
+const cardWidth = computed(() =>
+  Math.max(200, Math.min(CARD_WIDTH, viewportWidth.value - 2 * EDGE - deckSpread.value)),
+);
+
+function onViewportResize() {
+  viewportWidth.value = window.innerWidth;
+  viewportHeight.value = window.innerHeight;
+}
+
+// The deck container is fixed over the whole viewport, so the viewport size is its
+// size, and reading the refs re-places the deck when the screen turns or resizes.
 function getDeckBase(): { x: number; y: number } {
-  const el = containerRef.value;
-  if (!el) return { x: 50, y: 50 };
-  const rect = el.getBoundingClientRect();
-  return {
-    x: rect.left + rect.width * 0.5 - CARD_WIDTH * 0.5,
-    y: rect.top + rect.height * 0.6 - CARD_IMAGE_HEIGHT * 0.5,
-  };
+  const vw = viewportWidth.value;
+  const vh = viewportHeight.value;
+  const width = cardWidth.value;
+  const spread = deckSpread.value;
+  const x = (vw - width - spread) * 0.5;
+  // Clear of the call controls at the top and, on a phone, of the dock at the
+  // bottom (main.css, PHONES). 96px covers the dock or a desktop's bottom chips.
+  const preferredY = vh * 0.6 - CARD_IMAGE_HEIGHT * 0.5;
+  const lowestY = vh - 96 - CARD_HEIGHT_ESTIMATE - spread;
+  const y = Math.max(80, Math.min(preferredY, lowestY));
+  return { x: Math.max(EDGE, x), y };
 }
 
 function getCardPosition(index: number): { x: number; y: number } {
@@ -127,11 +152,13 @@ function onPointerUpGlobal() {
 }
 
 onMounted(() => {
+  window.addEventListener('resize', onViewportResize);
   window.addEventListener('pointermove', onPointerMoveGlobal);
   window.addEventListener('pointerup', onPointerUpGlobal);
   window.addEventListener('pointerleave', onPointerUpGlobal);
 });
 onUnmounted(() => {
+  window.removeEventListener('resize', onViewportResize);
   window.removeEventListener('pointermove', onPointerMoveGlobal);
   window.removeEventListener('pointerup', onPointerUpGlobal);
   window.removeEventListener('pointerleave', onPointerUpGlobal);
@@ -146,7 +173,6 @@ onUnmounted(() => {
       results.length > 0 &&
       !searchStore.isWindowed
     "
-    ref="containerRef"
     class="deck-container"
     aria-label="Web search results"
   >
@@ -167,7 +193,7 @@ onUnmounted(() => {
       rel="noopener noreferrer"
       class="deck-card"
       :style="{
-        width: `${CARD_WIDTH}px`,
+        width: `${cardWidth}px`,
         left: `${getCardPosition(i).x}px`,
         top: `${getCardPosition(i).y}px`,
         zIndex: 100 + i,
@@ -252,7 +278,9 @@ onUnmounted(() => {
 
 .deck-close {
   position: absolute;
-  top: 20px;
+  /* Below the call controls (App.vue, top-right): at the old top/right of 20px it
+     sat squarely on the call button. */
+  top: 80px;
   right: 20px;
   z-index: 200;
   width: 44px;
@@ -303,6 +331,8 @@ onUnmounted(() => {
   animation: deckCardEnter 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   opacity: 0;
   cursor: grab;
+  /* or a finger drag is taken as a pan and the card never moves */
+  touch-action: none;
 }
 .deck-card:active {
   cursor: grabbing;
@@ -312,6 +342,13 @@ onUnmounted(() => {
     0 16px 48px rgba(0, 0, 0, 0.35),
     0 0 0 1px rgba(255, 255, 255, 0.1) inset,
     0 0 40px rgba(0, 217, 255, 0.08);
+}
+
+@media (max-width: 767px) and (orientation: portrait) {
+  .deck-close {
+    top: calc(var(--phone-top) + 4px);
+    right: calc(var(--safe-right) + 12px);
+  }
 }
 
 @keyframes deckCardEnter {

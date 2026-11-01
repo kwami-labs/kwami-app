@@ -70,9 +70,11 @@ function clamp(value: number, min: number, max: number): number {
  * the left edge instead of keeping it on screen.
  */
 export function clampRect(rect: PanelRect, limits: PanelSizeLimits = {}): PanelRect {
-  const minWidth = limits.minWidth ?? MIN_PANEL_WIDTH;
-  const minHeight = limits.minHeight ?? MIN_PANEL_HEIGHT;
   const { width: vw, height: vh } = viewportSize();
+  // The minimums give way to a viewport smaller than them: a 360px floor on a
+  // 320px phone put the panel's right edge, and its close button, off-screen.
+  const minWidth = Math.min(limits.minWidth ?? MIN_PANEL_WIDTH, vw);
+  const minHeight = Math.min(limits.minHeight ?? MIN_PANEL_HEIGHT, vh);
   const width = clamp(Math.round(rect.width), minWidth, Math.max(minWidth, vw));
   const height = clamp(Math.round(rect.height), minHeight, Math.max(minHeight, vh));
   return {

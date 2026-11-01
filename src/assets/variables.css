@@ -6,6 +6,15 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 :root {
+  /* The screen's unsafe edges: notch, rounded corners, home indicator. Zero
+     except on such phones, with viewport-fit=cover (index.html). Read through
+     these rather than env() directly, so a test can stand in for an iPhone,
+     which no test browser can emulate (e2e/phone.spec.ts). */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+
   /* Glass panel theme - deeper, more luxurious */
   --glass-bg: rgba(8, 10, 18, 0.88);
   --glass-border: rgba(255, 255, 255, 0.06);
