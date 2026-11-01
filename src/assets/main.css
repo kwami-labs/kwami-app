@@ -592,4 +592,39 @@ body.sidebar-right.compact-mode .control-bar-container {
   body .sidebar .resize-handle {
     display: none !important;
   }
+
+  /* Neither do the small/medium/large size presets: the panel is the screen's width. */
+  body .sidebar .panel-header-controls .header-control-group:not(.close-group) {
+    display: none !important;
+  }
+
+  /* Panels were laid out for 280-680px. Flex and grid children default to
+     min-width: auto, so on a phone a row of options, a stats grid or a text input
+     (which has an intrinsic width) pushed the panel's content past its right edge,
+     and long unbroken strings (model ids, @kwami.io) did the same. Let them shrink
+     and wrap instead. :where() keeps this at zero specificity, so any component
+     that sets its own min-width or white-space still wins. */
+  :where(.sidebar .panel-column)
+    :where(
+      div,
+      section,
+      header,
+      footer,
+      form,
+      fieldset,
+      ul,
+      ol,
+      li,
+      label,
+      p,
+      input,
+      textarea,
+      select
+    ) {
+    min-width: 0;
+  }
+
+  :where(.sidebar .panel-column) {
+    overflow-wrap: anywhere;
+  }
 }
