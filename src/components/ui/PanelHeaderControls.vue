@@ -56,6 +56,18 @@ function applyPanelRatio(ratio: PanelRatio) {
   uiStore.setPanelWidth(targetWidth);
 }
 
+/**
+ * One button that steps small → medium → large → small, standing in for the
+ * three below when the panel is narrow (see the container query in the styles):
+ * at 320px a header with a badge, the close button and three size buttons was
+ * wider than the panel and cut its last button off.
+ */
+const nextSizeButton = computed(() => {
+  const order = baseSizeButtons.value;
+  const current = order.findIndex((b) => isActiveRatio(b.ratio));
+  return order[(current + 1) % order.length]!;
+});
+
 function closePanel() {
   if (uiStore.isPanelOpen) {
     uiStore.togglePanel();
@@ -87,6 +99,14 @@ function closePanel() {
         @click="applyPanelRatio(button.ratio)"
       >
         <iconify-icon :icon="button.icon"></iconify-icon>
+      </button>
+      <button
+        class="size-btn size-cycle-btn"
+        :title="nextSizeButton.label"
+        :aria-label="nextSizeButton.label"
+        @click="applyPanelRatio(nextSizeButton.ratio)"
+      >
+        <iconify-icon :icon="nextSizeButton.icon"></iconify-icon>
       </button>
     </div>
 
@@ -155,6 +175,21 @@ function closePanel() {
 
 .close-btn iconify-icon {
   font-size: 15px;
+}
+
+/* SidebarContent makes the panel a `panel` size container. */
+.size-cycle-btn {
+  display: none;
+}
+
+@container panel (max-width: 380px) {
+  .size-btn:not(.size-cycle-btn) {
+    display: none;
+  }
+
+  .size-cycle-btn {
+    display: flex;
+  }
 }
 
 .header-controls-divider {

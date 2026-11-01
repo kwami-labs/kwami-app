@@ -1251,7 +1251,10 @@ onMounted(() => {
 .stat-card {
   background: var(--surface-2);
   border-radius: 8px;
-  padding: 12px;
+  /* Narrow sides: three cards across a 280px compact panel left ~50px for the
+     label, and MESSAGES broke in the middle of the word. */
+  padding: 12px 6px;
+  min-width: 0;
   text-align: center;
   cursor: pointer;
   transition: all 0.2s;
@@ -1276,6 +1279,11 @@ onMounted(() => {
   margin-top: 4px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  overflow-wrap: normal;
+}
+body.compact-mode .stat-label {
+  font-size: 10px;
+  letter-spacing: 0.2px;
 }
 .stat-sub {
   font-size: 9px;

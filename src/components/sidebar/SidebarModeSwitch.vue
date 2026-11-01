@@ -193,7 +193,13 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
     0 0 14px color-mix(in srgb, var(--accent-primary) 16%, transparent),
     var(--glass-shadow);
   color: var(--text-primary);
-  transform: scale(1.08);
+}
+
+/* Under a mouse only: a touch screen keeps :hover on the last thing tapped. */
+@media (hover: hover) {
+  .mode-btn:hover:not(:disabled) {
+    transform: scale(1.08);
+  }
 }
 
 .mode-btn:disabled {

@@ -2,6 +2,7 @@
 import { ref, computed, onUnmounted } from 'vue';
 import { useUIStore } from '@/stores/ui';
 import { useThemeStore } from '@/stores/theme';
+import { isPhoneLayout } from '@/utils/phoneLayout';
 
 const uiStore = useUIStore();
 const themeStore = useThemeStore();
@@ -84,6 +85,63 @@ function resetWidth() {
   uiStore.resetPanelWidth();
 }
 
+/*
+ * Phone sheet: drag the handle or the panel header down to close it.
+ *
+ * Only in the phone layout (utils/phoneLayout.ts), where the panel is a sheet
+ * above the dock. The sheet follows the finger; letting go past a quarter of its
+ * height, or flicking down, closes the panel, and anything less springs back.
+ */
+const panelRef = ref<HTMLElement | null>(null);
+let drag: { id: number; startY: number; lastY: number; lastT: number; v: number } | null = null;
+// The panel's own header only: nested headers (the memory node details) stay inert.
+const DRAG_SURFACE = '.sheet-handle, .panel-content-wrapper > .panel-inner > .panel-header';
+const NOT_A_DRAG = 'button, a, input, select, textarea, label, [role="button"], [contenteditable]';
+
+function onSheetPointerDown(e: PointerEvent) {
+  const el = panelRef.value;
+  if (!el || !uiStore.isPanelOpen || !isPhoneLayout()) return;
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
+  const target = e.target as HTMLElement | null;
+  if (!target?.closest(DRAG_SURFACE) || target.closest(NOT_A_DRAG)) return;
+  drag = { id: e.pointerId, startY: e.clientY, lastY: e.clientY, lastT: e.timeStamp, v: 0 };
+  el.setPointerCapture?.(e.pointerId);
+  el.style.transition = 'none';
+}
+
+function onSheetPointerMove(e: PointerEvent) {
+  const el = panelRef.value;
+  if (!el || !drag || e.pointerId !== drag.id) return;
+  const dt = Math.max(1, e.timeStamp - drag.lastT);
+  drag.v = (e.clientY - drag.lastY) / dt;
+  drag.lastY = e.clientY;
+  drag.lastT = e.timeStamp;
+  // Down follows the finger; up only gives a little, so the sheet feels anchored.
+  const dy = e.clientY - drag.startY;
+  el.style.transform = `translateY(${dy > 0 ? dy : dy / 6}px)`;
+}
+
+function onSheetPointerUp(e: PointerEvent) {
+  const el = panelRef.value;
+  if (!el || !drag || e.pointerId !== drag.id) return;
+  const dy = e.clientY - drag.startY;
+  // Speed as of the last move. A finger that stopped before lifting is not
+  // flicking, however fast its last step was.
+  const resting = e.timeStamp - drag.lastT > 100;
+  const flick = !resting && drag.v > 0.6 && dy > 24;
+  drag = null;
+  el.releasePointerCapture?.(e.pointerId);
+  el.style.transition = '';
+  if (dy > el.offsetHeight * 0.25 || flick) {
+    // Hand over to the closed state's own transform (main.css) from where the finger
+    // left the sheet, rather than snapping back to the top first.
+    el.style.transform = '';
+    uiStore.togglePanel();
+  } else {
+    el.style.transform = '';
+  }
+}
+
 // Cleanup on unmount
 onUnmounted(() => {
   document.removeEventListener('mousemove', onMouseMove);
@@ -92,7 +150,17 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="panel-column glass-panel" :style="panelStyle">
+  <div
+    ref="panelRef"
+    class="panel-column glass-panel"
+    :style="panelStyle"
+    @pointerdown="onSheetPointerDown"
+    @pointermove="onSheetPointerMove"
+    @pointerup="onSheetPointerUp"
+    @pointercancel="onSheetPointerUp"
+  >
+    <!-- Phone sheet grab handle; hidden elsewhere (main.css, PHONES). -->
+    <div class="sheet-handle" aria-hidden="true"><span></span></div>
     <div class="panel-content-wrapper">
       <slot></slot>
     </div>
@@ -117,6 +185,9 @@ onUnmounted(() => {
 .panel-column {
   width: 320px;
   max-height: 100%;
+  /* Panel content can adapt to the panel's width, not the screen's
+     (PanelHeaderControls folds its size buttons into one when narrow). */
+  container: panel / inline-size;
   transition:
     width var(--duration-slow) var(--ease-out),
     min-width var(--duration-slow) var(--ease-out),
@@ -173,6 +244,10 @@ onUnmounted(() => {
   background-repeat: repeat;
   mix-blend-mode: overlay;
   border-radius: var(--radius-xl);
+}
+
+.sheet-handle {
+  display: none;
 }
 
 .panel-content-wrapper {

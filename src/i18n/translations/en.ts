@@ -6,6 +6,7 @@ export const en = {
     energy: 'Energy',
     account: 'Account',
     apps: 'Apps',
+    settings: 'Settings',
     panels: {
       avatar: 'Avatar',
       audio: 'Audio',
@@ -352,6 +353,7 @@ export const en = {
     backgroundGradient: 'Gradient',
     backgroundShuffle: 'Surprise me',
     backgroundDblclickHint: 'Double-click',
+    backgroundDoubleTapHint: 'Double-tap',
     backgroundDblclickHintRest: 'to change the video',
   },
   welcomeScreen: {

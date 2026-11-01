@@ -17,7 +17,21 @@ export default defineConfig({
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    // Opt-in: the phone layout on WebKit, the engine under iOS Safari. Off by
+    // default because CI installs Chromium only (ci.yml); locally,
+    // `bunx playwright install webkit` once, then PLAYWRIGHT_WEBKIT=1.
+    ...(process.env.PLAYWRIGHT_WEBKIT
+      ? [
+          {
+            name: 'webkit-phone',
+            testMatch: /phone\.spec\.ts/,
+            use: { browserName: 'webkit' as const },
+          },
+        ]
+      : []),
+  ],
   webServer: {
     // --mode test loads .env.test so no real Supabase/API credentials are used.
     command: `bun run dev --mode test --port ${PORT} --strictPort`,

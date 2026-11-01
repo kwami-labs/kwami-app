@@ -172,9 +172,12 @@ defineExpose({ scrollListToBottom });
   box-shadow: 0 0 16px var(--accent-glow);
 }
 
-.kwami-active-btn:hover {
-  transform: scale(1.08);
-  box-shadow: 0 0 24px var(--accent-glow);
+/* Under a mouse only: a touch screen keeps :hover on the last thing tapped. */
+@media (hover: hover) {
+  .kwami-active-btn:hover {
+    transform: scale(1.08);
+    box-shadow: 0 0 24px var(--accent-glow);
+  }
 }
 
 .kwami-selector.expanded .kwami-active-btn {

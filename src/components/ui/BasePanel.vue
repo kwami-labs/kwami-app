@@ -79,25 +79,44 @@ const hasActionSlot = computed(() => Boolean(slots.actions));
   color: var(--accent-primary);
 }
 
+.panel-icon {
+  flex-shrink: 0;
+}
+
+/* The title takes the room the header controls leave, and ends in an ellipsis
+   when that is not enough, instead of wrapping into a column of letters. */
 h2 {
   font-size: 15px;
   font-weight: 600;
   letter-spacing: 0.3px;
   color: var(--text-primary);
   margin: 0;
-  flex: 1;
+  flex: 1 1 auto;
+  /* Never squeezed out entirely: a few letters and an ellipsis at worst. */
+  min-width: 3.5em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .header-actions {
   display: flex;
   align-items: center;
   gap: 8px;
-  width: 100%;
+  flex: 0 0 auto;
+  margin-left: auto;
   justify-content: flex-end;
 }
 
+/* Sidebar on the right: the controls follow straight after the title. */
 .header-actions.sidebar-right {
   justify-content: flex-start;
+  flex: 1 1 auto;
+  margin-left: 0;
+}
+
+.panel-header:has(.header-actions.sidebar-right) h2 {
+  flex: 0 1 auto;
 }
 
 .panel-body {
