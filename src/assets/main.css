@@ -550,3 +550,46 @@ body.sidebar-right .control-bar-container {
 body.sidebar-right.compact-mode .control-bar-container {
   left: 12px !important;
 }
+
+/* =====================================================
+   PHONES - the workspace on a narrow screen
+   Below the compact-mode breakpoint (stores/ui.ts, 768px) the desktop layout, a
+   fixed-width panel beside the nav rail, was wider than the screen: panels were cut
+   off on the right and covered the energy badge and the call button. Here:
+   - the call controls keep their own row at the top and are never covered;
+   - the mode switch and the save chip keep theirs at the bottom;
+   - an open panel takes exactly the width left beside the rail.
+   The doubled selectors match the specificity of the compact-mode rules above
+   (also !important), and come later, so they win on a phone.
+   ===================================================== */
+
+@media (max-width: 767px) {
+  body.compact-mode .sidebar,
+  body .sidebar {
+    top: 64px !important;
+    bottom: 76px !important;
+  }
+
+  body.compact-mode .sidebar:not(.collapsed),
+  body .sidebar:not(.collapsed) {
+    right: 12px !important;
+  }
+
+  body.sidebar-right.compact-mode .sidebar:not(.collapsed),
+  body .sidebar.sidebar-right:not(.collapsed) {
+    left: 12px !important;
+  }
+
+  body.compact-mode .sidebar:not(.collapsed) .panel-column,
+  body .sidebar:not(.collapsed) .panel-column {
+    flex: 1 1 auto !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+  }
+
+  /* Dragging a panel edge needs a mouse and a screen wider than the panel. */
+  body .sidebar .resize-handle {
+    display: none !important;
+  }
+}
