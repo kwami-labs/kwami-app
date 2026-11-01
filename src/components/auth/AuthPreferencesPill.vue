@@ -292,7 +292,7 @@ function toggleTheme() {
      46), so both corners stay live while the login panel is open. */
   position: fixed;
   right: 20px;
-  bottom: 20px;
+  bottom: calc(var(--safe-bottom) + 20px);
   z-index: 47;
   display: flex;
   align-items: center;
@@ -463,6 +463,14 @@ function toggleTheme() {
 .menu-pop-leave-to {
   opacity: 0;
   transform: translateY(6px) scale(0.96);
+}
+
+/* Narrow screens: up a little, so AuthPage's footer fits underneath. */
+@media (max-width: 600px) {
+  .prefs-pill {
+    right: 12px;
+    bottom: calc(var(--safe-bottom) + 30px);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

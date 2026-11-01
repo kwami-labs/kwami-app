@@ -149,7 +149,7 @@ const recordLabel = computed(() =>
      so the pill stays live while the login panel is open. */
   position: fixed;
   left: 20px;
-  bottom: 20px;
+  bottom: calc(var(--safe-bottom) + 20px);
   z-index: 47;
   display: flex;
   align-items: center;
@@ -336,6 +336,14 @@ const recordLabel = computed(() =>
 .soundtrack-pill--compact
   .pill-btn:not(.pill-btn--main):not(.pill-btn--rate):not(.pill-btn--record) {
   display: none;
+}
+
+/* Narrow screens: up a little, so AuthPage's footer fits underneath. */
+@media (max-width: 600px) {
+  .soundtrack-pill {
+    left: 12px;
+    bottom: calc(var(--safe-bottom) + 30px);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -24,15 +24,41 @@ const youtubeOn = computed(() => Boolean(currentTrack.value?.youtube));
  * the login chrome, or an open panel are someone else's gesture.
  */
 function onBackgroundDblClick(event: MouseEvent) {
+  // A double-tap already shuffled; some phones follow it with a dblclick too.
+  if (performance.now() - lastDoubleTapAt < 600) return;
   if (loginOpen.value) return;
   if (isAuthChromeTarget(event.target)) return;
   if (hitsKwami(event.clientX, event.clientY)) return;
   shuffle();
 }
+
+/**
+ * The same gesture by touch. Phones do not reliably turn two taps into a
+ * dblclick, so two quick taps close together count as one here.
+ */
+const isTouchScreen =
+  typeof window !== 'undefined' && !!window.matchMedia?.('(pointer: coarse)').matches;
+let lastTap: { t: number; x: number; y: number } | null = null;
+let lastDoubleTapAt = -Infinity;
+
+function onBackgroundPointerUp(event: PointerEvent) {
+  if (event.pointerType !== 'touch') return;
+  const now = performance.now();
+  const prev = lastTap;
+  lastTap = { t: now, x: event.clientX, y: event.clientY };
+  if (!prev || now - prev.t > 320) return;
+  if (Math.hypot(event.clientX - prev.x, event.clientY - prev.y) > 40) return;
+  lastTap = null;
+  if (loginOpen.value) return;
+  if (isAuthChromeTarget(event.target)) return;
+  if (hitsKwami(event.clientX, event.clientY)) return;
+  lastDoubleTapAt = now;
+  shuffle();
+}
 </script>
 
 <template>
-  <div class="page" @dblclick="onBackgroundDblClick">
+  <div class="page" @dblclick="onBackgroundDblClick" @pointerup="onBackgroundPointerUp">
     <WelcomeVideoBackground />
 
     <!-- A blue glow tuned for the painted gradient; over a video it only
@@ -50,7 +76,9 @@ function onBackgroundDblClick(event: MouseEvent) {
     <SoundtrackPill :login-open="loginOpen" />
 
     <p class="video-hint" :class="{ 'video-hint--hidden': loginOpen }">
-      <span>{{ t('auth.backgroundDblclickHint') }}</span>
+      <span>{{
+        isTouchScreen ? t('auth.backgroundDoubleTapHint') : t('auth.backgroundDblclickHint')
+      }}</span>
       <span>{{ t('auth.backgroundDblclickHintRest') }}</span>
     </p>
     <AuthPreferencesPill />
@@ -141,7 +169,7 @@ function onBackgroundDblClick(event: MouseEvent) {
 .auth-footer {
   position: fixed;
   left: 50%;
-  bottom: 20px;
+  bottom: calc(var(--safe-bottom) + 20px);
   transform: translateX(-50%);
   text-align: center;
   z-index: 6;
@@ -159,7 +187,7 @@ function onBackgroundDblClick(event: MouseEvent) {
   /* Same corner as AuthPreferencesPill (right/bottom 20px, ~42px tall). */
   position: fixed;
   right: 20px;
-  bottom: 70px;
+  bottom: calc(var(--safe-bottom) + 70px);
   z-index: 47;
   display: flex;
   flex-direction: column;
@@ -186,6 +214,24 @@ function onBackgroundDblClick(event: MouseEvent) {
 @media (max-width: 900px) {
   .title-sub {
     top: 60%;
+  }
+}
+
+/* Narrow screens: the two corner pills leave no room between them for the
+   footer, which sat on top of both. It goes underneath them instead; the pills
+   (SoundtrackPill, AuthPreferencesPill) move up to make room at the same width. */
+@media (max-width: 600px) {
+  .auth-footer {
+    bottom: calc(var(--safe-bottom) + 8px);
+    white-space: nowrap;
+  }
+
+  .auth-footer p {
+    font-size: 10px;
+  }
+
+  .video-hint {
+    bottom: calc(var(--safe-bottom) + 84px);
   }
 }
 </style>
