@@ -14,32 +14,45 @@ import TTSTab from './tabs/TTSTab.vue';
 import RealtimeTab from './tabs/RealtimeTab.vue';
 import BrainFlow from './BrainFlow.vue';
 import BrainSettings from './BrainSettings.vue';
-import { JARVIS_VOICE } from '@/lib/brain';
-import { GEMINI_STANDARD, VOICE_PERSONAS } from '@/lib/voicePersonas';
+import { JARVIS_VOICE, voiceProviderHasKey } from '@/lib/brain';
+import { GEMINI_STANDARD, JARVIS_STANDARD, VOICE_PERSONAS } from '@/lib/voicePersonas';
 
 const voiceStore = useVoiceStore();
 const { t } = useI18n();
 const { llm, stt, tts, realtime, pipelineMode, modelsUI, brainStatus } = storeToRefs(voiceStore);
 
-// Jarvis's voice (2026-10-09): Gemini TTS on the all-Gemini standard pipeline,
-// or Gemini Live as the faster option -- both are fine. Offered when the
-// voice is neither, or when its provider has no key on the agent.
+// Jarvis's voice: Gemini listening and thinking with ElevenLabs speaking
+// (2026-10-19, a paid TTS instead of the free-tier Gemini one), or one of the
+// other character engines (Gemini TTS, Gemini Live). Offered when the voice is
+// on none of them, or when one of its providers has no key on the agent.
+const CHARACTER_TTS: readonly string[] = [
+  JARVIS_STANDARD.tts.provider,
+  GEMINI_STANDARD.tts.provider,
+];
 const voiceIsJarvis = computed(() =>
   pipelineMode.value === 'realtime'
     ? realtime.value.provider === JARVIS_VOICE.provider
-    : stt.value.provider === GEMINI_STANDARD.stt.provider &&
-      llm.value.provider === GEMINI_STANDARD.llm.provider &&
-      tts.value.provider === GEMINI_STANDARD.tts.provider,
+    : stt.value.provider === JARVIS_STANDARD.stt.provider &&
+      llm.value.provider === JARVIS_STANDARD.llm.provider &&
+      CHARACTER_TTS.includes(tts.value.provider),
 );
 const voiceProviderMissingKey = computed(() => {
-  const provider = pipelineMode.value === 'realtime' ? realtime.value.provider : 'google';
-  return voiceIsJarvis.value && brainStatus.value?.voiceProviders?.[provider] === false;
+  const status = brainStatus.value;
+  const missing =
+    pipelineMode.value === 'realtime'
+      ? !voiceProviderHasKey(status, 'realtime', realtime.value.provider)
+      : !voiceProviderHasKey(status, 'stt', stt.value.provider) ||
+        !voiceProviderHasKey(status, 'llm', llm.value.provider) ||
+        !voiceProviderHasKey(status, 'tts', tts.value.provider);
+  return voiceIsJarvis.value && missing;
 });
 function useJarvisVoice() {
   const jarvis = VOICE_PERSONAS[0];
-  voiceStore.updateSTT({ ...GEMINI_STANDARD.stt });
-  voiceStore.updateLLM({ ...GEMINI_STANDARD.llm });
-  voiceStore.updateTTS({ ...GEMINI_STANDARD.tts, voice: jarvis.voice, style: jarvis.style });
+  voiceStore.updateSTT({ ...JARVIS_STANDARD.stt });
+  voiceStore.updateLLM({ ...JARVIS_STANDARD.llm });
+  // The direction is kept although ElevenLabs does not read it: a set
+  // direction is what locks the voice against the agent's own switching.
+  voiceStore.updateTTS({ ...JARVIS_STANDARD.tts, style: jarvis.style });
   voiceStore.updateRealtime({ ...JARVIS_VOICE, style: jarvis.style });
   voiceStore.setPipelineMode('stt-llm-tts');
 }

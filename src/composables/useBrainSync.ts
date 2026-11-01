@@ -1,5 +1,7 @@
 import { onBeforeUnmount, onMounted, watch, type Ref } from 'vue';
 import type { Kwami } from 'kwami';
+import { useI18n } from 'vue-i18n';
+import { useToast } from 'vue-toastification';
 import { brainPayload } from '@/lib/brain';
 import { useVoiceStore } from '@/stores/voice';
 import { sendRawConfigUpdate } from '@/lib/agentConfigUpdate';
@@ -23,6 +25,8 @@ export function sendBrainConfig(instance: Kwami, voiceStore: ReturnType<typeof u
 
 export function useBrainSync(kwami: Ref<Kwami | null>, isConnected: Ref<boolean>) {
   const voiceStore = useVoiceStore();
+  const toast = useToast();
+  const { t } = useI18n();
   let timer: ReturnType<typeof setTimeout> | null = null;
 
   watch(
@@ -39,6 +43,9 @@ export function useBrainSync(kwami: Ref<Kwami | null>, isConnected: Ref<boolean>
   function onAgentMessage(event: Event) {
     const detail = (event as CustomEvent).detail as { type?: string } | undefined;
     if (detail?.type === 'brain_status') voiceStore.applyBrainStatus(detail);
+    // The realtime model failed for good and the agent moved the call to the
+    // standard pipeline rather than hang up: say so, or the new voice is a mystery.
+    if (detail?.type === 'voice_fallback') toast.warning(t('voicePersonas.realtimeFellBack'));
   }
 
   onMounted(() => window.addEventListener('kwami:agent_message', onAgentMessage));

@@ -59,7 +59,8 @@ export interface InferenceSTTModel {
   speed: 'fast' | 'standard' | 'slow';
   tier: 'flagship' | 'standard' | 'budget';
   description: string | null;
-  pricing: STTPricing;
+  /** Absent on a model only the plugin catalogue lists (our own key). */
+  pricing?: STTPricing;
 }
 
 export interface InferenceSTTResponse {
@@ -97,7 +98,8 @@ export interface InferenceTTSModel {
   speed: 'fast' | 'standard' | 'slow';
   tier: 'flagship' | 'standard' | 'budget';
   description: string | null;
-  pricing: TTSPricing;
+  /** Absent on a model only the plugin catalogue lists (our own key). */
+  pricing?: TTSPricing;
 }
 
 export interface InferenceTTSResponse {

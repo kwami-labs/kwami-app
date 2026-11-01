@@ -66,10 +66,17 @@ export interface BrainTaskStatus {
   steps?: { goal: string; difficulty: string; model: string; ok: boolean }[];
 }
 
+/** A stage of the voice pipeline, as the agent reports its providers. */
+export type VoiceStage = 'stt' | 'tts' | 'llm' | 'realtime';
+export const VOICE_STAGES: readonly VoiceStage[] = ['stt', 'tts', 'llm', 'realtime'];
+
 export interface BrainStatus {
   enabled: boolean;
   providers: Partial<Record<BrainProvider, boolean>>;
+  /** Realtime providers by name (google, openai, aws): the agent's older, flat report. */
   voiceProviders: Record<string, boolean>;
+  /** Every provider per stage and whether its key is on the agent; empty from older agents. */
+  voiceKeys: Partial<Record<VoiceStage, Record<string, boolean>>>;
   tavily: boolean;
   usableModels: string[];
   spend: { month: string; usd: number; budgetUsd: number; byModel: Record<string, number> };
@@ -269,6 +276,89 @@ export function modelUsable(model: BrainModel, status: BrainStatus | null): bool
   return status.providers[model.provider] !== false;
 }
 
+/** The env var each voice provider needs on the agent, for the "no key" hint. */
+export const VOICE_KEY_NAMES: Record<VoiceStage, Record<string, string>> = {
+  stt: {
+    deepgram: 'DEEPGRAM_API_KEY',
+    openai: 'OPENAI_API_KEY',
+    assemblyai: 'ASSEMBLYAI_API_KEY',
+    gemini: 'GOOGLE_API_KEY',
+    google: 'GOOGLE_APPLICATION_CREDENTIALS',
+    elevenlabs: 'ELEVEN_API_KEY',
+    cartesia: 'CARTESIA_API_KEY',
+  },
+  tts: {
+    openai: 'OPENAI_API_KEY',
+    elevenlabs: 'ELEVEN_API_KEY',
+    cartesia: 'CARTESIA_API_KEY',
+    deepgram: 'DEEPGRAM_API_KEY',
+    google: 'GOOGLE_APPLICATION_CREDENTIALS',
+    gemini: 'GOOGLE_API_KEY',
+    rime: 'LIVEKIT_API_KEY / LIVEKIT_API_SECRET',
+  },
+  llm: {
+    openai: 'OPENAI_API_KEY',
+    google: 'GOOGLE_API_KEY',
+    anthropic: 'ANTHROPIC_API_KEY',
+    groq: 'GROQ_API_KEY',
+    deepseek: 'DEEPSEEK_API_KEY',
+    mistral: 'MISTRAL_API_KEY',
+    cerebras: 'CEREBRAS_API_KEY',
+  },
+  realtime: {
+    google: 'GOOGLE_API_KEY',
+    openai: 'OPENAI_API_KEY',
+    aws: 'AWS_ACCESS_KEY_ID',
+  },
+};
+
+/**
+ * Whether a voice provider can be picked, given what the agent last reported.
+ * False only when the agent said its key is missing; unknown counts as usable,
+ * so an older agent or a provider it does not list never locks the panel.
+ */
+export function voiceProviderHasKey(
+  status: BrainStatus | null,
+  stage: VoiceStage,
+  provider: string,
+): boolean {
+  if (!status) return true;
+  const name = provider.toLowerCase();
+  // Optional chaining: a status cached by an older build has neither map.
+  const stageKeys = status.voiceKeys?.[stage];
+  if (stageKeys && name in stageKeys) return stageKeys[name] !== false;
+  if (stage === 'realtime') return status.voiceProviders?.[name] !== false;
+  return true;
+}
+
+/** The env var to name in the hint, or a generic label. */
+export function voiceKeyName(stage: VoiceStage, provider: string): string {
+  return VOICE_KEY_NAMES[stage][provider.toLowerCase()] ?? 'API key';
+}
+
+function booleanMap(value: unknown): Record<string, boolean> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  const out: Record<string, boolean> = {};
+  for (const [key, flag] of Object.entries(value as Record<string, unknown>)) {
+    if (typeof flag === 'boolean') out[key] = flag;
+  }
+  return out;
+}
+
+/** Splits the agent's report into the flat realtime keys and the per-stage maps. */
+function parseVoiceProviders(raw: unknown): Pick<BrainStatus, 'voiceProviders' | 'voiceKeys'> {
+  const voiceKeys: BrainStatus['voiceKeys'] = {};
+  if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+    const record = raw as Record<string, unknown>;
+    for (const stage of VOICE_STAGES) {
+      if (record[stage] && typeof record[stage] === 'object') {
+        voiceKeys[stage] = booleanMap(record[stage]);
+      }
+    }
+  }
+  return { voiceProviders: booleanMap(raw), voiceKeys };
+}
+
 export function parseBrainStatus(raw: unknown): BrainStatus | null {
   if (!raw || typeof raw !== 'object') return null;
   const r = raw as Record<string, unknown>;
@@ -277,7 +367,7 @@ export function parseBrainStatus(raw: unknown): BrainStatus | null {
   return {
     enabled: r.enabled !== false,
     providers: (r.providers as BrainStatus['providers']) ?? {},
-    voiceProviders: (r.voiceProviders as Record<string, boolean>) ?? {},
+    ...parseVoiceProviders(r.voiceProviders),
     tavily: r.tavily === true,
     usableModels: Array.isArray(r.usableModels) ? (r.usableModels as string[]) : [],
     spend: {

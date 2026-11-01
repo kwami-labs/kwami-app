@@ -6,49 +6,95 @@ import { useVoiceStore } from '@/stores/voice';
 import { useKwami } from '@/composables/useKwami';
 import BaseButton from '@/components/ui/BaseButton.vue';
 import { sendRawConfigUpdate } from '@/lib/agentConfigUpdate';
+import { voiceProviderHasKey } from '@/lib/brain';
 import {
+  ENGINE_SPECS,
+  FAST_STT,
   GEMINI_STANDARD,
   GEMINI_LIVE_MODEL,
+  VOICE_ENGINES,
   VOICE_PERSONAS,
   activePersona,
+  isRealtimeEngine,
   liveSampleUrl,
-  sampleUrl,
+  personaVoice,
+  personaVoices,
+  ttsFor,
+  voiceEngine,
+  voiceLabel,
+  voiceSampleUrl,
   type VoiceEngine,
   type VoicePersona,
 } from '@/lib/voicePersonas';
+import { useAgentVideo } from '@/composables/useAgentVideo';
 
 /**
- * Character voices: Jarvis (male) and Friday (female), each a prebuilt Gemini
- * voice plus a spoken direction, on either engine:
+ * Character voices: Jarvis (male) and Friday (female), each with a spoken
+ * direction and a voice on every engine (lib/voicePersonas.ts):
  *
- * - Gemini TTS (standard pipeline: Gemini STT -> Gemini Flash -> Gemini TTS):
- *   the sound the user chose, the direction going to the TTS itself;
- * - Gemini Live: near-instant, the direction going into the instructions.
+ * - standard pipeline (Deepgram listens, Gemini thinks, a TTS speaks):
+ *   ElevenLabs, Cartesia, Deepgram, OpenAI or Gemini TTS -- only Gemini TTS
+ *   reads the direction;
+ * - realtime (one model hears and speaks): Gemini Live or OpenAI Realtime,
+ *   the direction going into the instructions. Only these see the camera.
  *
- * A character is applied to both engines at once, so switching engine keeps
- * the same voice and direction.
+ * The Gemini voice is kept on both Gemini engines, so switching engine keeps
+ * the character.
  */
 const { t, locale } = useI18n();
 const voiceStore = useVoiceStore();
-const { realtime, tts, pipelineMode } = storeToRefs(voiceStore);
+const { realtime, tts, pipelineMode, brainStatus } = storeToRefs(voiceStore);
 const { kwami, isConnected } = useKwami();
 
 const engine = computed<VoiceEngine>(() =>
-  pipelineMode.value === 'realtime' ? 'gemini-live' : 'gemini-tts',
+  voiceEngine(pipelineMode.value, tts.value.provider, realtime.value.provider),
 );
-const activeVoice = computed(() =>
-  engine.value === 'gemini-live' ? realtime.value.voice : tts.value.voice,
-);
+const realtimeEngine = computed(() => isRealtimeEngine(engine.value));
+const activeVoice = computed(() => (realtimeEngine.value ? realtime.value.voice : tts.value.voice));
 const activeStyle = computed(() =>
-  engine.value === 'gemini-live' ? (realtime.value.style ?? '') : (tts.value.style ?? ''),
+  realtimeEngine.value ? (realtime.value.style ?? '') : (tts.value.style ?? ''),
 );
-const usingGemini = computed(() =>
-  engine.value === 'gemini-live'
-    ? realtime.value.provider === 'google'
-    : tts.value.provider === 'gemini',
+const onCharacterProvider = computed(() =>
+  realtimeEngine.value ? realtime.value.provider === ENGINE_SPECS[engine.value].provider : true,
 );
 const current = computed(() =>
-  usingGemini.value ? activePersona(activeVoice.value, activeStyle.value) : null,
+  onCharacterProvider.value ? activePersona(activeVoice.value, activeStyle.value) : null,
+);
+
+/** An engine whose provider the agent reported without a key cannot be picked. */
+function engineHasKey(next: VoiceEngine): boolean {
+  const spec = ENGINE_SPECS[next];
+  const stage = spec.kind === 'realtime' ? 'realtime' : 'tts';
+  return voiceProviderHasKey(brainStatus.value, stage, spec.provider);
+}
+const ENGINE_LABELS: Record<VoiceEngine, [string, string]> = {
+  elevenlabs: ['voicePersonas.engineElevenlabs', 'voicePersonas.engineElevenlabsHint'],
+  cartesia: ['voicePersonas.engineCartesia', 'voicePersonas.engineCartesiaHint'],
+  deepgram: ['voicePersonas.engineDeepgram', 'voicePersonas.engineDeepgramHint'],
+  'openai-tts': ['voicePersonas.engineOpenai', 'voicePersonas.engineOpenaiHint'],
+  'gemini-tts': ['voicePersonas.engineTts', 'voicePersonas.engineTtsHint'],
+  'gemini-live': ['voicePersonas.engineLive', 'voicePersonas.engineLiveHint'],
+  'openai-realtime': [
+    'voicePersonas.engineOpenaiRealtime',
+    'voicePersonas.engineOpenaiRealtimeHint',
+  ],
+};
+const ENGINE_GROUPS: { label: string; engines: VoiceEngine[] }[] = [
+  {
+    label: 'voicePersonas.standardGroup',
+    engines: VOICE_ENGINES.filter((e) => !isRealtimeEngine(e)),
+  },
+  { label: 'voicePersonas.realtimeGroup', engines: VOICE_ENGINES.filter(isRealtimeEngine) },
+];
+
+// The camera or a shared screen, for the engines that can see.
+const video = useAgentVideo();
+// Leaving a realtime engine leaves nothing to look: stop sending video.
+watch(
+  () => isRealtimeEngine(engine.value),
+  (canSee) => {
+    if (!canSee) void video.stopAll();
+  },
 );
 
 /**
@@ -59,7 +105,7 @@ const current = computed(() =>
 const locked = computed(() => activeStyle.value.trim() !== '');
 const isOn = (p: VoicePersona) => !locked.value || current.value?.id === p.id;
 const voicesOf = (p: VoicePersona) =>
-  locked.value ? [activeVoice.value] : [p.voice, ...p.alternatives];
+  locked.value ? [activeVoice.value] : personaVoices(p, engine.value);
 const showDesign = ref<string | null>(null);
 const copied = ref<string | null>(null);
 
@@ -84,8 +130,12 @@ function playUrl(key: string, url: string) {
   void audio.play().catch(stop);
 }
 
+const sampleOf = (persona: VoicePersona, voice: string) =>
+  voiceSampleUrl(persona, engine.value, voice);
+
 function play(persona: VoicePersona, voice: string) {
-  playUrl(`${persona.id}-${voice}`, sampleUrl(persona.id, voice));
+  const url = sampleOf(persona, voice);
+  if (url) playUrl(`${persona.id}-${voice}`, url);
 }
 
 function playLive(persona: VoicePersona) {
@@ -128,7 +178,7 @@ function pushToAgent(switchedEngine: boolean) {
       pipelineType: pipelineMode.value,
       ...engineFields(),
     });
-  } else if (engine.value === 'gemini-live') {
+  } else if (realtimeEngine.value) {
     instance.agent.syncConfigToBackend('voice', {
       realtimeProvider: realtime.value.provider,
       realtimeModel: realtime.value.model,
@@ -145,35 +195,77 @@ function pushToAgent(switchedEngine: boolean) {
   }
 }
 
-/** Puts a voice and direction on both engines. */
-function setVoice(voice: string, style: string) {
-  voiceStore.updateRealtime({
-    provider: 'google',
-    // Keep a Gemini Live model already chosen; otherwise the default one.
-    model: realtime.value.provider === 'google' ? realtime.value.model : GEMINI_LIVE_MODEL,
-    voice,
-    style,
-  });
-  voiceStore.updateTTS({ ...GEMINI_STANDARD.tts, voice, style });
+const usesGeminiVoice = (e: VoiceEngine) => e === 'gemini-tts' || e === 'gemini-live';
+
+/**
+ * Puts a character on an engine: its Gemini voice on Gemini Live (kept there
+ * while another engine speaks, so coming back keeps the character), and the
+ * engine's own voice wherever that engine speaks.
+ */
+type RealtimeUpdate = Parameters<typeof voiceStore.updateRealtime>[0];
+type TtsUpdate = Parameters<typeof voiceStore.updateTTS>[0];
+
+function setVoices(geminiVoice: string, engineVoice: string, style: string, on: VoiceEngine) {
+  const spec = ENGINE_SPECS[on];
+  if (on === 'openai-realtime') {
+    voiceStore.updateRealtime({
+      provider: spec.provider as RealtimeUpdate['provider'],
+      model: realtime.value.provider === spec.provider ? realtime.value.model : spec.model,
+      voice: engineVoice,
+      style,
+    });
+  } else {
+    voiceStore.updateRealtime({
+      provider: 'google',
+      // Keep a Gemini Live model already chosen; otherwise the default one.
+      model: realtime.value.provider === 'google' ? realtime.value.model : GEMINI_LIVE_MODEL,
+      voice: geminiVoice,
+      style,
+    });
+  }
+  if (spec.kind === 'standard') {
+    const speaker = ttsFor(on, usesGeminiVoice(on) ? geminiVoice : engineVoice);
+    voiceStore.updateTTS({ ...speaker, style } as TtsUpdate);
+  } else {
+    voiceStore.updateTTS({ style });
+  }
 }
 
-function apply(persona: VoicePersona, voice = persona.voice) {
+const GEMINI_STANDARD_VOICE = VOICE_PERSONAS[0]!.voice;
+
+/** The Gemini voice a character keeps while another engine speaks. */
+function geminiVoiceOf(persona: VoicePersona | null): string {
+  const kept = realtime.value.provider === 'google' ? realtime.value.voice : '';
+  if (!persona) return kept || GEMINI_STANDARD_VOICE;
+  return [persona.voice, ...persona.alternatives].includes(kept) ? kept : persona.voice;
+}
+
+function apply(persona: VoicePersona, voice = personaVoice(persona, engine.value)) {
   cancelDraft();
-  setVoice(voice, persona.style);
+  if (usesGeminiVoice(engine.value)) {
+    setVoices(voice, voice, persona.style, engine.value);
+  } else {
+    setVoices(geminiVoiceOf(persona), voice, persona.style, engine.value);
+  }
   pushToAgent(false);
 }
 
 function setEngine(next: VoiceEngine) {
-  if (next === engine.value) return;
+  if (next === engine.value || !engineHasKey(next)) return;
   cancelDraft();
-  // The persona travels with the switch.
-  setVoice(activeVoice.value, activeStyle.value);
-  if (next === 'gemini-tts') {
-    voiceStore.updateSTT({ ...GEMINI_STANDARD.stt });
+  // The character travels with the switch.
+  const persona = current.value;
+  const geminiVoice = geminiVoiceOf(persona);
+  const engineVoice = usesGeminiVoice(next)
+    ? geminiVoice
+    : personaVoice(persona ?? VOICE_PERSONAS[0]!, next);
+  setVoices(geminiVoice, engineVoice, activeStyle.value, next);
+  if (isRealtimeEngine(next)) {
+    voiceStore.setPipelineMode('realtime');
+  } else {
+    voiceStore.updateSTT({ ...FAST_STT });
     voiceStore.updateLLM({ ...GEMINI_STANDARD.llm });
     voiceStore.setPipelineMode('stt-llm-tts');
-  } else {
-    voiceStore.setPipelineMode('realtime');
   }
   pushToAgent(true);
 }
@@ -225,23 +317,50 @@ const summary = (p: VoicePersona) => (locale.value.startsWith('es') ? p.summary.
 
     <div class="engine">
       <span class="option-label">{{ t('voicePersonas.engine') }}</span>
-      <div class="engine-toggle">
-        <button
-          class="engine-btn"
-          :class="{ on: engine === 'gemini-tts' }"
-          @click="setEngine('gemini-tts')"
-        >
-          <strong>{{ t('voicePersonas.engineTts') }}</strong>
-          <span>{{ t('voicePersonas.engineTtsHint') }}</span>
-        </button>
-        <button
-          class="engine-btn"
-          :class="{ on: engine === 'gemini-live' }"
-          @click="setEngine('gemini-live')"
-        >
-          <strong>{{ t('voicePersonas.engineLive') }}</strong>
-          <span>{{ t('voicePersonas.engineLiveHint') }}</span>
-        </button>
+      <template v-for="group in ENGINE_GROUPS" :key="group.label">
+        <span class="group-label">{{ t(group.label) }}</span>
+        <div class="engine-toggle">
+          <button
+            v-for="e in group.engines"
+            :key="e"
+            class="engine-btn"
+            :class="{ on: engine === e }"
+            :disabled="engine !== e && !engineHasKey(e)"
+            :title="engineHasKey(e) ? undefined : t('brainPanel.noKey')"
+            @click="setEngine(e)"
+          >
+            <strong>{{ t(ENGINE_LABELS[e][0]) }}</strong>
+            <span>{{ engineHasKey(e) ? t(ENGINE_LABELS[e][1]) : t('brainPanel.noKey') }}</span>
+          </button>
+        </div>
+      </template>
+      <!-- Multimodal: what the realtime model sees, while connected. -->
+      <div v-if="realtimeEngine" class="vision">
+        <span class="hint small">{{ t('voicePersonas.visionHint') }}</span>
+        <div class="vision-actions">
+          <BaseButton
+            size="sm"
+            :variant="video.camera.value ? 'primary' : 'secondary'"
+            :icon="video.camera.value ? 'ph:video-camera-slash-duotone' : 'ph:video-camera-duotone'"
+            :disabled="!isConnected || video.busy.value"
+            @click="video.toggleCamera()"
+            >{{
+              t(video.camera.value ? 'voicePersonas.cameraOff' : 'voicePersonas.cameraOn')
+            }}</BaseButton
+          >
+          <BaseButton
+            v-if="video.canShareScreen"
+            size="sm"
+            :variant="video.screen.value ? 'primary' : 'secondary'"
+            :icon="video.screen.value ? 'ph:monitor-duotone' : 'ph:screencast-duotone'"
+            :disabled="!isConnected || video.busy.value"
+            @click="video.toggleScreen()"
+            >{{
+              t(video.screen.value ? 'voicePersonas.screenOff' : 'voicePersonas.screenOn')
+            }}</BaseButton
+          >
+        </div>
+        <span v-if="video.error.value" class="hint small error">{{ video.error.value }}</span>
       </div>
     </div>
 
@@ -285,14 +404,16 @@ const summary = (p: VoicePersona) => (locale.value.startsWith('es') ? p.summary.
             :class="{ chosen: activeVoice === v && current?.id === p.id }"
           >
             <button
+              v-if="sampleOf(p, v)"
               class="play"
-              :aria-label="t('voicePersonas.listen', { voice: v })"
+              :aria-label="t('voicePersonas.listen', { voice: voiceLabel(v) })"
               @click="play(p, v)"
             >
               <iconify-icon :icon="playing === `${p.id}-${v}` ? 'ph:stop-fill' : 'ph:play-fill'" />
             </button>
             <button class="pick" :disabled="locked" @click="apply(p, v)">
-              {{ v }}<span v-if="v === p.voice && !locked" class="suggested"> ★</span>
+              {{ voiceLabel(v)
+              }}<span v-if="v === personaVoice(p, engine) && !locked" class="suggested"> ★</span>
             </button>
           </div>
         </div>
@@ -364,8 +485,28 @@ const summary = (p: VoicePersona) => (locale.value.startsWith('es') ? p.summary.
 }
 .engine-toggle {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
   gap: 6px;
+}
+.group-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-tertiary);
+}
+.vision {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 2px;
+}
+.vision-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.hint.error {
+  color: var(--danger, #f87171);
 }
 .engine-btn {
   display: flex;
@@ -388,6 +529,11 @@ const summary = (p: VoicePersona) => (locale.value.startsWith('es') ? p.summary.
   font-size: 10px;
   color: var(--text-tertiary);
 }
+.engine-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .engine-btn.on {
   border-color: var(--accent-primary);
   background: var(--accent-glow);

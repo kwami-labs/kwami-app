@@ -13,6 +13,7 @@ import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { AuthError } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
+import { authRedirectUrl } from '@/lib/desktopAuth';
 
 export type EmailAuthMode = 'signIn' | 'signUp';
 
@@ -94,7 +95,7 @@ export function useEmailAuth() {
     const { data, error: authError } = await supabase.auth.signUp({
       email: email.value.trim(),
       password: password.value,
-      options: { emailRedirectTo: window.location.origin },
+      options: { emailRedirectTo: authRedirectUrl() },
     });
 
     if (authError) {
