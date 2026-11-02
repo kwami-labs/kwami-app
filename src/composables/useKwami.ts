@@ -195,7 +195,8 @@ export function useKwami() {
         participantName: authStore.userEmail || undefined,
         ...(kwamiId && isPersistedKwamiId(kwamiId) ? { kwamiId } : {}),
       },
-      { retry: false, timeoutMs: 20_000 },
+      // Every attempt gets its own room, so a retry after a database blip (503) is safe.
+      { retry: 1, idempotencyKey: crypto.randomUUID(), timeoutMs: 20_000 },
     );
   }
 
