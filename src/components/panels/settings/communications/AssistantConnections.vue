@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { onMounted, onUnmounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import PanelSection from '@/components/ui/PanelSection.vue';
@@ -22,6 +22,10 @@ interface GoogleStatus {
   accounts: GoogleAccount[];
 }
 
+/** Long enough to read the consent page, not so long it keeps asking for nothing. */
+const WAIT_STEP_MS = 3000;
+const WAIT_LIMIT_MS = 180_000;
+
 const { t } = useI18n();
 const workspaceStore = useWorkspaceStore();
 
@@ -37,9 +41,42 @@ const timezone = ref('Europe/Madrid');
 const reportsEnabled = ref(false);
 const busy = ref(false);
 const message = ref('');
+const googleMessage = ref('');
+const waiting = ref(false);
+let waitTimer: ReturnType<typeof setInterval> | undefined;
 
-function showError(error: unknown) {
-  message.value = error instanceof Error ? error.message : String(error);
+function errorText(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function stopWaiting() {
+  clearInterval(waitTimer);
+  waitTimer = undefined;
+  waiting.value = false;
+}
+
+/** Back from the browser: the page there can only say it is done, so ask again here. */
+async function refreshGoogle() {
+  const before = JSON.stringify(google.value.accounts);
+  try {
+    google.value = await api.get<GoogleStatus>('/google/status');
+  } catch {
+    return;
+  }
+  if (waiting.value && JSON.stringify(google.value.accounts) !== before) {
+    stopWaiting();
+    googleMessage.value = t('assistant.googleUpdated');
+  }
+}
+
+function waitForGoogle() {
+  stopWaiting();
+  waiting.value = true;
+  const startedAt = Date.now();
+  waitTimer = setInterval(() => {
+    if (Date.now() - startedAt >= WAIT_LIMIT_MS) stopWaiting();
+    else void refreshGoogle();
+  }, WAIT_STEP_MS);
 }
 
 async function load() {
@@ -56,19 +93,20 @@ async function load() {
     timezone.value = String(settings.timezone ?? 'Europe/Madrid');
     reportsEnabled.value = Boolean(settings.reports_enabled);
   } catch (error) {
-    showError(error);
+    message.value = errorText(error);
   }
 }
 
 async function connectGoogle() {
   busy.value = true;
-  message.value = '';
+  googleMessage.value = '';
   try {
     const { url } = await api.post<{ url: string }>('/google/connect');
     if (isTauri()) await openUrl(url);
     else window.open(url, '_blank', 'noopener');
+    waitForGoogle();
   } catch (error) {
-    showError(error);
+    googleMessage.value = errorText(error);
   } finally {
     busy.value = false;
   }
@@ -76,11 +114,12 @@ async function connectGoogle() {
 
 async function disconnectGoogle(email: string) {
   busy.value = true;
+  googleMessage.value = '';
   try {
     await api.del('/google/account', { query: { account: email } });
-    await load();
+    await refreshGoogle();
   } catch (error) {
-    showError(error);
+    googleMessage.value = errorText(error);
   } finally {
     busy.value = false;
   }
@@ -99,13 +138,21 @@ async function save() {
     });
     message.value = t('assistant.saved');
   } catch (error) {
-    showError(error);
+    message.value = errorText(error);
   } finally {
     busy.value = false;
   }
 }
 
-onMounted(load);
+onMounted(() => {
+  void load();
+  window.addEventListener('focus', refreshGoogle);
+});
+
+onUnmounted(() => {
+  stopWaiting();
+  window.removeEventListener('focus', refreshGoogle);
+});
 </script>
 
 <template>
@@ -114,25 +161,32 @@ onMounted(load);
     <template v-else>
       <p v-if="!google.accounts.length">{{ t('assistant.googleDisconnected') }}</p>
       <div v-for="account in google.accounts" :key="account.email" class="assistant-account">
-        <p>{{ t('assistant.googleConnected', { email: account.email }) }}</p>
-        <p v-if="account.needs_reconnect" role="alert">{{ t('assistant.googleNeedsReconnect') }}</p>
-        <p v-else-if="account.missing_scopes.length">{{ t('assistant.googleMissingScopes') }}</p>
-        <BaseButton
-          v-if="account.needs_reconnect || account.missing_scopes.length"
-          size="sm"
-          :loading="busy"
-          @click="connectGoogle"
-        >
-          {{ t('assistant.googleReconnect') }}
-        </BaseButton>
-        <BaseButton
-          variant="secondary"
-          size="sm"
-          :loading="busy"
-          @click="disconnectGoogle(account.email)"
-        >
-          {{ t('assistant.googleDisconnect') }}
-        </BaseButton>
+        <p class="assistant-account__email">{{ account.email }}</p>
+        <p v-if="account.needs_reconnect" class="assistant-account__warning" role="alert">
+          {{ t('assistant.googleNeedsReconnect') }}
+        </p>
+        <p v-else-if="account.missing_scopes.length" class="assistant-account__warning">
+          {{ t('assistant.googleMissingScopes') }}
+        </p>
+        <p v-else class="assistant-account__ready">{{ t('assistant.googleReady') }}</p>
+        <div class="assistant-account__actions">
+          <BaseButton
+            v-if="account.needs_reconnect || account.missing_scopes.length"
+            size="sm"
+            :loading="busy"
+            @click="connectGoogle"
+          >
+            {{ t('assistant.googleReconnect') }}
+          </BaseButton>
+          <BaseButton
+            variant="secondary"
+            size="sm"
+            :loading="busy"
+            @click="disconnectGoogle(account.email)"
+          >
+            {{ t('assistant.googleDisconnect') }}
+          </BaseButton>
+        </div>
       </div>
       <BaseButton size="sm" :loading="busy" @click="connectGoogle">
         {{
@@ -141,7 +195,12 @@ onMounted(load);
             : t('assistant.googleConnect')
         }}
       </BaseButton>
-      <p v-if="message" role="status">{{ message }}</p>
+      <p v-if="waiting" class="assistant-google-note" role="status">
+        {{ t('assistant.googleWaiting') }}
+      </p>
+      <p v-else-if="googleMessage" class="assistant-google-note" role="status">
+        {{ googleMessage }}
+      </p>
     </template>
   </PanelSection>
 
@@ -166,6 +225,35 @@ onMounted(load);
 <style scoped>
 .assistant-account {
   margin-bottom: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+}
+
+.assistant-account__email {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--text-primary);
+}
+
+.assistant-account__ready,
+.assistant-google-note {
+  margin: 0.25rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+}
+
+.assistant-account__warning {
+  margin: 0.25rem 0 0;
+  color: var(--warning);
+  font-size: 0.8125rem;
+}
+
+.assistant-account__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.625rem;
 }
 
 .assistant-row {
