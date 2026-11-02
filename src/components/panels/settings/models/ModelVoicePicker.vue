@@ -196,7 +196,7 @@ function playIcon(id: string): string {
     <div class="filters">
       <div class="segments" role="group">
         <button
-          v-for="g in ['all', 'male', 'female', 'favorites'] as const"
+          v-for="g in ['all', 'male', 'female'] as const"
           :key="g"
           class="segment"
           :class="{ active: gender === g }"
@@ -204,6 +204,16 @@ function playIcon(id: string): string {
           @click="gender = g"
         >
           {{ t(`voicePicker.${g}`) }}
+        </button>
+        <button
+          class="segment only-icon"
+          :class="{ active: gender === 'favorites' }"
+          :aria-pressed="gender === 'favorites'"
+          :aria-label="t('voicePicker.favorites')"
+          :title="t('voicePicker.favorites')"
+          @click="gender = 'favorites'"
+        >
+          <iconify-icon icon="ph:star-fill" />
         </button>
       </div>
       <BaseSelect v-if="languages.length > 1" v-model="language" :options="languageOptions" block />
@@ -382,6 +392,9 @@ function playIcon(id: string): string {
   color: var(--text-secondary);
   font-size: 11px;
   cursor: pointer;
+}
+.segment.only-icon {
+  flex: 0 0 26px;
 }
 .segment.active {
   background: var(--accent-primary);

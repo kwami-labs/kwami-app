@@ -429,8 +429,7 @@ describe('finding a voice again', () => {
     await flushPromises();
     await wrapper.findAll('.star')[1].trigger('click');
     expect(store.modelsUI.favoriteVoices).toEqual([favoriteKey('rime', 'b')]);
-    const saved = wrapper.findAll('.segment').find((x) => x.text() === 'Guardadas')!;
-    await saved.trigger('click');
+    await wrapper.find('.segment[aria-label="Guardadas"]').trigger('click');
     expect(wrapper.findAll('.voice .name').map((x) => x.text())).toEqual(['Berta']);
     await wrapper.find('.star').trigger('click');
     expect(store.modelsUI.favoriteVoices).toEqual([]);
