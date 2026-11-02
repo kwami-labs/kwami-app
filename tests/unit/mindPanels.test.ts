@@ -13,6 +13,7 @@ import ModelConnections from '../../src/components/panels/settings/models/ModelC
 import VoiceThinking from '../../src/components/panels/settings/voice/VoiceThinking.vue';
 import { useVoiceStore } from '../../src/stores/voice';
 import { useAuthStore } from '../../src/stores/auth';
+import { useProviderConnections } from '../../src/composables/useProviderConnections';
 import {
   PROVIDER_ROLES,
   modelUsable,
@@ -418,5 +419,57 @@ describe('who thinks on a call', () => {
     expect(store.llm.provider).toBe('google');
     await mode(wrapper, 'la voz repite').trigger('click');
     expect(store.brain.relay).toBe('everything');
+  });
+});
+
+describe('checking the connections', () => {
+  const connected = () =>
+    vi.spyOn(api, 'get').mockResolvedValue({
+      enabled: true,
+      providers: [],
+      connected: { xai: { hint: '7890' } },
+    });
+  const button = (w: ReturnType<typeof mountWithPinia>, text: string) =>
+    w.findAll('button').find((b) => b.text() === text);
+
+  it.each([
+    [{ ok: true }, 'acepta esta clave'],
+    [{ ok: false }, 'ya no acepta'],
+  ])('says what the provider answers of a connected key', async (answer, expected) => {
+    connected();
+    await useProviderConnections().refresh();
+    const wrapper = mountWithPinia(ModelConnections, global);
+    await flushPromises();
+    const post = vi.spyOn(api, 'post').mockResolvedValue(answer);
+    await button(wrapper, 'Comprobar')!.trigger('click');
+    await flushPromises();
+    expect(post).toHaveBeenCalledWith('/providers/xai/check');
+    expect(wrapper.text()).toContain(expected);
+  });
+
+  it('a silent provider says nothing of the key', async () => {
+    connected();
+    await useProviderConnections().refresh();
+    const wrapper = mountWithPinia(ModelConnections, global);
+    await flushPromises();
+    vi.spyOn(api, 'post').mockRejectedValue(new Error('down'));
+    await button(wrapper, 'Comprobar')!.trigger('click');
+    await flushPromises();
+    expect(wrapper.text()).toContain('no se ha podido comprobar');
+  });
+
+  it('shows which voice engines the agent can use, once it has said', async () => {
+    connected();
+    const wrapper = mountWithPinia(ModelConnections, global);
+    const store = useVoiceStore();
+    expect(wrapper.find('.engines').exists()).toBe(false);
+    store.brainStatus = {
+      ...store.brainStatus,
+      voiceKeys: { tts: { cartesia: false, elevenlabs: true }, stt: {}, llm: {}, realtime: {} },
+    } as never;
+    await flushPromises();
+    const on = wrapper.findAll('.engine.on').map((e) => e.text());
+    expect(on).toContain('elevenlabs');
+    expect(on).not.toContain('cartesia');
   });
 });

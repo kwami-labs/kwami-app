@@ -45,6 +45,12 @@ export function useProviderConnections() {
     return 'ok';
   }
 
+  /** Whether the provider still takes the key: false is an answer, a throw is not. */
+  async function checkKey(provider: BrainProvider): Promise<boolean> {
+    const { ok } = await api.post<{ ok: boolean }>(`/providers/${provider}/check`);
+    return ok;
+  }
+
   async function disconnect(provider: BrainProvider): Promise<void> {
     await api.del(`/providers/${provider}`);
     await refresh();
@@ -56,5 +62,5 @@ export function useProviderConnections() {
     await openExternal(url);
   }
 
-  return { connections, refresh, saveKey, disconnect, signInOpenRouter };
+  return { connections, refresh, saveKey, checkKey, disconnect, signInOpenRouter };
 }

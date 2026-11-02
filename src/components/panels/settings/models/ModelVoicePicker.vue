@@ -1,16 +1,20 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
 import type { Voice } from '@/composables/useVoicesApi';
 import { useVoicesApi } from '@/composables/useVoicesApi';
 import { useKwami } from '@/composables/useKwami';
+import { useVoicePreview } from '@/composables/useVoicePreview';
 import { useVoiceStore } from '@/stores/voice';
 import BaseButton from '@/components/ui/BaseButton.vue';
 import BaseSelect from '@/components/ui/BaseSelect.vue';
 import { getFlagIcon } from '@/constants/language-flags';
 import { GEMINI_CHARACTER_ES, catalogProvider, voiceLabel } from '@/lib/voicePersonas';
 import {
+  canHear,
+  favoriteKey,
+  inPickingOrder,
   languagesOf,
   matchesLanguage,
   matchesSearch,
@@ -48,7 +52,7 @@ const loading = ref(false);
 const failed = ref(false);
 
 const search = ref('');
-const gender = ref<'all' | 'male' | 'female'>('all');
+const gender = ref<'all' | 'male' | 'female' | 'favorites'>('all');
 const language = ref('all');
 const shown = ref(PAGE);
 const customId = ref('');
@@ -99,12 +103,30 @@ const languageOptions = computed(() => [
   { value: 'all', label: t('voicePicker.allLanguages') },
   ...languages.value.map((code) => ({ value: code, label: code, icon: getFlagIcon(code) })),
 ]);
+
+function isFavorite(id: string): boolean {
+  return modelsUI.value.favoriteVoices.includes(favoriteKey(provider.value, id));
+}
+function toggleFavorite(id: string) {
+  const key = favoriteKey(provider.value, id);
+  const list = modelsUI.value.favoriteVoices;
+  modelsUI.value.favoriteVoices = list.includes(key)
+    ? list.filter((k) => k !== key)
+    : [...list, key];
+}
+
 const matching = computed(() =>
-  forModel.value.filter(
-    (v) =>
-      (gender.value === 'all' || v.gender === gender.value) &&
-      matchesLanguage(v, language.value) &&
-      matchesSearch(v, search.value),
+  inPickingOrder(
+    forModel.value.filter(
+      (v) =>
+        (gender.value === 'all' ||
+          v.gender === gender.value ||
+          (gender.value === 'favorites' && isFavorite(v.id))) &&
+        matchesLanguage(v, language.value) &&
+        matchesSearch(v, search.value),
+    ),
+    current.value,
+    isFavorite,
   ),
 );
 const visible = computed(() => matching.value.slice(0, shown.value));
@@ -146,26 +168,12 @@ function useCustomId() {
   customId.value = '';
 }
 
-// A voice's own sample, where there is one.
-const previewing = ref<string | null>(null);
-let audio: HTMLAudioElement | null = null;
-function stopPreview() {
-  audio?.pause();
-  audio = null;
-  previewing.value = null;
+const preview = useVoicePreview();
+watch(provider, preview.stop);
+function playIcon(id: string): string {
+  if (preview.waiting.value === id) return 'ph:circle-notch';
+  return preview.playing.value === id ? 'ph:stop-fill' : 'ph:play-fill';
 }
-function togglePreview(voice: PickableVoice) {
-  if (!voice.preview_url) return;
-  if (previewing.value === voice.id) return stopPreview();
-  stopPreview();
-  audio = new Audio(voice.preview_url);
-  previewing.value = voice.id;
-  audio.onended = stopPreview;
-  audio.onerror = stopPreview;
-  void audio.play().catch(stopPreview);
-}
-watch(provider, stopPreview);
-onBeforeUnmount(stopPreview);
 </script>
 
 <template>
@@ -188,7 +196,7 @@ onBeforeUnmount(stopPreview);
     <div class="filters">
       <div class="segments" role="group">
         <button
-          v-for="g in ['all', 'male', 'female'] as const"
+          v-for="g in ['all', 'male', 'female', 'favorites'] as const"
           :key="g"
           class="segment"
           :class="{ active: gender === g }"
@@ -203,7 +211,10 @@ onBeforeUnmount(stopPreview);
     </div>
 
     <p v-if="loading" class="hint">{{ t('voicePicker.loading') }}</p>
-    <p v-else-if="failed" class="hint warn">{{ t('voicePicker.failed') }}</p>
+    <div v-else-if="failed" class="none">
+      <p class="hint warn">{{ t('voicePicker.failed') }}</p>
+      <button class="link" @click="load">{{ t('voicePicker.retry') }}</button>
+    </div>
     <p v-else-if="!forModel.length" class="hint">{{ t('voicePicker.noCatalog') }}</p>
     <div v-else-if="!matching.length" class="none">
       <p class="hint">{{ t('voicePicker.empty') }}</p>
@@ -242,15 +253,33 @@ onBeforeUnmount(stopPreview);
           </span>
           <span v-if="voice.description" class="description">{{ describe(voice) }}</span>
         </button>
-        <button
-          v-if="voice.preview_url"
-          class="play"
-          :aria-label="t('voicePicker.listen', { voice: voice.name })"
-          :title="t('voicePicker.listen', { voice: voice.name })"
-          @click="togglePreview(voice)"
-        >
-          <iconify-icon :icon="previewing === voice.id ? 'ph:stop-fill' : 'ph:play-fill'" />
-        </button>
+        <div class="side">
+          <button
+            v-if="canHear(provider, voice)"
+            class="play"
+            :class="{ spinning: preview.waiting.value === voice.id }"
+            :aria-label="t('voicePicker.listen', { voice: voice.name })"
+            :title="t('voicePicker.listen', { voice: voice.name })"
+            @click="preview.toggle(provider, voice, locale)"
+          >
+            <iconify-icon :icon="playIcon(voice.id)" />
+          </button>
+          <button
+            class="star"
+            :class="{ on: isFavorite(voice.id) }"
+            :aria-pressed="isFavorite(voice.id)"
+            :aria-label="t('voicePicker.favorite', { voice: voice.name })"
+            :title="t('voicePicker.favorite', { voice: voice.name })"
+            @click="toggleFavorite(voice.id)"
+          >
+            <iconify-icon :icon="isFavorite(voice.id) ? 'ph:star-fill' : 'ph:star'" />
+          </button>
+        </div>
+        <p v-if="preview.problem.value?.voice === voice.id" class="hint warn problem">
+          {{
+            t(`voicePicker.${preview.problem.value.kind === 'noKey' ? 'noSampleKey' : 'noSample'}`)
+          }}
+        </p>
       </li>
     </ul>
 
@@ -385,11 +414,22 @@ onBeforeUnmount(stopPreview);
 }
 .row {
   display: flex;
+  flex-wrap: wrap;
   align-items: stretch;
   gap: 4px;
 }
+.problem {
+  flex-basis: 100%;
+}
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex-shrink: 0;
+  width: 28px;
+}
 .voice {
-  flex: 1;
+  flex: 1 1 0;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -441,14 +481,26 @@ onBeforeUnmount(stopPreview);
   line-height: 1.35;
   color: var(--text-tertiary);
 }
-.play {
-  flex-shrink: 0;
-  width: 28px;
+.play,
+.star {
+  flex: 1;
+  min-height: 24px;
   border: none;
   border-radius: 6px;
   background: var(--surface-2);
   color: var(--text-secondary);
   cursor: pointer;
+}
+.star.on {
+  color: #fbbf24;
+}
+.spinning iconify-icon {
+  animation: picker-spin 1s linear infinite;
+}
+@keyframes picker-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 .foot {
   display: flex;

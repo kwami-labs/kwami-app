@@ -147,6 +147,8 @@ export const useVoiceStore = defineStore('voice', () => {
     realtimeVideoEnabled: false,
     /** The voice last chosen for each voice model (`modelVoiceKey`). */
     voiceByModel: {} as Record<string, string>,
+    /** The voices marked to find again (`favoriteKey`). */
+    favoriteVoices: [] as string[],
   });
 
   // Voice panel UI state
