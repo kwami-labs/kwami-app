@@ -16,34 +16,50 @@ import BrainFlow from './BrainFlow.vue';
 import BrainSettings from './BrainSettings.vue';
 import { JARVIS_VOICE, voiceProviderHasKey } from '@/lib/brain';
 import { GEMINI_STANDARD, JARVIS_STANDARD, VOICE_PERSONAS } from '@/lib/voicePersonas';
+import { hybridModelFor, type PipelineMode } from '@/lib/voiceEngines';
+import { engineSwitchFields, sendRawConfigUpdate } from '@/lib/agentConfigUpdate';
+import { useKwami } from '@/composables/useKwami';
 
 const voiceStore = useVoiceStore();
 const { t } = useI18n();
-const { llm, stt, tts, realtime, pipelineMode, modelsUI, brainStatus } = storeToRefs(voiceStore);
+const { llm, stt, tts, realtime, pipelineMode, modelsUI, brainStatus, engineNotice } =
+  storeToRefs(voiceStore);
 
-// Jarvis's voice: Gemini listening and thinking with ElevenLabs speaking
-// (2026-10-19, a paid TTS instead of the free-tier Gemini one), or one of the
+// Jarvis's voice: Deepgram listening, Claude thinking and ElevenLabs speaking
+// (a paid TTS instead of the free-tier Gemini one), or one of the
 // other character engines (Gemini TTS, Gemini Live). Offered when the voice is
 // on none of them, or when one of its providers has no key on the agent.
 const CHARACTER_TTS: readonly string[] = [
   JARVIS_STANDARD.tts.provider,
   GEMINI_STANDARD.tts.provider,
 ];
-const voiceIsJarvis = computed(() =>
-  pipelineMode.value === 'realtime'
-    ? realtime.value.provider === JARVIS_VOICE.provider
-    : stt.value.provider === JARVIS_STANDARD.stt.provider &&
-      llm.value.provider === JARVIS_STANDARD.llm.provider &&
-      CHARACTER_TTS.includes(tts.value.provider),
-);
+// Gemini thinking is the user's choice too ("the voice also answers"), and older saves.
+const CHARACTER_LLM: readonly string[] = [
+  JARVIS_STANDARD.llm.provider,
+  GEMINI_STANDARD.llm.provider,
+];
+// On Live + TTS the Live model hears and thinks: Jarvis is the character TTS.
+const voiceIsJarvis = computed(() => {
+  if (pipelineMode.value === 'realtime') return realtime.value.provider === JARVIS_VOICE.provider;
+  if (pipelineMode.value === 'hybrid') return CHARACTER_TTS.includes(tts.value.provider);
+  return (
+    stt.value.provider === JARVIS_STANDARD.stt.provider &&
+    CHARACTER_LLM.includes(llm.value.provider) &&
+    CHARACTER_TTS.includes(tts.value.provider)
+  );
+});
 const voiceProviderMissingKey = computed(() => {
   const status = brainStatus.value;
+  const realtimeMissing = !voiceProviderHasKey(status, 'realtime', realtime.value.provider);
+  const ttsMissing = !voiceProviderHasKey(status, 'tts', tts.value.provider);
   const missing =
     pipelineMode.value === 'realtime'
-      ? !voiceProviderHasKey(status, 'realtime', realtime.value.provider)
-      : !voiceProviderHasKey(status, 'stt', stt.value.provider) ||
-        !voiceProviderHasKey(status, 'llm', llm.value.provider) ||
-        !voiceProviderHasKey(status, 'tts', tts.value.provider);
+      ? realtimeMissing
+      : pipelineMode.value === 'hybrid'
+        ? realtimeMissing || ttsMissing
+        : !voiceProviderHasKey(status, 'stt', stt.value.provider) ||
+          !voiceProviderHasKey(status, 'llm', llm.value.provider) ||
+          ttsMissing;
   return voiceIsJarvis.value && missing;
 });
 function useJarvisVoice() {
@@ -58,13 +74,37 @@ function useJarvisVoice() {
 }
 const panelIcon = panelIcons.models ?? 'ph:cpu-duotone';
 
-// Pipeline type - synced with store (converts between UI value and store value)
+// The pipeline, through the store: Live + TTS may swap the Live model for one
+// that answers in text, or be refused when none can.
 const pipelineType = computed({
-  get: () => (pipelineMode.value === 'realtime' ? 'realtime' : 'standard'),
-  set: (value: 'standard' | 'realtime') => {
-    voiceStore.setPipelineMode(value === 'realtime' ? 'realtime' : 'stt-llm-tts');
+  get: () => pipelineMode.value,
+  set: (value: PipelineMode) => {
+    if (value === pipelineMode.value) return;
+    if (voiceStore.setPipelineMode(value)) pushPipeline();
   },
 });
+
+const { kwami, isConnected } = useKwami();
+/** The SDK's copy is what the next connect sends; a live session switches now. */
+function pushPipeline() {
+  const instance = kwami.value;
+  if (!instance) return;
+  instance.agent.updateConfig({
+    livekit: { ...instance.agent.getConfig().livekit, voice: voiceStore.voiceConfig },
+  });
+  if (!isConnected.value) return;
+  sendRawConfigUpdate(instance, 'pipeline', {
+    pipelineType: pipelineMode.value,
+    ...engineSwitchFields({
+      stt: stt.value,
+      llm: llm.value,
+      tts: tts.value,
+      realtime: realtime.value,
+    }),
+  });
+}
+/** No Live model that answers in text has its key on the agent. */
+const hybridDisabled = computed(() => hybridModelFor(realtime.value, brainStatus.value) === null);
 
 // Active model type tab (for standard pipeline) - persisted in store
 const activeModelType = computed({
@@ -103,7 +143,18 @@ function getProviderIcon(provider: string): string {
 
     <!-- Voice -->
     <PanelSection :title="t('brainPanel.voiceSectionTitle')" icon="ph:microphone-duotone">
-      <PipelineSelector v-model="pipelineType" />
+      <PipelineSelector v-model="pipelineType" :hybrid-disabled="hybridDisabled" />
+      <div v-if="engineNotice" class="engine-notice" role="status">
+        <iconify-icon icon="ph:info-duotone"></iconify-icon>
+        <p>{{ t(`engines.${engineNotice}`) }}</p>
+        <button
+          class="engine-notice-close"
+          :aria-label="t('engines.close')"
+          @click="engineNotice = null"
+        >
+          <iconify-icon icon="ph:x"></iconify-icon>
+        </button>
+      </div>
       <div v-if="!voiceIsJarvis || voiceProviderMissingKey" class="voice-hint">
         <iconify-icon icon="ph:warning-duotone"></iconify-icon>
         <p>
@@ -117,7 +168,7 @@ function getProviderIcon(provider: string): string {
     </PanelSection>
 
     <!-- Standard Pipeline -->
-    <template v-if="pipelineType === 'standard'">
+    <template v-if="pipelineType === 'stt-llm-tts'">
       <!-- Model Type Tabs + Content in same section -->
       <PanelSection>
         <div class="models-section">
@@ -137,9 +188,10 @@ function getProviderIcon(provider: string): string {
       </PanelSection>
     </template>
 
-    <!-- Realtime Pipeline -->
-    <template v-if="pipelineType === 'realtime'">
-      <PanelSection>
+    <!-- Realtime Pipeline (Live, and the Live model of Live + TTS) -->
+    <template v-if="pipelineType === 'realtime' || pipelineType === 'hybrid'">
+      <PanelSection :title="pipelineType === 'hybrid' ? t('engines.liveModelSection') : undefined">
+        <p v-if="pipelineType === 'hybrid'" class="hybrid-intro">{{ t('engines.hybridIntro') }}</p>
         <div class="realtime-section">
           <!-- Realtime Model Summary -->
           <div class="realtime-model-summary">
@@ -159,6 +211,15 @@ function getProviderIcon(provider: string): string {
           <div class="tab-content">
             <RealtimeTab />
           </div>
+        </div>
+      </PanelSection>
+      <PanelSection
+        v-if="pipelineType === 'hybrid'"
+        :title="t('engines.ttsSection')"
+        icon="lucide:audio-lines"
+      >
+        <div class="tab-content">
+          <TTSTab />
         </div>
       </PanelSection>
     </template>
@@ -211,6 +272,46 @@ function getProviderIcon(provider: string): string {
   color: var(--text-primary);
   font-size: 11px;
   cursor: pointer;
+}
+
+.engine-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-lg);
+  background: var(--accent-glow);
+  border: 1px solid var(--accent-primary);
+}
+
+.engine-notice iconify-icon {
+  color: var(--accent-primary);
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.engine-notice p {
+  flex: 1;
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+.engine-notice-close {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+}
+
+.hybrid-intro {
+  margin: 0 0 10px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-secondary);
 }
 
 .realtime-section {

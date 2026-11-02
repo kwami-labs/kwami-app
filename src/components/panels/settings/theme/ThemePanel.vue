@@ -12,6 +12,7 @@ import {
 import { useUIStore, type PanelSizePreset } from '@/stores/ui';
 import BasePanel from '@/components/ui/BasePanel.vue';
 import PanelSection from '@/components/ui/PanelSection.vue';
+import PanelArrangementEditor from './PanelArrangementEditor.vue';
 import { panelIcons } from '@/constants/panel-icons';
 import BaseButton from '@/components/ui/BaseButton.vue';
 import BaseSlider from '@/components/ui/BaseSlider.vue';
@@ -121,6 +122,8 @@ function handleFileImport(event: Event) {
         </button>
       </BaseTooltip>
     </template>
+    <PanelArrangementEditor />
+
     <!-- Theme Presets -->
     <PanelSection :title="t('theme.presets')" icon="ph:stack-duotone" collapsible>
       <div class="preset-grid">

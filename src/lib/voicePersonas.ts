@@ -20,13 +20,13 @@
  * same prebuilt voices, reading the same sentence under each `style`.
  *
  * Each character also has ElevenLabs voices (`elevenlabs`), for the third
- * engine. The account is on the free plan, which cannot speak with library
- * voices through the API (402) nor design voices through it (403), checked
- * 2026-10-19: so they are stock voices, picked by measuring a Spanish sample
- * of each on Flash v2.5 (pitch, contour, pace) against the character. The
- * `*-elevenlabs-*` samples are those very takes. ElevenLabs reads no
- * direction; the style stays set anyway, because a set direction is what
- * locks the voice against the agent's own switching.
+ * engine. The first two of each were designed for the character with Voice
+ * Design from its `designPrompt` (2026-11-01, Creator plan) and saved in the
+ * account, picked by measuring takes on Flash v2.5 (pitch, contour, pace). The
+ * stock voices stay behind them, so a kwami saved with one keeps its character.
+ * The `*-elevenlabs-*` samples are Flash takes. ElevenLabs reads no direction;
+ * the style stays set anyway, because a set direction is what locks the voice
+ * against the agent's own switching.
  */
 
 export type VoiceGender = 'male' | 'female';
@@ -136,6 +136,8 @@ export const LEGACY_DEFAULT_STT = {
  * agent backs each stage with another provider when one fails (a spent
  * free-tier quota, an outage), so a dead Gemini never leaves Jarvis mute.
  */
+export const CLAUDE_VOICE_LLM = { provider: 'anthropic', model: 'claude-haiku-5-5' } as const;
+
 export const GEMINI_STANDARD = {
   stt: FAST_STT,
   llm: { provider: 'google', model: 'gemini-3.5-flash' },
@@ -146,14 +148,17 @@ export const GEMINI_STANDARD = {
  * Jarvis on the standard pipeline (2026-10-19): Gemini listens and thinks,
  * ElevenLabs speaks. Flash v2.5 was the fastest TTS measured (0.19 s to first
  * audio) and is billed per use; Gemini TTS on a free-tier key allows ten
- * requests a day, and a spent quota leaves Jarvis mute. George is a mature
- * British male voice, the nearest stock voice to the butler register.
+ * requests a day, and a spent quota leaves Jarvis mute. The voice is the one
+ * designed for him, Británico.
  */
-export const JARVIS_ELEVENLABS_VOICE = 'JBFqnCBsd6RMkjVDRZzb';
+export const JARVIS_ELEVENLABS_VOICE = 'WHOJDqzCafRk2dAUIxxB';
 export const ELEVENLABS_TTS = { provider: 'elevenlabs', model: 'eleven_flash_v2_5' } as const;
 export const JARVIS_STANDARD = {
   stt: GEMINI_STANDARD.stt,
-  llm: GEMINI_STANDARD.llm,
+  // The user's rule (2026-11-02): Claude thinks, not Gemini. Haiku for a call: 0.75 s
+  // to the first token, measured with ~120 tools. It answers through the API key:
+  // a call's turns need streaming and tools, which the PC's account does not give.
+  llm: CLAUDE_VOICE_LLM,
   tts: { ...ELEVENLABS_TTS, voice: JARVIS_ELEVENLABS_VOICE },
 } as const;
 
@@ -175,7 +180,7 @@ export interface VoicePersona {
   alternatives: string[];
   /** Direction for the realtime model, in the language it will speak. */
   style: string;
-  /** ElevenLabs stock voices for the character; the first is the suggested one. */
+  /** ElevenLabs voices for the character, designed then stock; the first is the suggested one. */
   elevenlabs: readonly EngineVoice[];
   /** Voices on the other engines, suggested first (Spanish ones where they exist). */
   cartesia: readonly EngineVoice[];
@@ -198,11 +203,14 @@ export const VOICE_PERSONAS: readonly VoicePersona[] = [
     provider: 'google',
     voice: 'Charon',
     alternatives: ['Orus', 'Iapetus', 'Algieba'],
-    // Measured in Spanish on Flash v2.5: George 124 Hz with a flat contour and
-    // an unhurried pace, the butler register; Roger the deepest and flattest
-    // (101 Hz) but casual in manner; Daniel formal and slow; Brian deep.
+    // Measured in Spanish on Flash v2.5: Británico, designed, 142 Hz, light and
+    // medium-pitched like the film's AI; Seco, designed, 121 Hz and the briskest. Of the stock ones: George 124 Hz with a
+    // flat contour and an unhurried pace, the butler register; Roger the deepest
+    // and flattest (101 Hz) but casual in manner; Daniel formal and slow; Brian deep.
     elevenlabs: [
-      { id: JARVIS_ELEVENLABS_VOICE, name: 'George' },
+      { id: JARVIS_ELEVENLABS_VOICE, name: 'Británico' },
+      { id: 'tjU8IXOtwi9SR61U8hgY', name: 'Seco' },
+      { id: 'JBFqnCBsd6RMkjVDRZzb', name: 'George' },
       { id: 'CwhRBWXzGAHq8TQ4Fs17', name: 'Roger' },
       { id: 'onwK4e9ZLuTAKqWW03F9', name: 'Daniel' },
       { id: 'nPczCjzI2devNBz1zQrb', name: 'Brian' },
@@ -235,10 +243,12 @@ export const VOICE_PERSONAS: readonly VoicePersona[] = [
       'ironía británica por atenuación, que se intuye en una ligerísima sonrisa al decir lo ' +
       'obvio. Nunca suena robótico, entusiasmado ni comercial.',
     designPrompt:
-      'Voz masculina de unos 50 años, mayordomo inglés de la vieja escuela que habla castellano ' +
-      'de España neutro: timbre grave y aterciopelado con resonancia de pecho, dicción ' +
-      'impecable, ritmo pausado, calma absoluta e ironía seca y contenida. Grabación de ' +
-      'estudio, sin reverberación ni ruido.',
+      'A witty artificial intelligence butler: a British man in his late thirties speaking ' +
+      'fluent Castilian Spanish with a very slight refined English lilt. Light, smooth, ' +
+      'medium-pitched tenor-baritone, not deep. Dry, understated and effortlessly clever, ' +
+      'polite with a hint of sarcasm. Brisk, precise and fluid delivery, almost flat ' +
+      'intonation, unemotional yet warm, crisp consonants. Close microphone, clean studio ' +
+      'recording, no reverb, no noise.',
     summary: {
       en: 'Old-school butler AI, as JARVIS: deep velvety pitch, unhurried, impeccable, dry wit.',
       es: 'Mayordomo digital al estilo JARVIS: timbre grave y aterciopelado, pausado, impecable, ironía seca.',
@@ -264,9 +274,12 @@ export const VOICE_PERSONAS: readonly VoicePersona[] = [
     provider: 'google',
     voice: 'Aoede',
     alternatives: ['Kore', 'Sulafat', 'Despina'],
-    // Jessica: young, bright and warm (205 Hz), the closest in character;
-    // Alice the most melodic and quickest, Sarah bright, Lily velvety.
+    // Irlandesa, designed: 185 Hz, soft with a light lilt. Serena, designed: 167 Hz,
+    // lower and flatter. Of the stock ones: Jessica young, bright and warm (205 Hz); Alice
+    // the most melodic and quickest, Sarah bright, Lily velvety.
     elevenlabs: [
+      { id: '7DhuphZTKDjiMKbUjawV', name: 'Irlandesa' },
+      { id: 'r38nWKEfEkdcb3l6HqyC', name: 'Serena' },
       { id: 'cgSgspJ2msm6clMCkdW9', name: 'Jessica' },
       { id: 'Xb7hH8MSUJpSbSDYk0k2', name: 'Alice' },
       { id: 'EXAVITQu4vr4xnSDxMaL', name: 'Sarah' },
@@ -297,10 +310,11 @@ export const VOICE_PERSONAS: readonly VoicePersona[] = [
       'un punto pícaro, siempre respetuosa con el señor. Nunca chillona, infantil ni ' +
       'exagerada.',
     designPrompt:
-      'Voz femenina de unos 28 años que habla castellano de España: timbre agudo, luminoso y ' +
-      'suave, casi angelical, limpio y aireado; ritmo ágil sin atropellarse; tono cálido, ' +
-      'cercano y seguro con un punto desenfadado. Grabación de estudio, sin reverberación ni ' +
-      'ruido.',
+      'A capable artificial intelligence co-pilot: an Irish woman in her thirties speaking ' +
+      'fluent Castilian Spanish with a slight soft Irish lilt. Soft, medium-pitched, slightly ' +
+      'husky and calm voice, never shrill. Matter-of-fact, understated and quietly warm, with ' +
+      'gentle musical rises at the end of phrases. Relaxed yet quick, natural conversational ' +
+      'delivery. Close microphone, clean studio recording, no reverb, no noise.',
     summary: {
       en: 'Co-pilot AI, as FRIDAY: high, bright, almost angelic, quick and warm.',
       es: 'Copiloto digital al estilo FRIDAY: timbre agudo y luminoso, casi angelical, ágil y cálida.',
@@ -360,7 +374,10 @@ export function voiceSampleUrl(
 }
 
 /** The non-Gemini voice list a persona has for an engine. */
-function engineVoices(persona: VoicePersona, engine: VoiceEngine): readonly EngineVoice[] | null {
+export function engineVoices(
+  persona: VoicePersona,
+  engine: VoiceEngine,
+): readonly EngineVoice[] | null {
   switch (engine) {
     case 'elevenlabs':
       return persona.elevenlabs;
@@ -377,7 +394,7 @@ function engineVoices(persona: VoicePersona, engine: VoiceEngine): readonly Engi
   }
 }
 
-const TTS_ENGINE_BY_PROVIDER: Record<string, VoiceEngine> = {
+export const TTS_ENGINE_BY_PROVIDER: Record<string, VoiceEngine> = {
   elevenlabs: 'elevenlabs',
   cartesia: 'cartesia',
   deepgram: 'deepgram',

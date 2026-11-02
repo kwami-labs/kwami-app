@@ -6,6 +6,7 @@ import BaseButton from '@/components/ui/BaseButton.vue';
 import BaseInput from '@/components/ui/BaseInput.vue';
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue';
 import PanelHeaderControls from '@/components/ui/PanelHeaderControls.vue';
+import AssistantConnections from './AssistantConnections.vue';
 import {
   useCommunicationsPanel,
   type CommunicationsPanelMode,
@@ -82,6 +83,8 @@ const {
     </div>
 
     <div class="panel-body">
+      <AssistantConnections v-if="showOverview" />
+
       <PanelSection
         v-if="showOverview"
         :title="t('communications.overview')"

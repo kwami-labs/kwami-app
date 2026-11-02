@@ -15,6 +15,12 @@ import type {
 } from 'kwami';
 import { defaultCharter, normalizeCharter, type CharterConfig } from '@/lib/charter';
 import {
+  buildableMode,
+  hybridModelFor,
+  isPipelineMode,
+  type PipelineMode,
+} from '@/lib/voiceEngines';
+import {
   brainPayload,
   defaultBrain,
   normalizeBrain,
@@ -24,6 +30,7 @@ import {
 } from '@/lib/brain';
 import {
   FAST_STT,
+  CLAUDE_VOICE_LLM,
   GEMINI_STANDARD,
   LEGACY_DEFAULT_STT,
   VOICE_PERSONAS,
@@ -33,6 +40,8 @@ import {
 const STORAGE_KEY = 'kwami-voice-config';
 /** What the agent last said about its brain: which keys it has, spend, tasks. */
 const BRAIN_STATUS_KEY = 'kwami-brain-status';
+/** How long a cached agent report is trusted before a session refreshes it. */
+const BRAIN_STATUS_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 // Extended store configs with required fields for UI
 export interface STTConfig extends Omit<LibSTTConfig, 'provider' | 'language'> {
@@ -79,7 +88,13 @@ export const useVoiceStore = defineStore('voice', () => {
   // Pipeline mode - using correct VoicePipelineType values
   // Standard by default: Gemini TTS is Jarvis's voice; Gemini Live is the
   // faster alternative in the Voice panel.
-  const pipelineMode = ref<'stt-llm-tts' | 'realtime'>('stt-llm-tts');
+  const pipelineMode = ref<PipelineMode>('stt-llm-tts');
+
+  /**
+   * Why the panel last changed the engine on its own (an i18n key under
+   * `engines`), so it can say so instead of switching in silence.
+   */
+  const engineNotice = ref<string | null>(null);
 
   // STT Configuration
   // Defaults: the all-Gemini standard pipeline with Jarvis's voice, the sound
@@ -88,7 +103,7 @@ export const useVoiceStore = defineStore('voice', () => {
 
   // LLM Configuration
   const llm = ref<LLMConfig>({
-    ...GEMINI_STANDARD.llm,
+    ...CLAUDE_VOICE_LLM,
     temperature: 0.7,
     maxTokens: 1024,
   });
@@ -130,6 +145,8 @@ export const useVoiceStore = defineStore('voice', () => {
     ttsExpandedProvider: null as string | null,
     realtimeExpandedProvider: null as string | null,
     realtimeVideoEnabled: false,
+    /** The voice last chosen for each voice model (`modelVoiceKey`). */
+    voiceByModel: {} as Record<string, string>,
   });
 
   // Voice panel UI state
@@ -182,10 +199,15 @@ export const useVoiceStore = defineStore('voice', () => {
 
   // Runtime report from the agent. Cached locally so the panel can show which
   // providers have keys before a session starts; never saved with the kwami.
+  // A day-old report is dropped: on 2026-10-23 one from nine days before
+  // still said OpenAI had no key and greyed out Live + TTS until a call began.
   const brainStatus = ref<BrainStatus | null>(null);
   try {
     const cached = localStorage.getItem(BRAIN_STATUS_KEY);
-    if (cached) brainStatus.value = JSON.parse(cached) as BrainStatus;
+    const parsed = cached ? (JSON.parse(cached) as BrainStatus) : null;
+    if (parsed && Date.now() - (parsed.receivedAt ?? 0) < BRAIN_STATUS_MAX_AGE_MS) {
+      brainStatus.value = parsed;
+    }
   } catch {
     brainStatus.value = null;
   }
@@ -210,20 +232,23 @@ export const useVoiceStore = defineStore('voice', () => {
   });
 
   // Enhancements panel state (full config, not just UI)
+  // The agent's own tuning for Spanish conversation (kwami-lk-agent,
+  // runtime/turn_taking.py). The agent applies whatever this sends, so a
+  // default here that differs from it silently replaces that tuning.
   const enhancementsState = ref({
     initialized: false,
     turnDetection: {
       enabled: true,
-      mode: 'model' as 'vad' | 'stt' | 'model' | 'manual',
+      mode: 'model' as 'vad' | 'stt' | 'model',
       model: 'multilingual' as 'english' | 'multilingual',
-      minEndpointingDelay: 0.5,
-      maxEndpointingDelay: 3.0,
+      minEndpointingDelay: 0.4,
+      maxEndpointingDelay: 2.5,
     },
-    interruptions: { enabled: true, minDuration: 0.5, minWords: 0 },
+    interruptions: { enabled: true, minDuration: 0.4, minWords: 0 },
     noiseCancellation: { enabled: true, mode: 'bvc' as 'bvc' | 'krisp' | 'default' },
-    vad: { provider: 'silero' as const, threshold: 0.5, minSpeech: 0.1, minSilence: 0.5 },
+    vad: { provider: 'silero' as const, threshold: 0.5, minSpeech: 0.1, minSilence: 0.3 },
     audioProcessing: { echoCancellation: true, autoGainControl: true },
-    performance: { preemptiveGeneration: false },
+    performance: { preemptiveGeneration: true },
   });
 
   // Update functions
@@ -241,6 +266,13 @@ export const useVoiceStore = defineStore('voice', () => {
 
   function updateRealtime(config: Partial<RealtimeConfig>) {
     realtime.value = { ...realtime.value, ...config };
+    // A Live model that only answers in audio cannot speak through the TTS:
+    // Live + TTS becomes Live, with that model's own voice.
+    const mode = buildableMode(pipelineMode.value, realtime.value, brainStatus.value);
+    if (mode !== pipelineMode.value) {
+      pipelineMode.value = mode;
+      engineNotice.value = 'liveAudioOnly';
+    }
   }
 
   function applyPreset(preset: { stt: STTConfig; llm: LLMConfig; tts: TTSConfig }) {
@@ -253,8 +285,27 @@ export const useVoiceStore = defineStore('voice', () => {
     activePreset.value = presetId;
   }
 
-  function setPipelineMode(mode: 'stt-llm-tts' | 'realtime') {
+  /**
+   * Switch the voice pipeline. Live + TTS needs a Live model that answers in
+   * text: the current one is swapped for one that does (and the panel says
+   * so), and with none available the switch is refused. Returns whether the
+   * pipeline is now `mode`.
+   */
+  function setPipelineMode(mode: PipelineMode): boolean {
+    engineNotice.value = null;
+    if (mode === 'hybrid') {
+      const model = hybridModelFor(realtime.value, brainStatus.value);
+      if (!model) {
+        engineNotice.value = 'hybridUnavailable';
+        return false;
+      }
+      if (model.provider !== realtime.value.provider || model.model !== realtime.value.model) {
+        realtime.value = { ...realtime.value, ...model } as RealtimeConfig;
+        engineNotice.value = 'hybridModelSwapped';
+      }
+    }
     pipelineMode.value = mode;
+    return true;
   }
 
   // Get full voice config for sending to agent
@@ -275,8 +326,7 @@ export const useVoiceStore = defineStore('voice', () => {
   function applySnapshot(settings: Record<string, unknown>) {
     if (!settings) return;
     try {
-      if (settings.pipelineMode != null)
-        pipelineMode.value = settings.pipelineMode as typeof pipelineMode.value;
+      if (isPipelineMode(settings.pipelineMode)) pipelineMode.value = settings.pipelineMode;
       if (settings.stt && typeof settings.stt === 'object') {
         stt.value = { ...stt.value, ...settings.stt } as STTConfig;
         // The old default ear, Gemini transcribe-live, finalised 1.24 s after
@@ -298,6 +348,9 @@ export const useVoiceStore = defineStore('voice', () => {
         // A kwami saved with an earlier wording of Jarvis or Friday gets the current one.
         if (realtime.value.style) realtime.value.style = upgradeStyle(realtime.value.style);
       }
+      // A save on Live + TTS with a Live model that only answers in audio is
+      // built as Live by the agent; show it as that.
+      pipelineMode.value = buildableMode(pipelineMode.value, realtime.value, brainStatus.value);
       if (settings.activePreset != null) activePreset.value = settings.activePreset as string;
       if (settings.modelsUI && typeof settings.modelsUI === 'object')
         modelsUI.value = { ...modelsUI.value, ...settings.modelsUI };
@@ -333,6 +386,9 @@ export const useVoiceStore = defineStore('voice', () => {
           if (source && typeof source === 'object') Object.assign(target, source);
         };
         merge(e.turnDetection, s.turnDetection);
+        // "Manual" waited for the app to commit each turn, which it never
+        // does: Jarvis heard the user and never answered.
+        if ((e.turnDetection.mode as string) === 'manual') e.turnDetection.mode = 'model';
         merge(e.interruptions, s.interruptions);
         merge(e.noiseCancellation, s.noiseCancellation);
         merge(e.vad, s.vad);
@@ -415,6 +471,7 @@ export const useVoiceStore = defineStore('voice', () => {
 
   return {
     pipelineMode,
+    engineNotice,
     stt,
     llm,
     tts,

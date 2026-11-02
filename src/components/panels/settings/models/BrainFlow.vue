@@ -20,11 +20,16 @@ const { brain, brainStatus, realtime, stt, llm, tts, pipelineMode } = storeToRef
 const voiceChain = computed(() =>
   pipelineMode.value === 'realtime'
     ? [`${realtime.value.provider} · ${realtime.value.model} (${realtime.value.voice})`]
-    : [
-        `STT ${stt.value.provider} · ${stt.value.model}`,
-        `LLM ${llm.value.provider} · ${llm.value.model}`,
-        `TTS ${tts.value.provider} · ${tts.value.model} (${tts.value.voice})`,
-      ],
+    : pipelineMode.value === 'hybrid'
+      ? [
+          `Live ${realtime.value.provider} · ${realtime.value.model}`,
+          `TTS ${tts.value.provider} · ${tts.value.model} (${tts.value.voice})`,
+        ]
+      : [
+          `STT ${stt.value.provider} · ${stt.value.model}`,
+          `LLM ${llm.value.provider} · ${llm.value.model}`,
+          `TTS ${tts.value.provider} · ${tts.value.model} (${tts.value.voice})`,
+        ],
 );
 
 const roleIcons: Record<BrainRole, string> = {
@@ -32,6 +37,7 @@ const roleIcons: Record<BrainRole, string> = {
   standard: 'ph:brain-duotone',
   expert: 'ph:graduation-cap-duotone',
   search: 'ph:magnifying-glass-duotone',
+  x_search: 'simple-icons:x',
   code: 'ph:terminal-window-duotone',
 };
 const roleKey: Record<BrainRole, string> = {
@@ -39,12 +45,13 @@ const roleKey: Record<BrainRole, string> = {
   standard: 'Standard',
   expert: 'Expert',
   search: 'Search',
+  x_search: 'XSearch',
   code: 'Code',
 };
 
 const rows = computed(() =>
   BRAIN_ROLES.map((role) => {
-    const inRole = brain.value.models.filter((m) => m.role === role && m.enabled);
+    const inRole = brain.value.models.filter((m) => m.roles.includes(role) && m.enabled);
     const usable = inRole.filter((m) => modelUsable(m, brainStatus.value));
     return {
       role,
@@ -54,6 +61,15 @@ const rows = computed(() =>
     };
   }),
 );
+
+/** Who plans: what the agent says it is using, else what was chosen, else the router's pick. */
+const directorName = computed(() => {
+  const models = brain.value.models;
+  const id = brainStatus.value?.director || brain.value.director;
+  const chosen =
+    models.find((m) => m.id === id) ?? models.find((m) => m.roles.includes('standard'));
+  return chosen ? name(chosen) : t('brainPanel.nobody');
+});
 
 const councilMembers = computed(() => {
   const remote = brain.value.models.filter(
@@ -105,7 +121,8 @@ function name(m: BrainModel) {
         <span class="node-title">{{ t('brainPanel.bridge') }}</span>
         <span class="node-sub">{{ t('brainPanel.bridgeRole') }}</span>
         <span v-if="brain.splitTasks" class="node-sub planner">
-          <iconify-icon icon="ph:tree-structure-duotone" /> {{ t('brainPanel.plannerRole') }}
+          <iconify-icon icon="ph:tree-structure-duotone" />
+          {{ t('brainPanel.directorRole', { name: directorName }) }}
         </span>
       </div>
     </div>

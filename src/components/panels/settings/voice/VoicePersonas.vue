@@ -5,12 +5,12 @@ import { storeToRefs } from 'pinia';
 import { useVoiceStore } from '@/stores/voice';
 import { useKwami } from '@/composables/useKwami';
 import BaseButton from '@/components/ui/BaseButton.vue';
-import { sendRawConfigUpdate } from '@/lib/agentConfigUpdate';
+import { engineSwitchFields, sendRawConfigUpdate } from '@/lib/agentConfigUpdate';
 import { voiceProviderHasKey } from '@/lib/brain';
 import {
+  CLAUDE_VOICE_LLM,
   ENGINE_SPECS,
   FAST_STT,
-  GEMINI_STANDARD,
   GEMINI_LIVE_MODEL,
   VOICE_ENGINES,
   VOICE_PERSONAS,
@@ -32,7 +32,7 @@ import { useAgentVideo } from '@/composables/useAgentVideo';
  * Character voices: Jarvis (male) and Friday (female), each with a spoken
  * direction and a voice on every engine (lib/voicePersonas.ts):
  *
- * - standard pipeline (Deepgram listens, Gemini thinks, a TTS speaks):
+ * - standard pipeline (Deepgram listens, Claude thinks, a TTS speaks):
  *   ElevenLabs, Cartesia, Deepgram, OpenAI or Gemini TTS -- only Gemini TTS
  *   reads the direction;
  * - realtime (one model hears and speaks): Gemini Live or OpenAI Realtime,
@@ -148,21 +148,12 @@ onBeforeUnmount(stop);
 
 /** Everything either engine needs, so a switch never lands on a stale engine. */
 function engineFields() {
-  return {
-    realtimeProvider: realtime.value.provider,
-    realtimeModel: realtime.value.model,
-    realtimeVoice: realtime.value.voice,
-    realtimeStyle: realtime.value.style ?? '',
-    stt_provider: voiceStore.stt.provider,
-    stt_model: voiceStore.stt.model,
-    stt_language: voiceStore.stt.language,
-    llm_provider: voiceStore.llm.provider,
-    llm_model: voiceStore.llm.model,
-    tts_provider: tts.value.provider,
-    tts_model: tts.value.model,
-    tts_voice: tts.value.voice,
-    tts_style: tts.value.style ?? '',
-  };
+  return engineSwitchFields({
+    stt: voiceStore.stt,
+    llm: voiceStore.llm,
+    tts: tts.value,
+    realtime: realtime.value,
+  });
 }
 
 function pushToAgent(switchedEngine: boolean) {
@@ -214,6 +205,10 @@ function setVoices(geminiVoice: string, engineVoice: string, style: string, on: 
       voice: engineVoice,
       style,
     });
+  } else if (spec.kind === 'standard' && pipelineMode.value === 'hybrid') {
+    // Live + TTS: the Live model keeps hearing and thinking. Moving it to
+    // Gemini Live, which only answers in audio, would end Live + TTS.
+    voiceStore.updateRealtime({ style });
   } else {
     voiceStore.updateRealtime({
       provider: 'google',
@@ -259,12 +254,16 @@ function setEngine(next: VoiceEngine) {
   const engineVoice = usesGeminiVoice(next)
     ? geminiVoice
     : personaVoice(persona ?? VOICE_PERSONAS[0]!, next);
+  const hybrid = pipelineMode.value === 'hybrid';
   setVoices(geminiVoice, engineVoice, activeStyle.value, next);
   if (isRealtimeEngine(next)) {
     voiceStore.setPipelineMode('realtime');
+  } else if (hybrid) {
+    // Live + TTS: the TTS changes, the Live model keeps hearing and thinking.
   } else {
     voiceStore.updateSTT({ ...FAST_STT });
-    voiceStore.updateLLM({ ...GEMINI_STANDARD.llm });
+    // Claude thinks unless the user chose to have the voice model answer.
+    if (voiceStore.brain.relay === 'everything') voiceStore.updateLLM({ ...CLAUDE_VOICE_LLM });
     voiceStore.setPipelineMode('stt-llm-tts');
   }
   pushToAgent(true);
