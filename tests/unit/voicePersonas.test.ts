@@ -57,10 +57,10 @@ describe('voice personas', () => {
     }
   });
 
-  it('gives each character ElevenLabs stock voices, George first for Jarvis', () => {
+  it('gives each character its designed ElevenLabs voices first, then the stock ones', () => {
     const [jarvis, friday] = VOICE_PERSONAS;
-    expect(jarvis.elevenlabs[0]).toEqual({ id: JARVIS_ELEVENLABS_VOICE, name: 'George' });
-    expect(friday.elevenlabs[0]!.name).toBe('Jessica');
+    expect(jarvis.elevenlabs[0]).toEqual({ id: JARVIS_ELEVENLABS_VOICE, name: 'Británico' });
+    expect(friday.elevenlabs[0]!.name).toBe('Irlandesa');
     // ElevenLabs ids are 20 characters: the agent refuses shorter ones.
     for (const p of VOICE_PERSONAS) for (const v of p.elevenlabs) expect(v.id).toHaveLength(20);
     expect(activePersona('Xb7hH8MSUJpSbSDYk0k2', friday.style)?.id).toBe('friday');
@@ -176,7 +176,7 @@ describe('voice personas section', () => {
     expect(store.pipelineMode).toBe('stt-llm-tts');
     // Deepgram listens on every standard engine: Gemini took 1.24 s to transcribe.
     expect(store.stt).toMatchObject({ provider: 'deepgram', model: 'nova-3', language: 'es' });
-    expect(store.llm).toMatchObject({ provider: 'google', model: 'gemini-3.5-flash' });
+    expect(store.llm).toMatchObject({ provider: 'anthropic', model: 'claude-haiku-5-5' });
     expect(store.tts).toMatchObject({ provider: 'gemini', voice: 'Charon' });
   });
 
@@ -196,7 +196,7 @@ describe('voice personas section', () => {
     });
     expect(store.realtime).toMatchObject({ provider: 'google', voice: 'Charon' });
     expect(wrapper.findAll('.persona')[0].classes()).toContain('active');
-    expect(wrapper.find('.pick').text()).toBe('George');
+    expect(wrapper.find('.pick').text()).toBe('Británico');
 
     // Friday on ElevenLabs speaks with her own voice there.
     const switchTo = wrapper
@@ -204,7 +204,7 @@ describe('voice personas section', () => {
       .findAll('button')
       .find((b) => b.text() === 'Cambiar a Friday');
     await switchTo!.trigger('click');
-    expect(store.tts).toMatchObject({ provider: 'elevenlabs', voice: 'cgSgspJ2msm6clMCkdW9' });
+    expect(store.tts).toMatchObject({ provider: 'elevenlabs', voice: '7DhuphZTKDjiMKbUjawV' });
     expect(store.realtime.voice).toBe('Aoede');
 
     // And back on Gemini TTS she keeps her Gemini voice.
@@ -271,19 +271,39 @@ describe('voice personas section', () => {
     await wrapper.vm.$nextTick();
     const jarvis = wrapper.findAll('.persona')[0];
     expect(jarvis.findAll('.pick').map((b) => b.text())).toEqual([
-      'George ★',
+      'Británico ★',
+      'Seco',
+      'George',
       'Roger',
       'Daniel',
       'Brian',
     ]);
-    await jarvis.findAll('.play')[1]!.trigger('click');
+    await jarvis.findAll('.play')[3]!.trigger('click');
     expect(vi.mocked(globalThis.Audio).mock.calls[0][0]).toBe(
       '/voices/jarvis-elevenlabs-roger.wav',
     );
-    await jarvis.findAll('.pick')[1]!.trigger('click');
+    await jarvis.findAll('.pick')[3]!.trigger('click');
     expect(store.tts.voice).toBe('CwhRBWXzGAHq8TQ4Fs17');
     expect(store.realtime.voice).toBe('Charon');
     vi.unstubAllGlobals();
+  });
+
+  it('on Live + TTS, a TTS engine changes only the TTS and keeps the Live model', async () => {
+    // Seen in the 2026-10-23 test: ElevenLabs moved the Live model to Gemini
+    // Live, which only answers in audio, and the engine fell to standard.
+    const wrapper = mountWithPinia(VoicePersonas, { global: { plugins: [i18n] } });
+    const store = useVoiceStore();
+    expect(store.setPipelineMode('hybrid')).toBe(true);
+    await wrapper.vm.$nextTick();
+
+    const eleven = wrapper.findAll('.engine-btn').find((b) => b.text().startsWith('ElevenLabs'))!;
+    await eleven.trigger('click');
+
+    expect(store.pipelineMode).toBe('hybrid');
+    expect(store.realtime.provider).toBe('openai');
+    expect(store.realtime.model).toBe('gpt-realtime');
+    expect(store.tts.provider).toBe('elevenlabs');
+    expect(store.tts.voice).toBe(JARVIS_ELEVENLABS_VOICE);
   });
 
   it('will not switch to an engine whose key the agent lacks', async () => {

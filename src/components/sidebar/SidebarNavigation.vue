@@ -12,6 +12,7 @@ import {
   SETTINGS_INFO_PANELS,
   SETTINGS_VISUAL_PANELS,
 } from '@/constants/panels';
+import { visiblePanels } from '@/lib/panelArrangement';
 import { useCommunicationsStore } from '@/stores/communications';
 import { fetchKwamiCommunications } from '@/composables/useCommunicationsApi';
 
@@ -202,8 +203,16 @@ async function refreshPhoneActivationStatus() {
 // Shared with usePanelShortcuts so the keyboard and the sidebar can never
 // disagree about which panels exist or which are gated.
 const appPanels = computed(() =>
-  appsPanelOrder(communicationsStore.isKwamiPhoneActivated(workspaceStore.activeWorkspaceId)),
+  visiblePanels(
+    appsPanelOrder(communicationsStore.isKwamiPhoneActivated(workspaceStore.activeWorkspaceId)),
+    uiStore.panelArrangement,
+  ),
 );
+const visualPanels = computed(() =>
+  visiblePanels(SETTINGS_VISUAL_PANELS, uiStore.panelArrangement),
+);
+const agentPanels = computed(() => visiblePanels(SETTINGS_AGENT_PANELS, uiStore.panelArrangement));
+const infoPanels = computed(() => visiblePanels(SETTINGS_INFO_PANELS, uiStore.panelArrangement));
 
 watch(
   () => workspaceStore.activeWorkspaceId,
@@ -236,7 +245,7 @@ watch(
         <div class="nav-group">
           <span class="switcher-label">{{ t('sidebar.visual') }}</span>
           <button
-            v-for="p in SETTINGS_VISUAL_PANELS"
+            v-for="p in visualPanels"
             :key="p"
             class="nav-btn"
             :class="{ active: uiStore.activePanel === p && uiStore.isPanelOpen }"
@@ -254,7 +263,7 @@ watch(
         <div class="nav-group">
           <span class="switcher-label">{{ t('sidebar.agent') }}</span>
           <button
-            v-for="p in SETTINGS_AGENT_PANELS"
+            v-for="p in agentPanels"
             :key="p"
             class="nav-btn"
             :class="{ active: uiStore.activePanel === p && uiStore.isPanelOpen }"
@@ -272,7 +281,7 @@ watch(
         <div class="nav-group">
           <span class="switcher-label">{{ t('sidebar.info') }}</span>
           <button
-            v-for="p in SETTINGS_INFO_PANELS"
+            v-for="p in infoPanels"
             :key="p"
             class="nav-btn"
             :class="{ active: uiStore.activePanel === p && uiStore.isPanelOpen }"

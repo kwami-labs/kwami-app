@@ -12,6 +12,7 @@ import type {
 import { useKwami } from '@/composables/useKwami';
 import { sendRawConfigUpdate } from '@/lib/agentConfigUpdate';
 import { voiceLock } from '@/lib/voicePersonas';
+import { isPipelineMode } from '@/lib/voiceEngines';
 import { useUIStore, type PanelSizePreset } from '@/stores/ui';
 import { useSearchStore } from '@/stores/search';
 import { useVoiceStore } from '@/stores/voice';
@@ -36,6 +37,9 @@ import { useWorkspaceStore } from '@/stores/workspace';
 import { useKwamiConfigSync } from '@/composables/useKwamiConfigSync';
 import { useSearchPanelAgentTools } from '@/composables/useSearchPanelAgentTools';
 import { useCommsAgentTools } from '@/composables/useCommsAgentTools';
+import { useAssistantAgentTools } from '@/composables/useAssistantAgentTools';
+import { useLayoutAgentTools } from '@/composables/useLayoutAgentTools';
+import { useOutboundGate } from '@/composables/useOutboundGate';
 import { useLocaleAgentTools } from '@/composables/useLocaleAgentTools';
 import { useCharterAgentTools } from '@/composables/useCharterAgentTools';
 import { useRecallAgentTools } from '@/composables/useRecallAgentTools';
@@ -260,6 +264,9 @@ export function useWorkspaceAgentTools() {
   // this one, so there is a single place the agent's tool set is assembled.
   const searchPanelTools = useSearchPanelAgentTools();
   const commsTools = useCommsAgentTools();
+  const assistantTools = useAssistantAgentTools();
+  const layoutTools = useLayoutAgentTools();
+  const outboundGate = useOutboundGate();
   const localeTools = useLocaleAgentTools();
   const charterTools = useCharterAgentTools();
   const recallTools = useRecallAgentTools();
@@ -1159,10 +1166,12 @@ export function useWorkspaceAgentTools() {
     }
 
     if (normalized === 'pipelinemode') {
-      if (value !== 'realtime' && value !== 'stt-llm-tts') {
+      if (!isPipelineMode(value)) {
         return { success: false, message: t('workspaceAgentTools.pipelineModeInvalid') };
       }
-      voiceStore.setPipelineMode(value);
+      if (!voiceStore.setPipelineMode(value)) {
+        return { success: false, message: t('engines.hybridUnavailable') };
+      }
       if (kwami.value) {
         kwami.value.agent.updateConfig({
           livekit: {
@@ -1318,7 +1327,8 @@ export function useWorkspaceAgentTools() {
         eState.turnDetection.enabled = value;
         break;
       case 'turndetectionmode':
-        if (value !== 'vad' && value !== 'stt' && value !== 'model' && value !== 'manual') {
+        // No 'manual': nothing commits the user's turns, so the agent would never answer.
+        if (value !== 'vad' && value !== 'stt' && value !== 'model') {
           return { success: false, message: t('workspaceAgentTools.turnDetectionModeInvalid') };
         }
         eState.turnDetection.mode = value;
@@ -2468,6 +2478,8 @@ export function useWorkspaceAgentTools() {
     // added without being wired in below.
     searchPanelTools.registerSearchPanelTools(instance);
     commsTools.registerCommsTools(instance);
+    assistantTools.registerAssistantTools(instance);
+    layoutTools.registerLayoutTools(instance);
     localeTools.registerLocaleTools(instance);
     charterTools.registerCharterTools(instance);
     recallTools.registerRecallTools(instance);
@@ -2761,6 +2773,24 @@ export function useWorkspaceAgentTools() {
       return null;
     }
 
+    // Sent with no way back and to a third party: the same gate as a text message.
+    const approveEmail = (
+      recipient: string,
+      subject: string,
+      text: string,
+      expressOrder: unknown,
+    ) =>
+      outboundGate.allow({
+        title: t('assistant.confirmOwnEmailTitle'),
+        message: t('assistant.confirmGmailBody', { recipient, subject, text }),
+        confirmLabel: t('assistant.confirmSend'),
+        cancelLabel: t('assistant.confirmCancel'),
+        channel: 'email',
+        recipient,
+        summary: subject,
+        expressOrder,
+      });
+
     instance.registerTool({
       name: 'read_emails',
       description: t('workspaceAgentTools.toolDescReadEmails'),
@@ -2829,16 +2859,17 @@ export function useWorkspaceAgentTools() {
       parameters: {
         email_ref: { type: 'string' },
         body: { type: 'string' },
-        confirm: { type: 'boolean' },
+        express_order: { type: 'string' },
       },
-      handler: async ({ email_ref, body, confirm }) => {
-        if (!confirm) return t('workspaceAgentTools.confirmRequired');
+      handler: async ({ email_ref, body, express_order }) => {
         const ref = _resolveRef(email_ref);
         if (!ref)
           return 'Invalid email reference. Use a number from the last listing (e.g. "1") or a message ID.';
         const replyTo = ref.from_address || (await emailStore.fetchMessage(ref.id))?.from_address;
         const replySubject = ref.subject || '';
         if (!replyTo) return 'Message not found. Try calling read_emails first.';
+        if (!(await approveEmail(replyTo, replySubject, asString(body), express_order)))
+          return 'Reply cancelled by the user. Nothing was sent.';
         try {
           await emailStore.sendEmail({
             to: [replyTo],
@@ -2860,16 +2891,18 @@ export function useWorkspaceAgentTools() {
         to: { type: 'string' },
         subject: { type: 'string' },
         body: { type: 'string' },
-        confirm: { type: 'boolean' },
+        express_order: { type: 'string' },
       },
-      handler: async ({ to, subject, body, confirm }) => {
+      handler: async ({ to, subject, body, express_order }) => {
         if (!emailStore.isActivated) return 'Email is not activated for this kwami.';
-        if (!confirm) return t('workspaceAgentTools.confirmRequired');
         const toList = asString(to)
           .split(/[,;]\s*/)
           .map((a) => a.trim())
           .filter(Boolean);
         if (toList.length === 0) return 'No recipient provided.';
+        const recipients = toList.join(', ');
+        if (!(await approveEmail(recipients, asString(subject), asString(body), express_order)))
+          return 'Email cancelled by the user. Nothing was sent.';
         try {
           await emailStore.sendEmail({
             to: toList,

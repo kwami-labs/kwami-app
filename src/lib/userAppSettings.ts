@@ -31,6 +31,27 @@ export async function loadUserLocaleFromDb(userId: string): Promise<void> {
   }
 }
 
+/** The panel layout saved in the account, or null when there is none to read. */
+export async function loadUserUiFromDb(userId: string): Promise<Record<string, unknown> | null> {
+  const { data, error } = await supabase
+    .from('user_app_settings')
+    .select('ui')
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (error) {
+    console.warn('Failed to load the panel layout:', error.message);
+    return null;
+  }
+  return (data?.ui as Record<string, unknown> | undefined) ?? null;
+}
+
+export async function saveUserUiToDb(userId: string, ui: Record<string, unknown>): Promise<void> {
+  const { error } = await supabase.from('user_app_settings').update({ ui }).eq('user_id', userId);
+  if (error) {
+    console.warn('Failed to save the panel layout:', error.message);
+  }
+}
+
 export async function saveUserLocaleToDb(userId: string, locale: SupportedLocale): Promise<void> {
   const { error } = await supabase
     .from('user_app_settings')

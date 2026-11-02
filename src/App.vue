@@ -49,7 +49,7 @@ useBrainSync(kwami, isConnected);
 const { initialize: initSceneBackground } = useSceneBackground();
 import { useVoiceStore } from '@/stores/voice';
 import { useCreditsStore } from '@/stores/credits';
-import { loadUserLocaleFromDb } from '@/lib/userAppSettings';
+import { useUiLayoutSync } from '@/composables/useUiLayoutSync';
 
 // Panels are lazy: none of them is needed at first paint, and eagerly
 // importing all 23 put MemoryPanel (2.2k lines), SceneBackground (1.8k) and
@@ -178,6 +178,7 @@ const isSplitWithBrowser = computed(
   () => navState.isActive.value && !!navState.liveUrl.value && navState.isDocked.value,
 );
 useWorkspaceAgentTools();
+useUiLayoutSync();
 
 // Sync per-kwami config: apply config when switching kwami, debounced save to DB
 useKwamiConfigWatchers();
@@ -231,7 +232,6 @@ watch(
       const uid = authStore.userId;
       if (uid) {
         void workspaceStore.loadFromDb(uid);
-        void loadUserLocaleFromDb(uid);
       }
     }
   },

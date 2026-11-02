@@ -35,8 +35,12 @@ onMounted(() => {
       const e = livekitVoice.enhancements;
       if (e.turnDetection) {
         turnDetection.enabled = e.turnDetection.enabled ?? turnDetection.enabled;
+        // "manual" is no longer offered: nothing commits the user's turns.
+        const savedMode = e.turnDetection.mode as string | undefined;
         turnDetection.mode =
-          (e.turnDetection.mode as typeof turnDetection.mode) ?? turnDetection.mode;
+          savedMode && savedMode !== 'manual'
+            ? (savedMode as typeof turnDetection.mode)
+            : turnDetection.mode;
         turnDetection.model =
           (e.turnDetection.model as typeof turnDetection.model) ?? turnDetection.model;
         turnDetection.minEndpointingDelay =
@@ -188,7 +192,6 @@ watch(() => performance.preemptiveGeneration, debouncedApply);
               { label: t('enhancements.modeModel'), value: 'model' },
               { label: t('enhancements.modeVad'), value: 'vad' },
               { label: t('enhancements.modeStt'), value: 'stt' },
-              { label: t('enhancements.modeManual'), value: 'manual' },
             ]"
           />
 

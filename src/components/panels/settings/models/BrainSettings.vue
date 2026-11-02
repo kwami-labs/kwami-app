@@ -8,12 +8,18 @@ import BaseButton from '@/components/ui/BaseButton.vue';
 import BaseInput from '@/components/ui/BaseInput.vue';
 import BaseSelect from '@/components/ui/BaseSelect.vue';
 import BaseToggle from '@/components/ui/BaseToggle.vue';
+import BrainModelCard from './BrainModelCard.vue';
+import ClaudeAccountCard from './ClaudeAccountCard.vue';
+import MindDirector from './MindDirector.vue';
+import ModelConnections from './ModelConnections.vue';
 import {
   BRAIN_PROVIDERS,
-  BRAIN_ROLES,
   MODEL_SUGGESTIONS,
+  PROVIDER_ICONS,
   PROVIDER_KEY_NAME,
+  PROVIDER_ROLES,
   defaultBrainModels,
+  rosterModel,
   type BrainConfig,
   type BrainModel,
   type BrainProvider,
@@ -51,27 +57,19 @@ function resetRoster() {
   patch({ models: defaultBrainModels() });
 }
 
-const providerLabel = (p: BrainProvider) =>
-  t(`brainPanel.provider${p.charAt(0).toUpperCase()}${p.slice(1)}`);
-const roleLabel = (r: BrainRole) =>
-  t(
-    `brainPanel.role${{ fast: 'Fast', standard: 'Standard', expert: 'Expert', search: 'Search', code: 'Code' }[r]}`,
-  );
-const providerIcon: Record<BrainProvider, string> = {
-  anthropic: 'simple-icons:anthropic',
-  google: 'simple-icons:googlegemini',
-  openai: 'simple-icons:openai',
-  local: 'ph:terminal-window-duotone',
-};
+const providerLabel = (p: BrainProvider) => t(`brainPanel.providers.${p}`);
+const roleLabel = (r: BrainRole) => t(`brainPanel.roles.${r}`);
 
 /** false only when the agent has said so; unknown is not "missing". */
 function hasKey(provider: BrainProvider): boolean {
   return brainStatus.value?.providers?.[provider] !== false;
 }
 
-const roleOptions = computed(() => BRAIN_ROLES.map((r) => ({ value: r, label: roleLabel(r) })));
+const draftRoles = computed(() =>
+  PROVIDER_ROLES[draft.value.provider].map((r) => ({ value: r, label: roleLabel(r) })),
+);
 const providerOptions = computed(() =>
-  BRAIN_PROVIDERS.map((p) => ({ value: p, label: providerLabel(p), icon: providerIcon[p] })),
+  BRAIN_PROVIDERS.map((p) => ({ value: p, label: providerLabel(p), icon: PROVIDER_ICONS[p] })),
 );
 
 // -- add a model ---------------------------------------------------------------
@@ -86,18 +84,31 @@ const draft = ref({
 const addError = ref('');
 const suggestions = computed(() => MODEL_SUGGESTIONS[draft.value.provider]);
 
+function changeDraftProvider(provider: BrainProvider) {
+  const allowed = PROVIDER_ROLES[provider];
+  const role = allowed.includes(draft.value.role) ? draft.value.role : allowed[0];
+  draft.value = { provider, model: '', label: '', role };
+}
 function useSuggestion(s: { model: string; label: string }) {
   draft.value = { ...draft.value, model: s.model, label: s.label };
+}
+/** "Add a model" opened on a provider just connected, with its first suggestion filled in. */
+function addFromProvider(provider: BrainProvider) {
+  const first = MODEL_SUGGESTIONS[provider][0];
+  draft.value = {
+    provider,
+    model: first?.model ?? '',
+    label: first?.label ?? '',
+    role: PROVIDER_ROLES[provider][0],
+  };
+  addError.value = '';
+  adding.value = true;
 }
 function addModel() {
   const model = draft.value.model.trim();
   if (!model) return;
-  const role: BrainRole =
-    draft.value.provider === 'local'
-      ? 'code'
-      : draft.value.role === 'code'
-        ? 'standard'
-        : draft.value.role;
+  const allowed = PROVIDER_ROLES[draft.value.provider];
+  const role = allowed.includes(draft.value.role) ? draft.value.role : allowed[0];
   const id = `${draft.value.provider}-${model}`.toLowerCase().replace(/[^a-z0-9.-]+/g, '-');
   if (brain.value.models.some((m) => m.id === id)) {
     addError.value = t('brainPanel.duplicate');
@@ -106,15 +117,7 @@ function addModel() {
   patch({
     models: [
       ...brain.value.models,
-      {
-        id,
-        label: draft.value.label.trim() || model,
-        provider: draft.value.provider,
-        model,
-        role,
-        enabled: true,
-        council: false,
-      },
+      rosterModel(id, draft.value.label.trim() || model, draft.value.provider, model, role),
     ],
   });
   adding.value = false;
@@ -200,72 +203,21 @@ const taskStatusLabel = (s: string) =>
       <iconify-icon icon="ph:plug-duotone" /> {{ t('brainPanel.statusUnknown') }}
     </p>
 
+    <ClaudeAccountCard />
+    <MindDirector />
+    <ModelConnections @add="addFromProvider" />
+
     <!-- Roster -->
     <ul class="roster">
-      <li
+      <BrainModelCard
         v-for="(m, i) in brain.models"
         :key="m.id"
-        class="model"
-        :class="{ disabled: !m.enabled, nokey: !hasKey(m.provider) }"
-      >
-        <div class="model-top">
-          <iconify-icon :icon="providerIcon[m.provider]" class="provider-icon" />
-          <div class="model-names">
-            <span class="model-label">{{ m.label || m.model }}</span>
-            <span class="model-id">{{ m.model }}</span>
-          </div>
-          <span
-            v-if="!hasKey(m.provider)"
-            class="badge nokey-badge"
-            :title="t('brainPanel.noKeyHint', { key: PROVIDER_KEY_NAME[m.provider] })"
-            >{{ t('brainPanel.noKey') }}</span
-          >
-          <BaseToggle
-            :model-value="m.enabled"
-            size="sm"
-            @update:model-value="patchModel(m.id, { enabled: $event })"
-          />
-        </div>
-        <div class="model-controls">
-          <div class="toggle-group roles">
-            <button
-              v-for="r in m.provider === 'local'
-                ? (['code'] as BrainRole[])
-                : BRAIN_ROLES.filter((x) => x !== 'code')"
-              :key="r"
-              class="toggle-btn"
-              :class="{ active: m.role === r }"
-              @click="patchModel(m.id, { role: r })"
-            >
-              {{ roleLabel(r) }}
-            </button>
-          </div>
-          <button
-            v-if="m.provider !== 'local'"
-            class="icon-btn"
-            :class="{ on: m.council }"
-            :title="t('brainPanel.inCouncil')"
-            @click="patchModel(m.id, { council: !m.council })"
-          >
-            <iconify-icon icon="ph:users-three-duotone" />
-          </button>
-          <button
-            class="icon-btn"
-            :disabled="i === 0"
-            :title="t('brainPanel.moveUp')"
-            @click="moveUp(m.id)"
-          >
-            <iconify-icon icon="ph:arrow-up-bold" />
-          </button>
-          <button
-            class="icon-btn danger"
-            :title="t('brainPanel.remove')"
-            @click="removeModel(m.id)"
-          >
-            <iconify-icon icon="ph:trash-duotone" />
-          </button>
-        </div>
-      </li>
+        :model="m"
+        :first="i === 0"
+        @change="patchModel(m.id, $event)"
+        @move-up="moveUp(m.id)"
+        @remove="removeModel(m.id)"
+      />
     </ul>
 
     <!-- Add -->
@@ -276,9 +228,7 @@ const taskStatusLabel = (s: string) =>
         :options="providerOptions"
         :label="t('brainPanel.provider')"
         block
-        @update:model-value="
-          draft = { ...draft, provider: $event as BrainProvider, model: '', label: '' }
-        "
+        @update:model-value="changeDraftProvider($event as BrainProvider)"
       />
       <div class="chips">
         <button
@@ -299,9 +249,9 @@ const taskStatusLabel = (s: string) =>
       />
       <BaseInput v-model="draft.label" :label="t('brainPanel.label')" placeholder="GPT-5.2" />
       <BaseSelect
-        v-if="draft.provider !== 'local'"
+        v-if="draftRoles.length > 1"
         :model-value="draft.role"
-        :options="roleOptions.filter((o) => o.value !== 'code')"
+        :options="draftRoles"
         :label="t('brainPanel.role')"
         block
         @update:model-value="draft = { ...draft, role: $event as BrainRole }"
@@ -509,6 +459,9 @@ const taskStatusLabel = (s: string) =>
         <li v-for="task in tasks" :key="task.id" class="task" :class="task.status">
           <div class="task-head">
             <span class="task-title">{{ task.title }}</span>
+            <span v-if="task.viaAccount" class="badge account-badge">{{
+              t('brainPanel.onAccount')
+            }}</span>
             <span class="badge">{{ taskStatusLabel(task.status) }}</span>
           </div>
           <span class="task-meta"
@@ -558,53 +511,13 @@ const taskStatusLabel = (s: string) =>
   flex-direction: column;
   gap: 8px;
 }
-.model {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 10px;
-  border-radius: var(--radius-lg);
-  background: var(--surface-1);
-  border: 1px solid var(--surface-2);
+.account-badge {
+  background: rgba(74, 222, 128, 0.15);
+  color: #4ade80;
 }
-.model.disabled {
-  opacity: 0.55;
-}
-.model.nokey {
-  border-style: dashed;
-}
-.model-top {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.provider-icon {
-  font-size: 15px;
-  color: var(--text-secondary);
-  flex-shrink: 0;
-}
-.model-names {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  flex: 1;
-}
-.model-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-.model-id {
-  font-size: 9px;
-  font-family: var(--font-mono, monospace);
-  color: var(--text-muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.model-controls {
-  display: flex;
-  gap: 6px;
-  align-items: center;
+.nokey-badge {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
 }
 .badge {
   font-size: 9px;
@@ -613,36 +526,6 @@ const taskStatusLabel = (s: string) =>
   background: var(--surface-2);
   color: var(--text-secondary);
   white-space: nowrap;
-}
-.nokey-badge {
-  background: rgba(251, 191, 36, 0.15);
-  color: #fbbf24;
-}
-.icon-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  flex-shrink: 0;
-  border-radius: 6px;
-  border: 1px solid var(--surface-2);
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-}
-.icon-btn:disabled {
-  opacity: 0.3;
-  cursor: default;
-}
-.icon-btn.on {
-  background: rgba(167, 139, 250, 0.2);
-  border-color: rgba(167, 139, 250, 0.6);
-  color: #c4b5fd;
-}
-.icon-btn.danger:hover {
-  color: #f87171;
-  border-color: rgba(248, 113, 113, 0.5);
 }
 .add-form {
   display: flex;

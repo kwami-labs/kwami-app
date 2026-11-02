@@ -12,6 +12,7 @@ import { i18n, setLocale } from '../../src/i18n';
 import BrainFlow from '../../src/components/panels/settings/models/BrainFlow.vue';
 import BrainSettings from '../../src/components/panels/settings/models/BrainSettings.vue';
 import { useVoiceStore } from '../../src/stores/voice';
+import { rosterModel } from '../../src/lib/brain';
 
 enableAutoUnmount(afterEach);
 
@@ -20,7 +21,7 @@ const status = {
   providers: { anthropic: true, google: true, openai: false, local: true },
   voiceProviders: { google: true, openai: false, aws: false },
   tavily: false,
-  spend: { month: '2026-10', usd: 12.5, budgetUsd: 50 },
+  spend: { month: '2026-10', usd: 12.5, budgetUsd: 150 },
   tasks: [
     {
       id: 't1',
@@ -54,15 +55,7 @@ describe('brain panel', () => {
       ...store.brain,
       models: [
         ...store.brain.models,
-        {
-          id: 'gpt',
-          label: 'GPT-5.2',
-          provider: 'openai',
-          model: 'gpt-5.2',
-          role: 'expert',
-          enabled: true,
-          council: true,
-        },
+        rosterModel('gpt', 'GPT-5.2', 'openai', 'gpt-5.2', 'expert', { council: true }),
       ],
     };
     store.applyBrainStatus(status);
@@ -70,11 +63,11 @@ describe('brain panel', () => {
       const text = wrapper.text();
       // Standard Gemini pipeline by default: the chain shows each stage.
       expect(text).toContain('TTS gemini · gemini-3.1-flash-tts-preview (Charon)');
-      expect(text).toContain('LLM google · gemini-3.5-flash');
+      expect(text).toContain('LLM anthropic · claude-haiku-5-5');
       expect(text).toContain('Claude Haiku 5.5');
       expect(text).toContain('Claude Opus 5.5');
       expect(text).toContain('GPT-5.2 · sin clave');
-      expect(text).toContain('Planificador');
+      expect(text).toContain('Director');
     });
   });
 
@@ -84,7 +77,7 @@ describe('brain panel', () => {
     store.applyBrainStatus(status);
     await wrapper.vm.$nextTick();
 
-    expect(wrapper.text()).toContain('12.50 $ / 50 $');
+    expect(wrapper.text()).toContain('12.50 $ / 150 $');
     expect(wrapper.text()).toContain('precio del oro');
 
     const haikuRow = wrapper.findAll('.model')[0];

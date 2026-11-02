@@ -242,7 +242,7 @@ export const workspaceAgentToolsEn = {
       'The voice is fixed on {name} by the user. It can only be changed from the Voice panel, by choosing another character.',
     voiceControlString: 'Voice control must be a string.',
     cancelledVoiceControl: 'Cancelled voice control {control}.',
-    pipelineModeInvalid: 'Pipeline mode must be realtime or stt-llm-tts.',
+    pipelineModeInvalid: 'Pipeline mode must be realtime, stt-llm-tts or hybrid.',
     pipelineModeSet: 'Pipeline mode set to {mode}.',
     pipelineModeSetReconnect:
       'Pipeline mode set to {mode}. Reconnect the session if the active backend pipeline does not change immediately.',
@@ -363,9 +363,9 @@ export const workspaceAgentToolsEn = {
     toolDescReadEmailDetail:
       "Read the full content of a specific email. Pass email_ref as a number from the last listing (e.g. '1' for the first email) or a UUID message ID.",
     toolDescReplyToEmail:
-      "Reply to a specific email. Pass email_ref as a number from the last listing (e.g. '1') or a UUID. Requires the reply body text and confirm=true to actually send.",
+      "Reply to a specific email. Pass email_ref as a number from the last listing (e.g. '1') or a UUID. Requires the reply body text. The app asks the user first; only if their latest words expressly order it sent without review, pass those exact words as express_order.",
     toolDescSendEmail:
-      "Compose and send a new email (not a reply). Requires: to (email address), subject, body text, and confirm=true to send. The email is sent from the user's kwami.io address.",
+      "Compose and send a new email (not a reply). Requires: to (email address), subject and body text. The app asks the user first; only if their latest words expressly order it sent without review, pass those exact words as express_order. The email is sent from the user's kwami.io address.",
     toolDescArchiveEmail:
       'Archive an email, removing it from the inbox. Pass email_ref as a number from the last listing or a UUID.',
     toolDescCheckEmailStatus: "Check the user's unread email count, broken down by category.",
@@ -624,7 +624,7 @@ export const workspaceAgentToolsEs = {
       'La voz está fijada en {name} por el usuario. Solo se cambia desde el panel de Voz, eligiendo otro personaje.',
     voiceControlString: 'Control voz: cadena.',
     cancelledVoiceControl: 'Control voz cancelado: {control}.',
-    pipelineModeInvalid: 'Pipeline: realtime o stt-llm-tts.',
+    pipelineModeInvalid: 'Pipeline: realtime, stt-llm-tts o hybrid.',
     pipelineModeSet: 'Pipeline: {mode}.',
     pipelineModeSetReconnect: 'Pipeline: {mode}. Reconecta si el backend no cambia de inmediato.',
     ttsVoiceString: 'Voz TTS: id.',
@@ -744,9 +744,9 @@ export const workspaceAgentToolsEs = {
     toolDescReadEmailDetail:
       "Lee el contenido completo de un email. Pasa email_ref como numero de la ultima lista (ej. '1' para el primero) o un UUID.",
     toolDescReplyToEmail:
-      "Responde a un email. Pasa email_ref como numero de la ultima lista (ej. '1') o UUID. Requiere texto de respuesta y confirm=true para enviar.",
+      "Responde a un email. Pasa email_ref como numero de la ultima lista (ej. '1') o UUID. Requiere texto de respuesta. La app pregunta antes al usuario; solo si sus ultimas palabras ordenan expresamente enviarlo sin revisar, pasa esas palabras exactas en express_order.",
     toolDescSendEmail:
-      'Compone y envia un email nuevo (no una respuesta). Requiere: to (direccion), subject, body y confirm=true para enviar. Se envia desde la direccion kwami.io del usuario.',
+      'Compone y envia un email nuevo (no una respuesta). Requiere: to (direccion), subject y body. La app pregunta antes al usuario; solo si sus ultimas palabras ordenan expresamente enviarlo sin revisar, pasa esas palabras exactas en express_order. Se envia desde la direccion kwami.io del usuario.',
     toolDescArchiveEmail:
       'Archiva un email, removiendolo de la bandeja. Pasa email_ref como numero de la ultima lista o UUID.',
     toolDescCheckEmailStatus:

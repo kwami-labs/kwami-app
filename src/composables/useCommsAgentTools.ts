@@ -4,6 +4,7 @@ import { useWorkspaceStore } from '@/stores/workspace';
 import { useContactsStore, type ContactRecord } from '@/stores/contacts';
 import { useWalletStore } from '@/stores/wallet';
 import { useAgentActionState } from '@/composables/useAgentActionState';
+import { useOutboundGate } from '@/composables/useOutboundGate';
 import {
   fetchKwamiCommunications,
   searchKwamiNumbers,
@@ -31,7 +32,8 @@ import {
  * 2. **Anything outward-facing goes through the app's own confirmation**,
  *    with no model-supplied bypass. Elsewhere in the app a tool may take
  *    `confirm: true` from the model; for sending and calling that would make
- *    the model its own gate, which is no gate.
+ *    the model its own gate, which is no gate. The one way past the dialog is
+ *    the user's own words, checked in `lib/expressOrder.ts`.
  * 3. **The result is reported, not the request.** Nobody can hear an SMS
  *    fail. Every handler returns what the API actually said.
  */
@@ -81,6 +83,7 @@ export function useCommsAgentTools() {
   const contactsStore = useContactsStore();
   const walletStore = useWalletStore();
   const actionState = useAgentActionState();
+  const outboundGate = useOutboundGate();
 
   function activeKwamiId(): string {
     return workspaceStore.activeWorkspaceId;
@@ -296,7 +299,12 @@ export function useCommsAgentTools() {
   // Messaging
   // ---------------------------------------------------------------------------
 
-  async function sendMessage(kind: 'sms' | 'whatsapp', to: unknown, body: unknown) {
+  async function sendMessage(
+    kind: 'sms' | 'whatsapp',
+    to: unknown,
+    body: unknown,
+    expressOrder?: unknown,
+  ) {
     const kwami = requireKwami();
     if (!kwami.ok) return { success: false, message: kwami.message };
 
@@ -306,10 +314,16 @@ export function useCommsAgentTools() {
     const resolved = await resolveRecipient(to, kind);
     if (!resolved.ok) return { success: false, message: resolved.message };
 
-    const approved = await confirmOutbound(
-      kind === 'sms' ? t('comms.confirmSmsTitle') : t('comms.confirmWhatsappTitle'),
-      t('comms.confirmSendBody', { recipient: resolved.recipient.label, text }),
-    );
+    const approved = await outboundGate.allow({
+      title: kind === 'sms' ? t('comms.confirmSmsTitle') : t('comms.confirmWhatsappTitle'),
+      message: t('comms.confirmSendBody', { recipient: resolved.recipient.label, text }),
+      confirmLabel: t('comms.confirmSend'),
+      cancelLabel: t('comms.confirmCancel'),
+      channel: kind,
+      recipient: resolved.recipient.number,
+      summary: text.slice(0, 120),
+      expressOrder,
+    });
     if (!approved) {
       return {
         success: false,
@@ -739,8 +753,9 @@ export function useCommsAgentTools() {
       parameters: {
         to: { type: 'string' },
         body: { type: 'string' },
+        express_order: { type: 'string' },
       },
-      handler: async ({ to, body }) => sendMessage('sms', to, body),
+      handler: async ({ to, body, express_order }) => sendMessage('sms', to, body, express_order),
     });
 
     instance.registerTool({
@@ -749,8 +764,10 @@ export function useCommsAgentTools() {
       parameters: {
         to: { type: 'string' },
         body: { type: 'string' },
+        express_order: { type: 'string' },
       },
-      handler: async ({ to, body }) => sendMessage('whatsapp', to, body),
+      handler: async ({ to, body, express_order }) =>
+        sendMessage('whatsapp', to, body, express_order),
     });
 
     instance.registerTool({
