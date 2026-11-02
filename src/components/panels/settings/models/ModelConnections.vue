@@ -12,8 +12,10 @@ import {
   MODEL_SUGGESTIONS,
   PROVIDER_ICONS,
   PROVIDER_KEY_PAGES,
+  voiceProviderHasKey,
   type BrainProvider,
 } from '@/lib/brain';
+import { voiceProviderServed } from '@/lib/voiceCatalog';
 
 /**
  * Every provider the brain can use, how it is reached today, and the way to connect
@@ -24,16 +26,44 @@ const emit = defineEmits<{ add: [provider: BrainProvider] }>();
 const { t } = useI18n();
 const { brain, brainStatus } = storeToRefs(useVoiceStore());
 const auth = useAuthStore();
-const { connections, refresh, saveKey, disconnect, signInOpenRouter } = useProviderConnections();
+const { connections, refresh, saveKey, checkKey, disconnect, signInOpenRouter } =
+  useProviderConnections();
 
 const providers = BRAIN_PROVIDERS.filter((p) => p !== 'local');
 /** The API was asked and could not say. */
 const unreachable = ref(false);
-onMounted(async () => {
-  if (!auth.userId) return;
+async function look() {
   await refresh();
   unreachable.value = connections.value === null;
+}
+onMounted(() => {
+  if (auth.userId) void look();
 });
+
+/** What the last check said of a connected key. */
+const checks = ref<Partial<Record<BrainProvider, 'checking' | 'good' | 'bad' | 'unknown'>>>({});
+async function check(p: BrainProvider) {
+  checks.value[p] = 'checking';
+  try {
+    checks.value[p] = (await checkKey(p)) ? 'good' : 'bad';
+  } catch {
+    // The provider or the server did not answer: that says nothing of the key.
+    checks.value[p] = 'unknown';
+  }
+}
+
+/** The voice engines this agent can use, once it has reported them. */
+const VOICE_ENGINES = ['elevenlabs', 'cartesia', 'deepgram', 'openai', 'gemini', 'rime'];
+const voiceEngines = computed(() =>
+  brainStatus.value
+    ? VOICE_ENGINES.map((name) => ({
+        name,
+        on:
+          voiceProviderServed(brainStatus.value, 'tts', name) &&
+          voiceProviderHasKey(brainStatus.value, 'tts', name),
+      }))
+    : [],
+);
 
 function stateOf(p: BrainProvider): { kind: 'on' | 'off'; text: string } {
   const own = connections.value?.connected?.[p];
@@ -90,7 +120,10 @@ async function save(p: BrainProvider) {
   <PanelSection :title="t('mind.connectionsTitle')" icon="ph:plugs-connected-duotone" collapsible>
     <p class="hint">{{ t('mind.connectionsHint') }}</p>
     <p v-if="!auth.userId" class="hint warn">{{ t('mind.connectionsLogin') }}</p>
-    <p v-else-if="unreachable" class="hint warn">{{ t('mind.connectionsDown') }}</p>
+    <p v-else-if="unreachable" class="hint warn">
+      {{ t('mind.connectionsDown') }}
+      <button class="link" @click="look">{{ t('mind.retry') }}</button>
+    </p>
     <p v-else-if="connections && !connections.enabled" class="hint warn">
       {{ t('mind.connectionsOff') }}
     </p>
@@ -102,10 +135,24 @@ async function save(p: BrainProvider) {
           <div class="names">
             <span class="name">{{ t(`brainPanel.providers.${p}`) }}</span>
             <span class="state" :class="stateOf(p).kind">{{ stateOf(p).text }}</span>
+            <span
+              v-if="checks[p] && checks[p] !== 'checking'"
+              class="state"
+              :class="{ on: checks[p] === 'good', bad: checks[p] === 'bad' }"
+              >{{ t(`mind.check_${checks[p]}`) }}</span
+            >
           </div>
           <div class="actions">
             <button v-if="canAdd(p)" class="link" @click="emit('add', p)">
               {{ t('mind.addItsModels') }}
+            </button>
+            <button
+              v-if="connections?.connected?.[p]"
+              class="link"
+              :disabled="checks[p] === 'checking'"
+              @click="check(p)"
+            >
+              {{ t(checks[p] === 'checking' ? 'mind.checking' : 'mind.check') }}
             </button>
             <button
               v-if="connections?.connected?.[p]"
@@ -153,6 +200,17 @@ async function save(p: BrainProvider) {
         </div>
       </li>
     </ul>
+    <div v-if="voiceEngines.length" class="engines">
+      <span class="engines-title">{{ t('mind.voiceEngines') }}</span>
+      <span
+        v-for="engine in voiceEngines"
+        :key="engine.name"
+        class="engine"
+        :class="{ on: engine.on }"
+        :title="t(engine.on ? 'mind.engineOn' : 'mind.engineOff')"
+        >{{ engine.name }}</span
+      >
+    </div>
   </PanelSection>
 </template>
 
@@ -216,6 +274,31 @@ async function save(p: BrainProvider) {
   color: var(--text-muted);
 }
 .state.on {
+  color: #4ade80;
+}
+.state.bad {
+  color: #f87171;
+}
+.engines {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+}
+.engines-title {
+  flex-basis: 100%;
+  font-size: 10px;
+  color: var(--text-tertiary);
+}
+.engine {
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  color: var(--text-muted);
+  background: var(--surface-2);
+}
+.engine.on {
   color: #4ade80;
 }
 .link {

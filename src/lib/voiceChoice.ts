@@ -40,6 +40,32 @@ function deepgramFamily(model: string): 'aura-1' | 'aura-2' {
   return bareModelId(model).startsWith('aura-2') ? 'aura-2' : 'aura-1';
 }
 
+/** Providers that publish no sample of their voices: the API speaks one (`/voices/preview`). */
+const SPOKEN_ON_REQUEST = new Set(['cartesia', 'rime', 'openai', 'gemini']);
+
+/** Whether a voice can be heard before choosing it. Not a character's voice from another list. */
+export function canHear(provider: string, voice: PickableVoice): boolean {
+  return Boolean(voice.preview_url) || SPOKEN_ON_REQUEST.has(provider);
+}
+
+/** The key of a favourite: the same id on two providers is two voices. */
+export function favoriteKey(provider: string, voiceId: string): string {
+  return `${provider}:${voiceId}`;
+}
+
+/** The voice in use first, then the favourites; each group keeps the catalogue's order. */
+export function inPickingOrder<V extends { id: string }>(
+  voices: readonly V[],
+  current: string,
+  isFavorite: (id: string) => boolean,
+): V[] {
+  const rank = (v: V) => (v.id === current ? 0 : isFavorite(v.id) ? 1 : 2);
+  return voices
+    .map((voice, index) => ({ voice, index }))
+    .sort((a, b) => rank(a.voice) - rank(b.voice) || a.index - b.index)
+    .map(({ voice }) => voice);
+}
+
 /** Providers whose voices speak any language of the model, whatever they are tagged. */
 export function speaksAnyLanguage(provider: string): boolean {
   return ['elevenlabs', 'openai', 'gemini'].includes(provider);

@@ -239,7 +239,9 @@ describe('sending from Gmail', () => {
     expect(api.get.mock.calls[0]?.[1].query.q).toBe('in:inbox');
     expect((await tool('read_gmail_message')({ id: 'm1' })).message).toEqual({ id: 'm1' });
     await tool('archive_gmail_message')({ id: 'm1' });
-    expect(api.post).toHaveBeenCalledWith('/google/gmail/messages/m1/archive');
+    expect(api.post).toHaveBeenCalledWith('/google/gmail/messages/m1/archive', undefined, {
+      query: {},
+    });
     expect(confirmations).toHaveLength(0);
   });
 });
@@ -253,6 +255,7 @@ describe('Google Calendar', () => {
     expect(api.post).toHaveBeenCalledWith(
       '/google/calendar/events',
       expect.objectContaining({ attendees: null }),
+      { query: {} },
     );
   });
 
@@ -273,16 +276,16 @@ describe('Google Calendar', () => {
     expect(api.patch).toHaveBeenCalledWith(
       '/google/calendar/events/e1',
       expect.objectContaining({ title: 'N', attendees: null }),
+      { query: {} },
     );
   });
 
-  it('deleting always asks', async () => {
-    approve.value = false;
-    expect((await tool('delete_google_event')({ id: 'e1' })).cancelled).toBe(true);
-    expect(api.del).not.toHaveBeenCalled();
-    approve.value = true;
-    await tool('delete_google_event')({ id: 'e1', title: 'R' });
-    expect(api.del).toHaveBeenCalledWith('/google/calendar/events/e1');
+  it('deleting needs no dialog, since the Calendar bin keeps it', async () => {
+    await tool('delete_google_event')({ id: 'e1', account: 'a@b.c' });
+    expect(confirmations).toHaveLength(0);
+    expect(api.del).toHaveBeenCalledWith('/google/calendar/events/e1', {
+      query: { account: 'a@b.c' },
+    });
   });
 
   it('lists a range', async () => {

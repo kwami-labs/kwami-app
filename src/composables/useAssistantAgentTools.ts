@@ -24,6 +24,10 @@ function asList(value: unknown): string[] {
     .filter(Boolean);
 }
 
+function accountOf(args: Record<string, unknown>) {
+  return asText(args.account) ? { account: asText(args.account) } : {};
+}
+
 function failure(error: unknown) {
   return { success: false, message: error instanceof Error ? error.message : String(error) };
 }
@@ -134,7 +138,7 @@ export function useAssistantAgentTools() {
   async function listGmail(args: Record<string, unknown>) {
     return attempt(async () => {
       const { messages } = await api.get<{ messages: unknown[] }>('/google/gmail/messages', {
-        query: { q: asText(args.query) || 'in:inbox', max_results: 10 },
+        query: { q: asText(args.query) || 'in:inbox', max_results: 10, ...accountOf(args) },
       });
       return { success: true, messages };
     });
@@ -143,7 +147,9 @@ export function useAssistantAgentTools() {
   async function readGmail(args: Record<string, unknown>) {
     return attempt(async () => {
       const path = `/google/gmail/messages/${encodeURIComponent(asText(args.id))}`;
-      const { message } = await api.get<{ message: unknown }>(path);
+      const { message } = await api.get<{ message: unknown }>(path, {
+        query: accountOf(args),
+      });
       return { success: true, message };
     });
   }
@@ -165,12 +171,17 @@ export function useAssistantAgentTools() {
     });
     if (!approved) return { success: false, cancelled: true, sent: false };
     return attempt(async () => {
-      await api.post('/google/gmail/send', {
-        to,
-        subject: asText(args.subject),
-        body,
-        reply_to_message_id: asText(args.reply_to_message_id) || null,
-      });
+      await api.post(
+        '/google/gmail/send',
+        {
+          to,
+          subject: asText(args.subject),
+          body,
+          reply_to_message_id: asText(args.reply_to_message_id) || null,
+          attachment_file_ids: asList(args.attachment_file_ids),
+        },
+        { query: accountOf(args) },
+      );
       actionState.recordAction(t('assistant.actionGmail'), recipient, { announce: true });
       return { success: true, sent: true, recipient };
     });
@@ -178,7 +189,13 @@ export function useAssistantAgentTools() {
 
   async function archiveGmail(args: Record<string, unknown>) {
     return attempt(async () => {
-      await api.post(`/google/gmail/messages/${encodeURIComponent(asText(args.id))}/archive`);
+      await api.post(
+        `/google/gmail/messages/${encodeURIComponent(asText(args.id))}/archive`,
+        undefined,
+        {
+          query: accountOf(args),
+        },
+      );
       return { success: true };
     });
   }
@@ -188,7 +205,11 @@ export function useAssistantAgentTools() {
   async function listGoogleEvents(args: Record<string, unknown>) {
     return attempt(async () => {
       const { events } = await api.get<{ events: unknown[] }>('/google/calendar/events', {
-        query: { range_start: asText(args.range_start), range_end: asText(args.range_end) },
+        query: {
+          range_start: asText(args.range_start),
+          range_end: asText(args.range_end),
+          ...accountOf(args),
+        },
       });
       return { success: true, events };
     });
@@ -214,14 +235,18 @@ export function useAssistantAgentTools() {
     const attendees = asList(args.attendees);
     if (!(await inviteGate(args, attendees))) return { success: false, cancelled: true };
     return attempt(async () => {
-      const { event } = await api.post<{ event: unknown }>('/google/calendar/events', {
-        title: asText(args.title),
-        starts_at: asText(args.starts_at),
-        ends_at: asText(args.ends_at),
-        description: asText(args.description) || null,
-        location: asText(args.location) || null,
-        attendees: attendees.length ? attendees : null,
-      });
+      const { event } = await api.post<{ event: unknown }>(
+        '/google/calendar/events',
+        {
+          title: asText(args.title),
+          starts_at: asText(args.starts_at),
+          ends_at: asText(args.ends_at),
+          description: asText(args.description) || null,
+          location: asText(args.location) || null,
+          attendees: attendees.length ? attendees : null,
+        },
+        { query: accountOf(args) },
+      );
       return { success: true, event };
     });
   }
@@ -240,18 +265,18 @@ export function useAssistantAgentTools() {
           location: asText(args.location) || null,
           attendees: attendees.length ? attendees : null,
         },
+        { query: accountOf(args) },
       );
       return { success: true, event };
     });
   }
 
+  /** No dialog: Google Calendar keeps a deleted event in its bin for 30 days. */
   async function deleteGoogleEvent(args: Record<string, unknown>) {
-    const approved = await actionState.requestConfirmation(
-      dialog(t('assistant.confirmDeleteEventTitle'), asText(args.title) || asText(args.id)),
-    );
-    if (!approved) return { success: false, cancelled: true };
     return attempt(async () => {
-      await api.del(`/google/calendar/events/${encodeURIComponent(asText(args.id))}`);
+      await api.del(`/google/calendar/events/${encodeURIComponent(asText(args.id))}`, {
+        query: accountOf(args),
+      });
       return { success: true };
     });
   }
@@ -337,6 +362,7 @@ export function useAssistantAgentTools() {
       name: 'list_gmail_messages',
       description: t('assistant.tool.list_gmail_messages'),
       parameters: {
+        account: { type: 'string' },
         query: { type: 'string' },
       },
       handler: async (args) => listGmail(args),
@@ -346,6 +372,7 @@ export function useAssistantAgentTools() {
       name: 'read_gmail_message',
       description: t('assistant.tool.read_gmail_message'),
       parameters: {
+        account: { type: 'string' },
         id: { type: 'string' },
       },
       handler: async (args) => readGmail(args),
@@ -355,10 +382,12 @@ export function useAssistantAgentTools() {
       name: 'send_gmail_message',
       description: t('assistant.tool.send_gmail_message'),
       parameters: {
+        account: { type: 'string' },
         to: { type: 'string' },
         subject: { type: 'string' },
         body: { type: 'string' },
         reply_to_message_id: { type: 'string' },
+        attachment_file_ids: { type: 'string' },
         express_order: { type: 'string' },
       },
       handler: async (args) => sendGmail(args),
@@ -368,6 +397,7 @@ export function useAssistantAgentTools() {
       name: 'archive_gmail_message',
       description: t('assistant.tool.archive_gmail_message'),
       parameters: {
+        account: { type: 'string' },
         id: { type: 'string' },
       },
       handler: async (args) => archiveGmail(args),
@@ -377,6 +407,7 @@ export function useAssistantAgentTools() {
       name: 'list_google_events',
       description: t('assistant.tool.list_google_events'),
       parameters: {
+        account: { type: 'string' },
         range_start: { type: 'string' },
         range_end: { type: 'string' },
       },
@@ -387,6 +418,7 @@ export function useAssistantAgentTools() {
       name: 'create_google_event',
       description: t('assistant.tool.create_google_event'),
       parameters: {
+        account: { type: 'string' },
         title: { type: 'string' },
         starts_at: { type: 'string' },
         ends_at: { type: 'string' },
@@ -402,6 +434,7 @@ export function useAssistantAgentTools() {
       name: 'update_google_event',
       description: t('assistant.tool.update_google_event'),
       parameters: {
+        account: { type: 'string' },
         id: { type: 'string' },
         title: { type: 'string' },
         starts_at: { type: 'string' },
@@ -418,6 +451,7 @@ export function useAssistantAgentTools() {
       name: 'delete_google_event',
       description: t('assistant.tool.delete_google_event'),
       parameters: {
+        account: { type: 'string' },
         id: { type: 'string' },
         title: { type: 'string' },
       },

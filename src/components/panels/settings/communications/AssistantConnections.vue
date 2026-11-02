@@ -9,16 +9,28 @@ import { api } from '@/lib/apiClient';
 import { isTauri } from '@/lib/platform';
 import { useWorkspaceStore } from '@/stores/workspace';
 
+interface GoogleAccount {
+  email: string;
+  needs_reconnect: boolean;
+  missing_scopes: string[];
+}
+
 interface GoogleStatus {
   configured: boolean;
   connected: boolean;
   email: string | null;
+  accounts: GoogleAccount[];
 }
 
 const { t } = useI18n();
 const workspaceStore = useWorkspaceStore();
 
-const google = ref<GoogleStatus>({ configured: false, connected: false, email: null });
+const google = ref<GoogleStatus>({
+  configured: false,
+  connected: false,
+  email: null,
+  accounts: [],
+});
 const notifyTo = ref('');
 const notifyChannel = ref('whatsapp');
 const timezone = ref('Europe/Madrid');
@@ -62,10 +74,10 @@ async function connectGoogle() {
   }
 }
 
-async function disconnectGoogle() {
+async function disconnectGoogle(email: string) {
   busy.value = true;
   try {
-    await api.del('/google/account');
+    await api.del('/google/account', { query: { account: email } });
     await load();
   } catch (error) {
     showError(error);
@@ -99,17 +111,37 @@ onMounted(load);
 <template>
   <PanelSection :title="t('assistant.googleTitle')" icon="ph:google-logo-duotone">
     <p v-if="!google.configured">{{ t('assistant.googleNotConfigured') }}</p>
-    <template v-else-if="google.connected">
-      <p>{{ t('assistant.googleConnected', { email: google.email }) }}</p>
-      <BaseButton variant="secondary" size="sm" :loading="busy" @click="disconnectGoogle">
-        {{ t('assistant.googleDisconnect') }}
-      </BaseButton>
-    </template>
     <template v-else>
-      <p>{{ t('assistant.googleDisconnected') }}</p>
+      <p v-if="!google.accounts.length">{{ t('assistant.googleDisconnected') }}</p>
+      <div v-for="account in google.accounts" :key="account.email" class="assistant-account">
+        <p>{{ t('assistant.googleConnected', { email: account.email }) }}</p>
+        <p v-if="account.needs_reconnect" role="alert">{{ t('assistant.googleNeedsReconnect') }}</p>
+        <p v-else-if="account.missing_scopes.length">{{ t('assistant.googleMissingScopes') }}</p>
+        <BaseButton
+          v-if="account.needs_reconnect || account.missing_scopes.length"
+          size="sm"
+          :loading="busy"
+          @click="connectGoogle"
+        >
+          {{ t('assistant.googleReconnect') }}
+        </BaseButton>
+        <BaseButton
+          variant="secondary"
+          size="sm"
+          :loading="busy"
+          @click="disconnectGoogle(account.email)"
+        >
+          {{ t('assistant.googleDisconnect') }}
+        </BaseButton>
+      </div>
       <BaseButton size="sm" :loading="busy" @click="connectGoogle">
-        {{ t('assistant.googleConnect') }}
+        {{
+          google.accounts.length
+            ? t('assistant.googleConnectAnother')
+            : t('assistant.googleConnect')
+        }}
       </BaseButton>
+      <p v-if="message" role="status">{{ message }}</p>
     </template>
   </PanelSection>
 
@@ -132,6 +164,10 @@ onMounted(load);
 </template>
 
 <style scoped>
+.assistant-account {
+  margin-bottom: 0.75rem;
+}
+
 .assistant-row {
   display: flex;
   align-items: center;

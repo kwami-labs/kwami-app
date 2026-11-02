@@ -8,9 +8,12 @@ import { mountWithPinia } from '../helpers/mount';
 import { i18n, setLocale } from '../../src/i18n';
 import ModelVoicePicker from '../../src/components/panels/settings/models/ModelVoicePicker.vue';
 import { useVoiceStore } from '../../src/stores/voice';
-import { api } from '../../src/lib/apiClient';
+import { ApiError, api } from '../../src/lib/apiClient';
 import { useVoicesApi } from '../../src/composables/useVoicesApi';
 import {
+  canHear,
+  favoriteKey,
+  inPickingOrder,
   languagesOf,
   matchesLanguage,
   matchesSearch,
@@ -304,5 +307,148 @@ describe('the picker', () => {
       .trigger('click');
     expect(store.tts.voice).toBe('a');
     expect(store.tts.style).toBe('Habla como alguien');
+  });
+});
+
+describe('hearing a voice before choosing it', () => {
+  const mounted = async (voices: Voice[], provider = 'rime') => {
+    vi.spyOn(api, 'get').mockResolvedValue({
+      provider: 'p',
+      voices,
+      source: 'yaml',
+      count: voices.length,
+    });
+    const wrapper = mountWithPinia(ModelVoicePicker, { ...global, props: { kind: 'tts' } });
+    const store = useVoiceStore();
+    store.updateTTS({ provider, model: 'other', voice: '' } as never);
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+    await flushPromises();
+    return { wrapper, store };
+  };
+
+  it('every voice of a provider the API can speak, and those with a sample of their own', () => {
+    expect(canHear('cartesia', v('a'))).toBe(true);
+    expect(canHear('openai', v('a'))).toBe(true);
+    expect(canHear('deepgram', v('a', { preview_url: 'https://x/a.wav' }))).toBe(true);
+    expect(canHear('google', v('a'))).toBe(false);
+  });
+
+  it('asks the API for a sample, once, in the language of the panel', async () => {
+    const created = vi.fn(() => 'blob:sample');
+    vi.stubGlobal('URL', Object.assign(URL, { createObjectURL: created }));
+    const play = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal(
+      'Audio',
+      class {
+        play = play;
+        pause = vi.fn();
+      },
+    );
+    const { wrapper } = await mounted([v('once-only', { name: 'Ana' })]);
+    const get = vi.mocked(api.get);
+    get.mockResolvedValue(new Blob(['x']));
+    await wrapper.find('.play').trigger('click');
+    await flushPromises();
+    expect(get).toHaveBeenCalledWith(
+      '/voices/preview',
+      expect.objectContaining({
+        query: { provider: 'rime', voice: 'once-only', lang: 'es' },
+        parse: 'blob',
+      }),
+    );
+    expect(play).toHaveBeenCalledTimes(1);
+    get.mockClear();
+    await wrapper.find('.play').trigger('click'); // stops it
+    await wrapper.find('.play').trigger('click'); // plays it again
+    await flushPromises();
+    expect(get).not.toHaveBeenCalled();
+    expect(created).toHaveBeenCalledTimes(1);
+    vi.unstubAllGlobals();
+  });
+
+  it('says why when there is no sample', async () => {
+    const { wrapper } = await mounted([v('no-key', { name: 'Ana' })]);
+    vi.mocked(api.get).mockRejectedValue(
+      new ApiError({
+        status: 503,
+        code: 'unavailable',
+        message: 'x',
+        method: 'GET',
+        url: '/',
+      } as never),
+    );
+    await wrapper.find('.play').trigger('click');
+    await flushPromises();
+    expect(wrapper.text()).toContain('conecta una clave');
+    vi.mocked(api.get).mockRejectedValue(new Error('down'));
+    await wrapper.find('.play').trigger('click');
+    await flushPromises();
+    expect(wrapper.text()).toContain('no se ha podido crear');
+  });
+
+  it('a voice with its own sample does not touch the API', async () => {
+    const play = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal(
+      'Audio',
+      class {
+        play = play;
+        pause = vi.fn();
+      },
+    );
+    const { wrapper } = await mounted([v('a', { preview_url: 'https://x/a.wav' })], 'deepgram');
+    const get = vi.mocked(api.get);
+    get.mockClear();
+    await wrapper.find('.play').trigger('click');
+    await flushPromises();
+    expect(get).not.toHaveBeenCalled();
+    expect(play).toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+});
+
+describe('finding a voice again', () => {
+  it('the one in use first, then the kept ones, the rest as they came', () => {
+    const list = [{ id: 'a' }, { id: 'b' }, { id: 'c' }, { id: 'd' }];
+    const order = inPickingOrder(list, 'c', (id) => id === 'd');
+    expect(order.map((x) => x.id)).toEqual(['c', 'd', 'a', 'b']);
+  });
+
+  it('keeps a voice per provider, and lists only the kept ones when asked', async () => {
+    vi.spyOn(api, 'get').mockResolvedValue({
+      provider: 'p',
+      voices: [v('a', { name: 'Ana' }), v('b', { name: 'Berta' })],
+      source: 'yaml',
+      count: 2,
+    });
+    const wrapper = mountWithPinia(ModelVoicePicker, { ...global, props: { kind: 'tts' } });
+    const store = useVoiceStore();
+    store.updateTTS({ provider: 'rime', model: 'other', voice: '' } as never);
+    await flushPromises();
+    await wrapper.vm.$nextTick();
+    await flushPromises();
+    await wrapper.findAll('.star')[1].trigger('click');
+    expect(store.modelsUI.favoriteVoices).toEqual([favoriteKey('rime', 'b')]);
+    await wrapper.find('.segment[aria-label="Guardadas"]').trigger('click');
+    expect(wrapper.findAll('.voice .name').map((x) => x.text())).toEqual(['Berta']);
+    await wrapper.find('.star').trigger('click');
+    expect(store.modelsUI.favoriteVoices).toEqual([]);
+  });
+
+  it('offers to try again when the list did not come', async () => {
+    useVoicesApi().clearCache();
+    const get = vi.spyOn(api, 'get').mockRejectedValue(new Error('down'));
+    const wrapper = mountWithPinia(ModelVoicePicker, { ...global, props: { kind: 'tts' } });
+    await flushPromises();
+    expect(wrapper.text()).toContain('Reintentar');
+    get.mockResolvedValue({
+      provider: 'p',
+      voices: [v('a', { name: 'Ana' })],
+      source: 'yaml',
+      count: 1,
+    });
+    await wrapper.find('.link').trigger('click');
+    await flushPromises();
+    expect(wrapper.text()).not.toContain('Reintentar');
   });
 });

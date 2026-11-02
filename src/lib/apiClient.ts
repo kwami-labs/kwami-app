@@ -210,7 +210,7 @@ export interface ApiRequestOptions {
   retry?: number | false;
   /** Sets Idempotency-Key, which also makes a POST safe to retry. */
   idempotencyKey?: string;
-  parse?: 'json' | 'text' | 'none';
+  parse?: 'json' | 'text' | 'blob' | 'none';
 }
 
 /** `AbortSignal.any` is not available in every webview this ships to (Tauri
@@ -271,6 +271,8 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function readBody(res: Response, parse: ApiRequestOptions['parse']): Promise<unknown> {
   if (parse === 'none' || res.status === 204) return undefined;
+  // An error carries its envelope as text whatever the caller wanted.
+  if (parse === 'blob' && res.ok) return res.blob();
   const text = await res.text().catch(() => '');
   if (!text) return undefined;
   if (parse === 'text') return text;
