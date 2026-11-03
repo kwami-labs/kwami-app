@@ -40,7 +40,12 @@ async function render() {
       stubs: {
         PanelSection: { template: '<section><slot /></section>' },
         BaseButton: { template: '<button @click="$emit(\'click\')"><slot /></button>' },
-        BaseInput: { template: '<input />' },
+        BaseInput: {
+          props: ['modelValue'],
+          emits: ['update:modelValue'],
+          template:
+            '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
+        },
       },
     },
   });
@@ -204,6 +209,65 @@ describe('AssistantConnections', () => {
       await vi.advanceTimersByTimeAsync(3000);
       await flushPromises();
       expect(wrapper.text()).toContain(assistantEn.assistant.googleWaiting);
+    });
+  });
+
+  describe('a new number', () => {
+    const NEW = '+34699999999';
+
+    async function withNewNumber() {
+      respond({ configured: true, connected: false, email: null, accounts: [] });
+      const wrapper = await render();
+      await wrapper.find('input[type="tel"]').setValue(NEW);
+      return wrapper;
+    }
+
+    it('gets a code before anything is saved', async () => {
+      api.post.mockResolvedValue({ proof: 'p1' });
+      const wrapper = await withNewNumber();
+      await button(wrapper, assistantEn.assistant.save).trigger('click');
+      await flushPromises();
+      expect(api.post).toHaveBeenCalledWith('/assistant/settings/notify-code', {
+        kwami_id: 'k1',
+        notify_to: NEW,
+        notify_channel: 'sms',
+      });
+      expect(api.put).not.toHaveBeenCalled();
+      expect(wrapper.text()).toContain(assistantEn.assistant.notifyCodeSent);
+    });
+
+    it('is saved with the code that came to it', async () => {
+      api.post.mockResolvedValue({ proof: 'p1' });
+      api.put.mockResolvedValue({ settings: { notify_to: NEW } });
+      const wrapper = await withNewNumber();
+      await button(wrapper, assistantEn.assistant.save).trigger('click');
+      await flushPromises();
+      await wrapper.find('input[autocomplete="one-time-code"]').setValue(' 123456 ');
+      await button(wrapper, assistantEn.assistant.save).trigger('click');
+      await flushPromises();
+      expect(api.put).toHaveBeenCalledWith(
+        '/assistant/settings',
+        expect.objectContaining({ notify_to: NEW, notify_code: '123456', notify_proof: 'p1' }),
+      );
+      expect(wrapper.text()).toContain(assistantEn.assistant.saved);
+      expect(wrapper.find('input[autocomplete="one-time-code"]').exists()).toBe(false);
+    });
+
+    it('needs a new code if the number changes again', async () => {
+      api.post.mockResolvedValue({ proof: 'p1' });
+      const wrapper = await withNewNumber();
+      await button(wrapper, assistantEn.assistant.save).trigger('click');
+      await flushPromises();
+      await wrapper.find('input[type="tel"]').setValue('+34688888888');
+      expect(wrapper.find('input[autocomplete="one-time-code"]').exists()).toBe(false);
+    });
+
+    it('says when the code could not be sent', async () => {
+      api.post.mockRejectedValue(new Error('The code could not be sent'));
+      const wrapper = await withNewNumber();
+      await button(wrapper, assistantEn.assistant.save).trigger('click');
+      await flushPromises();
+      expect(wrapper.text()).toContain('The code could not be sent');
     });
   });
 

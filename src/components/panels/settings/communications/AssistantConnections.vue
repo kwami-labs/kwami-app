@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue';
+import { onMounted, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import PanelSection from '@/components/ui/PanelSection.vue';
@@ -36,6 +36,10 @@ const google = ref<GoogleStatus>({
   accounts: [],
 });
 const notifyTo = ref('');
+/** What is saved already. A different number has to be confirmed with a code sent to it. */
+const savedNumber = ref('');
+const notifyCode = ref('');
+const notifyProof = ref('');
 const notifyChannel = ref('whatsapp');
 const timezone = ref('Europe/Madrid');
 const reportsEnabled = ref(false);
@@ -44,6 +48,12 @@ const message = ref('');
 const googleMessage = ref('');
 const waiting = ref(false);
 let waitTimer: ReturnType<typeof setInterval> | undefined;
+
+// A code is for the number it was sent to.
+watch(notifyTo, () => {
+  notifyProof.value = '';
+  notifyCode.value = '';
+});
 
 function errorText(error: unknown) {
   return error instanceof Error ? error.message : String(error);
@@ -89,6 +99,7 @@ async function load() {
       { query: { kwami_id: kwamiId } },
     );
     notifyTo.value = String(settings.notify_to ?? '');
+    savedNumber.value = notifyTo.value;
     notifyChannel.value = String(settings.notify_channel ?? 'whatsapp');
     timezone.value = String(settings.timezone ?? 'Europe/Madrid');
     reportsEnabled.value = Boolean(settings.reports_enabled);
@@ -130,14 +141,35 @@ async function disconnectGoogle(email: string) {
 async function save() {
   busy.value = true;
   message.value = '';
+  const number = notifyTo.value.trim();
   try {
-    await api.put('/assistant/settings', {
-      kwami_id: workspaceStore.activeWorkspaceId,
-      notify_to: notifyTo.value.trim() || null,
-      notify_channel: notifyChannel.value,
-      timezone: timezone.value,
-      reports_enabled: reportsEnabled.value,
-    });
+    if (number && number !== savedNumber.value && !notifyProof.value) {
+      const { proof } = await api.post<{ proof: string }>('/assistant/settings/notify-code', {
+        kwami_id: workspaceStore.activeWorkspaceId,
+        notify_to: number,
+        notify_channel: notifyChannel.value,
+      });
+      notifyProof.value = proof;
+      message.value = t('assistant.notifyCodeSent');
+      return;
+    }
+    const answer = await api.put<{ settings?: { notify_to?: string | null } }>(
+      '/assistant/settings',
+      {
+        kwami_id: workspaceStore.activeWorkspaceId,
+        notify_to: number || null,
+        notify_channel: notifyChannel.value,
+        timezone: timezone.value,
+        reports_enabled: reportsEnabled.value,
+        ...(notifyProof.value
+          ? { notify_code: notifyCode.value.trim(), notify_proof: notifyProof.value }
+          : {}),
+      },
+    );
+    savedNumber.value = answer?.settings?.notify_to ?? number;
+    notifyTo.value = savedNumber.value;
+    notifyProof.value = '';
+    notifyCode.value = '';
     message.value = t('assistant.saved');
   } catch (error) {
     message.value = errorText(error);
@@ -212,6 +244,14 @@ onUnmounted(() => {
       <span>{{ t('assistant.reportsEnable') }}</span>
     </label>
     <BaseInput v-model="notifyTo" :label="t('assistant.notifyTo')" type="tel" block />
+    <BaseInput
+      v-if="notifyProof"
+      v-model="notifyCode"
+      :label="t('assistant.notifyCode')"
+      inputmode="numeric"
+      autocomplete="one-time-code"
+      block
+    />
     <label class="assistant-row">
       <span>{{ t('assistant.notifyChannel') }}</span>
       <select v-model="notifyChannel">
