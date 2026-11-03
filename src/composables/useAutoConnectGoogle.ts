@@ -29,6 +29,8 @@ async function connectIfMissing(userId: string): Promise<void> {
     localStorage.removeItem(triedKey(userId));
     return;
   }
+  // On the web, nobody is asked for their mail until they choose to connect it.
+  if (status.accounts.length === 0 && !isTauri()) return;
   if (alreadyTried(userId) || pendingConnections.value.length > 0) return;
   localStorage.setItem(triedKey(userId), new Date().toISOString());
   const { url } = await api.post<{ url: string }>('/google/connect', { desktop: isTauri() });

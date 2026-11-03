@@ -82,6 +82,29 @@ describe('useAutoConnectGoogle', () => {
     expect(openUrl).toHaveBeenCalledTimes(2);
   });
 
+  it('does not ask for Google on the web when nobody has connected it', async () => {
+    tauri.value = false;
+    await signIn();
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it('sends a web user back once when their connection expired', async () => {
+    tauri.value = false;
+    const assign = vi.fn();
+    vi.stubGlobal('location', { assign });
+    get.mockResolvedValue({
+      configured: true,
+      accounts: [{ email: 'a@b.c', needs_reconnect: true }],
+    });
+    await signIn();
+    await signIn();
+    vi.unstubAllGlobals();
+    expect(post).toHaveBeenCalledWith('/google/connect', { desktop: false });
+    expect(assign).toHaveBeenCalledTimes(1);
+    expect(assign).toHaveBeenCalledWith(CONSENT);
+    expect(openUrl).not.toHaveBeenCalled();
+  });
+
   it('stays put when Google is not configured here', async () => {
     get.mockResolvedValue({ configured: false, accounts: [] });
     await signIn();
