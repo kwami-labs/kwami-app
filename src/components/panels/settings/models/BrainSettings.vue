@@ -12,6 +12,7 @@ import BrainModelCard from './BrainModelCard.vue';
 import ClaudeAccountCard from './ClaudeAccountCard.vue';
 import MindDirector from './MindDirector.vue';
 import ModelConnections from './ModelConnections.vue';
+import VoiceKeyConnections from './VoiceKeyConnections.vue';
 import {
   BRAIN_PROVIDERS,
   MODEL_SUGGESTIONS,
@@ -206,6 +207,7 @@ const taskStatusLabel = (s: string) =>
     <ClaudeAccountCard />
     <MindDirector />
     <ModelConnections @add="addFromProvider" />
+    <VoiceKeyConnections />
 
     <!-- Roster -->
     <ul class="roster">

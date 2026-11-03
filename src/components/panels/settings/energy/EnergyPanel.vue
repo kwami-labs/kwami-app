@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { panelIcons } from '@/constants/panel-icons';
-import { useCreditsStore } from '@/stores/credits';
+import { energyToMinutes, useCreditsStore } from '@/stores/credits';
 import { translateApiUserMessage } from '@/utils/translateApiMessage';
 import PanelSection from '@/components/ui/PanelSection.vue';
 import BaseButton from '@/components/ui/BaseButton.vue';
@@ -102,11 +102,17 @@ const balancePercentage = computed(() => {
 });
 
 const energyLevel = computed(() => {
+  if (!creditsStore.balanceKnown) return 'unknown';
   const b = creditsStore.displayBalance;
   if (b <= 0) return 'depleted';
   if (b < 100) return 'low';
   if (b < 500) return 'medium';
   return 'high';
+});
+
+const balanceErrorMessage = computed(() => {
+  if (!creditsStore.balanceError) return '';
+  return translateApiUserMessage(creditsStore.balanceError, t);
 });
 
 const creditErrorMessage = computed(() => {
@@ -145,8 +151,17 @@ function packIcon(packId: string): string {
           </div>
           <div class="meter-content">
             <div class="meter-value">
-              <span class="meter-amount">{{ creditsStore.displayBalance.toLocaleString() }}</span>
+              <span class="meter-amount">{{
+                creditsStore.balanceKnown ? creditsStore.displayBalance.toLocaleString() : '—'
+              }}</span>
               <span class="meter-unit">{{ t('energyPanel.energyUnit') }}</span>
+            </div>
+            <div v-if="creditsStore.balanceKnown" class="meter-minutes">
+              {{
+                t('energyPanel.aboutMinutes', {
+                  minutes: creditsStore.estimatedMinutes.toLocaleString(),
+                })
+              }}
             </div>
             <div class="meter-bar">
               <div class="meter-bar-fill" :style="{ width: balancePercentage + '%' }"></div>
@@ -165,7 +180,14 @@ function packIcon(packId: string): string {
           </div>
         </div>
 
-        <div v-if="energyLevel === 'depleted'" class="depleted-warning">
+        <div v-if="balanceErrorMessage" class="low-warning" role="alert">
+          <iconify-icon icon="ph:wifi-slash-duotone"></iconify-icon>
+          <span>{{ t('energyPanel.balanceUnavailable') }} {{ balanceErrorMessage }}</span>
+          <button type="button" class="retry-balance" @click="creditsStore.loadBalance()">
+            {{ t('energyPanel.retry') }}
+          </button>
+        </div>
+        <div v-else-if="energyLevel === 'depleted'" class="depleted-warning">
           <iconify-icon icon="ph:warning-duotone"></iconify-icon>
           <span>{{ t('energyPanel.depletedWarning') }}</span>
         </div>
@@ -221,6 +243,14 @@ function packIcon(packId: string): string {
                 {{ pack.credits.toLocaleString() }}
                 <span class="pack-energy-label">{{ t('energyPanel.energyUnit') }}</span>
               </div>
+              <div class="pack-minutes">{{ t(`energyPanel.packUse.${pack.id}`) }}</div>
+              <div class="pack-minutes">
+                {{
+                  t('energyPanel.aboutMinutes', {
+                    minutes: energyToMinutes(pack.credits).toLocaleString(),
+                  })
+                }}
+              </div>
             </div>
             <div class="pack-pricing">
               <div class="pack-price">{{ pack.price_display }}</div>
@@ -229,6 +259,9 @@ function packIcon(packId: string): string {
         </div>
         <p class="energy-info">
           {{ t('energyPanel.energyInfo') }}
+        </p>
+        <p class="energy-info">
+          {{ t('energyPanel.ownKeysInfo') }}
         </p>
       </PanelSection>
 
@@ -402,6 +435,28 @@ function packIcon(packId: string): string {
   border-radius: 3px;
   filter: blur(4px);
   transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.meter-minutes,
+.pack-minutes {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.meter-minutes {
+  margin-bottom: 6px;
+}
+
+.retry-balance {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 3px 10px;
+  border: 1px solid currentColor;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
 }
 
 .meter-stats {

@@ -14,12 +14,24 @@ import {
 
 const MICRO_CREDITS_PER_CREDIT = 1000;
 
+/**
+ * What a minute of voice conversation costs with the default models, measured
+ * on real sessions (2026-11). Only for the "about N minutes" hint: the ledger
+ * charges what each session really used.
+ */
+export const ENERGY_PER_VOICE_MINUTE = 70;
+
+export function energyToMinutes(energy: number): number {
+  return Math.floor(energy / ENERGY_PER_VOICE_MINUTE);
+}
+
 export const useCreditsStore = defineStore('credits', () => {
   // ---------------------------------------------------------------------------
   // State
   // ---------------------------------------------------------------------------
 
   const balance = ref<CreditBalance | null>(null);
+  const balanceError = ref<string | null>(null);
   const packs = ref<CreditPack[]>([]);
   const transactions = ref<CreditTransaction[]>([]);
   const usageLogs = ref<CreditUsageLog[]>([]);
@@ -34,6 +46,11 @@ export const useCreditsStore = defineStore('credits', () => {
     if (!balance.value) return 0;
     return Math.floor(balance.value.balance / MICRO_CREDITS_PER_CREDIT);
   });
+
+  // Null means "could not ask", which is not the same as an empty balance.
+  const balanceKnown = computed(() => balance.value !== null);
+
+  const estimatedMinutes = computed(() => energyToMinutes(displayBalance.value));
 
   const balanceCredits = computed(() => {
     return balance.value?.balance_credits ?? 0;
@@ -60,7 +77,10 @@ export const useCreditsStore = defineStore('credits', () => {
   async function loadBalance() {
     try {
       balance.value = await fetchBalance();
+      balanceError.value = null;
     } catch (e) {
+      // The last balance read stays on screen: a network blip spends nothing.
+      balanceError.value = (e as Error).message;
       console.error('Failed to load credit balance:', e);
     }
   }
@@ -147,6 +167,7 @@ export const useCreditsStore = defineStore('credits', () => {
   return {
     // State
     balance,
+    balanceError,
     packs,
     transactions,
     usageLogs,
@@ -154,6 +175,8 @@ export const useCreditsStore = defineStore('credits', () => {
     error,
     // Getters
     displayBalance,
+    balanceKnown,
+    estimatedMinutes,
     balanceCredits,
     hasCredits,
     lifetimePurchased,

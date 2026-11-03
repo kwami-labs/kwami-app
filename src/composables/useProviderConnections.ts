@@ -11,9 +11,13 @@ import type { BrainProvider } from '@/lib/brain';
  * store, in a snapshot or on the data channel, and the API only ever hands back its
  * last characters. Shared across the panel: what one card connects, the others see.
  */
+/** Providers that only hear and speak: voice runs on them, the brain does not. */
+export type VoiceKeyProvider = 'deepgram' | 'elevenlabs' | 'cartesia' | 'assemblyai';
+type ConnectableProvider = BrainProvider | VoiceKeyProvider;
+
 interface Connections {
   enabled: boolean;
-  connected: Partial<Record<BrainProvider, { hint: string }>>;
+  connected: Partial<Record<ConnectableProvider, { hint: string }>>;
 }
 
 /** Not asked yet, or the API could not say. */
@@ -35,7 +39,7 @@ export function useProviderConnections() {
     }
   }
 
-  async function saveKey(provider: BrainProvider, key: string): Promise<ConnectResult> {
+  async function saveKey(provider: ConnectableProvider, key: string): Promise<ConnectResult> {
     try {
       await api.put(`/providers/${provider}/key`, { key });
     } catch (e) {
@@ -46,12 +50,12 @@ export function useProviderConnections() {
   }
 
   /** Whether the provider still takes the key: false is an answer, a throw is not. */
-  async function checkKey(provider: BrainProvider): Promise<boolean> {
+  async function checkKey(provider: ConnectableProvider): Promise<boolean> {
     const { ok } = await api.post<{ ok: boolean }>(`/providers/${provider}/check`);
     return ok;
   }
 
-  async function disconnect(provider: BrainProvider): Promise<void> {
+  async function disconnect(provider: ConnectableProvider): Promise<void> {
     await api.del(`/providers/${provider}`);
     await refresh();
   }
