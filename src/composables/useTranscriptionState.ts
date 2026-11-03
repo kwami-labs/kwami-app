@@ -185,9 +185,25 @@ function updateIndicators(state: 'idle' | 'listening' | 'thinking' | 'speaking')
   }
 }
 
+/**
+ * The transcript arrives a sentence at a time, so one thing said with a pause in it read
+ * as several messages. With nothing from the assistant between them, they are one.
+ */
+const SAME_MESSAGE_MS = 30_000;
+
 function addMessage(role: 'user' | 'assistant' | 'system', content: string) {
-  const msg: TranscriptionMessage = { role, content, timestamp: Date.now() };
-  liveMessages.value = [...liveMessages.value, msg];
+  const now = Date.now();
+  const last = liveMessages.value.at(-1);
+  if (role === 'user' && last?.role === 'user' && now - last.timestamp < SAME_MESSAGE_MS) {
+    const joined: TranscriptionMessage = {
+      role,
+      content: `${last.content} ${content}`,
+      timestamp: now,
+    };
+    liveMessages.value = [...liveMessages.value.slice(0, -1), joined];
+  } else {
+    liveMessages.value = [...liveMessages.value, { role, content, timestamp: now }];
+  }
   if (viewingHistoryId.value) {
     viewingHistoryId.value = null;
     historySnapshot.value = [];
