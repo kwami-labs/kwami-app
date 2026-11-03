@@ -4,6 +4,18 @@ All notable changes to this client are documented here. This file is generated f
 
 `v0.1.0` is a baseline tag placed at the commit that introduced this automation. Everything before it lives in the git log rather than here: it shipped before there was a release line to put it on.
 
+## [0.1.6](https://github.com/kwami-labs/kwami-app/compare/v0.1.5...v0.1.6) (2026-11-03)
+
+
+### Bug Fixes
+
+* **connect:** finish Google and OpenRouter connections from the signed-in app ([7649100](https://github.com/kwami-labs/kwami-app/commit/7649100848577e5421a07febe25c64ba3bb6ff77))
+
+
+### Features
+
+* **voices:** search the ElevenLabs library and add voices from the picker ([#55](https://github.com/kwami-labs/kwami-app/issues/55)) ([b174c7d](https://github.com/kwami-labs/kwami-app/commit/b174c7d55b6057feb1c7e7a4c51a984ecd2a87a1))
+
 ## [0.1.5](https://github.com/kwami-labs/kwami-app/compare/v0.1.4...v0.1.5) (2026-11-03)
 
 
