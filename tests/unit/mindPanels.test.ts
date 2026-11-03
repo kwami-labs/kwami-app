@@ -366,7 +366,7 @@ describe('the connected accounts', () => {
       .find((b) => b.text().includes('Entrar'))!
       .trigger('click');
     await flushPromises();
-    expect(post).toHaveBeenCalledWith('/providers/openrouter/connect');
+    expect(post).toHaveBeenCalledWith('/providers/openrouter/connect', { desktop: false });
     expect(opened).toHaveBeenCalledWith('https://openrouter.ai/auth?x', '_blank', 'noopener');
   });
 

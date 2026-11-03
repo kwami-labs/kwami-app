@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch } from 'vue';
+import { useConnectReturn } from '@/composables/useConnectReturn';
 import { useI18n } from 'vue-i18n';
 import { isEnvValid, missingEnvVars } from '@/lib/env';
 import { useAuthStore } from '@/stores/auth';
@@ -48,6 +49,8 @@ watch(
   },
   { immediate: true },
 );
+
+useConnectReturn();
 
 onMounted(() => {
   authStore.initAuth();

@@ -14,6 +14,7 @@ import type { Provider } from '@supabase/supabase-js';
 import { getCurrent, onOpenUrl } from '@tauri-apps/plugin-deep-link';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { supabase } from '@/lib/supabase';
+import { connectReturnFromDeepLink, queueConnectReturn } from '@/lib/connectReturn';
 import { isTauri } from '@/lib/platform';
 
 export const AUTH_CALLBACK_URL = 'kwami://auth/callback';
@@ -92,10 +93,14 @@ export async function handleAuthCallback(raw: string): Promise<void> {
   emit(error ? { error: error.message } : {});
 }
 
-/** Route `kwami://` deep links to the auth callback. Call once, inside Tauri only. */
+/** Route `kwami://` deep links to whoever handles them. Call once, inside Tauri only. */
 export async function listenForAuthCallbacks(): Promise<void> {
   const route = (urls: string[] | null) => {
-    for (const url of urls ?? []) void handleAuthCallback(url);
+    for (const url of urls ?? []) {
+      const connection = connectReturnFromDeepLink(url);
+      if (connection) queueConnectReturn(connection);
+      else void handleAuthCallback(url);
+    }
   };
   route(await getCurrent());
   await onOpenUrl(route);
