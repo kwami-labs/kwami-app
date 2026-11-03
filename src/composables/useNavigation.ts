@@ -14,6 +14,8 @@ export function useNavigation() {
     vendor,
     isPersistent,
     hasNavigation,
+    frameUrl,
+    hasView,
     layout,
     floatingRect,
     isManipulating,
@@ -156,6 +158,8 @@ export function useNavigation() {
     vendor,
     isPersistent,
     hasNavigation,
+    frameUrl,
+    hasView,
 
     // Panel layout. Exposed here rather than reached for through the store so
     // the agent's client tools and the panel's own chrome drive exactly the
