@@ -1,11 +1,57 @@
+import { realpathSync } from 'node:fs';
+import { join, normalize, sep } from 'node:path';
 import { fileURLToPath, URL } from 'node:url';
-import { defineConfig } from 'vite';
+import { defineConfig, searchForWorkspaceRoot, type Plugin } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import { VitePWA } from 'vite-plugin-pwa';
+
+/**
+ * Where the `kwami` SDK really lives. With a local checkout linked in
+ * (`bun link`), node_modules/kwami is a junction to a sibling folder that Vite
+ * would otherwise refuse to serve; without one this is just node_modules/kwami.
+ */
+function kwamiRoot(): string[] {
+  try {
+    return [realpathSync(fileURLToPath(new URL('./node_modules/kwami', import.meta.url)))];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * A linked SDK lives outside the project root, so Vite neither watches its build output nor
+ * drops its cached transforms when it changes. Rebuilding the SDK then left the browser on
+ * the old renderer until a server restart. Watch its dist and reload when it changes.
+ */
+function watchLinkedKwami(): Plugin {
+  return {
+    name: 'kwami:watch-linked-sdk',
+    apply: 'serve',
+    configureServer(server) {
+      const dists = kwamiRoot()
+        .filter((root) => !root.split(sep).includes('node_modules'))
+        .map((root) => normalize(join(root, 'dist')).toLowerCase());
+      if (!dists.length) return;
+      server.watcher.add(dists);
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      server.watcher.on('change', (file) => {
+        const changed = normalize(file).toLowerCase();
+        if (!dists.some((dist) => changed.startsWith(dist))) return;
+        // A library build rewrites dozens of files; reload once when it settles.
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+          server.moduleGraph.invalidateAll();
+          server.ws.send({ type: 'full-reload' });
+        }, 300);
+      });
+    },
+  };
+}
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
+    watchLinkedKwami(),
     vue({
       template: {
         compilerOptions: {
@@ -125,10 +171,20 @@ export default defineConfig({
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
+    // A linked SDK brings its own three.js dev copy; two copies break instanceof checks.
+    dedupe: ['three'],
   },
   server: {
     port: 5173,
     strictPort: true,
+    fs: {
+      allow: [searchForWorkspaceRoot(process.cwd()), ...kwamiRoot()],
+    },
+    // `tauri dev` compiles into src-tauri/target while Vite runs; watching it made Windows
+    // throw EBUSY on the DLL being written and took the dev server down with it.
+    watch: {
+      ignored: ['**/src-tauri/**'],
+    },
   },
   build: {
     // The entry chunk was 2.63 MB, over workbox's 2 MiB precache ceiling, so

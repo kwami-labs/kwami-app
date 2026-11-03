@@ -84,6 +84,9 @@ export interface RealtimeConfig extends Omit<LibRealtimeConfig, 'provider' | 'mo
   style?: string;
 }
 
+/** Bumped when the listening defaults change for accounts that already saved theirs. */
+const LISTENING_VERSION = 2;
+
 export const useVoiceStore = defineStore('voice', () => {
   // Pipeline mode - using correct VoicePipelineType values
   // Standard by default: Gemini TTS is Jarvis's voice; Gemini Live is the
@@ -243,14 +246,16 @@ export const useVoiceStore = defineStore('voice', () => {
       enabled: true,
       mode: 'model' as 'vad' | 'stt' | 'model',
       model: 'multilingual' as 'english' | 'multilingual',
-      minEndpointingDelay: 0.4,
-      maxEndpointingDelay: 2.5,
+      minEndpointingDelay: 0.8,
+      maxEndpointingDelay: 4,
     },
     interruptions: { enabled: true, minDuration: 0.4, minWords: 0 },
     noiseCancellation: { enabled: true, mode: 'bvc' as 'bvc' | 'krisp' | 'default' },
     vad: { provider: 'silero' as const, threshold: 0.5, minSpeech: 0.1, minSilence: 0.3 },
     audioProcessing: { echoCancellation: true, autoGainControl: true },
     performance: { preemptiveGeneration: true },
+    /** Names and words the transcription should expect. */
+    vocabulary: [] as string[],
   });
 
   // Update functions
@@ -396,6 +401,15 @@ export const useVoiceStore = defineStore('voice', () => {
         merge(e.vad, s.vad);
         merge(e.audioProcessing, s.audioProcessing);
         merge(e.performance, s.performance);
+        if (Array.isArray(s.vocabulary)) {
+          e.vocabulary = s.vocabulary.filter((w): w is string => typeof w === 'string');
+        }
+        // Saved before the waits went up, when they cut people off mid-sentence. Only
+        // once: a shorter wait chosen from here on is the user's to keep.
+        if (s.listeningVersion !== LISTENING_VERSION) {
+          e.turnDetection.minEndpointingDelay = Math.max(e.turnDetection.minEndpointingDelay, 0.8);
+          e.turnDetection.maxEndpointingDelay = Math.max(e.turnDetection.maxEndpointingDelay, 4);
+        }
         e.initialized = true;
       }
     } catch (e) {
@@ -428,6 +442,8 @@ export const useVoiceStore = defineStore('voice', () => {
         vad: { ...enhancementsState.value.vad },
         audioProcessing: { ...enhancementsState.value.audioProcessing },
         performance: { ...enhancementsState.value.performance },
+        vocabulary: [...enhancementsState.value.vocabulary],
+        listeningVersion: LISTENING_VERSION,
       },
     };
   }

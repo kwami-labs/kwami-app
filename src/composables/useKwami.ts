@@ -239,6 +239,7 @@ export function useKwami() {
           minInterruptionDuration: eState.interruptions.minDuration,
           minInterruptionWords: eState.interruptions.minWords,
         },
+        vocabulary: eState.vocabulary,
         noiseCancellation: {
           enabled: eState.noiseCancellation.enabled,
           mode: eState.noiseCancellation.mode,

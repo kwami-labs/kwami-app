@@ -117,7 +117,14 @@ export const brainEn = {
     relayTitle: 'What the voice answers by itself',
     brainBrief: 'Instructions for the whole brain',
     briefPlaceholder: 'How it should work, what to always keep in mind…',
+    vocabulary: 'Words it should understand',
+    vocabularyHint:
+      'Names it mishears, separated by commas. Your assistant and its models are already known. Applies from the next call. Deepgram Nova-3 only.',
+    vocabularyPlaceholder: 'Nexow, Alex, Madrid',
     connectionsTitle: 'Connected accounts',
+    voiceKeysTitle: 'Voice accounts',
+    voiceKeysHint:
+      'Connect your own accounts to hear and speak. What runs on your key is billed to you by that provider, and costs no energy.',
     connectionsHint:
       'Connect a provider and its models appear here to give them a job. Keys are checked, stored encrypted, and never shown again.',
     connectionsOff: 'This server cannot store keys yet (PROVIDER_KEYS_SECRET).',
@@ -404,7 +411,14 @@ export const brainEs: typeof brainEn = {
     relayTitle: 'Qué responde la voz por sí sola',
     brainBrief: 'Instrucciones para todo el cerebro',
     briefPlaceholder: 'Cómo debe trabajar, qué debe tener siempre presente…',
+    vocabulary: 'Palabras que debe entender',
+    vocabularyHint:
+      'Nombres que oye mal, separados por comas. Tu asistente y sus modelos ya los conoce. Se aplica desde la siguiente llamada. Solo con Deepgram Nova-3.',
+    vocabularyPlaceholder: 'Nexow, Alex, Madrid',
     connectionsTitle: 'Cuentas conectadas',
+    voiceKeysTitle: 'Cuentas de voz',
+    voiceKeysHint:
+      'Conecta tus propias cuentas para oir y hablar. Lo que usa tu clave te lo cobra ese proveedor y no gasta energia.',
     connectionsHint:
       'Conecta un proveedor y sus modelos aparecen aquí para darles trabajo. Las claves se comprueban, se guardan cifradas y no se vuelven a mostrar.',
     connectionsOff: 'Este servidor aún no puede guardar claves (PROVIDER_KEYS_SECRET).',

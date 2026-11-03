@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, watch } from 'vue';
+import { computed, onMounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { panelIcons } from '@/constants/panel-icons';
 import { useKwami } from '@/composables/useKwami';
@@ -76,10 +76,20 @@ onMounted(() => {
   enhancementsState.value.initialized = true;
 });
 
+const vocabularyText = computed(() => enhancementsState.value.vocabulary.join(', '));
+function setVocabulary(text: string) {
+  const words = text
+    .split(',')
+    .map((word) => word.trim())
+    .filter(Boolean);
+  enhancementsState.value.vocabulary = [...new Set(words)];
+}
+
 function applySettings() {
   if (!kwami.value) return;
 
-  const config: VoiceEnhancementsConfig = {
+  const config: VoiceEnhancementsConfig & { vocabulary: string[] } = {
+    vocabulary: enhancementsState.value.vocabulary,
     turnDetection: {
       enabled: turnDetection.enabled,
       mode: turnDetection.mode,
@@ -146,6 +156,7 @@ watch(() => turnDetection.mode, debouncedApply);
 watch(() => turnDetection.model, debouncedApply);
 watch(() => turnDetection.minEndpointingDelay, debouncedApply);
 watch(() => turnDetection.maxEndpointingDelay, debouncedApply);
+watch(() => enhancementsState.value.vocabulary, debouncedApply);
 
 watch(() => interruptions.enabled, debouncedApply);
 watch(() => interruptions.minDuration, debouncedApply);
@@ -219,6 +230,19 @@ watch(() => performance.preemptiveGeneration, debouncedApply);
             :step="0.5"
             v-model="turnDetection.maxEndpointingDelay"
           />
+        </div>
+        <div class="config-form">
+          <label class="vocabulary">
+            <span class="label">{{ t('mind.vocabulary') }}</span>
+            <span class="desc">{{ t('mind.vocabularyHint') }}</span>
+            <input
+              class="vocabulary-input"
+              :value="vocabularyText"
+              :placeholder="t('mind.vocabularyPlaceholder')"
+              spellcheck="false"
+              @change="setVocabulary(($event.target as HTMLInputElement).value)"
+            />
+          </label>
         </div>
       </PanelSection>
 
@@ -416,5 +440,20 @@ watch(() => performance.preemptiveGeneration, debouncedApply);
   50% {
     opacity: 0.5;
   }
+}
+.vocabulary {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.vocabulary-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  font-size: 12px;
+  color: var(--text-primary);
+  background: var(--surface-2);
+  border: 1px solid var(--surface-2);
+  border-radius: 6px;
 }
 </style>

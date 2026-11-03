@@ -11,13 +11,14 @@ onMounted(() => {
 });
 
 const displayBalance = computed(() => {
+  if (!creditsStore.balanceKnown) return '—';
   const b = creditsStore.displayBalance;
   if (b >= 1000) return `${(b / 1000).toFixed(1)}k`;
   return b.toLocaleString();
 });
 
 const isLow = computed(() => creditsStore.displayBalance > 0 && creditsStore.displayBalance < 100);
-const isEmpty = computed(() => !creditsStore.hasCredits);
+const isEmpty = computed(() => creditsStore.balanceKnown && !creditsStore.hasCredits);
 
 function openEnergyPanel() {
   uiStore.setPanel('credits');
