@@ -4,6 +4,37 @@ All notable changes to this client are documented here. This file is generated f
 
 `v0.1.0` is a baseline tag placed at the commit that introduced this automation. Everything before it lives in the git log rather than here: it shipped before there was a release line to put it on.
 
+## [0.1.5](https://github.com/kwami-labs/kwami-app/compare/v0.1.4...v0.1.5) (2026-11-03)
+
+
+### Bug Fixes
+
+* **avatar:** show a clear notice when WebGL is unavailable ([#41](https://github.com/kwami-labs/kwami-app/issues/41)) ([6eb05e5](https://github.com/kwami-labs/kwami-app/commit/6eb05e5168168bda9f3d4f6e717190dade668154))
+* **build:** chunk and strip console under Vite 8 ([23a32f6](https://github.com/kwami-labs/kwami-app/commit/23a32f648f0e61f93e75a6274da2c1df901ef64e))
+* **deps:** bump vue-i18n to 11.4.17 ([ba80585](https://github.com/kwami-labs/kwami-app/commit/ba80585fd0a6539f8bf1e38bca765e35c7681c1c)), closes [hi#severity](https://github.com/hi/issues/severity)
+* **test:** keep drag tests working on jsdom 30 ([7a4dff7](https://github.com/kwami-labs/kwami-app/commit/7a4dff779e00c0526eb00b696cb54ed198cb6156))
+* **token:** retry the token once when the API is briefly unavailable ([#47](https://github.com/kwami-labs/kwami-app/issues/47)) ([16b8dd6](https://github.com/kwami-labs/kwami-app/commit/16b8dd6c79d93228386228cebe24d09e4cdd8eba))
+* **ui:** fit floating panels, dialogs and search cards on small screens ([da7d5c3](https://github.com/kwami-labs/kwami-app/commit/da7d5c3de8818b48ce965462d5cbfb84f7ac84ed))
+* **ui:** keep sidebar panels inside the phone viewport ([628cf44](https://github.com/kwami-labs/kwami-app/commit/628cf44401dcc194108f40c9ca1310b495306310))
+* **ui:** stop phone panels overflowing their column ([602239f](https://github.com/kwami-labs/kwami-app/commit/602239f4c9945b53a07a54dd9a78cea92c401fca))
+* **ui:** stop scoped styles leaking onto the page body ([abba3e4](https://github.com/kwami-labs/kwami-app/commit/abba3e44c47d8b5572e508e7c4bf430fe0bc6043))
+
+
+### Features
+
+* **auth:** fit the login screen to phones ([beab3a8](https://github.com/kwami-labs/kwami-app/commit/beab3a8204630c958dface9e7fdd106f61e541ca))
+* **avatar:** add Jarvis — HUD avatar, charter, brain and character voices ([#32](https://github.com/kwami-labs/kwami-app/issues/32)) ([0a68ce2](https://github.com/kwami-labs/kwami-app/commit/0a68ce26c0dd53b1d04df39c7c3eed5d85ceac04))
+* bring the app to what the desktop build runs ([#51](https://github.com/kwami-labs/kwami-app/issues/51)) ([e63f8b9](https://github.com/kwami-labs/kwami-app/commit/e63f8b93bfe0642acf53afb92f8f8eca63d858fd)), closes [kwami-labs/kwami-lk-api#71](https://github.com/kwami-labs/kwami-lk-api/issues/71) [kwami-labs/kwami-lk-agent#96](https://github.com/kwami-labs/kwami-lk-agent/issues/96)
+* **browser:** show the agent's built-in browser in the panel ([4a46f89](https://github.com/kwami-labs/kwami-app/commit/4a46f89bd6eccf58da2d57ac0a05bd0c443ad832))
+* **google:** the accounts panel follows the consent by itself ([#48](https://github.com/kwami-labs/kwami-app/issues/48)) ([248acd2](https://github.com/kwami-labs/kwami-app/commit/248acd2481e87aa6fb0d97f16970525d3a5180be)), closes [kwami-labs/kwami-lk-api#69](https://github.com/kwami-labs/kwami-lk-api/issues/69)
+* **pwa:** reload open tabs onto a new deploy ([ed78418](https://github.com/kwami-labs/kwami-app/commit/ed784183a08a657f14babfb57ace6094ab454b05))
+* **ui:** a phone layout for the workspace: dock, sheets, touch ([e3f2bc7](https://github.com/kwami-labs/kwami-app/commit/e3f2bc7827808b2a6da1bafc0a8f4d15d6157f39))
+* **ui:** touch input for sliders, tooltips, the region picker and graph ([11fe63a](https://github.com/kwami-labs/kwami-app/commit/11fe63a4bc8a719875aad8e57d71ddf84dfd57f1))
+* **voice:** choose who thinks, every voice per model, and the layout ([#44](https://github.com/kwami-labs/kwami-app/issues/44)) ([0afc622](https://github.com/kwami-labs/kwami-app/commit/0afc622222ff1bfd2a09ed1dd612d25e6f986f3e)), closes [kwami-labs/kwami-lk-api#69](https://github.com/kwami-labs/kwami-lk-api/issues/69)
+* **voice:** every voice engine, a working chat and the camera for Jarvis ([#38](https://github.com/kwami-labs/kwami-app/issues/38)) ([40c208e](https://github.com/kwami-labs/kwami-app/commit/40c208e64724df4da27c8473c1915efe1f06d8bb))
+* **voice:** hear any voice before choosing it, and reach every Google account ([#45](https://github.com/kwami-labs/kwami-app/issues/45)) ([5ab0255](https://github.com/kwami-labs/kwami-app/commit/5ab0255f4f6c665ba997063ac72734d18481f2ee)), closes [kwami-labs/kwami-lk-api#69](https://github.com/kwami-labs/kwami-lk-api/issues/69)
+* **voice:** one thing said is one message, and more patience before answering ([#49](https://github.com/kwami-labs/kwami-app/issues/49)) ([9eb33f0](https://github.com/kwami-labs/kwami-app/commit/9eb33f0af37dfd1d6086d9104dfc92c8e0ac85b3)), closes [kwami-labs/kwami-lk-agent#93](https://github.com/kwami-labs/kwami-lk-agent/issues/93) [#93](https://github.com/kwami-labs/kwami-app/issues/93)
+
 ## [0.1.4](https://github.com/kwami-labs/kwami-app/compare/v0.1.3...v0.1.4) (2026-11-01)
 
 
