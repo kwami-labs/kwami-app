@@ -5,6 +5,7 @@ import { storeToRefs } from 'pinia';
 import type { Voice } from '@/composables/useVoicesApi';
 import { useVoicesApi } from '@/composables/useVoicesApi';
 import { useKwami } from '@/composables/useKwami';
+import { useVoiceLibrary, type LibraryVoice } from '@/composables/useVoiceLibrary';
 import { useVoicePreview } from '@/composables/useVoicePreview';
 import { useVoiceStore } from '@/stores/voice';
 import BaseButton from '@/components/ui/BaseButton.vue';
@@ -37,9 +38,10 @@ const { t, locale } = useI18n();
 const voiceStore = useVoiceStore();
 const { tts, realtime, stt, modelsUI } = storeToRefs(voiceStore);
 const { kwami, isConnected } = useKwami();
-const { fetchTTSVoicesByProvider, fetchRealtimeVoicesByProvider } = useVoicesApi();
+const { fetchTTSVoicesByProvider, fetchRealtimeVoicesByProvider, clearCache } = useVoicesApi();
 
 const PAGE = 40;
+const LIBRARY_LANGUAGES = ['es', 'en', 'fr', 'de', 'it', 'pt'];
 
 const config = computed(() => (props.kind === 'tts' ? tts.value : realtime.value));
 const provider = computed(() => config.value.provider as string);
@@ -173,6 +175,56 @@ watch(provider, preview.stop);
 function playIcon(id: string): string {
   if (preview.waiting.value === id) return 'ph:circle-notch';
   return preview.playing.value === id ? 'ph:stop-fill' : 'ph:play-fill';
+}
+
+/**
+ * ElevenLabs' public library, to save more voices into the account. The account is the
+ * whole deployment's, so only an administrator is offered it, and only with the live list:
+ * without it, a saved voice would not show up here.
+ */
+const library = useVoiceLibrary();
+const librarySearch = ref('');
+const libraryLanguage = ref('all');
+const libraryGender = ref('all');
+const libraryOffered = computed(
+  () => props.kind === 'tts' && provider.value === 'elevenlabs' && live.value,
+);
+const libraryLanguageOptions = computed(() => [
+  { value: 'all', label: t('voicePicker.allLanguages') },
+  ...LIBRARY_LANGUAGES.map((code) => ({ value: code, label: code, icon: getFlagIcon(code) })),
+]);
+const libraryGenderOptions = computed(() =>
+  ['all', 'male', 'female'].map((g) => ({ value: g, label: t(`voicePicker.${g}`) })),
+);
+
+watch(
+  libraryOffered,
+  (offered) => {
+    library.reset();
+    if (!offered) return;
+    const base = (stt.value.language ?? '').split('-')[0].toLowerCase();
+    libraryLanguage.value = LIBRARY_LANGUAGES.includes(base) ? base : 'all';
+    void library.checkAccess();
+  },
+  { immediate: true },
+);
+
+function searchLibrary() {
+  return library.search({
+    search: librarySearch.value,
+    language: libraryLanguage.value,
+    gender: libraryGender.value,
+  });
+}
+watch([libraryLanguage, libraryGender], () => {
+  if (library.searched.value) void searchLibrary();
+});
+
+async function addFromLibrary(voice: LibraryVoice) {
+  if (!(await library.add(voice))) return;
+  // The API forgot its list when the voice was saved; so does this panel, to list it now.
+  clearCache();
+  await load();
 }
 </script>
 
@@ -316,6 +368,133 @@ function playIcon(id: string): string {
         <BaseButton size="sm" :disabled="!customId.trim()" @click="useCustomId">{{
           t('voicePicker.use')
         }}</BaseButton>
+      </div>
+    </details>
+
+    <details v-if="libraryOffered && library.allowed.value" class="custom library">
+      <summary>{{ t('voicePicker.libraryTitle') }}</summary>
+      <div v-if="library.capacity.value" class="library-room">
+        <p class="hint">
+          {{
+            t('voicePicker.librarySlots', {
+              used: library.capacity.value.voice_slots_used,
+              limit: library.capacity.value.voice_limit,
+            })
+          }}
+        </p>
+        <p v-if="library.capacity.value.adds_limit !== null" class="hint">
+          {{
+            t('voicePicker.libraryAdds', {
+              used: library.capacity.value.adds_used,
+              limit: library.capacity.value.adds_limit,
+            })
+          }}
+        </p>
+        <p v-if="library.capacity.value.tier === 'free'" class="hint warn">
+          {{ t('voicePicker.libraryProblem.freePlan') }}
+        </p>
+        <p v-else-if="library.outOfAdds.value" class="hint warn">
+          {{ t('voicePicker.libraryOutOfAdds') }}
+        </p>
+      </div>
+      <div class="custom-row">
+        <input
+          v-model="librarySearch"
+          class="search library-search"
+          type="search"
+          :aria-label="t('voicePicker.librarySearch')"
+          :placeholder="t('voicePicker.librarySearch')"
+          @keydown.enter="searchLibrary"
+        />
+        <BaseButton size="sm" :loading="library.searching.value" @click="searchLibrary">{{
+          t('voicePicker.librarySearchAction')
+        }}</BaseButton>
+      </div>
+      <div class="library-filters">
+        <BaseSelect v-model="libraryLanguage" :options="libraryLanguageOptions" block />
+        <BaseSelect v-model="libraryGender" :options="libraryGenderOptions" block />
+      </div>
+
+      <p v-if="library.problem.value" class="hint warn">
+        {{ t(`voicePicker.libraryProblem.${library.problem.value}`) }}
+      </p>
+      <p
+        v-else-if="
+          library.searched.value && !library.searching.value && !library.voices.value.length
+        "
+        class="hint"
+      >
+        {{ t('voicePicker.libraryEmpty') }}
+      </p>
+
+      <ul v-if="library.voices.value.length" class="voices library-voices">
+        <li v-for="voice in library.voices.value" :key="voice.id" class="row">
+          <div class="voice library-voice">
+            <span class="line">
+              <span class="name">{{ voice.name }}</span>
+              <iconify-icon
+                v-if="voice.gender === 'male' || voice.gender === 'female'"
+                class="gender"
+                :icon="voice.gender === 'male' ? 'ph:gender-male' : 'ph:gender-female'"
+              />
+              <span v-if="voice.language" class="tag">{{ voice.language }}</span>
+              <span v-if="voice.in_account" class="tag character">{{
+                t('voicePicker.libraryInAccount')
+              }}</span>
+            </span>
+            <span v-if="voice.description" class="description">{{ voice.description }}</span>
+          </div>
+          <div class="side">
+            <button
+              v-if="canHear(provider, voice)"
+              class="play"
+              :class="{ spinning: preview.waiting.value === voice.id }"
+              :aria-label="t('voicePicker.listen', { voice: voice.name })"
+              :title="t('voicePicker.listen', { voice: voice.name })"
+              @click="preview.toggle(provider, voice, locale)"
+            >
+              <iconify-icon :icon="playIcon(voice.id)" />
+            </button>
+          </div>
+          <BaseButton
+            v-if="voice.in_account"
+            class="library-action"
+            size="sm"
+            :disabled="voice.id === current"
+            @click="choose(voice.id)"
+            >{{ t('voicePicker.use') }}</BaseButton
+          >
+          <BaseButton
+            v-else
+            class="library-action"
+            size="sm"
+            :loading="library.adding.value === voice.id"
+            :disabled="library.adding.value !== null"
+            :aria-label="t('voicePicker.libraryAddVoice', { voice: voice.name })"
+            @click="addFromLibrary(voice)"
+            >{{ t('voicePicker.libraryAdd') }}</BaseButton
+          >
+          <p v-if="library.addProblem.value?.voice === voice.id" class="hint warn problem">
+            {{ t(`voicePicker.libraryProblem.${library.addProblem.value.kind}`) }}
+          </p>
+          <p v-if="preview.problem.value?.voice === voice.id" class="hint warn problem">
+            {{ t('voicePicker.noSample') }}
+          </p>
+        </li>
+      </ul>
+
+      <div v-if="library.voices.value.length" class="foot">
+        <span class="hint">{{
+          t('voicePicker.count', { shown: library.voices.value.length, total: library.total.value })
+        }}</span>
+        <button
+          v-if="library.hasMore.value"
+          class="link"
+          :disabled="library.searching.value"
+          @click="library.more()"
+        >
+          {{ t('voicePicker.showMore') }}
+        </button>
       </div>
     </details>
   </section>
@@ -540,5 +719,30 @@ function playIcon(id: string): string {
   align-items: center;
   gap: 6px;
   margin-top: 6px;
+}
+.library-room {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 6px;
+}
+.library-filters {
+  display: flex;
+  gap: 6px;
+  margin: 6px 0;
+}
+.library-filters > * {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.library-voices {
+  margin-top: 6px;
+}
+.library-voice {
+  cursor: default;
+}
+.library-action {
+  flex-shrink: 0;
+  align-self: center;
 }
 </style>

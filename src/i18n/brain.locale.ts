@@ -80,6 +80,28 @@ export const brainEn = {
     customId: 'Another voice, by its id',
     customPlaceholder: "The voice's id at the provider",
     use: 'Use',
+    libraryTitle: 'Add voices from the ElevenLabs library',
+    librarySlots:
+      "The account's own voices: {used} of {limit} slots. Library voices do not use them.",
+    libraryAdds: 'Voice additions and edits on the plan: {used} of {limit}.',
+    libraryOutOfAdds:
+      'The plan has no voice additions or edits left: ElevenLabs will probably refuse the next one.',
+    librarySearch: 'Search by name, accent or character',
+    librarySearchAction: 'Search',
+    libraryEmpty: 'The library has no voice like that.',
+    libraryInAccount: 'In the account',
+    libraryAdd: 'Add',
+    libraryAddVoice: 'Add {voice} to the account',
+    libraryProblem: {
+      noRoom:
+        'ElevenLabs says the account has no room for another voice. Delete one in My Voices or move up a plan.',
+      freePlan: 'On a free ElevenLabs plan the agent cannot speak with library voices.',
+      withdrawn: 'That voice is no longer in the library.',
+      keyRefused: "The API's ElevenLabs key has no permission to do this.",
+      noKey: 'This installation has no ElevenLabs key.',
+      rateLimited: 'Too many in a row. Wait a moment and try again.',
+      failed: 'ElevenLabs did not answer. Try again.',
+    },
     speaksAnyLanguage: 'These voices speak any language the model does.',
   },
   mind: {
@@ -373,6 +395,29 @@ export const brainEs: typeof brainEn = {
     customId: 'Otra voz, por su id',
     customPlaceholder: 'El id de la voz en el proveedor',
     use: 'Usar',
+    libraryTitle: 'Añadir voces de la biblioteca de ElevenLabs',
+    librarySlots:
+      'Voces propias de la cuenta: {used} de {limit} huecos. Las de la biblioteca no los ocupan.',
+    libraryAdds: 'Altas y cambios de voces del plan: {used} de {limit}.',
+    libraryOutOfAdds:
+      'Al plan no le quedan altas ni cambios de voces: ElevenLabs seguramente rechazará la siguiente.',
+    librarySearch: 'Busca por nombre, acento o carácter',
+    librarySearchAction: 'Buscar',
+    libraryEmpty: 'La biblioteca no tiene ninguna voz así.',
+    libraryInAccount: 'En la cuenta',
+    libraryAdd: 'Añadir',
+    libraryAddVoice: 'Añadir {voice} a la cuenta',
+    libraryProblem: {
+      noRoom:
+        'ElevenLabs dice que la cuenta no tiene sitio para otra voz. Borra alguna en My Voices o sube de plan.',
+      freePlan:
+        'Con un plan gratuito de ElevenLabs, el agente no puede hablar con voces de la biblioteca.',
+      withdrawn: 'Esa voz ya no está en la biblioteca.',
+      keyRefused: 'La clave de ElevenLabs de la API no tiene permiso para esto.',
+      noKey: 'Esta instalación no tiene clave de ElevenLabs.',
+      rateLimited: 'Demasiadas seguidas. Espera un momento y vuelve a probar.',
+      failed: 'ElevenLabs no ha respondido. Vuelve a probar.',
+    },
     speaksAnyLanguage: 'Estas voces hablan cualquier idioma del modelo.',
   },
   mind: {

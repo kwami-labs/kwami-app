@@ -16,6 +16,11 @@ import { initPwaInstall } from './composables/usePwaInstall';
 import { useKwami } from './composables/useKwami';
 import { installStaleChunkRecovery } from './lib/staleVersion';
 import { registerServiceWorker } from './lib/registerServiceWorker';
+import { queueConnectReturn, takeConnectReturnFromLocation } from './lib/connectReturn';
+
+// Before anything else reads the address: the auth store clears its fragment.
+const connection = takeConnectReturnFromLocation();
+if (connection) queueConnectReturn(connection);
 
 const app = createApp(App);
 const pinia = createPinia();

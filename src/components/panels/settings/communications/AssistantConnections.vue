@@ -101,7 +101,9 @@ async function connectGoogle() {
   busy.value = true;
   googleMessage.value = '';
   try {
-    const { url } = await api.post<{ url: string }>('/google/connect');
+    const { url } = await api.post<{ url: string }>('/google/connect', {
+      desktop: isTauri(),
+    });
     if (isTauri()) await openUrl(url);
     else window.open(url, '_blank', 'noopener');
     waitForGoogle();
