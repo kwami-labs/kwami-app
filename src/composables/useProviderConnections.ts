@@ -60,9 +60,11 @@ export function useProviderConnections() {
     await refresh();
   }
 
-  /** OpenRouter's own consent page. The key arrives at the API, not here. */
+  /** OpenRouter's own consent page. The key goes to the API, never through here. */
   async function signInOpenRouter(): Promise<void> {
-    const { url } = await api.post<{ url: string }>('/providers/openrouter/connect');
+    const { url } = await api.post<{ url: string }>('/providers/openrouter/connect', {
+      desktop: isTauri(),
+    });
     await openExternal(url);
   }
 
