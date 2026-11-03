@@ -3,7 +3,10 @@ import { workspaceAgentToolsEn, workspaceAgentToolsEs } from './workspaceAgentTo
 import { appLocaleEn, appLocaleEs } from './appLocale.locale';
 import { charterEn, charterEs } from './charter.locale';
 import { brainEn, brainEs } from './brain.locale';
+import { enginesEn, enginesEs } from './engines.locale';
 import { commsAgentToolsEn, commsAgentToolsEs } from './commsAgentTools.locale';
+import { assistantEn, assistantEs } from './assistant.locale';
+import { layoutEn, layoutEs } from './layout.locale';
 import { kwamiAdminEn, kwamiAdminEs } from './kwamiAdmin.locale';
 import { extrasEn, extrasEs } from './extras.locale';
 import { recallEn, recallEs } from './recall.locale';
@@ -51,6 +54,8 @@ export const messages = {
     ...workspaceAgentToolsEn,
     ...searchPanelEn,
     ...commsAgentToolsEn,
+    ...assistantEn,
+    ...layoutEn,
     ...appLocaleEn,
     ...kwamiAdminEn,
     ...recallEn,
@@ -58,12 +63,15 @@ export const messages = {
     ...charterEn,
     ...brainEn,
     ...avatarUnavailableEn,
+    ...enginesEn,
   },
   es: {
     ...es,
     ...workspaceAgentToolsEs,
     ...searchPanelEs,
     ...commsAgentToolsEs,
+    ...assistantEs,
+    ...layoutEs,
     ...appLocaleEs,
     ...kwamiAdminEs,
     ...recallEs,
@@ -71,6 +79,7 @@ export const messages = {
     ...charterEs,
     ...brainEs,
     ...avatarUnavailableEs,
+    ...enginesEs,
   },
 } as const;
 

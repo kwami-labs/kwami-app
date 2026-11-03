@@ -30,3 +30,33 @@ export function sendRawConfigUpdate(
     return false;
   }
 }
+
+interface EngineState {
+  stt: { provider: string; model: string; language?: string };
+  llm: { provider: string; model: string };
+  tts: { provider: string; model: string; voice: string; style?: string };
+  realtime: { provider: string; model: string; voice: string; style?: string };
+}
+
+/**
+ * Everything any pipeline needs, sent with a `'pipeline'` switch so the agent
+ * never lands on a stale engine: the hybrid pipeline reads both the realtime
+ * and the TTS fields.
+ */
+export function engineSwitchFields(state: EngineState): Record<string, unknown> {
+  return {
+    realtimeProvider: state.realtime.provider,
+    realtimeModel: state.realtime.model,
+    realtimeVoice: state.realtime.voice,
+    realtimeStyle: state.realtime.style ?? '',
+    stt_provider: state.stt.provider,
+    stt_model: state.stt.model,
+    stt_language: state.stt.language,
+    llm_provider: state.llm.provider,
+    llm_model: state.llm.model,
+    tts_provider: state.tts.provider,
+    tts_model: state.tts.model,
+    tts_voice: state.tts.voice,
+    tts_style: state.tts.style ?? '',
+  };
+}

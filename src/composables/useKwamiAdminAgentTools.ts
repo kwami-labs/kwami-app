@@ -247,6 +247,12 @@ export function useKwamiAdminAgentTools() {
         message: t('kwamiAdmin.creditsFailed', { error: getErrorMessage(error) }),
       };
     }
+    if (creditsStore.balanceError) {
+      return {
+        success: false,
+        message: t('kwamiAdmin.creditsFailed', { error: creditsStore.balanceError }),
+      };
+    }
     const credits = creditsStore.balanceCredits;
     return {
       success: true,

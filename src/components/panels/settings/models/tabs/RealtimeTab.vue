@@ -6,11 +6,14 @@ import { useVoiceStore } from '@/stores/voice';
 import { storeToRefs } from 'pinia';
 import type { RealtimeProvider } from 'kwami';
 import PanelSection from '@/components/ui/PanelSection.vue';
+import { realtimeSpeaksText } from '@/lib/voiceEngines';
+import { modelVoiceKey } from '@/lib/voiceChoice';
+import ModelVoicePicker from '../ModelVoicePicker.vue';
 
 const { fetchRealtimeModels, realtimeModels, isLoading } = useModelsApi();
 const { t } = useI18n();
 const voiceStore = useVoiceStore();
-const { realtime, modelsUI, brainStatus } = storeToRefs(voiceStore);
+const { realtime, modelsUI, brainStatus, pipelineMode } = storeToRefs(voiceStore);
 
 /** Key env var per realtime provider on the agent, for the "no key" hint. */
 const VOICE_KEY: Record<string, string> = {
@@ -22,6 +25,16 @@ const VOICE_KEY: Record<string, string> = {
 /** False only when the agent has reported the key missing; unknown is allowed. */
 function providerHasKey(provider: string): boolean {
   return brainStatus.value?.voiceProviders?.[provider] !== false;
+}
+
+/** Answers in text, so a TTS can speak for it (Live + TTS). */
+function speaksText(model: string, provider: string): boolean {
+  return realtimeSpeaksText(provider, model, brainStatus.value);
+}
+
+/** On Live + TTS a model that only answers in audio cannot be picked. */
+function audioOnlyBlocked(model: string, provider: string): boolean {
+  return pipelineMode.value === 'hybrid' && !speaksText(model, provider);
 }
 
 // Persisted UI state via store
@@ -79,18 +92,26 @@ function getProviderIcon(provider: string): string {
 }
 
 function selectModel(modelId: string, provider: string) {
-  if (!providerHasKey(provider)) return;
-  // Voice names are per provider: Gemini's are capitalised star names
-  // (Charon), OpenAI's lowercase (alloy). Carrying one across gives the agent
-  // a voice the new model rejects.
+  if (!providerHasKey(provider) || audioOnlyBlocked(modelId, provider)) return;
+  // Each model keeps the voice chosen for it. Voice names are per provider:
+  // Gemini's are capitalised star names (Charon), OpenAI's lowercase (alloy).
+  // Carrying one across gives the agent a voice the new model rejects.
+  const voices = modelsUI.value.voiceByModel;
+  voices[modelVoiceKey('realtime', realtime.value.provider, realtime.value.model)] =
+    realtime.value.voice ?? '';
   const voice = realtime.value.voice ?? '';
   const keepsVoice =
     provider === realtime.value.provider ||
     (provider === 'google' ? /^[A-Z]/.test(voice) : /^[a-z]/.test(voice));
+  const remembered = voices[modelVoiceKey('realtime', provider, modelId)];
   voiceStore.updateRealtime({
     provider: provider as RealtimeProvider,
     model: modelId,
-    ...(keepsVoice ? {} : { voice: provider === 'google' ? 'Charon' : 'alloy' }),
+    ...(remembered
+      ? { voice: remembered }
+      : keepsVoice
+        ? {}
+        : { voice: provider === 'google' ? 'Charon' : 'alloy' }),
   });
   expandSelectedProvider();
 }
@@ -170,6 +191,9 @@ function getModelInfo(modelId: string) {
       <p>{{ t('modelTabs.realtimeInfo') }}</p>
     </div>
 
+    <!-- On Live + TTS the Live model's own voice is never heard: the TTS speaks. -->
+    <ModelVoicePicker v-if="pipelineMode !== 'hybrid'" kind="realtime" />
+
     <!-- Loading State -->
     <div v-if="isLoading" class="loading-state">
       <iconify-icon icon="ph:spinner-duotone" class="spinner"></iconify-icon>
@@ -199,9 +223,15 @@ function getModelInfo(modelId: string) {
             class="realtime-model-card"
             :class="{
               selected: realtime.model === model,
-              locked: !providerHasKey(String(provider)),
+              locked:
+                !providerHasKey(String(provider)) || audioOnlyBlocked(model, String(provider)),
             }"
-            :disabled="!providerHasKey(String(provider))"
+            :disabled="
+              !providerHasKey(String(provider)) || audioOnlyBlocked(model, String(provider))
+            "
+            :title="
+              audioOnlyBlocked(model, String(provider)) ? t('engines.audioOnlyTitle') : undefined
+            "
             @click="selectModel(model, String(provider))"
           >
             <div class="model-header">
@@ -236,6 +266,22 @@ function getModelInfo(modelId: string) {
               >
                 <iconify-icon icon="ph:wrench-duotone"></iconify-icon>
                 <span class="feature-label">{{ t('modelTabs.tools') }}</span>
+              </span>
+              <span
+                v-if="speaksText(model, String(provider))"
+                class="feature hybrid"
+                :title="t('engines.hybridDesc')"
+              >
+                <iconify-icon icon="lucide:audio-lines"></iconify-icon>
+                <span class="feature-label">{{ t('engines.textReady') }}</span>
+              </span>
+              <span
+                v-else-if="pipelineMode === 'hybrid'"
+                class="feature audio-only"
+                :title="t('engines.audioOnlyTitle')"
+              >
+                <iconify-icon icon="ph:speaker-simple-slash-duotone"></iconify-icon>
+                <span class="feature-label">{{ t('engines.audioOnly') }}</span>
               </span>
             </div>
             <div class="selected-indicator">
@@ -452,6 +498,16 @@ function getModelInfo(modelId: string) {
 .feature.tools {
   background: rgba(96, 165, 250, 0.2);
   color: #60a5fa;
+}
+
+.feature.hybrid {
+  background: rgba(45, 212, 191, 0.2);
+  color: #2dd4bf;
+}
+
+.feature.audio-only {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
 }
 
 .realtime-model-card.selected .feature {

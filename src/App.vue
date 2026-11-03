@@ -49,7 +49,8 @@ useBrainSync(kwami, isConnected);
 const { initialize: initSceneBackground } = useSceneBackground();
 import { useVoiceStore } from '@/stores/voice';
 import { useCreditsStore } from '@/stores/credits';
-import { loadUserLocaleFromDb } from '@/lib/userAppSettings';
+import { useUiLayoutSync } from '@/composables/useUiLayoutSync';
+import { useBrowserFrames } from '@/composables/useBrowserFrames';
 
 // Panels are lazy: none of them is needed at first paint, and eagerly
 // importing all 23 put MemoryPanel (2.2k lines), SceneBackground (1.8k) and
@@ -174,10 +175,10 @@ const navState = useNavigation();
  * overlays, so reserving half the row for them squeezed the avatar into a
  * sliver of the screen with nothing rendered beside it.
  */
-const isSplitWithBrowser = computed(
-  () => navState.isActive.value && !!navState.liveUrl.value && navState.isDocked.value,
-);
+const isSplitWithBrowser = computed(() => navState.hasView.value && navState.isDocked.value);
 useWorkspaceAgentTools();
+useUiLayoutSync();
+useBrowserFrames();
 
 // Sync per-kwami config: apply config when switching kwami, debounced save to DB
 useKwamiConfigWatchers();
@@ -231,7 +232,6 @@ watch(
       const uid = authStore.userId;
       if (uid) {
         void workspaceStore.loadFromDb(uid);
-        void loadUserLocaleFromDb(uid);
       }
     }
   },

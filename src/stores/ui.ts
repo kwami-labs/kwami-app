@@ -1,4 +1,11 @@
 import { defineStore, storeToRefs } from 'pinia';
+import {
+  emptyArrangement,
+  normalizeArrangement,
+  withPanelHidden,
+  withPanelMoved,
+  type PanelArrangement,
+} from '@/lib/panelArrangement';
 import { ref, computed, watch } from 'vue';
 import { useThemeStore } from './theme';
 
@@ -27,6 +34,15 @@ const DEFAULT_SIZE_PRESETS: Record<PanelSizePreset, SizePresetConfig> = {
 
 export type SidebarMode = 'settings' | 'apps';
 
+/** The part of this store that follows the user across devices. */
+export interface UiLayoutSnapshot {
+  arrangement: PanelArrangement;
+  panelWidth: number;
+  sizePresets: Record<PanelSizePreset, SizePresetConfig>;
+  activeSizePreset: PanelSizePreset;
+  allowCustomResize: boolean;
+}
+
 export const useUIStore = defineStore('ui', () => {
   const activePanel = ref<string>('avatar');
   const isPanelOpen = ref(true);
@@ -38,6 +54,7 @@ export const useUIStore = defineStore('ui', () => {
   const sizePresets = ref<Record<PanelSizePreset, SizePresetConfig>>({ ...DEFAULT_SIZE_PRESETS });
   const activeSizePreset = ref<PanelSizePreset>('small');
   const allowCustomResize = ref(true);
+  const panelArrangement = ref<PanelArrangement>(emptyArrangement());
 
   // Track window width for viewport-aware panel sizing
   const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1920);
@@ -174,6 +191,14 @@ export const useUIStore = defineStore('ui', () => {
     }
 
     // Load allow custom resize
+    try {
+      panelArrangement.value = normalizeArrangement(
+        JSON.parse(localStorage.getItem('kwami-panel-arrangement') ?? 'null'),
+      );
+    } catch {
+      panelArrangement.value = emptyArrangement();
+    }
+
     const savedAllowResize = localStorage.getItem('kwami-allow-custom-resize');
     if (savedAllowResize !== null) {
       allowCustomResize.value = savedAllowResize === 'true';
@@ -188,6 +213,54 @@ export const useUIStore = defineStore('ui', () => {
     localStorage.setItem('kwami-size-presets', JSON.stringify(sizePresets.value));
     localStorage.setItem('kwami-active-preset', activeSizePreset.value);
     localStorage.setItem('kwami-allow-custom-resize', String(allowCustomResize.value));
+    localStorage.setItem('kwami-panel-arrangement', JSON.stringify(panelArrangement.value));
+  }
+
+  function setPanelHidden(panel: string, hidden: boolean) {
+    panelArrangement.value = withPanelHidden(panelArrangement.value, panel, hidden);
+    if (panelArrangement.value.hidden.includes(activePanel.value)) isPanelOpen.value = false;
+    saveSettings();
+  }
+
+  function movePanel(panel: string, offset: -1 | 1) {
+    panelArrangement.value = withPanelMoved(panelArrangement.value, panel, offset);
+    saveSettings();
+  }
+
+  function resetPanelArrangement() {
+    panelArrangement.value = emptyArrangement();
+    saveSettings();
+  }
+
+  function getLayoutSnapshot(): UiLayoutSnapshot {
+    return {
+      arrangement: panelArrangement.value,
+      panelWidth: panelWidth.value,
+      sizePresets: sizePresets.value,
+      activeSizePreset: activeSizePreset.value,
+      allowCustomResize: allowCustomResize.value,
+    };
+  }
+
+  /** What comes back may have been written by an older app: anything odd is skipped. */
+  function applyLayoutSnapshot(snapshot: Partial<UiLayoutSnapshot>) {
+    panelArrangement.value = normalizeArrangement(snapshot.arrangement);
+    if (typeof snapshot.allowCustomResize === 'boolean') {
+      allowCustomResize.value = snapshot.allowCustomResize;
+    }
+    const presets = snapshot.sizePresets;
+    if (presets && typeof presets === 'object') {
+      sizePresets.value = { ...sizePresets.value, ...presets };
+    }
+    const preset = snapshot.activeSizePreset;
+    if (preset && preset in sizePresets.value) activeSizePreset.value = preset;
+    if (typeof snapshot.panelWidth === 'number') {
+      panelWidth.value = Math.max(
+        MIN_PANEL_WIDTH,
+        Math.min(maxAllowedWidth.value, snapshot.panelWidth),
+      );
+    }
+    saveSettings();
   }
 
   function togglePanel() {
@@ -303,6 +376,13 @@ export const useUIStore = defineStore('ui', () => {
     setPresetWidth,
     setPresetShortcut,
     setAllowCustomResize,
+    panelArrangement,
+    setPanelHidden,
+    movePanel,
+    resetPanelArrangement,
+    getLayoutSnapshot,
+    applyLayoutSnapshot,
+    loadSettings,
     cleanupResizeListener,
     MIN_PANEL_WIDTH,
     MAX_PANEL_WIDTH,

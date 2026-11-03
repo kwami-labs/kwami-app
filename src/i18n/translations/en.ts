@@ -1035,6 +1035,16 @@ export const en = {
     used: 'used',
     depletedWarning: 'Your Kwami has no energy. Recharge to continue conversations.',
     lowWarning: 'Energy is running low. Recharge soon.',
+    balanceUnavailable: 'Could not check your energy. It has not been spent.',
+    retry: 'Retry',
+    aboutMinutes: 'about {minutes} min of conversation',
+    ownKeysInfo:
+      'On your own model accounts you pay them directly. Energy then only pays for Kwami: 600 per day of use, 30 minutes included, then 20 per minute.',
+    packUse: {
+      starter: 'A week of short daily chats',
+      standard: 'Three weeks of daily use',
+      pro: 'A month of many tasks',
+    },
     recharge: 'Recharge',
     history: 'History',
     usage: 'Usage',

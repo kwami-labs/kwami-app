@@ -29,7 +29,8 @@ describe('brain config', () => {
       ['claude-sonnet-5-5', 'code'],
     ]);
     expect(brain.splitTasks).toBe(true);
-    expect(brain.budgetPolicy).toBe('inform');
+    expect(brain.budgetPolicy).toBe('stop');
+    expect(brain.monthlyBudgetUsd).toBe(150);
   });
 
   it('drops bad models and fills missing fields from the defaults', () => {
@@ -49,6 +50,14 @@ describe('brain config', () => {
 
   it('treats a save from before the brain existed as the defaults', () => {
     expect(normalizeBrain(undefined)).toEqual(defaultBrain());
+    expect(normalizeBrain({ monthlyBudgetUsd: 50, budgetPolicy: 'inform' })).toMatchObject({
+      monthlyBudgetUsd: 150,
+      budgetPolicy: 'stop',
+    });
+    expect(normalizeBrain({ monthlyBudgetUsd: 40, budgetPolicy: 'inform' })).toMatchObject({
+      monthlyBudgetUsd: 40,
+      budgetPolicy: 'inform',
+    });
   });
 
   it('routes like the agent: Haiku only for the simplest, Gemini for quick lookups', () => {

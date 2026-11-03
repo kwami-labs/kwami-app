@@ -1043,6 +1043,16 @@ export const es = {
     used: 'usada',
     depletedWarning: 'Tu Kwami no tiene energia. Recarga para continuar conversaciones.',
     lowWarning: 'La energia esta baja. Recarga pronto.',
+    balanceUnavailable: 'No se pudo comprobar tu energia. No se ha gastado.',
+    retry: 'Reintentar',
+    aboutMinutes: 'unos {minutes} min de conversacion',
+    ownKeysInfo:
+      'Con tus propias cuentas de modelos les pagas directamente a ellos. La energia solo paga Kwami: 600 por dia de uso con 30 minutos incluidos, y luego 20 por minuto.',
+    packUse: {
+      starter: 'Una semana de charlas cortas a diario',
+      standard: 'Tres semanas de uso diario',
+      pro: 'Un mes de muchas tareas',
+    },
     recharge: 'Recargar',
     history: 'Historial',
     usage: 'Uso',

@@ -308,6 +308,19 @@ describe('get_credit_balance', () => {
   });
 });
 
+describe('get_credit_balance when the API cannot be reached', () => {
+  it('says it could not check, because the real store swallows the error', async () => {
+    const credits = useCreditsStore();
+    credits.loadBalance = vi.fn(async () => {
+      credits.balanceError = 'Failed to fetch';
+    }) as typeof credits.loadBalance;
+
+    const result = await call('get_credit_balance');
+    expect(result.success).toBe(false);
+    expect(String(result.message)).toContain('Failed to fetch');
+  });
+});
+
 describe('randomize_appearance', () => {
   it('rerolls the active renderer', async () => {
     const avatar = useAvatarStore();

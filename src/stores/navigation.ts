@@ -63,7 +63,25 @@ export const useNavigationStore = defineStore('navigation', () => {
     minHeight: MIN_PANEL_HEIGHT,
   });
 
+  /** The latest screenshot from the agent's built-in browser, which has no live view. */
+  const frameUrl = ref('');
+
   const hasNavigation = computed(() => isActive.value);
+
+  /** Whether the panel has anything to display: a live view, or frames that will come. */
+  const hasView = computed(
+    () => isActive.value && (!!liveUrl.value || vendor.value === 'headless'),
+  );
+
+  function showFrame(url: string) {
+    // One still on its way when browsing ended would greet the next session.
+    if (url && !isActive.value) {
+      URL.revokeObjectURL(url);
+      return;
+    }
+    if (frameUrl.value) URL.revokeObjectURL(frameUrl.value);
+    frameUrl.value = url;
+  }
 
   function updateState(state: {
     url?: string;
@@ -91,6 +109,7 @@ export const useNavigationStore = defineStore('navigation', () => {
     isLoading.value = false;
     liveUrl.value = '';
     vendor.value = '';
+    showFrame('');
     isPersistent.value = true;
     panel.setManipulating(false);
     // Layout is deliberately kept: it is a user preference about the panel,
@@ -106,6 +125,9 @@ export const useNavigationStore = defineStore('navigation', () => {
     vendor,
     isPersistent,
     hasNavigation,
+    frameUrl,
+    hasView,
+    showFrame,
     updateState,
     end,
 

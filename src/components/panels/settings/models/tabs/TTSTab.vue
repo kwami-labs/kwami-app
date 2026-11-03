@@ -7,9 +7,11 @@ import { useKwami } from '@/composables/useKwami';
 import { storeToRefs } from 'pinia';
 import type { TTSProvider } from 'kwami';
 import { voiceKeyName, voiceProviderHasKey } from '@/lib/brain';
-import { mergeModels, sameModel, voiceProviderServed } from '@/lib/voiceCatalog';
+import { mergeModels, voiceProviderServed } from '@/lib/voiceCatalog';
 import PanelSection from '@/components/ui/PanelSection.vue';
 import TTSModelCard from '@/components/ui/TTSModelCard.vue';
+import ModelVoicePicker from '../ModelVoicePicker.vue';
+import { modelVoiceKey, sameTtsModel, voiceAfterModelChange } from '@/lib/voiceChoice';
 
 const {
   fetchTTSInferenceModels,
@@ -187,16 +189,16 @@ function selectModel(modelId: string, provider: string) {
   selectedProvider.value = provider;
   selectedModel.value = modelId;
 
-  voiceStore.updateTTS({
-    provider: provider as TTSProvider,
-    model: modelId,
-  });
+  // Each model keeps the voice chosen for it. Without this a voice from the
+  // provider left behind went on being sent to a provider that does not have it.
+  const voices = modelsUI.value.voiceByModel;
+  voices[modelVoiceKey('tts', tts.value.provider, tts.value.model)] = tts.value.voice;
+  const patch = voiceAfterModelChange(tts.value, provider, modelId, voices);
+
+  voiceStore.updateTTS({ ...patch, provider: provider as TTSProvider });
 
   if (isConnected.value && kwami.value) {
-    kwami.value.agent.updateTtsLive({
-      provider,
-      model: modelId,
-    });
+    kwami.value.agent.updateTtsLive({ ...patch, provider });
   }
 }
 
@@ -219,6 +221,8 @@ watch(
     </div>
 
     <template v-if="!isLoading">
+      <ModelVoicePicker kind="tts" />
+
       <!-- Sort Controls -->
       <div class="sort-row">
         <span class="sort-label">{{ t('modelTabs.sort') }}</span>
@@ -270,7 +274,10 @@ watch(
               v-for="model in models"
               :key="model.model_id"
               :model="model"
-              :selected="tts.provider === model.provider && sameModel(tts.model, model.model_id)"
+              :selected="
+                tts.provider === model.provider &&
+                sameTtsModel(tts.provider, tts.model, model.model_id)
+              "
               :minPrice="minPrice"
               :maxPrice="maxPrice"
               :class="{ locked: !providerUsable(model.provider) }"
@@ -290,7 +297,8 @@ watch(
             :key="model.model_id"
             :model="model"
             :selected="
-              selectedProvider === model.provider && sameModel(selectedModel, model.model_id)
+              selectedProvider === model.provider &&
+              sameTtsModel(selectedProvider, selectedModel, model.model_id)
             "
             :minPrice="minPrice"
             :maxPrice="maxPrice"

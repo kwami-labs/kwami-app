@@ -1,5 +1,12 @@
 import { onMounted, onUnmounted } from 'vue';
-import { appsPanelOrder, SETTINGS_PANEL_ORDER } from '@/constants/panels';
+import {
+  appsPanelOrder,
+  SETTINGS_AGENT_PANELS,
+  SETTINGS_INFO_PANELS,
+  SETTINGS_PINNED_PANELS,
+  SETTINGS_VISUAL_PANELS,
+} from '@/constants/panels';
+import { visiblePanels } from '@/lib/panelArrangement';
 import { useCommunicationsStore } from '@/stores/communications';
 import { useUIStore } from '@/stores/ui';
 import { useWorkspaceStore } from '@/stores/workspace';
@@ -15,11 +22,19 @@ export function usePanelShortcuts() {
    * digit key must never open a panel the sidebar is hiding.
    */
   function panelOrder(): readonly string[] {
-    if (uiStore.sidebarMode !== 'apps') return SETTINGS_PANEL_ORDER;
+    const arrangement = uiStore.panelArrangement;
+    if (uiStore.sidebarMode !== 'apps') {
+      return [
+        ...visiblePanels(SETTINGS_VISUAL_PANELS, arrangement),
+        ...visiblePanels(SETTINGS_AGENT_PANELS, arrangement),
+        ...visiblePanels(SETTINGS_INFO_PANELS, arrangement),
+        ...SETTINGS_PINNED_PANELS,
+      ];
+    }
     const phoneActivated = communicationsStore.isKwamiPhoneActivated(
       workspaceStore.activeWorkspaceId,
     );
-    return appsPanelOrder(phoneActivated);
+    return visiblePanels(appsPanelOrder(phoneActivated), arrangement);
   }
 
   function handleKeydown(e: KeyboardEvent) {

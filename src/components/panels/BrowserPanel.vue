@@ -24,8 +24,9 @@ import { useI18n } from 'vue-i18n';
 import { useNavigation } from '@/composables/useNavigation';
 
 const {
-  isActive,
   liveUrl,
+  frameUrl,
+  hasView,
   currentUrl,
   currentTitle,
   isPersistent,
@@ -74,9 +75,14 @@ function startLoadTimer() {
   }, LOAD_TIMEOUT_MS);
 }
 
-// Animate in when active with a liveUrl
+// The built-in browser's first frame plays the part of the iframe's load event.
+watch(frameUrl, (url) => {
+  if (url) onIframeLoad();
+});
+
+// Animate in when active with something to show
 watch(
-  () => isActive.value && !!liveUrl.value,
+  hasView,
   (shouldShow) => {
     isLoaded.value = false;
     hasError.value = false;
@@ -299,7 +305,7 @@ onBeforeUnmount(() => {
 <template>
   <Transition name="browser-panel">
     <div
-      v-if="showPanel && liveUrl"
+      v-if="showPanel && hasView"
       id="kwami-browser-panel"
       class="browser-panel"
       :class="[`browser-panel--${layout}`, { 'browser-panel--busy': isManipulating }]"
@@ -433,6 +439,14 @@ onBeforeUnmount(() => {
           referrerpolicy="no-referrer"
           @load="onIframeLoad"
           @error="onIframeError"
+        />
+
+        <!-- The built-in browser: what the agent's own Chromium is showing. -->
+        <img
+          v-if="frameUrl && !iframeSrc && !isFailed"
+          :src="frameUrl"
+          class="browser-panel__frame"
+          :alt="currentTitle || t('browser.panelLabel')"
         />
 
         <!-- Pointer shield. Without it a drag dies the instant the cursor
@@ -678,6 +692,14 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 100%;
   border: none;
+  background: #0d0d0f;
+}
+
+.browser-panel__frame {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: top;
   background: #0d0d0f;
 }
 
