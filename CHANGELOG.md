@@ -4,6 +4,13 @@ All notable changes to this client are documented here. This file is generated f
 
 `v0.1.0` is a baseline tag placed at the commit that introduced this automation. Everything before it lives in the git log rather than here: it shipped before there was a release line to put it on.
 
+## [0.1.4](https://github.com/kwami-labs/kwami-app/compare/v0.1.3...v0.1.4) (2026-11-01)
+
+
+### Bug Fixes
+
+* **deps:** bump vue-i18n to 11.4.17 ([#43](https://github.com/kwami-labs/kwami-app/issues/43)) ([48f37bd](https://github.com/kwami-labs/kwami-app/commit/48f37bd7aa53fbf1c53bf3c5afcf006576fef93f))
+
 ## [0.1.3](https://github.com/kwami-labs/kwami-app/compare/v0.1.2...v0.1.3) (2026-10-14)
 
 ## [0.1.2](https://github.com/kwami-labs/kwami-app/compare/v0.1.1...v0.1.2) (2026-09-23)
