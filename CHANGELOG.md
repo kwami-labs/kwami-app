@@ -4,6 +4,8 @@ All notable changes to this client are documented here. This file is generated f
 
 `v0.1.0` is a baseline tag placed at the commit that introduced this automation. Everything before it lives in the git log rather than here: it shipped before there was a release line to put it on.
 
+## [0.1.7](https://github.com/kwami-labs/kwami-app/compare/v0.1.6...v0.1.7) (2026-11-04)
+
 ## [0.1.6](https://github.com/kwami-labs/kwami-app/compare/v0.1.5...v0.1.6) (2026-11-03)
 
 
