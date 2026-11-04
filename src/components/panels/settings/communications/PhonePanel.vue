@@ -7,6 +7,8 @@ import BaseInput from '@/components/ui/BaseInput.vue';
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue';
 import PanelHeaderControls from '@/components/ui/PanelHeaderControls.vue';
 import AssistantConnections from './AssistantConnections.vue';
+import PcConnections from './PcConnections.vue';
+import { isTauri } from '@/lib/platform';
 import {
   useCommunicationsPanel,
   type CommunicationsPanelMode,
@@ -84,6 +86,7 @@ const {
 
     <div class="panel-body">
       <AssistantConnections v-if="showOverview" />
+      <PcConnections v-if="showOverview && isTauri()" />
 
       <PanelSection
         v-if="showOverview"
