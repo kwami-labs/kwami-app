@@ -4,6 +4,20 @@ All notable changes to this client are documented here. This file is generated f
 
 `v0.1.0` is a baseline tag placed at the commit that introduced this automation. Everything before it lives in the git log rather than here: it shipped before there was a release line to put it on.
 
+## [0.1.8](https://github.com/kwami-labs/kwami-app/compare/v0.1.7...v0.1.8) (2026-11-04)
+
+
+### Bug Fixes
+
+* **assistant:** confirm a new phone number with the code sent to it ([#56](https://github.com/kwami-labs/kwami-app/issues/56)) ([0b27362](https://github.com/kwami-labs/kwami-app/commit/0b273622706435d6d149d4221cb3c1aca0978443))
+* **settings:** hide the assistant's sections when the API has no such routes ([#61](https://github.com/kwami-labs/kwami-app/issues/61)) ([e07211e](https://github.com/kwami-labs/kwami-app/commit/e07211e7b3098edd955735a29b8755e2ba443f22))
+
+
+### Features
+
+* **google:** reconnect an expired Google account right after signing in ([#57](https://github.com/kwami-labs/kwami-app/issues/57)) ([9aede65](https://github.com/kwami-labs/kwami-app/commit/9aede658d811e01cfe2724355a6247675fa92ab2))
+* **settings:** connect Claude and websites from the app on the PC ([#58](https://github.com/kwami-labs/kwami-app/issues/58)) ([6df4d3b](https://github.com/kwami-labs/kwami-app/commit/6df4d3b9d8ac63f2770120ce7bffba19f9c4b572))
+
 ## [0.1.7](https://github.com/kwami-labs/kwami-app/compare/v0.1.6...v0.1.7) (2026-11-04)
 
 ## [0.1.6](https://github.com/kwami-labs/kwami-app/compare/v0.1.5...v0.1.6) (2026-11-03)
