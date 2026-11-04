@@ -1,0 +1,30 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "KWAMI",
+  "mainBinaryName": "KWAMI",
+  "identifier": "io.kwami.desktop",
+  "build": {
+    "frontendDist": "https://kwami.io",
+    "beforeBuildCommand": ""
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "KWAMI",
+        "url": "https://kwami.io",
+        "width": 1280,
+        "height": 800,
+        "minWidth": 400,
+        "minHeight": 600,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "capabilities": ["kwami-io"]
+    }
+  },
+  "bundle": {
+    "targets": ["nsis"]
+  }
+}

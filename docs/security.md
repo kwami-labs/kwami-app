@@ -100,7 +100,9 @@ The LiveKit agent can invoke **client tools** (open panels, change theme, draft 
 
 ### 7. Desktop
 
-Tauri embeds the same origin-less `VITE_*` build. `csp` in `tauri.conf.json` is currently `null` — set it before shipping a signed installer. See [Desktop](guides/desktop.md).
+A plain `tauri build` embeds the same origin-less `VITE_*` build. `csp` in `tauri.conf.json` is currently `null` — set it before shipping that build.
+
+The Windows installer served from `/downloads/` embeds no frontend and no `VITE_*`: its window opens `https://kwami.io`. The site gets only what sign-in needs on the desktop (`capabilities/kwami-io.json`: the deep link back and opening web addresses in the system browser), and any other native command is refused. The installer is not code-signed yet, so Windows warns on first run. See [Desktop](guides/desktop.md).
 
 ## Higher-severity review list
 
