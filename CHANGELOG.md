@@ -4,6 +4,13 @@ All notable changes to this client are documented here. This file is generated f
 
 `v0.1.0` is a baseline tag placed at the commit that introduced this automation. Everything before it lives in the git log rather than here: it shipped before there was a release line to put it on.
 
+## [0.1.9](https://github.com/kwami-labs/kwami-app/compare/v0.1.8...v0.1.9) (2026-11-04)
+
+
+### Features
+
+* **account:** offer the native Windows app next to the PWA ([#60](https://github.com/kwami-labs/kwami-app/issues/60)) ([3971491](https://github.com/kwami-labs/kwami-app/commit/3971491f351a2d65799ee9257c1f136d2dd80d9f))
+
 ## [0.1.8](https://github.com/kwami-labs/kwami-app/compare/v0.1.7...v0.1.8) (2026-11-04)
 
 
