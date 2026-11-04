@@ -22,7 +22,7 @@ Order comes from [`src/constants/panels.ts`](../../src/constants/panels.ts) (vis
 | `metrics` | `MetricsPanel` | Live session metrics |
 | `info` | `InfoPanel` | Connection and runtime status |
 | `credits` | `EnergyPanel` | Balance, packs, usage (pinned) |
-| `account` | `AccountPanel` | User, locale, PWA install, sign-out (pinned) |
+| `account` | `AccountPanel` | User, locale, install (PWA and Windows app), sign-out (pinned) |
 
 ## Apps (`sidebarMode === 'apps'`)
 

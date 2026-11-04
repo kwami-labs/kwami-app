@@ -217,14 +217,23 @@ export const en = {
     languageEnglish: 'English',
     languageSpanish: 'Spanish',
     installApp: 'Install app',
-    installTitle: 'Use as a native app',
-    installHint: 'Download Kwami to this device and open it from your home screen or app dock.',
-    downloadApp: 'Download app',
+    installTitle: 'Web app (PWA)',
+    installHint:
+      'Installed by your browser and runs on its engine. Updates by itself, on phones and computers.',
+    downloadApp: 'Install PWA',
     installed: 'Installed on this device',
     installIos: 'In Safari, tap Share, then Add to Home Screen, then Add.',
-    installAndroid: 'Tap Download app, or open the browser menu and choose Install app.',
+    installAndroid: 'Tap Install PWA, or open the browser menu and choose Install app.',
     installDesktop:
-      'Click Download app, or the install icon in the address bar. On Safari or Firefox, open this site in Chrome or Edge to install.',
+      'Click Install PWA, or the install icon in the address bar. On Safari or Firefox, open this site in Chrome or Edge to install.',
+    pwaInsideNative: 'The PWA installs from a browser: open kwami.io there.',
+    nativeTitle: 'Desktop app (Tauri)',
+    nativeHint:
+      'A Windows program with its own window and shortcut, no browser needed. It opens kwami.io inside a shell written in Rust.',
+    nativeDownload: 'Download for Windows (.exe)',
+    nativeUnsigned: 'Not signed yet: if Windows warns you, choose More info, then Run anyway.',
+    nativeUnsupported: 'Only for Windows for now: open kwami.io on a Windows PC to get it.',
+    nativeRunning: 'You are using this app now',
   },
   models: {
     title: 'Models',
