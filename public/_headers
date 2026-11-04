@@ -7,6 +7,11 @@
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
 
+# Keeps its name across rebuilds, so it must be checked again rather than cached.
+/downloads/*
+  Cache-Control: no-cache
+  Content-Disposition: attachment
+
 /*
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY

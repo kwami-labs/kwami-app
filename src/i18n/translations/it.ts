@@ -219,15 +219,24 @@ export const it = {
     languageEnglish: 'Inglese',
     languageSpanish: 'Spagnolo',
     installApp: 'Installa app',
-    installTitle: 'Usa come app nativa',
+    installTitle: 'App web (PWA)',
     installHint:
-      'Scarica Kwami su questo dispositivo e aprilo dalla schermata home o dal dock delle app.',
-    downloadApp: 'Scarica app',
+      'La installa il browser e funziona con il suo motore. Si aggiorna da sola, su telefono e computer.',
+    downloadApp: 'Installa PWA',
     installed: 'Installata su questo dispositivo',
     installIos: 'In Safari, tocca Condividi, poi Aggiungi a Home e infine Aggiungi.',
-    installAndroid: 'Tocca Scarica app, oppure apri il menu del browser e scegli Installa app.',
+    installAndroid: 'Tocca Installa PWA, oppure apri il menu del browser e scegli Installa app.',
     installDesktop:
-      "Clicca su Scarica app, o sull'icona di installazione nella barra degli indirizzi. Su Safari o Firefox, apri questo sito in Chrome o Edge per installarlo.",
+      "Clicca su Installa PWA, o sull'icona di installazione nella barra degli indirizzi. Su Safari o Firefox, apri questo sito in Chrome o Edge per installarlo.",
+    pwaInsideNative: 'La PWA si installa da un browser: apri lì kwami.io.',
+    nativeTitle: 'App desktop (Tauri)',
+    nativeHint:
+      'Un programma Windows con finestra e collegamento propri, senza browser. Apre kwami.io in un guscio scritto in Rust.',
+    nativeDownload: 'Scarica per Windows (.exe)',
+    nativeUnsigned:
+      'Non ancora firmata: se Windows ti avvisa, scegli Ulteriori informazioni, poi Esegui comunque.',
+    nativeUnsupported: 'Per ora solo per Windows: apri kwami.io su un PC Windows per scaricarla.',
+    nativeRunning: 'Stai già usando questa app',
   },
   models: {
     title: 'Modelli',

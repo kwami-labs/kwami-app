@@ -97,7 +97,9 @@ Do not put the API origin behind a service-worker cache.
 
 ## Desktop
 
-`bun run tauri build` runs `bun run build` then packages `../dist`. Same baked env. [Desktop](../guides/desktop.md).
+`bun run tauri build` runs `bun run build` then packages `../dist`. Same baked env.
+
+The Windows installer offered in Account → Install is built differently: `bun run desktop:installer` wraps the live kwami.io with no frontend or env inside, and the result is committed to `public/downloads/`, so a deploy ships it with the button. [Desktop](../guides/desktop.md).
 
 ## CORS and redirects
 

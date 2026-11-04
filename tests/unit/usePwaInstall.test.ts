@@ -9,7 +9,7 @@ import {
   resetPwaInstallState,
   usePwaInstall,
 } from '../../src/composables/usePwaInstall';
-import PwaInstallSection from '../../src/components/panels/settings/account/PwaInstallSection.vue';
+import AppInstallSection from '../../src/components/panels/settings/account/AppInstallSection.vue';
 import { flushPromises } from '../helpers/mount';
 
 function fakeInstallEvent(outcome: 'accepted' | 'dismissed' = 'accepted') {
@@ -40,12 +40,16 @@ afterEach(() => {
 describe('detectPwaPlatform', () => {
   it('detects iOS phones and iPadOS', () => {
     expect(detectPwaPlatform('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)')).toBe('ios');
-    expect(detectPwaPlatform('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)', 5, 'MacIntel')).toBe('ios');
+    expect(
+      detectPwaPlatform('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)', 5, 'MacIntel'),
+    ).toBe('ios');
   });
 
   it('detects Android and desktop', () => {
     expect(detectPwaPlatform('Mozilla/5.0 (Linux; Android 14) Chrome/120.0.0.0')).toBe('android');
-    expect(detectPwaPlatform('Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0')).toBe('desktop');
+    expect(detectPwaPlatform('Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0')).toBe(
+      'desktop',
+    );
   });
 });
 
@@ -100,21 +104,23 @@ describe('usePwaInstall', () => {
   });
 });
 
-describe('PwaInstallSection', () => {
+describe('AppInstallSection (PWA option)', () => {
   it('renders the download button when the app is not installed', () => {
-    const wrapper = mount(PwaInstallSection);
-    expect(wrapper.get('[data-testid="pwa-download"]').text()).toContain('Download app');
-    expect(wrapper.text()).toContain('Use as a native app');
+    const wrapper = mount(AppInstallSection);
+    expect(wrapper.get('[data-testid="pwa-download"]').text()).toContain('Install PWA');
+    expect(wrapper.text()).toContain('Web app (PWA)');
   });
 
   it('shows the installed state after a successful prompt', async () => {
     initPwaInstall();
     window.dispatchEvent(fakeInstallEvent('accepted'));
 
-    const wrapper = mount(PwaInstallSection);
+    const wrapper = mount(AppInstallSection);
     await wrapper.get('[data-testid="pwa-download"]').trigger('click');
     await flushPromises();
 
-    expect(wrapper.get('[data-testid="pwa-installed"]').text()).toContain('Installed on this device');
+    expect(wrapper.get('[data-testid="pwa-installed"]').text()).toContain(
+      'Installed on this device',
+    );
   });
 });

@@ -135,6 +135,8 @@ export default defineConfig({
         // Overriding this drops workbox's default, hence node_modules here.
         // `welcome.mp3` sits at the public root and stays precached.
         globIgnores: ['**/node_modules/**/*', '**/audio/tour/**'],
+        // Otherwise the worker answers a download with the app's index.html.
+        navigateFallbackDenylist: [/^\/downloads\//],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.(?:gstatic|googleapis)\.com\/.*/i,

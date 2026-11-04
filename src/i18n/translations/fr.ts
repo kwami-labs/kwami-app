@@ -219,17 +219,27 @@ export const fr = {
     languageEnglish: 'Anglais',
     languageSpanish: 'Espagnol',
     installApp: "Installer l'application",
-    installTitle: 'Utiliser comme application native',
+    installTitle: 'Application web (PWA)',
     installHint:
-      "Téléchargez Kwami sur cet appareil et ouvrez-le depuis votre écran d'accueil ou votre dock.",
-    downloadApp: "Télécharger l'application",
+      'Installée par votre navigateur et exécutée par son moteur. Se met à jour toute seule, sur mobile et ordinateur.',
+    downloadApp: 'Installer la PWA',
     installed: 'Installée sur cet appareil',
     installIos:
       "Dans Safari, appuyez sur Partager, puis sur Sur l'écran d'accueil, puis sur Ajouter.",
     installAndroid:
-      "Appuyez sur Télécharger l'application, ou ouvrez le menu du navigateur et choisissez Installer l'application.",
+      "Appuyez sur Installer la PWA, ou ouvrez le menu du navigateur et choisissez Installer l'application.",
     installDesktop:
-      "Cliquez sur Télécharger l'application, ou sur l'icône d'installation dans la barre d'adresse. Sur Safari ou Firefox, ouvrez ce site dans Chrome ou Edge pour l'installer.",
+      "Cliquez sur Installer la PWA, ou sur l'icône d'installation dans la barre d'adresse. Sur Safari ou Firefox, ouvrez ce site dans Chrome ou Edge pour l'installer.",
+    pwaInsideNative: "La PWA s'installe depuis un navigateur : ouvrez-y kwami.io.",
+    nativeTitle: 'Application de bureau (Tauri)',
+    nativeHint:
+      'Un programme Windows avec sa propre fenêtre et son raccourci, sans navigateur. Il ouvre kwami.io dans une enveloppe écrite en Rust.',
+    nativeDownload: 'Télécharger pour Windows (.exe)',
+    nativeUnsigned:
+      'Pas encore signée : si Windows vous avertit, choisissez Informations complémentaires, puis Exécuter quand même.',
+    nativeUnsupported:
+      "Windows uniquement pour l'instant : ouvrez kwami.io sur un PC Windows pour l'obtenir.",
+    nativeRunning: 'Vous utilisez déjà cette application',
   },
   models: {
     title: 'Modèles',

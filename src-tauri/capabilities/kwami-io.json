@@ -1,0 +1,15 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "kwami-io",
+  "description": "The installed app shows kwami.io: only what its sign-in needs (deep link back, system browser)",
+  "windows": ["main"],
+  "remote": {
+    "urls": ["https://kwami.io/*"]
+  },
+  "permissions": [
+    "core:event:default",
+    "deep-link:default",
+    "opener:allow-open-url",
+    "opener:allow-default-urls"
+  ]
+}

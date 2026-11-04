@@ -63,7 +63,7 @@ Shortcuts follow [`src/constants/panels.ts`](../../src/constants/panels.ts). Wha
 
 ## PWA / install button missing
 
-Installability needs a secure context (localhost or HTTPS), a valid manifest, and a registered service worker. Account → download uses the sphere icon. Chromium e2e stubs CDNs; do not debug installability inside Playwright.
+Installability needs a secure context (localhost or HTTPS), a valid manifest, and a registered service worker. Chromium e2e stubs CDNs; do not debug installability inside Playwright.
 
 ## Tauri: requests abort strangely
 
