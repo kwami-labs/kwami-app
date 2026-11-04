@@ -5,7 +5,7 @@ import { openUrl } from '@tauri-apps/plugin-opener';
 import PanelSection from '@/components/ui/PanelSection.vue';
 import BaseButton from '@/components/ui/BaseButton.vue';
 import BaseInput from '@/components/ui/BaseInput.vue';
-import { api } from '@/lib/apiClient';
+import { api, ApiError } from '@/lib/apiClient';
 import { isTauri } from '@/lib/platform';
 import { useWorkspaceStore } from '@/stores/workspace';
 
@@ -47,6 +47,8 @@ const busy = ref(false);
 const message = ref('');
 const googleMessage = ref('');
 const waiting = ref(false);
+/** False when the API behind this app has no such routes yet: nothing here could work. */
+const available = ref(true);
 let waitTimer: ReturnType<typeof setInterval> | undefined;
 
 // A code is for the number it was sent to.
@@ -94,6 +96,12 @@ async function load() {
   if (!kwamiId) return;
   try {
     google.value = await api.get<GoogleStatus>('/google/status');
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) available.value = false;
+    else message.value = errorText(error);
+    return;
+  }
+  try {
     const { settings } = await api.get<{ settings: Record<string, unknown> }>(
       '/assistant/settings',
       { query: { kwami_id: kwamiId } },
@@ -190,7 +198,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <PanelSection :title="t('assistant.googleTitle')" icon="ph:google-logo-duotone">
+  <PanelSection v-if="available" :title="t('assistant.googleTitle')" icon="ph:google-logo-duotone">
     <p v-if="!google.configured">{{ t('assistant.googleNotConfigured') }}</p>
     <template v-else>
       <p v-if="!google.accounts.length">{{ t('assistant.googleDisconnected') }}</p>
@@ -238,7 +246,11 @@ onUnmounted(() => {
     </template>
   </PanelSection>
 
-  <PanelSection :title="t('assistant.reportsTitle')" icon="ph:calendar-check-duotone">
+  <PanelSection
+    v-if="available"
+    :title="t('assistant.reportsTitle')"
+    icon="ph:calendar-check-duotone"
+  >
     <label class="assistant-row">
       <input v-model="reportsEnabled" type="checkbox" />
       <span>{{ t('assistant.reportsEnable') }}</span>

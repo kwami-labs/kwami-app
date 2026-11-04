@@ -5,6 +5,7 @@ import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils';
 import { createI18n } from 'vue-i18n';
 import AssistantConnections from '@/components/panels/settings/communications/AssistantConnections.vue';
 import { assistantEn } from '@/i18n/assistant.locale';
+import { ApiError } from '@/lib/apiClient';
 import { useWorkspaceStore } from '@/stores/workspace';
 
 enableAutoUnmount(afterEach);
@@ -65,7 +66,44 @@ beforeEach(() => {
   useWorkspaceStore().activeWorkspaceId = 'k1';
 });
 
+function failure(status: number) {
+  return new ApiError({
+    message: `HTTP ${status}`,
+    status,
+    code: 'http',
+    method: 'GET',
+    url: '/google/status',
+  });
+}
+
 describe('AssistantConnections', () => {
+  it('shows nothing when the API behind it has no such routes yet', async () => {
+    api.get.mockRejectedValue(failure(404));
+    const wrapper = await render();
+    expect(wrapper.find('section').exists()).toBe(false);
+    expect(wrapper.find('input').exists()).toBe(false);
+    expect(api.get).toHaveBeenCalledTimes(1);
+  });
+
+  it('still says when the API fails for another reason', async () => {
+    api.get.mockRejectedValue(failure(500));
+    const wrapper = await render();
+    expect(wrapper.find('section').exists()).toBe(true);
+    expect(wrapper.text()).toContain('HTTP 500');
+  });
+
+  it('keeps the sections when only the settings are not found', async () => {
+    api.get.mockImplementation(async (path: string) => {
+      if (path === '/google/status') {
+        return { configured: false, connected: false, email: null, accounts: [] };
+      }
+      throw failure(404);
+    });
+    const wrapper = await render();
+    expect(wrapper.find('section').exists()).toBe(true);
+    expect(wrapper.text()).toContain('HTTP 404');
+  });
+
   it('says when the server has no Google client', async () => {
     respond({ configured: false, connected: false, email: null, accounts: [] });
     const wrapper = await render();
