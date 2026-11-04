@@ -89,7 +89,8 @@ async function handleDownload() {
 
         <template v-else-if="nativeState === 'windows'">
           <BaseButton
-            variant="accent"
+            class="native-download"
+            variant="secondary"
             icon="ph:windows-logo-duotone"
             block
             data-testid="native-download"
@@ -170,21 +171,28 @@ async function handleDownload() {
   color: var(--text-primary);
 }
 
+/* Cyan and amber are too pale for text on the light theme, so they only colour the outline. */
 .install-tech {
   padding: 1px 6px;
-  border: 1px solid currentcolor;
+  border: 1px solid;
   border-radius: 999px;
   font-size: 10px;
   font-weight: 600;
+  color: var(--text-primary);
   white-space: nowrap;
 }
 
 .install-tech--web {
-  color: var(--accent-primary);
+  border-color: var(--accent-primary);
 }
 
 .install-tech--native {
-  color: var(--warning);
+  border-color: var(--warning);
+}
+
+.install-card .native-download {
+  border-color: var(--warning);
+  color: var(--text-primary);
 }
 
 .install-hint {
@@ -203,11 +211,12 @@ async function handleDownload() {
   border-radius: var(--radius-md);
   font-size: 12px;
   font-weight: 500;
-  color: var(--accent-primary);
+  color: var(--text-primary);
 }
 
 .installed-badge iconify-icon {
   font-size: 16px;
+  color: var(--accent-primary);
 }
 
 .install-steps {
