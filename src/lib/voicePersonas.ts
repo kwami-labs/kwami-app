@@ -20,10 +20,12 @@
  * same prebuilt voices, reading the same sentence under each `style`.
  *
  * Each character also has ElevenLabs voices (`elevenlabs`), for the third
- * engine. The first two of each were designed for the character with Voice
- * Design from its `designPrompt` (2026-11-01, Creator plan) and saved in the
- * account, picked by measuring takes on Flash v2.5 (pitch, contour, pace). The
- * stock voices stay behind them, so a kwami saved with one keeps its character.
+ * engine. The designed ones come first -- for Jarvis, four tuned on 2026-11-05
+ * for a deeper, cinematic butler register; for Friday, two from 2026-11-01 --
+ * all built with Voice Design from the `designPrompt` (Creator plan) and saved
+ * in the account, picked by measuring takes on Flash v2.5 (pitch, contour,
+ * pace). The stock voices stay behind them, so a kwami saved with one keeps its
+ * character.
  * The `*-elevenlabs-*` samples are Flash takes. ElevenLabs reads no direction;
  * the style stays set anyway, because a set direction is what locks the voice
  * against the agent's own switching.
@@ -149,9 +151,9 @@ export const GEMINI_STANDARD = {
  * ElevenLabs speaks. Flash v2.5 was the fastest TTS measured (0.19 s to first
  * audio) and is billed per use; Gemini TTS on a free-tier key allows ten
  * requests a day, and a spent quota leaves Jarvis mute. The voice is the one
- * designed for him, Británico.
+ * designed for him, Cine: a deep, controlled, cinematic butler.
  */
-export const JARVIS_ELEVENLABS_VOICE = 'WHOJDqzCafRk2dAUIxxB';
+export const JARVIS_ELEVENLABS_VOICE = 'hJ8c5S51sAyQqz7QaCFy';
 export const ELEVENLABS_TTS = { provider: 'elevenlabs', model: 'eleven_flash_v2_5' } as const;
 export const JARVIS_STANDARD = {
   stt: GEMINI_STANDARD.stt,
@@ -203,12 +205,20 @@ export const VOICE_PERSONAS: readonly VoicePersona[] = [
     provider: 'google',
     voice: 'Charon',
     alternatives: ['Orus', 'Iapetus', 'Algieba'],
-    // Measured in Spanish on Flash v2.5: Británico, designed, 142 Hz, light and
-    // medium-pitched like the film's AI; Seco, designed, 121 Hz and the briskest. Of the stock ones: George 124 Hz with a
+    // Measured in Spanish on Flash v2.5. Designed for Jarvis with Voice Design
+    // from his designPrompt, aimed at a deeper, cinematic butler register: Cine
+    // 97 Hz with a very flat, controlled contour; Grave 115 Hz with more presence;
+    // Sobrio 111 Hz, even and calm; Claro 122 Hz, a touch brighter. Then the
+    // earlier designed pair: Británico 142 Hz, light and medium-pitched like the
+    // film's AI; Seco 121 Hz, the briskest. Of the stock ones: George 124 Hz with a
     // flat contour and an unhurried pace, the butler register; Roger the deepest
     // and flattest (101 Hz) but casual in manner; Daniel formal and slow; Brian deep.
     elevenlabs: [
-      { id: JARVIS_ELEVENLABS_VOICE, name: 'Británico' },
+      { id: JARVIS_ELEVENLABS_VOICE, name: 'Cine' },
+      { id: 'gPMMGH6RuQIzTEF7tPvh', name: 'Grave' },
+      { id: 'qSukQ8DWG391NxzhQB8J', name: 'Sobrio' },
+      { id: 'TPiookPUZQ1R0cC2Enwe', name: 'Claro' },
+      { id: 'WHOJDqzCafRk2dAUIxxB', name: 'Británico' },
       { id: 'tjU8IXOtwi9SR61U8hgY', name: 'Seco' },
       { id: 'JBFqnCBsd6RMkjVDRZzb', name: 'George' },
       { id: 'CwhRBWXzGAHq8TQ4Fs17', name: 'Roger' },
