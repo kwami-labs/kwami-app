@@ -15,6 +15,7 @@ import {
 import { visiblePanels } from '@/lib/panelArrangement';
 import { useCommunicationsStore } from '@/stores/communications';
 import { fetchKwamiCommunications } from '@/composables/useCommunicationsApi';
+import { useSiteAccess } from '@/composables/useSiteAccess';
 
 const uiStore = useUIStore();
 const workspaceStore = useWorkspaceStore();
@@ -186,6 +187,20 @@ onMounted(() =>
 );
 onUnmounted(() => groupsObserver?.disconnect());
 
+// Requests Jarvis made for a site, shown as a badge on the Access button. Read now
+// and then while the window is in front; the panel itself reads them more often.
+const siteAccess = useSiteAccess();
+const accessRequests = computed(() => siteAccess.pending.value.length);
+const ACCESS_BADGE_POLL_MS = 60_000;
+let accessPoll: ReturnType<typeof setInterval> | undefined;
+onMounted(() => {
+  void siteAccess.load();
+  accessPoll = setInterval(() => {
+    if (document.visibilityState === 'visible') void siteAccess.load();
+  }, ACCESS_BADGE_POLL_MS);
+});
+onUnmounted(() => clearInterval(accessPoll));
+
 async function refreshPhoneActivationStatus() {
   const kwamiId = workspaceStore.activeWorkspaceId;
   if (!kwamiId) return;
@@ -245,9 +260,10 @@ watch(
         <div class="nav-group">
           <span class="switcher-label">{{ t('sidebar.visual') }}</span>
           <button
-            v-for="p in visualPanels"
+            v-for="(p, i) in visualPanels"
             :key="p"
             class="nav-btn"
+            :style="{ '--i': i }"
             :class="{ active: uiStore.activePanel === p && uiStore.isPanelOpen }"
             @click="handlePanelClick(p)"
             :title="panelTitle(p)"
@@ -263,9 +279,10 @@ watch(
         <div class="nav-group">
           <span class="switcher-label">{{ t('sidebar.agent') }}</span>
           <button
-            v-for="p in agentPanels"
+            v-for="(p, i) in agentPanels"
             :key="p"
             class="nav-btn"
+            :style="{ '--i': i }"
             :class="{ active: uiStore.activePanel === p && uiStore.isPanelOpen }"
             @click="handlePanelClick(p)"
             :title="panelTitle(p)"
@@ -273,6 +290,9 @@ watch(
           >
             <iconify-icon :icon="panelIcon(p)"></iconify-icon>
             <span class="nav-label">{{ panelTitle(p) }}</span>
+            <span v-if="p === 'access' && accessRequests > 0" class="nav-badge">
+              {{ accessRequests }}
+            </span>
           </button>
         </div>
 
@@ -281,9 +301,10 @@ watch(
         <div class="nav-group">
           <span class="switcher-label">{{ t('sidebar.info') }}</span>
           <button
-            v-for="p in infoPanels"
+            v-for="(p, i) in infoPanels"
             :key="p"
             class="nav-btn"
+            :style="{ '--i': i }"
             :class="{ active: uiStore.activePanel === p && uiStore.isPanelOpen }"
             @click="handlePanelClick(p)"
             :title="panelTitle(p)"
@@ -324,9 +345,10 @@ watch(
         <div class="nav-group">
           <span class="switcher-label">{{ t('sidebar.apps') }}</span>
           <button
-            v-for="p in appPanels"
+            v-for="(p, i) in appPanels"
             :key="p"
             class="nav-btn"
+            :style="{ '--i': i }"
             :class="{ active: uiStore.activePanel === p && uiStore.isPanelOpen }"
             @click="handlePanelClick(p)"
             :title="panelTitle(p)"
@@ -374,6 +396,63 @@ watch(
   max-height: 100%;
   min-height: 0;
   /* height is animated via JS; default is auto */
+  position: relative;
+  isolation: isolate;
+}
+
+/* A thin line of light runs round the rail's edge, and a soft scan crosses it now
+   and then: the rail reads as a live instrument, not a row of buttons. Both sit
+   under the buttons and let every click through. */
+@property --rail-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.switcher-column::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  z-index: -1;
+  padding: 1px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--rail-angle),
+    transparent 0deg,
+    color-mix(in srgb, var(--accent-primary) 85%, transparent) 40deg,
+    transparent 110deg,
+    transparent 180deg,
+    color-mix(in srgb, var(--accent-primary) 45%, transparent) 220deg,
+    transparent 290deg
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+  animation: rail-orbit 9s linear infinite;
+  pointer-events: none;
+}
+
+.switcher-column::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    color-mix(in srgb, var(--accent-primary) 10%, transparent) 50%,
+    transparent 100%
+  );
+  background-size: 100% 220px;
+  background-repeat: no-repeat;
+  background-position: 0 -220px;
+  animation: rail-scan 7s ease-in-out infinite;
+  pointer-events: none;
 }
 
 .header-section {
@@ -446,9 +525,15 @@ watch(
 
 .nav-divider {
   height: 1px;
-  margin: 4px 0;
-  background: var(--glass-border);
+  margin: 4px 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--accent-primary) 45%, var(--glass-border)),
+    transparent
+  );
   flex-shrink: 0;
+  opacity: 0.8;
 }
 
 .nav-spacer {
@@ -456,50 +541,219 @@ watch(
   min-height: 8px;
 }
 
+/* -- the buttons --------------------------------------------------------------------
+   Glass keys: a lit top edge, a sheen that crosses on hover, the icon lifting
+   towards the pointer. The open panel's key glows in the accent and carries a
+   light bar on the rail's edge. */
 .nav-btn {
+  position: relative;
   width: 40px;
   height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--surface-1);
-  border: 1px solid transparent;
-  border-radius: var(--radius-md);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface-2) 75%, transparent),
+    var(--surface-1)
+  );
+  border: 1px solid color-mix(in srgb, var(--glass-border) 85%, transparent);
+  border-radius: 12px;
   color: var(--text-secondary);
   cursor: pointer;
-  transition: all var(--duration-fast) var(--ease-out);
   font-size: 20px;
   flex-shrink: 0;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 1px 2px rgba(0, 0, 0, 0.25);
+  transition:
+    transform 0.18s var(--ease-out),
+    color 0.18s var(--ease-out),
+    background 0.18s var(--ease-out),
+    border-color 0.18s var(--ease-out),
+    box-shadow 0.25s var(--ease-out);
+  animation: nav-in 0.34s var(--ease-out) backwards;
+  animation-delay: calc(var(--i, 0) * 28ms);
+}
+
+.nav-btn iconify-icon {
+  transition:
+    transform 0.2s var(--ease-out),
+    filter 0.2s var(--ease-out);
+}
+
+.nav-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    115deg,
+    transparent 35%,
+    rgba(255, 255, 255, 0.16) 50%,
+    transparent 65%
+  );
+  transform: translateX(-120%);
+  transition: transform 0.6s var(--ease-out);
+  pointer-events: none;
 }
 
 .nav-btn:hover {
-  background: var(--surface-2);
   color: var(--text-primary);
+  border-color: color-mix(in srgb, var(--accent-primary) 45%, transparent);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent-primary) 14%, var(--surface-2)),
+    var(--surface-1)
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 6px 18px -6px var(--accent-glow);
 }
 
-/* A touch screen keeps :hover on the last button tapped; only grow under a mouse. */
+.nav-btn:hover::after {
+  transform: translateX(120%);
+}
+
+/* A touch screen keeps :hover on the last button tapped; only lift under a mouse. */
 @media (hover: hover) {
   .nav-btn:hover {
+    transform: translateY(-1px) scale(1.06);
+  }
+
+  .nav-btn:hover iconify-icon {
     transform: scale(1.08);
   }
 }
 
+.nav-btn:active {
+  transform: scale(0.94);
+}
+
+.nav-btn:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
 .nav-btn.active {
-  background: var(--accent-glow);
-  border-color: var(--accent-primary);
   color: var(--accent-primary);
+  border-color: color-mix(in srgb, var(--accent-primary) 70%, transparent);
+  background: radial-gradient(
+    120% 120% at 50% 0%,
+    color-mix(in srgb, var(--accent-primary) 30%, transparent),
+    color-mix(in srgb, var(--accent-primary) 8%, transparent)
+  );
   box-shadow:
-    0 0 20px var(--accent-glow),
-    0 0 0 1px rgba(0, 217, 255, 0.2) inset;
+    0 0 18px var(--accent-glow),
+    inset 0 0 12px color-mix(in srgb, var(--accent-primary) 22%, transparent);
+}
+
+.nav-btn.active iconify-icon {
+  filter: drop-shadow(0 0 6px var(--accent-primary));
+}
+
+/* The light bar on the rail's edge, next to the open panel's key. */
+.nav-btn.active::before {
+  content: '';
+  position: absolute;
+  left: -8px;
+  top: 50%;
+  width: 3px;
+  height: 18px;
+  border-radius: 3px;
+  background: var(--accent-primary);
+  box-shadow: 0 0 10px var(--accent-primary);
+  transform: translateY(-50%);
+  animation: nav-indicator 0.3s var(--ease-out);
+}
+
+/* Requests waiting for an answer: Jarvis asked to go somewhere. */
+.nav-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  color: #1a1200;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow:
+    0 0 0 2px var(--glass-bg),
+    0 0 10px rgba(251, 191, 36, 0.6);
+  animation: nav-badge 2s ease-in-out infinite;
+  pointer-events: none;
 }
 
 .switcher-label {
   font-size: 8px;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.8px;
-  color: var(--text-muted);
+  letter-spacing: 1.1px;
   text-align: center;
   padding: 0 4px;
+  color: var(--text-muted);
+  background: linear-gradient(90deg, var(--text-muted), var(--accent-primary), var(--text-muted));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  opacity: 0.9;
+}
+
+@keyframes rail-orbit {
+  to {
+    --rail-angle: 360deg;
+  }
+}
+
+@keyframes rail-scan {
+  0%,
+  55% {
+    background-position: 0 -220px;
+  }
+  100% {
+    background-position: 0 calc(100% + 220px);
+  }
+}
+
+@keyframes nav-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.92);
+  }
+}
+
+@keyframes nav-indicator {
+  from {
+    height: 0;
+    opacity: 0;
+  }
+}
+
+@keyframes nav-badge {
+  50% {
+    box-shadow:
+      0 0 0 2px var(--glass-bg),
+      0 0 16px rgba(251, 191, 36, 0.9);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .switcher-column::before,
+  .switcher-column::after,
+  .nav-btn,
+  .nav-btn.active::before,
+  .nav-badge {
+    animation: none;
+  }
+
+  .nav-btn::after {
+    display: none;
+  }
 }
 </style>

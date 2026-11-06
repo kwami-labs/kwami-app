@@ -18,6 +18,7 @@ export const en = {
       memory: 'Memory',
       enhancements: 'Enhancements',
       tools: 'Tools',
+      access: 'Access',
       transcription: 'Transcription',
       history: 'History',
       communications: 'Communications',

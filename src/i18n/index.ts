@@ -3,6 +3,7 @@ import { workspaceAgentToolsEn, workspaceAgentToolsEs } from './workspaceAgentTo
 import { appLocaleEn, appLocaleEs } from './appLocale.locale';
 import { charterEn, charterEs } from './charter.locale';
 import { brainEn, brainEs } from './brain.locale';
+import { brainCloudEn, brainCloudEs } from './brainCloud.locale';
 import { enginesEn, enginesEs } from './engines.locale';
 import { commsAgentToolsEn, commsAgentToolsEs } from './commsAgentTools.locale';
 import { assistantEn, assistantEs } from './assistant.locale';
@@ -13,6 +14,7 @@ import { recallEn, recallEs } from './recall.locale';
 import { searchPanelEn, searchPanelEs } from './searchPanel.locale';
 import { avatarUnavailableEn, avatarUnavailableEs } from './avatarUnavailable.locale';
 import { toolsPanelEn, toolsPanelEs } from './toolsPanel.locale';
+import { siteAccessEn, siteAccessEs } from './siteAccess.locale';
 import { en } from './translations/en';
 import { es } from './translations/es';
 
@@ -63,9 +65,11 @@ export const messages = {
     ...extrasEn,
     ...charterEn,
     ...brainEn,
+    ...brainCloudEn,
     ...avatarUnavailableEn,
     ...enginesEn,
     ...toolsPanelEn,
+    ...siteAccessEn,
   },
   es: {
     ...es,
@@ -80,9 +84,11 @@ export const messages = {
     ...extrasEs,
     ...charterEs,
     ...brainEs,
+    ...brainCloudEs,
     ...avatarUnavailableEs,
     ...enginesEs,
     ...toolsPanelEs,
+    ...siteAccessEs,
   },
 } as const;
 

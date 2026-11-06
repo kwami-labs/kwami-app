@@ -23,6 +23,7 @@ export const it = {
       memory: 'Memoria',
       enhancements: 'Miglioramenti',
       tools: 'Strumenti',
+      access: 'Accessi',
       transcription: 'Trascrizione',
       history: 'Cronologia',
       communications: 'Comunicazioni',

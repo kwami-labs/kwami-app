@@ -772,6 +772,10 @@ summary,
     background: transparent;
   }
 
+  body .sidebar .nav-btn.active::before {
+    display: none;
+  }
+
   body .sidebar .nav-label {
     display: block !important;
     max-width: 52px;

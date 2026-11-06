@@ -23,6 +23,7 @@ export const fr = {
       memory: 'Mémoire',
       enhancements: 'Améliorations',
       tools: 'Outils',
+      access: 'Accès',
       transcription: 'Transcription',
       history: 'Historique',
       communications: 'Communications',
