@@ -225,12 +225,12 @@ export const VOICE_PERSONAS: readonly VoicePersona[] = [
       { id: 'onwK4e9ZLuTAKqWW03F9', name: 'Daniel' },
       { id: 'nPczCjzI2devNBz1zQrb', name: 'Brian' },
     ],
-    // Sonic is Jarvis's own voice, designed in Cartesia Sonic 3.5 and served
+    // Sonic-3.5 is Jarvis's own voice, designed in Cartesia Sonic 3.5 and served
     // through LiveKit Inference (a "v_" id, not a UUID). Marcos and Gonzalo are
     // Cartesia's own Spanish (Spain) male voices, calm and warmer. Deepgram's
     // Spanish Aura voice for a man is Néstor.
     cartesia: [
-      { id: 'v_ZMPWZvfoRpsC', name: 'Sonic' },
+      { id: 'v_ZMPWZvfoRpsC', name: 'Sonic-3.5' },
       { id: '13ff5deb-2591-42ad-a356-63a04e524411', name: 'Marcos' },
       { id: '58e531e3-b212-49df-adee-c335a19c2429', name: 'Gonzalo' },
     ],
