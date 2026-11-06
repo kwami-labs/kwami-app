@@ -393,6 +393,14 @@ export const useThemeStore = defineStore('theme', () => {
       glowEffects.value ? `${accentPrimary.value}26` : 'transparent',
     );
     root.style.setProperty('--accent-hover', adjustBrightness(accentPrimary.value, 20));
+    // For rgba(var(--accent-primary-rgb), alpha): the accent as bare channels.
+    const accentChannels = hexToRgb(accentPrimary.value);
+    if (accentChannels) {
+      root.style.setProperty(
+        '--accent-primary-rgb',
+        `${accentChannels.r}, ${accentChannels.g}, ${accentChannels.b}`,
+      );
+    }
 
     // Gradient direction
     root.style.setProperty('--gradient-direction', `${gradientDirection.value}deg`);
@@ -523,6 +531,7 @@ export const useThemeStore = defineStore('theme', () => {
         root.style.setProperty('--text-muted', '#8a8aa0');
       }
 
+      root.style.setProperty('--surface-0', '#ffffff');
       root.style.setProperty('--surface-1', `rgba(0, 0, 0, ${0.03 * contrast * 2})`);
       root.style.setProperty('--surface-2', `rgba(0, 0, 0, ${0.05 * contrast * 2})`);
       root.style.setProperty('--surface-3', `rgba(0, 0, 0, ${0.08 * contrast * 2})`);
@@ -563,6 +572,7 @@ export const useThemeStore = defineStore('theme', () => {
         root.style.setProperty('--text-muted', '#5c6178');
       }
 
+      root.style.setProperty('--surface-0', '#0a0c14');
       root.style.setProperty('--surface-1', `rgba(255, 255, 255, ${0.025 * contrast * 2})`);
       root.style.setProperty('--surface-2', `rgba(255, 255, 255, ${0.05 * contrast * 2})`);
       root.style.setProperty('--surface-3', `rgba(255, 255, 255, ${0.08 * contrast * 2})`);

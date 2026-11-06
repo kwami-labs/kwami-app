@@ -26,8 +26,9 @@ flowchart LR
 | `black-hole` | `avatar.black-hole` | `useBlackHoleSync` | Accretion / event-horizon style |
 | `particles-face` | `avatar.particles-face` | `useParticlesFaceSync` | Particle field face |
 | `eye-iris` | `avatar.eye-iris` | `useEyeIrisSync` | Iris / pupil |
+| `jarvis` | `avatar.jarvis` | `useJarvisSync` | Holographic HUD: reactor, floating data panels, floor grid. `useJarvisSignals` feeds it the session |
 
-`useAvatarStore.rendererType` is the persisted choice. Shortcuts: `B` blob, `H` black-hole. `switchRenderer` on the SDK updates the scene and emits `kwami:rendererChanged`.
+`useAvatarStore.rendererType` is the persisted choice. Shortcuts: `B` blob, `H` black-hole, `J` jarvis. `switchRenderer` on the SDK updates the scene and emits `kwami:rendererChanged`.
 
 ## Stores
 

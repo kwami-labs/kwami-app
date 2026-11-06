@@ -12,6 +12,7 @@ import { extrasEn, extrasEs } from './extras.locale';
 import { recallEn, recallEs } from './recall.locale';
 import { searchPanelEn, searchPanelEs } from './searchPanel.locale';
 import { avatarUnavailableEn, avatarUnavailableEs } from './avatarUnavailable.locale';
+import { toolsPanelEn, toolsPanelEs } from './toolsPanel.locale';
 import { en } from './translations/en';
 import { es } from './translations/es';
 
@@ -64,6 +65,7 @@ export const messages = {
     ...brainEn,
     ...avatarUnavailableEn,
     ...enginesEn,
+    ...toolsPanelEn,
   },
   es: {
     ...es,
@@ -80,6 +82,7 @@ export const messages = {
     ...brainEs,
     ...avatarUnavailableEs,
     ...enginesEs,
+    ...toolsPanelEs,
   },
 } as const;
 
@@ -107,8 +110,30 @@ export const i18n = createI18n({
   messages,
 });
 
+/**
+ * Tell the browser which language the page is actually in.
+ *
+ * `index.html` ships `lang="en"` and nothing ever changed it, so a page rendered
+ * in Spanish still declared itself English. Chrome and Edge then offered -- or,
+ * for users who had accepted once, silently ran -- "translate from English",
+ * which rewrote text that was already Spanish: tool names such as
+ * `set_search_panel` came out as "establecer_panel_de_búsqueda", and control
+ * values the model reads ("floating", "true") as "flotante", "verdadero". The
+ * Tools panel then showed names the agent has never heard of.
+ *
+ * Kept in step from one place, because the locale is set from five callers
+ * (account panel, sign-in pill, saved settings, the language tool, boot).
+ */
+export function syncDocumentLanguage(locale: SupportedLocale): void {
+  if (typeof document === 'undefined') return;
+  document.documentElement.lang = locale;
+}
+
+syncDocumentLanguage(getCurrentLocale());
+
 export function setLocale(locale: SupportedLocale): void {
   i18n.global.locale.value = locale;
+  syncDocumentLanguage(locale);
   if (typeof window !== 'undefined') {
     window.localStorage.setItem(LOCALE_STORAGE_KEY, locale);
   }

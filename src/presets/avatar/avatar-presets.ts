@@ -101,13 +101,29 @@ const JARVIS_PRESETS: Array<{
   },
 ];
 
+/**
+ * The three-dimensional interface — data panels, floor grid and layer depth — is what a Jarvis
+ * preset looks like. A preset only recoloured the HUD before, so picking one after switching a
+ * piece off left it off; now every preset brings the whole interface back.
+ */
+export const JARVIS_INTERFACE: Pick<JarvisState, 'panels' | 'grid' | 'depth'> = {
+  panels: true,
+  grid: true,
+  depth: 1,
+};
+
 function toJarvisAvatarPreset(preset: (typeof JARVIS_PRESETS)[number]): AvatarPreset {
   return {
     id: `jarvis-${preset.id}`,
     name: preset.name,
     icon: preset.icon,
     renderer: 'jarvis',
-    jarvis: { palettePreset: preset.id, color: getJarvisPalette(preset.id), ...preset.extra },
+    jarvis: {
+      ...JARVIS_INTERFACE,
+      palettePreset: preset.id,
+      color: getJarvisPalette(preset.id),
+      ...preset.extra,
+    },
   };
 }
 

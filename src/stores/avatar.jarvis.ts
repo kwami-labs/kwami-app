@@ -37,6 +37,12 @@ export interface JarvisState {
   labels: boolean;
   title: string;
   scale: number;
+  /** Floating data panels around the reactor. */
+  panels: boolean;
+  /** Perspective floor under the reactor. */
+  grid: boolean;
+  /** How far the layers spread through depth: 0 flat, 1 reference, 2 double. */
+  depth: number;
 }
 
 export function getDefaultJarvisState(): JarvisState {
@@ -53,6 +59,9 @@ export function getDefaultJarvisState(): JarvisState {
     labels: defaults.labels,
     title: defaults.title,
     scale: defaults.scale,
+    panels: defaults.panels,
+    grid: defaults.grid,
+    depth: defaults.depth,
   };
 }
 
@@ -90,7 +99,8 @@ export const useJarvisStore = defineStore('jarvis', () => {
     applyPalettePreset(others[Math.floor(Math.random() * others.length)] ?? 'holo-cyan');
     state.intensity = randomInRange(0.8, 1.35, 0.01);
     state.rotationSpeed = randomInRange(0.6, 1.6, 0.01);
-    // Reactivity, parallax, quality, title and scale are the user's, not the dice's.
+    // Reactivity, parallax, depth, quality, title, scale and what is shown are the user's,
+    // not the dice's.
   }
 
   function syncFromKwami(renderer: { getConfig: () => Partial<JarvisState> }) {

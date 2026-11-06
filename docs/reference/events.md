@@ -17,11 +17,11 @@ flowchart LR
 | Event | Detail | Producers | Consumers |
 | --- | --- | --- | --- |
 | `kwami:sessionPrepare` | `{ memoryUserId }` | `connect()` before join | Transcription (open storage key) |
-| `kwami:connected` | `{ memoryUserId }` | `connect()` success | History, metrics, info, agent-action |
-| `kwami:connectFailed` | — | `connect()` catch | Transcription |
-| `kwami:disconnected` | — | agent state / `disconnect()` | Credits refresh, metrics, info, history |
-| `kwami:insufficient-credits` | — | token 402 | Toast in `App.vue` |
-| `kwami:message` | `{ role, content }` | user/agent speech | History |
+| `kwami:connected` | `{ memoryUserId }` | `connect()` success | History, metrics, info, agent-action, Jarvis HUD |
+| `kwami:connectFailed` | — | `connect()` catch | Transcription, Jarvis HUD |
+| `kwami:disconnected` | — | agent state / `disconnect()` | Credits refresh, metrics, info, history, Jarvis HUD |
+| `kwami:insufficient-credits` | — | token 402 | Toast in `App.vue`, Jarvis HUD |
+| `kwami:message` | `{ role, content }` | user/agent speech | History, Jarvis HUD |
 | `kwami:interim` | `string` | partial STT | History |
 | `kwami:stateChanged` | `'idle' \| 'listening' \| 'thinking' \| 'speaking'` | agent, shortcuts, music, interactions | Avatar, info, history |
 | `kwami:metrics` | payload | agent | Metrics panel |
@@ -30,8 +30,8 @@ flowchart LR
 
 | Event | Detail | Producers | Consumers |
 | --- | --- | --- | --- |
-| `kwami:configApplied` | — | config sync, agent tools | Re-apply avatar + soul + scene |
-| `kwami:rendererChanged` | renderer id | `switchRenderer` | Avatar panel |
+| `kwami:configApplied` | — | config sync, agent tools | Re-apply avatar + soul + scene, Jarvis HUD status rows |
+| `kwami:rendererChanged` | renderer id | `switchRenderer` | Avatar panel, Jarvis HUD status rows |
 | `kwami:randomized` | — | randomize helpers | Avatar panel |
 | `kwami:randomize-avatar-panel` | — | avatar interactions | `App.vue` runs full panel randomize |
 | `kwami:voiceConfigChanged` | — | voice UI | Metrics |
@@ -43,7 +43,7 @@ flowchart LR
 | --- | --- | --- | --- |
 | `kwami:search_results` | `{ query, results, answer }` | agent data channel | `useSearchResults`, agent-action |
 | `kwami:remove_result` | id / url | UI | `useSearchResults` |
-| `kwami:browser_session` | `{ action, liveUrl, url, title }` | agent | `useNavigation` (`open` / `update` / `close`) |
+| `kwami:browser_session` | `{ action, liveUrl, url, title }` | agent | `useNavigation` (`open` / `update` / `close`), Jarvis HUD |
 | `kwami:nav_command` | extension command | agent (legacy) | `useNavigation` → `postMessage` |
 | `kwami:send_data` | payload | navigation | outbound to agent / extension |
 | `kwami:ext_nav_state` | state | browser extension | navigation store |
