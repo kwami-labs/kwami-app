@@ -59,6 +59,7 @@ These participate in `useKwamiConfigSync` snapshots (except where noted).
 | `scene` | `scene.ts` | `kwami-scene` + workspace | `scene` |
 | `theme` | `theme.ts` | `localStorage` + workspace | `theme` |
 | `communications` | `communications.ts` | `kwami-communications-config` + workspace | `telephony` |
+| `userTools` | `userTools.ts` | workspace only | `tools` (webhooks, MCP servers, switched-off groups) |
 
 Avatar façade API: `rendererType`, interaction config, `getSnapshot` / `applySnapshot`, preset helpers.
 
@@ -79,6 +80,10 @@ Theme writes CSS variables (`applyTheme`) and owns sidebar position, compact mod
 
 Guarded stores use `createRequestGuard()` so a companion switch cannot apply stale pages.
 
+`userTools` is applied even when a config has no `tools` key, unlike the look
+stores: a kwami without tools must not keep the previous kwami's webhooks live.
+MCP keys are not part of it (memory, or `localStorage` when the user asks).
+
 ## Chrome
 
 | Store | File | Role |
@@ -86,6 +91,8 @@ Guarded stores use `createRequestGuard()` so a companion switch cannot apply sta
 | `ui` | `ui.ts` | Active panel, open/width, size presets, settings vs apps mode, mobile compact |
 | `search` | `search.ts` | Orbit-card web-search hits |
 | `navigation` | `navigation.ts` | Split-view browser session (`liveUrl`, title, loading) |
+| `toolCatalog` | `toolCatalog.ts` | Group of every registered client tool; switched-off tools; a revision the Tools panel watches |
+| `toolInventory` | `toolInventory.ts` | The agent's last `tool_inventory` report: built-ins on, client tools dropped |
 
 `ui` persists panel chrome to `localStorage` (`kwami-active-panel`, `kwami-panel-open`, `kwami-sidebar-mode`, …). Legacy ids `persona` → `soul`, `transcription` → `history`.
 
