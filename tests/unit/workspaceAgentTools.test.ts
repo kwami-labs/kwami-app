@@ -431,7 +431,7 @@ describe('pipeline switching', () => {
       expect(String(result.message)).toContain('Jarvis');
     }
     expect(sentConfigUpdates).toHaveLength(0);
-    expect(useVoiceStore().tts.voice).toBe('Charon');
+    expect(useVoiceStore().tts.voice).toBe('v_ZMPWZvfoRpsC');
   });
 
   it('sends the switch over the data channel when connected', async () => {
