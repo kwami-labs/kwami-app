@@ -38,6 +38,9 @@ export const jarvisSdkStubs = {
     labels: true,
     title: 'KWAMI',
     scale: 1,
+    panels: true,
+    grid: true,
+    depth: 1,
   })),
 };
 
