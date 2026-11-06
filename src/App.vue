@@ -26,6 +26,7 @@ import { isBareShortcut, isEditableTarget } from '@/utils/keyboard';
 import { useWorkspaceAgentTools } from '@/composables/useWorkspaceAgentTools';
 import { useUserToolRegistration } from '@/composables/useUserToolRegistration';
 import { useMcpServers } from '@/composables/useMcpServers';
+import { useToolInventorySync } from '@/composables/useToolInventorySync';
 import { useAvatarStore } from '@/stores/avatar';
 import { useBlobXyzSync } from '@/composables/avatar/sync/useBlobXyzSync';
 import { useBlackHoleSync } from '@/composables/avatar/sync/useBlackHoleSync';
@@ -183,6 +184,8 @@ useWorkspaceAgentTools();
 useUserToolRegistration();
 // And the MCP servers saved on it, connected again on every load.
 useMcpServers().startSync();
+// What the agent reports it offers the model, for the Tools panel's budget.
+useToolInventorySync();
 useUiLayoutSync();
 useBrowserFrames();
 

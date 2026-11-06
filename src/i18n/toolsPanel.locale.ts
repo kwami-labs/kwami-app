@@ -43,6 +43,10 @@ const groupsEn = {
   extras: { title: 'Extras', hint: 'Theme files, performance metrics and the wallet.' },
   custom: { title: 'Your tools', hint: 'Webhooks you added.' },
   mcp: { title: 'MCP servers', hint: 'Tools from the MCP servers you connected.' },
+  agent: {
+    title: 'The agent’s own',
+    hint: 'Built into the voice agent and run on the server: web search, the browser, memory…',
+  },
   other: { title: 'Other', hint: 'Tools registered outside any group.' },
 };
 
@@ -82,6 +86,10 @@ const groupsEs: typeof groupsEn = {
   extras: { title: 'Extras', hint: 'Archivos de tema, métricas de rendimiento y cartera.' },
   custom: { title: 'Tus herramientas', hint: 'Webhooks que has añadido tú.' },
   mcp: { title: 'Servidores MCP', hint: 'Herramientas de los servidores MCP que conectaste.' },
+  agent: {
+    title: 'Del propio agente',
+    hint: 'Vienen con el agente de voz y se ejecutan en el servidor: búsqueda web, navegador, memoria…',
+  },
   other: { title: 'Otras', hint: 'Herramientas registradas fuera de un grupo.' },
 };
 
@@ -127,6 +135,27 @@ export const toolsPanelEn = {
       sourceCustom: 'Webhook',
       sourceMcp: 'MCP',
       edit: 'Edit',
+      groupOn: 'Available to the agent',
+      groupOff: 'Switched off: the agent does not see these.',
+      dropped: 'Does not reach the model',
+      droppedHint:
+        'Left out by the agent because the model takes at most {limit} tools. Switch off a group you do not use to make room.',
+      offTool: 'Switched off with its group.',
+      agentTool:
+        'One of the agent’s own tools; it runs on the server and cannot be tested from here.',
+    },
+    budget: {
+      title: 'What reaches the model',
+      reaches: '{total} of {limit}',
+      legendAgent: 'Agent',
+      legendApp: 'App',
+      legendYours: 'Yours',
+      dropped:
+        'no tool is left out | 1 tool does not reach the model | {n} tools do not reach the model',
+      droppedHint: 'Switch off groups you do not use to make room for them.',
+      unknown:
+        'The agent has not reported its tools yet; it does once a call starts. The app offers {count}; the model takes {limit} in all, the agent’s own included.',
+      asOf: 'Reported at {time}',
     },
     create: {
       intro:
@@ -347,6 +376,26 @@ export const toolsPanelEs: typeof toolsPanelEn = {
       sourceCustom: 'Webhook',
       sourceMcp: 'MCP',
       edit: 'Editar',
+      groupOn: 'Disponible para el agente',
+      groupOff: 'Apagado: el agente no ve estas herramientas.',
+      dropped: 'No llega al modelo',
+      droppedHint:
+        'El agente la deja fuera porque el modelo admite como mucho {limit} herramientas. Apaga un grupo que no uses para hacerle sitio.',
+      offTool: 'Apagada junto con su grupo.',
+      agentTool: 'Es del propio agente: se ejecuta en el servidor y no se puede probar desde aquí.',
+    },
+    budget: {
+      title: 'Lo que llega al modelo',
+      reaches: '{total} de {limit}',
+      legendAgent: 'Agente',
+      legendApp: 'App',
+      legendYours: 'Tuyas',
+      dropped:
+        'no se queda fuera ninguna | 1 herramienta no llega al modelo | {n} herramientas no llegan al modelo',
+      droppedHint: 'Apaga grupos que no uses para hacerles sitio.',
+      unknown:
+        'El agente aún no ha informado de sus herramientas; lo hace al empezar una llamada. La app ofrece {count}; el modelo admite {limit} en total, contando las del agente.',
+      asOf: 'Informe de las {time}',
     },
     create: {
       intro:

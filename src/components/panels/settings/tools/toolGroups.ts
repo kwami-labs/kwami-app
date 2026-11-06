@@ -16,5 +16,6 @@ export const TOOL_GROUP_LOOK: Record<ToolGroupId, { icon: string; color: string 
   extras: { icon: 'ph:sparkle-duotone', color: '#facc15' },
   custom: { icon: 'ph:webhooks-logo-duotone', color: '#22d3ee' },
   mcp: { icon: 'ph:plugs-connected-duotone', color: '#2dd4bf' },
+  agent: { icon: 'ph:cpu-duotone', color: '#c084fc' },
   other: { icon: 'ph:puzzle-piece-duotone', color: '#94a3b8' },
 };
