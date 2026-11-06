@@ -6,8 +6,6 @@ import { useToast } from 'vue-toastification';
 import { useKwami } from '@/composables/useKwami';
 import type { ToolDefinition } from 'kwami';
 import PanelSection from '@/components/ui/PanelSection.vue';
-import BaseButton from '@/components/ui/BaseButton.vue';
-import BaseSelect from '@/components/ui/BaseSelect.vue';
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue';
 import PanelHeaderControls from '@/components/ui/PanelHeaderControls.vue';
 import { useToolCatalogStore } from '@/stores/toolCatalog';
@@ -15,6 +13,7 @@ import { USER_TOOL_GROUPS } from '@/lib/toolRegistration';
 import ToolCatalog from './ToolCatalog.vue';
 import CustomToolEditor from './CustomToolEditor.vue';
 import McpServers from './McpServers.vue';
+import ToolTester from './ToolTester.vue';
 import { useMcpServers } from '@/composables/useMcpServers';
 import { useUserToolsStore } from '@/stores/userTools';
 import type { UserWebhookTool } from '@/lib/userTools';
@@ -50,7 +49,13 @@ const yourCount = computed(
   () => tools.value.filter((tool) => USER_TOOL_GROUPS.has(catalog.groupOf(tool.name))).length,
 );
 
-const exec = ref({ toolName: '', params: '', result: '', loading: false, error: '' });
+// The Test tab's selection, so the catalog's Test button can hand a tool over.
+const testToolName = ref('');
+
+function runTool(name: string, args: Record<string, unknown>) {
+  if (!kwami.value) return Promise.reject(new Error('No companion is loaded'));
+  return kwami.value.executeTool(name, args);
+}
 
 // Your tools: created and edited in the Create tab, kept on the kwami's config.
 const userTools = useUserToolsStore();
@@ -100,34 +105,8 @@ function removeTool() {
 }
 
 function testTool(name: string) {
-  exec.value = { ...exec.value, toolName: name, result: '', error: '' };
+  testToolName.value = name;
   activeTab.value = 'test';
-}
-
-async function executeTool() {
-  if (!exec.value.toolName) return;
-  exec.value.loading = true;
-  exec.value.result = '';
-  exec.value.error = '';
-  let params = {};
-  try {
-    if (exec.value.params) params = JSON.parse(exec.value.params);
-  } catch {
-    exec.value.error = t('tools.invalidJson');
-    exec.value.loading = false;
-    return;
-  }
-  try {
-    exec.value.result = JSON.stringify(
-      await kwami.value?.executeTool(exec.value.toolName, params),
-      null,
-      2,
-    );
-  } catch (e) {
-    exec.value.error = (e as Error).message;
-  } finally {
-    exec.value.loading = false;
-  }
 }
 </script>
 
@@ -226,26 +205,13 @@ async function executeTool() {
 
       <!-- Test -->
       <div v-else id="tools-tabpanel-test" role="tabpanel" aria-labelledby="tools-tab-test">
-        <PanelSection :title="t('tools.testToolExecution')">
-          <div class="form">
-            <BaseSelect
-              :label="t('tools.tool')"
-              v-model="exec.toolName"
-              :options="tools.map((tool) => ({ label: tool.name, value: tool.name }))"
-            />
-            <div class="group">
-              <label>{{ t('tools.parametersJson') }}</label
-              ><textarea v-model="exec.params" rows="2" placeholder="{}" translate="no"></textarea>
-            </div>
-            <BaseButton :disabled="exec.loading" icon="ph:play-duotone" @click="executeTool">{{
-              exec.loading ? t('tools.running') : t('tools.execute')
-            }}</BaseButton>
-
-            <div v-if="exec.result" class="res success">
-              <pre translate="no">{{ exec.result }}</pre>
-            </div>
-            <div v-if="exec.error" class="res error">{{ exec.error }}</div>
-          </div>
+        <PanelSection>
+          <ToolTester
+            v-model="testToolName"
+            :tools="tools"
+            :group-of="catalog.groupOf"
+            :run="runTool"
+          />
         </PanelSection>
       </div>
     </div>
@@ -347,49 +313,5 @@ async function executeTool() {
   margin: 0;
   font-size: 13px;
   color: var(--text-secondary);
-}
-
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.group {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.group label {
-  font-size: 11px;
-  color: var(--text-tertiary);
-}
-textarea {
-  background: var(--surface-1);
-  border: 1px solid var(--glass-border);
-  padding: 8px;
-  border-radius: 6px;
-  color: var(--text-secondary);
-  font-size: 12px;
-  resize: vertical;
-}
-
-.res {
-  margin-top: 8px;
-  padding: 8px;
-  border-radius: 6px;
-  font-size: 12px;
-}
-.res.success {
-  background: rgba(0, 255, 100, 0.1);
-  color: var(--text-primary);
-}
-.res.success pre {
-  margin: 0;
-  white-space: pre-wrap;
-  word-break: break-all;
-}
-.res.error {
-  background: rgba(255, 0, 0, 0.1);
-  color: var(--accent-error);
 }
 </style>
