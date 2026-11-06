@@ -641,6 +641,8 @@ export const es = {
     performance: 'Rendimiento',
     preemptiveGeneration: 'Generacion anticipada',
     preemptiveGenerationDesc: 'Empieza a generar respuesta antes de terminar el turno',
+    thinkingSound: 'Sonido mientras piensa',
+    thinkingSoundDesc: 'Un teclado suave mientras el agente prepara la respuesta',
   },
   metrics: {
     title: 'Metricas',

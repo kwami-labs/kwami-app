@@ -253,7 +253,8 @@ export const useVoiceStore = defineStore('voice', () => {
     noiseCancellation: { enabled: true, mode: 'bvc' as 'bvc' | 'krisp' | 'default' },
     vad: { provider: 'silero' as const, threshold: 0.5, minSpeech: 0.1, minSilence: 0.3 },
     audioProcessing: { echoCancellation: true, autoGainControl: true },
-    performance: { preemptiveGeneration: true },
+    // A soft keyboard while the agent thinks (kwami-lk-agent runtime/thinking_sound.py).
+    performance: { preemptiveGeneration: true, thinkingSound: false },
     /** Names and words the transcription should expect. */
     vocabulary: [] as string[],
   });

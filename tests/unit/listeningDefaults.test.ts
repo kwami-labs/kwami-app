@@ -26,6 +26,19 @@ describe('listening defaults', () => {
     expect(e.noiseCancellation).toMatchObject({ enabled: true, mode: 'bvc' });
     expect(e.vad).toMatchObject({ threshold: 0.5, minSpeech: 0.1, minSilence: 0.3 });
     expect(e.performance.preemptiveGeneration).toBe(true);
+    // The agent's thinking sound is opt-in.
+    expect(e.performance.thinkingSound).toBe(false);
+  });
+
+  it('keeps a thinking sound the user switched on with the saved settings', () => {
+    const store = useVoiceStore();
+    store.applySnapshot({ enhancementsState: { performance: { thinkingSound: true } } });
+    expect(store.enhancementsState.performance.thinkingSound).toBe(true);
+    expect(store.enhancementsState.performance.preemptiveGeneration).toBe(true);
+    const saved = store.getSnapshot().enhancementsState as {
+      performance: { thinkingSound: boolean };
+    };
+    expect(saved.performance.thinkingSound).toBe(true);
   });
 
   it('turn a saved manual turn mode into the model detector', () => {
