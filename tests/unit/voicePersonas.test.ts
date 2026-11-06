@@ -17,11 +17,16 @@ import VoicePersonas from '../../src/components/panels/settings/voice/VoicePerso
 import { useVoiceStore } from '../../src/stores/voice';
 import {
   JARVIS_ELEVENLABS_VOICE,
+  JARVIS_LIVEKIT_VOICE,
+  JARVIS_STANDARD,
   VOICE_PERSONAS,
   VOICE_ENGINES,
   activePersona,
   catalogProvider,
   elevenlabsSampleUrl,
+  isLiveKitVoice,
+  parseLiveKitVoice,
+  personaVoice,
   personaVoices,
   voiceSampleUrl,
   liveSampleUrl,
@@ -29,6 +34,7 @@ import {
   upgradeStyle,
   voiceEngine,
   voiceLabel,
+  withLiveKitVoice,
 } from '../../src/lib/voicePersonas';
 
 enableAutoUnmount(afterEach);
@@ -76,12 +82,68 @@ describe('voice personas', () => {
     expect(voiceEngine('stt-llm-tts', 'deepgram')).toBe('deepgram');
     expect(voiceEngine('stt-llm-tts', 'openai')).toBe('openai-tts');
     expect(voiceEngine('stt-llm-tts', 'gemini')).toBe('gemini-tts');
+    // A LiveKit voice travels as Cartesia: its "v_" id tells the engine.
+    expect(voiceEngine('stt-llm-tts', 'cartesia', 'google', JARVIS_LIVEKIT_VOICE)).toBe('livekit');
+    expect(
+      voiceEngine('stt-llm-tts', 'cartesia', 'google', VOICE_PERSONAS[0].cartesia[0]!.id),
+    ).toBe('cartesia');
+    expect(voiceEngine('realtime', 'cartesia', 'google', JARVIS_LIVEKIT_VOICE)).toBe('gemini-live');
+  });
+
+  it("makes Jarvis's LiveKit voice his main one, on LiveKit first", () => {
+    const [jarvis, friday] = VOICE_PERSONAS;
+    expect(VOICE_ENGINES[0]).toBe('livekit');
+    expect(JARVIS_STANDARD.tts).toEqual({
+      provider: 'cartesia',
+      model: 'sonic-3.5',
+      voice: 'v_ZMPWZvfoRpsC',
+    });
+    expect(personaVoice(jarvis, 'livekit')).toBe(JARVIS_LIVEKIT_VOICE);
+    expect(voiceLabel(JARVIS_LIVEKIT_VOICE)).toBe('Sonic-3.5');
+    // Cartesia keeps Cartesia's own voices; the designed one is on LiveKit only.
+    expect(jarvis.cartesia.some((v) => v.id === JARVIS_LIVEKIT_VOICE)).toBe(false);
+    // Friday has none of her own: the panel offers the voices the user adds.
+    expect(personaVoice(friday, 'livekit')).toBe('');
+    expect(activePersona(JARVIS_LIVEKIT_VOICE, jarvis.style)?.id).toBe('jarvis');
+  });
+
+  it('takes only real LiveKit voice ids, and keeps one entry per voice', () => {
+    expect(isLiveKitVoice('v_ZMPWZvfoRpsC')).toBe(true);
+    expect(isLiveKitVoice(' v_ZMPWZvfoRpsC ')).toBe(true);
+    for (const id of [
+      '',
+      'v_',
+      'v_ab',
+      'V_ZMPWZvfoRpsC',
+      'ZMPWZvfoRpsC',
+      'v_ZMPW-ZvfoRpsC',
+      'aura-2-nestor-es',
+    ])
+      expect(isLiveKitVoice(id), id).toBe(false);
+    expect(parseLiveKitVoice(' v_Abc12345 ', ' Mi voz ')).toEqual({
+      id: 'v_Abc12345',
+      name: 'Mi voz',
+    });
+    expect(parseLiveKitVoice('v_Abc12345')).toEqual({ id: 'v_Abc12345', name: 'v_Abc12345' });
+    expect(parseLiveKitVoice('13ff5deb-2591-42ad-a356-63a04e524411')).toBeNull();
+
+    const one = withLiveKitVoice([], { id: 'v_Abc12345', name: 'Una' });
+    const renamed = withLiveKitVoice(one, { id: 'v_Abc12345', name: 'Otra' });
+    expect(renamed).toEqual([{ id: 'v_Abc12345', name: 'Otra' }]);
+    // A character's own voice is never duplicated as the user's.
+    expect(withLiveKitVoice(renamed, { id: JARVIS_LIVEKIT_VOICE, name: 'x' })).toEqual(renamed);
+    expect(voiceLabel('v_Abc12345', renamed)).toBe('Otra');
   });
 
   it('gives each character a voice on every engine, with a sample wherever one can be made', () => {
     for (const p of VOICE_PERSONAS) {
       for (const engine of VOICE_ENGINES) {
         const voices = personaVoices(p, engine);
+        // On LiveKit a character may have no designed voice of its own yet.
+        if (engine === 'livekit' && !p.livekit.length) {
+          expect(voices).toEqual([]);
+          continue;
+        }
         expect(voices.length, `${p.id} on ${engine}`).toBeGreaterThan(0);
         for (const voice of voices) {
           // A realtime voice only exists live: there is no file to play.
@@ -134,12 +196,24 @@ describe('voice personas section', () => {
     await setLocale('es');
   });
 
-  it('starts as Jarvis on Gemini TTS and switches to Friday on both engines', async () => {
+  it('starts as Jarvis on his LiveKit voice and switches to Friday on both engines', async () => {
     const wrapper = mountWithPinia(VoicePersonas, { global: { plugins: [i18n] } });
     const store = useVoiceStore();
     expect(store.pipelineMode).toBe('stt-llm-tts');
-    expect(store.tts).toMatchObject({ provider: 'gemini', voice: 'Charon' });
+    expect(store.tts).toMatchObject({
+      provider: 'cartesia',
+      model: 'sonic-3.5',
+      voice: JARVIS_LIVEKIT_VOICE,
+    });
     expect(activePersona(store.tts.voice, store.tts.style ?? '')?.id).toBe('jarvis');
+    const engineOn = () => wrapper.find('.engine-btn.on').text();
+    expect(engineOn()).toMatch(/^LiveKit/);
+    expect(
+      wrapper
+        .findAll('.persona')[0]
+        .findAll('.pick')
+        .map((b) => b.text()),
+    ).toEqual(['Sonic-3.5']);
 
     // One voice on: Friday is off, with only a deliberate switch to offer.
     const fridayCard = () => wrapper.findAll('.persona')[1];
@@ -151,14 +225,76 @@ describe('voice personas section', () => {
     await use!.trigger('click');
     expect(wrapper.findAll('.persona')[0].classes()).toContain('off');
 
-    // The engine is the user's choice: applying a character does not change it.
+    // Friday has no LiveKit voice: she speaks with her own on ElevenLabs instead
+    // of nothing happening, and keeps her Gemini voice for Gemini Live.
     expect(store.pipelineMode).toBe('stt-llm-tts');
-    const friday = { voice: 'Aoede', style: VOICE_PERSONAS[1].style };
-    expect(store.tts).toMatchObject({ provider: 'gemini', ...friday });
-    expect(store.realtime).toMatchObject({ provider: 'google', ...friday });
-    expect((wrapper.find('textarea').element as HTMLTextAreaElement).value).toBe(
-      VOICE_PERSONAS[1].style,
-    );
+    const style = VOICE_PERSONAS[1].style;
+    expect(store.tts).toMatchObject({
+      provider: 'elevenlabs',
+      voice: VOICE_PERSONAS[1].elevenlabs[0]!.id,
+      style,
+    });
+    expect(store.realtime).toMatchObject({ provider: 'google', voice: 'Aoede', style });
+    expect(engineOn()).toMatch(/^ElevenLabs/);
+    expect((wrapper.find('textarea').element as HTMLTextAreaElement).value).toBe(style);
+
+    // On an engine where she has a voice, the engine is the user's choice.
+    await wrapper
+      .findAll('.engine-btn')
+      .find((b) => b.text().startsWith('Gemini TTS'))!
+      .trigger('click');
+    const jarvisSwitch = wrapper
+      .findAll('.persona')[0]
+      .findAll('button')
+      .find((b) => b.text() === 'Cambiar a Jarvis');
+    await jarvisSwitch!.trigger('click');
+    expect(store.tts).toMatchObject({ provider: 'gemini', voice: 'Charon' });
+  });
+
+  it('adds a LiveKit voice by id, offers it to every character, and removes it', async () => {
+    const wrapper = mountWithPinia(VoicePersonas, { global: { plugins: [i18n] } });
+    const store = useVoiceStore();
+    const [idInput, nameInput] = wrapper.findAll('.livekit-add input');
+    const form = wrapper.find('.livekit-add');
+    expect(wrapper.find('.livekit').text()).toContain('v_ZMPWZvfoRpsC');
+
+    await idInput!.setValue('13ff5deb-2591-42ad-a356-63a04e524411');
+    await form.trigger('submit');
+    expect(store.modelsUI.livekitVoices).toEqual([]);
+    expect(wrapper.find('.livekit .error').exists()).toBe(true);
+
+    await idInput!.setValue('v_Fri12345');
+    await nameInput!.setValue('Viernes');
+    await form.trigger('submit');
+    expect(store.modelsUI.livekitVoices).toEqual([{ id: 'v_Fri12345', name: 'Viernes' }]);
+    expect(wrapper.find('.livekit .error').exists()).toBe(false);
+    expect(wrapper.find('.livekit').text()).toContain('Viernes');
+
+    // Unlocked, Jarvis offers his own LiveKit voice and the one added.
+    store.updateTTS({ style: '' });
+    store.updateRealtime({ style: '' });
+    await wrapper.vm.$nextTick();
+    const jarvis = wrapper.findAll('.persona')[0];
+    expect(jarvis.findAll('.pick').map((b) => b.text())).toEqual(['Sonic-3.5 ★', 'Viernes']);
+    // The added voice has no sample to play: only the designed one does.
+    expect(jarvis.findAll('.play')).toHaveLength(1);
+
+    // Friday now speaks on LiveKit with it, under her own direction.
+    const friday = wrapper.findAll('.persona')[1];
+    await friday
+      .findAll('.pick')
+      .find((b) => b.text().startsWith('Viernes'))!
+      .trigger('click');
+    expect(store.tts).toMatchObject({
+      provider: 'cartesia',
+      model: 'sonic-3.5',
+      voice: 'v_Fri12345',
+      style: VOICE_PERSONAS[1].style,
+    });
+    expect(activePersona(store.tts.voice, store.tts.style ?? '')?.id).toBe('friday');
+
+    await wrapper.find('.livekit-list .link').trigger('click');
+    expect(store.modelsUI.livekitVoices).toEqual([]);
   });
 
   it('switches engine keeping the character, and back to Gemini TTS with the fast ear', async () => {
@@ -218,12 +354,17 @@ describe('voice personas section', () => {
     const button = (label: string) =>
       wrapper.findAll('.engine-btn').find((b) => b.text().startsWith(label))!;
 
+    // Cartesia's own Spanish voice, not the LiveKit one, though both travel as Cartesia.
     await button('Cartesia').trigger('click');
     expect(store.tts).toMatchObject({
       provider: 'cartesia',
       model: 'sonic-3.5',
-      voice: 'v_ZMPWZvfoRpsC',
+      voice: '13ff5deb-2591-42ad-a356-63a04e524411',
     });
+    expect(wrapper.find('.engine-btn.on').text()).toMatch(/^Cartesia/);
+    // And back on LiveKit, his designed voice.
+    await button('LiveKit').trigger('click');
+    expect(store.tts).toMatchObject({ provider: 'cartesia', voice: JARVIS_LIVEKIT_VOICE });
     await button('Deepgram').trigger('click');
     // A Deepgram Aura voice is a model.
     expect(store.tts).toMatchObject({ provider: 'deepgram', model: 'aura-2-nestor-es' });
@@ -321,7 +462,15 @@ describe('voice personas section', () => {
     const eleven = wrapper.findAll('.engine-btn').find((b) => b.text().startsWith('ElevenLabs'))!;
     expect(eleven.attributes('disabled')).toBeDefined();
     await eleven.trigger('click');
-    expect(store.tts.provider).toBe('gemini');
+    expect(store.tts).toMatchObject({ provider: 'cartesia', voice: JARVIS_LIVEKIT_VOICE });
+    // LiveKit needs no key of ours, even with Cartesia's reported missing.
+    store.brainStatus = {
+      ...(store.brainStatus ?? {}),
+      voiceKeys: { tts: { cartesia: false, gemini: true } },
+    } as typeof store.brainStatus;
+    await wrapper.vm.$nextTick();
+    const livekit = wrapper.findAll('.engine-btn').find((b) => b.text().startsWith('LiveKit'))!;
+    expect(livekit.attributes('disabled')).toBeUndefined();
   });
 
   it('shows the alternatives only when no voice is on, and picks one with its direction', async () => {
@@ -333,7 +482,11 @@ describe('voice personas section', () => {
         .findAll('.persona')[0]
         .findAll('.pick')
         .map((b) => b.text()),
-    ).toEqual(['Charon']);
+    ).toEqual(['Sonic-3.5']);
+    await wrapper
+      .findAll('.engine-btn')
+      .find((b) => b.text().startsWith('Gemini TTS'))!
+      .trigger('click');
     store.updateTTS({ style: '' });
     store.updateRealtime({ style: '' });
     await wrapper.vm.$nextTick();
@@ -357,7 +510,9 @@ describe('voice personas section', () => {
     const button = wrapper.find('.play');
     await button.trigger('click');
     expect(play).toHaveBeenCalledOnce();
-    expect(vi.mocked(globalThis.Audio).mock.calls[0][0]).toBe('/voices/jarvis-charon.wav');
+    expect(vi.mocked(globalThis.Audio).mock.calls[0][0]).toBe(
+      '/voices/jarvis-livekit-sonic-3.5.wav',
+    );
     await button.trigger('click');
     expect(pause).toHaveBeenCalled();
     vi.unstubAllGlobals();
@@ -384,5 +539,38 @@ describe('the ear a saved kwami loads with', () => {
       stt: { provider: 'assemblyai', model: 'universal-streaming-multilingual' },
     });
     expect(store.stt).toMatchObject({ provider: 'assemblyai' });
+  });
+});
+
+describe('the LiveKit voices a saved kwami loads with', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    setActivePinia(createPinia());
+  });
+
+  it('keeps only real "v_" voices, cleaned', () => {
+    const store = useVoiceStore();
+    store.applySnapshot({
+      modelsUI: {
+        livekitVoices: [
+          { id: ' v_Keep1234 ', name: ' Mía ' },
+          { id: 'not-a-voice', name: 'Fuera' },
+          null,
+          { name: 'Sin id' },
+          { id: 'v_Bare5678' },
+        ],
+      },
+    });
+    expect(store.modelsUI.livekitVoices).toEqual([
+      { id: 'v_Keep1234', name: 'Mía' },
+      { id: 'v_Bare5678', name: 'v_Bare5678' },
+    ]);
+  });
+
+  it('starts empty on a save from before LiveKit voices', () => {
+    const store = useVoiceStore();
+    store.applySnapshot({ modelsUI: { favoriteVoices: ['rime:a'] } });
+    expect(store.modelsUI.livekitVoices).toEqual([]);
+    expect(store.modelsUI.favoriteVoices).toEqual(['rime:a']);
   });
 });

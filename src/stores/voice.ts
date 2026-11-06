@@ -32,9 +32,12 @@ import {
   FAST_STT,
   CLAUDE_VOICE_LLM,
   GEMINI_STANDARD,
+  JARVIS_STANDARD,
   LEGACY_DEFAULT_STT,
   VOICE_PERSONAS,
+  parseLiveKitVoice,
   upgradeStyle,
+  type LiveKitCustomVoice,
 } from '@/lib/voicePersonas';
 
 const STORAGE_KEY = 'kwami-voice-config';
@@ -112,9 +115,10 @@ export const useVoiceStore = defineStore('voice', () => {
   });
 
   // TTS Configuration
+  // Jarvis's own voice, designed in LiveKit Cloud: LiveKit Inference serves it with
+  // no key of ours, where Gemini TTS on a free-tier key stops after ten requests.
   const tts = ref<TTSConfig>({
-    ...GEMINI_STANDARD.tts,
-    voice: VOICE_PERSONAS[0].voice,
+    ...(JARVIS_STANDARD.tts as unknown as TTSConfig),
     style: VOICE_PERSONAS[0].style,
     speed: 1.0,
   });
@@ -152,6 +156,8 @@ export const useVoiceStore = defineStore('voice', () => {
     voiceByModel: {} as Record<string, string>,
     /** The voices marked to find again (`favoriteKey`). */
     favoriteVoices: [] as string[],
+    /** Voices the user designed in LiveKit Cloud and added by id: LiveKit lists none. */
+    livekitVoices: [] as LiveKitCustomVoice[],
   });
 
   // Voice panel UI state
@@ -360,8 +366,16 @@ export const useVoiceStore = defineStore('voice', () => {
       // built as Live by the agent; show it as that.
       pipelineMode.value = buildableMode(pipelineMode.value, realtime.value, brainStatus.value);
       if (settings.activePreset != null) activePreset.value = settings.activePreset as string;
-      if (settings.modelsUI && typeof settings.modelsUI === 'object')
+      if (settings.modelsUI && typeof settings.modelsUI === 'object') {
         modelsUI.value = { ...modelsUI.value, ...settings.modelsUI };
+        // A hand-edited or older save: keep only real "v_" voices.
+        const saved = Array.isArray(modelsUI.value.livekitVoices)
+          ? modelsUI.value.livekitVoices
+          : [];
+        modelsUI.value.livekitVoices = saved
+          .map((v) => parseLiveKitVoice(String(v?.id ?? ''), String(v?.name ?? '')))
+          .filter((v): v is LiveKitCustomVoice => v !== null);
+      }
       if (settings.voiceUI && typeof settings.voiceUI === 'object')
         voiceUI.value = { ...voiceUI.value, ...settings.voiceUI };
       const soulUIFromSettings = (settings.soulUI ?? settings.personaUI) as

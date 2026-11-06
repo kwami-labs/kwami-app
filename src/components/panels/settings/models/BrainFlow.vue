@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
 import { useVoiceStore } from '@/stores/voice';
 import { BRAIN_ROLES, modelUsable, type BrainModel, type BrainRole } from '@/lib/brain';
+import { isLiveKitVoice, voiceLabel } from '@/lib/voicePersonas';
 
 /**
  * "Who does what": the voice, the bridge, and which model each role lands on.
@@ -14,21 +15,28 @@ import { BRAIN_ROLES, modelUsable, type BrainModel, type BrainRole } from '@/lib
  */
 const { t } = useI18n();
 const voiceStore = useVoiceStore();
-const { brain, brainStatus, realtime, stt, llm, tts, pipelineMode } = storeToRefs(voiceStore);
+const { brain, brainStatus, realtime, stt, llm, tts, pipelineMode, modelsUI } =
+  storeToRefs(voiceStore);
+
+/** The speaking stage: a LiveKit voice says so, and every voice shows by its name. */
+const ttsLine = computed(() => {
+  const voice = voiceLabel(tts.value.voice, modelsUI.value.livekitVoices ?? []);
+  const provider = isLiveKitVoice(tts.value.voice)
+    ? `LiveKit · ${tts.value.provider}/${tts.value.model}`
+    : `${tts.value.provider} · ${tts.value.model}`;
+  return `TTS ${provider} (${voice})`;
+});
 
 /** One line per stage: a realtime model is one stage, the standard pipeline three. */
 const voiceChain = computed(() =>
   pipelineMode.value === 'realtime'
     ? [`${realtime.value.provider} · ${realtime.value.model} (${realtime.value.voice})`]
     : pipelineMode.value === 'hybrid'
-      ? [
-          `Live ${realtime.value.provider} · ${realtime.value.model}`,
-          `TTS ${tts.value.provider} · ${tts.value.model} (${tts.value.voice})`,
-        ]
+      ? [`Live ${realtime.value.provider} · ${realtime.value.model}`, ttsLine.value]
       : [
           `STT ${stt.value.provider} · ${stt.value.model}`,
           `LLM ${llm.value.provider} · ${llm.value.model}`,
-          `TTS ${tts.value.provider} · ${tts.value.model} (${tts.value.voice})`,
+          ttsLine.value,
         ],
 );
 

@@ -97,7 +97,13 @@ const forModel = computed<PickableVoice[]>(() =>
   voicesForModel(
     provider.value,
     model.value,
-    withCharacterVoices(props.kind, provider.value, voices.value, live.value),
+    withCharacterVoices(
+      props.kind,
+      provider.value,
+      voices.value,
+      live.value,
+      modelsUI.value.livekitVoices ?? [],
+    ),
   ),
 );
 const languages = computed(() => (anyLanguage.value ? [] : languagesOf(forModel.value)));
@@ -135,7 +141,10 @@ const visible = computed(() => matching.value.slice(0, shown.value));
 
 const currentName = computed(() => {
   if (!current.value) return t('voicePicker.noneChosen');
-  return forModel.value.find((v) => v.id === current.value)?.name ?? voiceLabel(current.value);
+  return (
+    forModel.value.find((v) => v.id === current.value)?.name ??
+    voiceLabel(current.value, modelsUI.value.livekitVoices ?? [])
+  );
 });
 
 function clearFilters() {
