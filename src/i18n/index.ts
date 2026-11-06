@@ -12,6 +12,7 @@ import { extrasEn, extrasEs } from './extras.locale';
 import { recallEn, recallEs } from './recall.locale';
 import { searchPanelEn, searchPanelEs } from './searchPanel.locale';
 import { avatarUnavailableEn, avatarUnavailableEs } from './avatarUnavailable.locale';
+import { toolsPanelEn, toolsPanelEs } from './toolsPanel.locale';
 import { en } from './translations/en';
 import { es } from './translations/es';
 
@@ -64,6 +65,7 @@ export const messages = {
     ...brainEn,
     ...avatarUnavailableEn,
     ...enginesEn,
+    ...toolsPanelEn,
   },
   es: {
     ...es,
@@ -80,6 +82,7 @@ export const messages = {
     ...brainEs,
     ...avatarUnavailableEs,
     ...enginesEs,
+    ...toolsPanelEs,
   },
 } as const;
 
