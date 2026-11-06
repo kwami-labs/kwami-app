@@ -46,6 +46,8 @@ import { useCharterAgentTools } from '@/composables/useCharterAgentTools';
 import { useRecallAgentTools } from '@/composables/useRecallAgentTools';
 import { useKwamiAdminAgentTools } from '@/composables/useKwamiAdminAgentTools';
 import { useWorkspaceExtrasAgentTools } from '@/composables/useWorkspaceExtrasAgentTools';
+import { registerToolBatch, type ToolBatchScope } from '@/lib/toolRegistration';
+import { useToolCatalogStore } from '@/stores/toolCatalog';
 import { soulPresets } from '@/presets/agent/soul-presets';
 import { sceneImagePresets } from '@/presets/scene/image-presets';
 import { sceneVideoPresets } from '@/presets/scene/video-presets';
@@ -258,6 +260,7 @@ export function useWorkspaceAgentTools() {
   const eyeIrisStore = useEyeIrisStore();
   const navigationStore = useNavigationStore();
   const workspaceStore = useWorkspaceStore();
+  const toolCatalog = useToolCatalogStore();
   const { switchToKwami } = useKwamiConfigSync();
   const { messages } = useTranscriptionState();
   const actionState = useAgentActionState();
@@ -2472,24 +2475,45 @@ export function useWorkspaceAgentTools() {
     };
   }
 
-  function registerTools(instance: Kwami) {
+  /**
+   * All of the app's tools, as one change to the agent and filed by group for
+   * the Tools panel. Runs on every new instance and every language switch.
+   */
+  function registerTools(live: Kwami) {
+    registerToolBatch(live, registerInto, toolCatalog.record);
+    toolCatalog.touch();
+  }
+
+  function registerInto({ instance, group }: ToolBatchScope) {
     // Every `use*AgentTools` composable must be registered here, or its tools
     // are unreachable: they exist, they are translated, their unit tests pass,
     // and the model is never told they exist. Recall, admin and extras — 19
     // tools — sat in exactly that state, green in CI and invisible, until this
     // line was added. `toolRegistrars.test.ts` now fails if a composable is
     // added without being wired in below.
+    //
+    // `group()` files what follows for the Tools panel; a tool registered
+    // before any group lands in "other" rather than going missing.
+    group('search');
     searchPanelTools.registerSearchPanelTools(instance);
+    group('communications');
     commsTools.registerCommsTools(instance);
+    group('assistant');
     assistantTools.registerAssistantTools(instance);
+    group('google');
     googleWorkspaceTools.registerGoogleWorkspaceTools(instance);
+    group('interface');
     layoutTools.registerLayoutTools(instance);
     localeTools.registerLocaleTools(instance);
+    group('memory');
     charterTools.registerCharterTools(instance);
     recallTools.registerRecallTools(instance);
+    group('companions');
     kwamiAdminTools.registerKwamiAdminTools(instance);
+    group('extras');
     extrasTools.registerWorkspaceExtrasTools(instance);
 
+    group('interface');
     instance.registerTool({
       name: 'set_ui_control',
       description: t('workspaceAgentTools.toolDescSetUiControl'),
@@ -2539,6 +2563,7 @@ export function useWorkspaceAgentTools() {
       handler: async ({ control, value }) => setPanelControl(control, value),
     });
 
+    group('appearance');
     instance.registerTool({
       name: 'set_theme_control',
       description: t('workspaceAgentTools.toolDescSetThemeControl'),
@@ -2569,6 +2594,7 @@ export function useWorkspaceAgentTools() {
       handler: async ({ control, value }) => setSceneControl(control, value),
     });
 
+    group('personality');
     instance.registerTool({
       name: 'set_voice_control',
       description: t('workspaceAgentTools.toolDescSetVoiceControl'),
@@ -2580,6 +2606,7 @@ export function useWorkspaceAgentTools() {
       handler: async ({ control, value, confirm }) => setVoiceControl(control, value, confirm),
     });
 
+    group('appearance');
     instance.registerTool({
       name: 'set_enhancement_control',
       description: t('workspaceAgentTools.toolDescSetEnhancementControl'),
@@ -2590,6 +2617,7 @@ export function useWorkspaceAgentTools() {
       handler: async ({ control, value }) => setEnhancementControl(control, value),
     });
 
+    group('interface');
     instance.registerTool({
       name: 'set_memory_ui_control',
       description: t('workspaceAgentTools.toolDescSetMemoryUi'),
@@ -2612,6 +2640,7 @@ export function useWorkspaceAgentTools() {
       handler: async ({ renderer }) => setRenderer(renderer),
     });
 
+    group('search');
     instance.registerTool({
       name: 'set_browser_panel',
       description: t('workspaceAgentTools.toolDescSetBrowserPanel'),
@@ -2625,6 +2654,7 @@ export function useWorkspaceAgentTools() {
       handler: async ({ control, value }) => setBrowserPanelControl(control, value),
     });
 
+    group('personality');
     instance.registerTool({
       name: 'set_soul_control',
       description: t('workspaceAgentTools.toolDescSetSoulControl'),
@@ -2672,6 +2702,7 @@ export function useWorkspaceAgentTools() {
       handler: async ({ name, confirm }) => applySoulPreset(name, confirm),
     });
 
+    group('appearance');
     instance.registerTool({
       name: 'control_soundtrack',
       description: t('workspaceAgentTools.toolDescControlSoundtrack'),
@@ -2701,6 +2732,7 @@ export function useWorkspaceAgentTools() {
       handler: async ({ kind, name }) => applyScenePreset(kind, name),
     });
 
+    group('personality');
     instance.registerTool({
       name: 'list_kwami_profiles',
       description: t('workspaceAgentTools.toolDescListKwamiProfiles'),
@@ -2727,12 +2759,14 @@ export function useWorkspaceAgentTools() {
       handler: async ({ length, confirm }) => setResponseLength(length, confirm),
     });
 
+    group('search');
     instance.registerTool({
       name: 'clear_search_results',
       description: t('workspaceAgentTools.toolDescClearSearch'),
       handler: async () => clearSearchResults(),
     });
 
+    group('interface');
     instance.registerTool({
       name: 'reset_ui_domain',
       description: t('workspaceAgentTools.toolDescResetUiDomain'),
@@ -2795,6 +2829,7 @@ export function useWorkspaceAgentTools() {
         expressOrder,
       });
 
+    group('email');
     instance.registerTool({
       name: 'read_emails',
       description: t('workspaceAgentTools.toolDescReadEmails'),
@@ -2958,6 +2993,7 @@ export function useWorkspaceAgentTools() {
     });
 
     // ---- Calendar tools ----
+    group('calendar');
     instance.registerTool({
       name: 'list_calendar_events',
       description: t('workspaceAgentTools.toolDescListCalendarEvents'),

@@ -7,10 +7,12 @@
  * user as the agent ignoring them. So every test here asserts the store
  * actually moved, not just that the handler resolved.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { defineComponent, h, ref } from 'vue';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { defineComponent, h, nextTick, ref } from 'vue';
+import { getCurrentLocale, setLocale } from '@/i18n';
+import { useToolCatalogStore } from '@/stores/toolCatalog';
 import { createPinia, setActivePinia } from 'pinia';
-import { mount } from '@vue/test-utils';
+import { mount, type VueWrapper } from '@vue/test-utils';
 import { useWorkspaceAgentTools } from '@/composables/useWorkspaceAgentTools';
 import { useNavigationStore } from '@/stores/navigation';
 import { useSceneStore } from '@/stores/scene';
@@ -31,9 +33,18 @@ const registered = new Map<string, ToolDef>();
 const sentConfigUpdates: { type: string; config: unknown }[] = [];
 const isConnected = ref(false);
 
+// The app registers its tools in one batch: straight into the registry and the
+// dispatch table, then one sync. `registerTool` is kept for anything that still
+// calls it directly.
 const kwamiStub = {
   registerTool: (def: ToolDef) => registered.set(def.name, def),
+  isConnected: () => isConnected.value,
+  tools: {
+    register: (def: ToolDef) => registered.set(def.name, def),
+    getToolDefinitions: () => [...registered.values()].map(({ handler: _h, ...def }) => def),
+  },
   agent: {
+    registerTool: vi.fn(),
     getConfig: () => ({}),
     updateConfig: vi.fn(),
     syncConfigToBackend: vi.fn(),
@@ -123,6 +134,14 @@ function call(name: string, args: Record<string, unknown> = {}) {
   return tool.handler(args) as Promise<Record<string, unknown>>;
 }
 
+// Unmounted after each test: a host left mounted keeps its locale watcher, and
+// every later language switch re-registered once per test that had run.
+let host: VueWrapper | null = null;
+afterEach(() => {
+  host?.unmount();
+  host = null;
+});
+
 beforeEach(() => {
   registered.clear();
   sentConfigUpdates.length = 0;
@@ -135,7 +154,7 @@ beforeEach(() => {
   });
   localStorage.clear();
   setActivePinia(createPinia());
-  mount(Host);
+  host = mount(Host);
 });
 
 describe('registration', () => {
@@ -151,6 +170,33 @@ describe('registration', () => {
     ]) {
       expect(registered.has(name), `${name} is missing`).toBe(true);
     }
+  });
+
+  // The Tools panel groups by what was recorded here. A tool added without a
+  // group() before it would sit under "other" next to nothing it relates to.
+  it('files every app tool under a real group', () => {
+    const catalog = useToolCatalogStore();
+    const ungrouped = [...registered.keys()].filter((name) => catalog.groupOf(name) === 'other');
+    expect(registered.size).toBeGreaterThan(90);
+    expect(ungrouped).toEqual([]);
+    expect(catalog.groupOf('send_email')).toBe('email');
+    expect(catalog.groupOf('set_theme_control')).toBe('appearance');
+    expect(catalog.groupOf('open_search_result')).toBe('search');
+  });
+
+  it('re-sends the tool list once, not once per tool, when the language changes mid-call', async () => {
+    isConnected.value = true;
+    kwamiStub.agent.syncConfigToBackend.mockClear();
+
+    setLocale(getCurrentLocale() === 'es' ? 'en' : 'es');
+    await nextTick();
+
+    const toolSyncs = kwamiStub.agent.syncConfigToBackend.mock.calls.filter(
+      ([type]) => type === 'tools',
+    );
+    expect(toolSyncs).toHaveLength(1);
+    expect((toolSyncs[0][1] as unknown[]).length).toBe(registered.size);
+    setLocale('en');
   });
 
   it('offers eye-iris as a renderer', () => {
