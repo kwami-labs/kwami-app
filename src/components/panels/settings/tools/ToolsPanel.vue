@@ -239,7 +239,7 @@ onMounted(refreshTools);
           <div v-for="tool in tools" :key="tool.name" class="card">
             <div class="head">
               <iconify-icon icon="ph:function-duotone"></iconify-icon>
-              <span class="name">{{ tool.name }}</span>
+              <span class="name" translate="no">{{ tool.name }}</span>
               <button
                 class="remove"
                 :title="t('tools.removeTool')"
@@ -252,7 +252,7 @@ onMounted(refreshTools);
             <p class="desc">{{ tool.description }}</p>
             <details v-if="tool.parameters" class="params">
               <summary>{{ t('tools.params') }}</summary>
-              <pre>{{ JSON.stringify(tool.parameters, null, 2) }}</pre>
+              <pre translate="no">{{ JSON.stringify(tool.parameters, null, 2) }}</pre>
             </details>
           </div>
         </div>
@@ -307,10 +307,10 @@ onMounted(refreshTools);
           <div v-for="s in mcps" :key="s.name" class="card">
             <div class="head">
               <iconify-icon icon="ph:plugs-connected-duotone"></iconify-icon>
-              <span class="name">{{ s.name }}</span>
+              <span class="name" translate="no">{{ s.name }}</span>
               <span class="badg">{{ t('tools.connected') }}</span>
             </div>
-            <span class="url">{{ s.url }}</span>
+            <span class="url" translate="no">{{ s.url }}</span>
           </div>
         </div>
         <div class="form" style="margin-top: 12px">
@@ -344,7 +344,7 @@ onMounted(refreshTools);
           }}</BaseButton>
 
           <div v-if="exec.result" class="res success">
-            <pre>{{ exec.result }}</pre>
+            <pre translate="no">{{ exec.result }}</pre>
           </div>
           <div v-if="exec.error" class="res error">{{ exec.error }}</div>
         </div>
