@@ -45,7 +45,7 @@ afterEach(() => setLocale('en'));
 describe('ToolCatalog', () => {
   it('lists groups in the panel order, with counts', () => {
     const w = mountCatalog();
-    expect(groupTitles(w)).toEqual(['Search and browser', 'Email', 'Calendar', 'Your tools']);
+    expect(groupTitles(w)).toEqual(['Your tools', 'Search and browser', 'Email', 'Calendar']);
     expect(w.findAll('.group-count').map((c) => c.text())).toEqual(['1', '1', '1', '1']);
   });
 
@@ -54,8 +54,8 @@ describe('ToolCatalog', () => {
     const open = () => w.findAll('.group.open .group-title').map((g) => g.text());
     expect(open()).toEqual(['Your tools']);
 
-    await w.findAll('.group-head')[1].trigger('click');
-    expect(open()).toEqual(['Email', 'Your tools']);
+    await w.findAll('.group-head')[2].trigger('click');
+    expect(open()).toEqual(['Your tools', 'Email']);
   });
 
   it('searches names, descriptions and parameters, ignoring accents and case', async () => {
