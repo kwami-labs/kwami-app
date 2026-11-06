@@ -90,6 +90,9 @@ const MemoryPanel = defineAsyncComponent(
 const ToolsPanel = defineAsyncComponent(
   () => import('@/components/panels/settings/tools/ToolsPanel.vue'),
 );
+const AccessPanel = defineAsyncComponent(
+  () => import('@/components/panels/settings/access/AccessPanel.vue'),
+);
 const InfoPanel = defineAsyncComponent(
   () => import('@/components/panels/settings/info/InfoPanel.vue'),
 );
@@ -583,6 +586,7 @@ onUnmounted(() => {
           <SoulPanel v-if="uiStore.activePanel === 'soul'" />
           <MemoryPanel v-if="uiStore.activePanel === 'memory'" />
           <ToolsPanel v-if="uiStore.activePanel === 'tools'" />
+          <AccessPanel v-if="uiStore.activePanel === 'access'" />
           <InfoPanel v-if="uiStore.activePanel === 'info'" />
           <MetricsPanel v-if="uiStore.activePanel === 'metrics'" />
           <AccountPanel v-if="uiStore.activePanel === 'account'" />

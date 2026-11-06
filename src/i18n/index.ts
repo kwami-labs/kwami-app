@@ -13,6 +13,7 @@ import { recallEn, recallEs } from './recall.locale';
 import { searchPanelEn, searchPanelEs } from './searchPanel.locale';
 import { avatarUnavailableEn, avatarUnavailableEs } from './avatarUnavailable.locale';
 import { toolsPanelEn, toolsPanelEs } from './toolsPanel.locale';
+import { siteAccessEn, siteAccessEs } from './siteAccess.locale';
 import { en } from './translations/en';
 import { es } from './translations/es';
 
@@ -66,6 +67,7 @@ export const messages = {
     ...avatarUnavailableEn,
     ...enginesEn,
     ...toolsPanelEn,
+    ...siteAccessEn,
   },
   es: {
     ...es,
@@ -83,6 +85,7 @@ export const messages = {
     ...avatarUnavailableEs,
     ...enginesEs,
     ...toolsPanelEs,
+    ...siteAccessEs,
   },
 } as const;
 

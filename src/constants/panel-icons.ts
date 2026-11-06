@@ -11,6 +11,7 @@ export const panelIcons = {
   soul: 'ph:heart-duotone',
   memory: 'ph:brain-duotone',
   tools: 'ph:wrench-duotone',
+  access: 'ph:shield-checkered-duotone',
   metrics: 'ph:chart-line-up-duotone',
   transcription: 'ph:chat-circle-text-duotone',
   history: 'ph:clock-counter-clockwise-duotone',
