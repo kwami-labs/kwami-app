@@ -445,6 +445,10 @@ onUnmounted(() => {
   flex-direction: column;
   gap: 12px;
 }
+/* The body scrolls; its blocks keep their height instead of squeezing to fit. */
+.access-panel .panel-body > * {
+  flex-shrink: 0;
+}
 
 /* -- hero ---------------------------------------------------------------------- */
 .hero {
@@ -864,9 +868,15 @@ onUnmounted(() => {
 }
 .site-top {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 2px 8px;
+  min-width: 0;
+}
+.site-top .host {
+  min-width: 0;
+  flex: 1 1 auto;
 }
 .level-tag {
   display: inline-flex;

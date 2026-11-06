@@ -66,11 +66,12 @@ function onKey(event: KeyboardEvent) {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  container-type: inline-size;
 }
 .segments {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 4px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 3px;
   padding: 3px;
   border-radius: var(--radius-md);
   background: var(--surface-1);
@@ -107,9 +108,18 @@ function onKey(event: KeyboardEvent) {
   font-size: 15px;
 }
 .segment .label {
-  font-size: 10px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 9.5px;
   font-weight: 600;
-  letter-spacing: 0.2px;
+}
+/* Too narrow for words: the icons stay, and the line under the bar names the level. */
+@container (max-width: 230px) {
+  .segment .label {
+    display: none;
+  }
 }
 .segment:hover {
   color: var(--c);
