@@ -23,6 +23,9 @@ export const TOOL_GROUPS = [
   'google',
   'companions',
   'extras',
+  // The agent's own, server-side tools: shown from its tool_inventory report,
+  // never registered here.
+  'agent',
   'other',
 ] as const;
 
@@ -30,6 +33,25 @@ export type ToolGroupId = (typeof TOOL_GROUPS)[number];
 
 /** The groups whose tools a user created, as opposed to the app's own. */
 export const USER_TOOL_GROUPS: ReadonlySet<ToolGroupId> = new Set<ToolGroupId>(['custom', 'mcp']);
+
+/**
+ * The app's groups a user may switch off to make room under the model's tool
+ * limit. Not `interface`: without it the agent cannot open or move a panel,
+ * which is how it shows anything else.
+ */
+export const OPTIONAL_TOOL_GROUPS: ReadonlySet<ToolGroupId> = new Set<ToolGroupId>([
+  'appearance',
+  'personality',
+  'search',
+  'memory',
+  'assistant',
+  'communications',
+  'email',
+  'calendar',
+  'google',
+  'companions',
+  'extras',
+]);
 
 export interface ToolBatchScope {
   /**
@@ -60,6 +82,15 @@ export function registerToolBatch(
   live: Kwami,
   fill: (scope: ToolBatchScope) => void,
   onRegistered: (name: string, group: ToolGroupId) => void,
+  options: {
+    /**
+     * Groups the user switched off: their tools are filed (so the panel can
+     * list them) but not registered, and taken back if they were.
+     */
+    skip?: (group: ToolGroupId) => boolean;
+    /** Hears each skipped tool, so the panel can still list it. */
+    onSkipped?: (tool: ToolDefinition, group: ToolGroupId) => void;
+  } = {},
 ): void {
   let current: ToolGroupId = 'other';
 
@@ -68,6 +99,14 @@ export function registerToolBatch(
   const instance = Object.create(live, {
     registerTool: {
       value(tool: ToolDefinition) {
+        if (options.skip?.(current)) {
+          if (live.tools.get(tool.name)) {
+            live.tools.unregister(tool.name);
+            live.agent.unregisterTool(tool.name);
+          }
+          options.onSkipped?.(tool, current);
+          return;
+        }
         live.tools.register(tool);
         if (tool.handler) live.agent.registerTool(tool.name, tool.handler);
         onRegistered(tool.name, current);

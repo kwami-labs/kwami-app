@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
+import type { ToolDefinition } from 'kwami';
 import type { ToolGroupId } from '@/lib/toolRegistration';
 
 /**
@@ -11,15 +12,31 @@ import type { ToolGroupId } from '@/lib/toolRegistration';
  */
 export const useToolCatalogStore = defineStore('toolCatalog', () => {
   const groups = ref<Record<string, ToolGroupId>>({});
+  /**
+   * Tools of groups the user switched off: not in the registry, so kept here
+   * (without their handlers) for the panel to list and switch back on.
+   */
+  const off = ref<Record<string, ToolDefinition>>({});
   /** Bumped whenever the set of registered tools may have changed. */
   const revision = ref(0);
 
   function record(name: string, group: ToolGroupId) {
     groups.value[name] = group;
+    delete off.value[name];
+  }
+
+  function recordOff(tool: ToolDefinition, group: ToolGroupId) {
+    groups.value[tool.name] = group;
+    off.value[tool.name] = {
+      name: tool.name,
+      description: tool.description,
+      parameters: tool.parameters,
+    };
   }
 
   function forget(name: string) {
     delete groups.value[name];
+    delete off.value[name];
     revision.value += 1;
   }
 
@@ -31,5 +48,5 @@ export const useToolCatalogStore = defineStore('toolCatalog', () => {
     return groups.value[name] ?? 'other';
   }
 
-  return { groups, revision, record, forget, touch, groupOf };
+  return { groups, off, revision, record, recordOff, forget, touch, groupOf };
 });

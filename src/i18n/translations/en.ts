@@ -635,6 +635,8 @@ export const en = {
     performance: 'Performance',
     preemptiveGeneration: 'Preemptive Generation',
     preemptiveGenerationDesc: 'Start generating response before turn ends',
+    thinkingSound: 'Thinking sound',
+    thinkingSoundDesc: 'A soft keyboard while the agent works out its answer',
   },
   metrics: {
     title: 'Metrics',

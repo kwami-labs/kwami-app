@@ -4,7 +4,12 @@ import { useI18n } from 'vue-i18n';
 import { useToast } from 'vue-toastification';
 import type { ToolDefinition } from 'kwami';
 import BaseButton from '@/components/ui/BaseButton.vue';
-import { TOOL_GROUPS, USER_TOOL_GROUPS, type ToolGroupId } from '@/lib/toolRegistration';
+import {
+  OPTIONAL_TOOL_GROUPS,
+  TOOL_GROUPS,
+  USER_TOOL_GROUPS,
+  type ToolGroupId,
+} from '@/lib/toolRegistration';
 import { describeParameters, foldForSearch, summarize, type ToolParam } from '@/lib/toolSchema';
 import { TOOL_GROUP_LOOK } from './toolGroups';
 
@@ -16,15 +21,25 @@ import { TOOL_GROUP_LOOK } from './toolGroups';
  * away. Only tools the user added can be removed here: taking one of the app's
  * own away left a control the agent could no longer reach until a reload.
  */
-const props = defineProps<{
-  tools: ToolDefinition[];
-  groupOf: (name: string) => ToolGroupId;
-}>();
+const props = withDefaults(
+  defineProps<{
+    tools: ToolDefinition[];
+    groupOf: (name: string) => ToolGroupId;
+    /** App groups the user switched off; their tools are listed, dimmed. */
+    offGroups?: ReadonlySet<ToolGroupId>;
+    /** Client tools the agent reported it left out of the model's list. */
+    dropped?: ReadonlySet<string>;
+    /** The model's tool ceiling, for the dropped-tool explanation. */
+    limit?: number;
+  }>(),
+  { offGroups: () => new Set(), dropped: () => new Set(), limit: 128 },
+);
 
 const emit = defineEmits<{
   (e: 'test', name: string): void;
   (e: 'remove', name: string): void;
   (e: 'edit', name: string): void;
+  (e: 'toggle-group', group: ToolGroupId, enabled: boolean): void;
 }>();
 
 const { t } = useI18n();
@@ -222,25 +237,45 @@ function sourceLabel(name: string) {
       v-for="group in visibleGroups"
       :key="group.id"
       class="group"
-      :class="{ open: isOpen(group.id) }"
+      :class="{ open: isOpen(group.id), off: offGroups.has(group.id) }"
       :style="{ '--group-color': TOOL_GROUP_LOOK[group.id].color }"
     >
-      <button
-        type="button"
-        class="group-head"
-        :aria-expanded="isOpen(group.id)"
-        @click="toggleGroup(group.id)"
-      >
-        <span class="group-icon" aria-hidden="true">
-          <iconify-icon :icon="TOOL_GROUP_LOOK[group.id].icon"></iconify-icon>
-        </span>
-        <span class="group-text">
-          <span class="group-title">{{ groupTitle(group.id) }}</span>
-          <span class="group-hint">{{ t(`toolsPanel.groups.${group.id}.hint`) }}</span>
-        </span>
-        <span class="group-count">{{ group.tools.length }}</span>
-        <iconify-icon icon="ph:caret-down-bold" class="caret" aria-hidden="true"></iconify-icon>
-      </button>
+      <div class="group-bar">
+        <button
+          type="button"
+          class="group-head"
+          :aria-expanded="isOpen(group.id)"
+          @click="toggleGroup(group.id)"
+        >
+          <span class="group-icon" aria-hidden="true">
+            <iconify-icon :icon="TOOL_GROUP_LOOK[group.id].icon"></iconify-icon>
+          </span>
+          <span class="group-text">
+            <span class="group-title">{{ groupTitle(group.id) }}</span>
+            <span class="group-hint">{{
+              offGroups.has(group.id)
+                ? t('toolsPanel.catalog.groupOff')
+                : t(`toolsPanel.groups.${group.id}.hint`)
+            }}</span>
+          </span>
+          <span class="group-count">{{ group.tools.length }}</span>
+          <iconify-icon icon="ph:caret-down-bold" class="caret" aria-hidden="true"></iconify-icon>
+        </button>
+        <label
+          v-if="OPTIONAL_TOOL_GROUPS.has(group.id)"
+          class="switch"
+          :title="t('toolsPanel.catalog.groupOn')"
+        >
+          <input
+            type="checkbox"
+            role="switch"
+            :checked="!offGroups.has(group.id)"
+            :aria-label="`${groupTitle(group.id)}: ${t('toolsPanel.catalog.groupOn')}`"
+            @change="emit('toggle-group', group.id, ($event.target as HTMLInputElement).checked)"
+          />
+          <span class="switch-track" aria-hidden="true"></span>
+        </label>
+      </div>
 
       <ul v-show="isOpen(group.id)" class="rows">
         <li
@@ -261,6 +296,12 @@ function sourceLabel(name: string) {
                 <span v-if="sourceLabel(tool.name)" class="source">{{
                   sourceLabel(tool.name)
                 }}</span>
+                <span
+                  v-if="dropped.has(tool.name)"
+                  class="dropped"
+                  :title="t('toolsPanel.catalog.droppedHint', { limit })"
+                  >{{ t('toolsPanel.catalog.dropped') }}</span
+                >
               </span>
               <span v-if="openTool !== tool.name" class="tool-summary">{{
                 summarize(tool.description)
@@ -271,7 +312,16 @@ function sourceLabel(name: string) {
           </button>
 
           <div v-if="openTool === tool.name" class="detail">
-            <p class="desc">{{ tool.description }}</p>
+            <p v-if="groupOf(tool.name) === 'agent'" class="note">
+              {{ t('toolsPanel.catalog.agentTool') }}
+            </p>
+            <p v-if="offGroups.has(groupOf(tool.name))" class="note">
+              {{ t('toolsPanel.catalog.offTool') }}
+            </p>
+            <p v-if="dropped.has(tool.name)" class="note warn">
+              {{ t('toolsPanel.catalog.droppedHint', { limit }) }}
+            </p>
+            <p v-if="tool.description" class="desc">{{ tool.description }}</p>
 
             <h4 class="detail-title">
               {{ t('toolsPanel.catalog.params') }}
@@ -298,8 +348,13 @@ function sourceLabel(name: string) {
               </li>
             </ul>
 
-            <div class="actions">
-              <BaseButton size="sm" icon="ph:play-duotone" @click="emit('test', tool.name)">
+            <div v-if="groupOf(tool.name) !== 'agent'" class="actions">
+              <BaseButton
+                v-if="!offGroups.has(groupOf(tool.name))"
+                size="sm"
+                icon="ph:play-duotone"
+                @click="emit('test', tool.name)"
+              >
                 {{ t('toolsPanel.catalog.test') }}
               </BaseButton>
               <BaseButton
@@ -559,6 +614,90 @@ function sourceLabel(name: string) {
 }
 .group.open .caret {
   transform: rotate(180deg);
+}
+
+.group-bar {
+  display: flex;
+  align-items: center;
+}
+.group-bar .group-head {
+  flex: 1;
+  min-width: 0;
+}
+.group.off .group-icon,
+.group.off .group-count {
+  filter: grayscale(1);
+  opacity: 0.55;
+}
+.group.off .group-title {
+  color: var(--text-muted);
+}
+.group.off .rows {
+  opacity: 0.6;
+}
+.switch {
+  position: relative;
+  flex: none;
+  display: inline-flex;
+  margin-right: 12px;
+  cursor: pointer;
+}
+.switch input {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  opacity: 0;
+  margin: 0;
+  cursor: pointer;
+}
+.switch-track {
+  pointer-events: none;
+  width: 30px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--surface-4);
+  transition: background var(--duration-fast) ease;
+  position: relative;
+}
+.switch-track::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--text-secondary);
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+.switch input:checked + .switch-track {
+  background: color-mix(in srgb, var(--group-color) 55%, transparent);
+}
+.switch input:checked + .switch-track::after {
+  transform: translateX(12px);
+  background: var(--text-primary);
+}
+.switch input:focus-visible + .switch-track {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+.dropped {
+  flex: none;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  line-height: 16px;
+  color: var(--warning);
+  background: var(--warning-glow);
+}
+.note {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+.note.warn {
+  color: var(--warning);
 }
 
 /* Rows */
