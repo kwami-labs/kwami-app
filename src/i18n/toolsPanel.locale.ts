@@ -249,6 +249,20 @@ export const toolsPanelEn = {
         other: 'The server answered with an error: {message}',
       },
     },
+    test: {
+      intro:
+        'Run any tool by hand, the way the agent would. Useful to check a webhook or an MCP server before relying on it.',
+      tool: 'Tool',
+      choose: 'Choose a tool…',
+      arguments: 'Arguments',
+      preview: 'Arguments as sent',
+      missing: 'Required and still empty: {names}.',
+      realRun:
+        'This really runs. A tool that sends, calls or deletes asks for the same confirmation it asks the agent for.',
+      run: 'Run',
+      running: 'Running…',
+      history: 'Recent runs',
+    },
     templates: {
       weather: {
         label: 'Current weather',
@@ -456,6 +470,20 @@ export const toolsPanelEs: typeof toolsPanelEn = {
         timeout: 'El servidor no respondió a tiempo.',
         other: 'El servidor respondió con un error: {message}',
       },
+    },
+    test: {
+      intro:
+        'Ejecuta cualquier herramienta a mano, como lo haría el agente. Sirve para comprobar un webhook o un servidor MCP antes de confiar en él.',
+      tool: 'Herramienta',
+      choose: 'Elige una herramienta…',
+      arguments: 'Argumentos',
+      preview: 'Argumentos tal como se envían',
+      missing: 'Obligatorios y aún vacíos: {names}.',
+      realRun:
+        'Se ejecuta de verdad. Una herramienta que envía, llama o borra pide la misma confirmación que cuando la usa el agente.',
+      run: 'Ejecutar',
+      running: 'Ejecutando…',
+      history: 'Últimas pruebas',
     },
     templates: {
       weather: {

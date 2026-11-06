@@ -434,12 +434,6 @@ export const en = {
   },
   tools: {
     title: 'Tools',
-    parametersJson: 'Parameters (JSON)',
-    testToolExecution: 'Test Tool Execution',
-    tool: 'Tool',
-    execute: 'Execute',
-    running: 'Running...',
-    invalidJson: 'Invalid JSON',
   },
   memory: {
     contextRetrieval: 'Context Retrieval',

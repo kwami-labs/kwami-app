@@ -439,12 +439,6 @@ export const es = {
   },
   tools: {
     title: 'Herramientas',
-    parametersJson: 'Parametros (JSON)',
-    testToolExecution: 'Probar ejecucion de herramienta',
-    tool: 'Herramienta',
-    execute: 'Ejecutar',
-    running: 'Ejecutando...',
-    invalidJson: 'JSON invalido',
   },
   memory: {
     contextRetrieval: 'Recuperacion de contexto',
