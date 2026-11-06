@@ -37,6 +37,10 @@ export const typeColors: Record<string, number> = {
   goal: 0xef5350, // Red - goals/objectives
   procedure: 0x4db6ac, // Teal - procedures/instructions
 
+  // What the agent's ontology adds: things to do, and holdings
+  task: 0xd4e157, // Lime - to-dos, errands, reminders
+  asset: 0x9ccc65, // Light green - stocks, funds, crypto
+
   // Properties
   attribute: 0x29b6f6, // Sky blue - attributes/properties (colors, ages)
 
@@ -83,6 +87,10 @@ export const typeColorsHex: Record<string, string> = {
   // Goals & Procedures
   goal: '#ef5350',
   procedure: '#4db6ac',
+
+  // What the agent's ontology adds: things to do, and holdings
+  task: '#d4e157',
+  asset: '#9ccc65',
 
   // Properties
   attribute: '#29b6f6',
