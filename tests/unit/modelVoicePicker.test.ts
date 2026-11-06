@@ -178,7 +178,7 @@ describe('what a choice changes', () => {
   it('never carries a voice to another provider', () => {
     const current = { provider: 'openai', voice: 'onyx' };
     const next = voiceAfterModelChange(current, 'elevenlabs', 'eleven_flash_v2_5', {});
-    expect(next.voice).toBe('WHOJDqzCafRk2dAUIxxB');
+    expect(next.voice).toBe('hJ8c5S51sAyQqz7QaCFy');
     expect(voiceAfterModelChange(current, 'rime', 'arcana', {}).voice).toBe('');
   });
 
