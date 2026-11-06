@@ -61,8 +61,8 @@ describe('brain panel', () => {
     store.applyBrainStatus(status);
     return wrapper.vm.$nextTick().then(() => {
       const text = wrapper.text();
-      // Standard Gemini pipeline by default: the chain shows each stage.
-      expect(text).toContain('TTS gemini · gemini-3.1-flash-tts-preview (Charon)');
+      // The standard pipeline with Jarvis's LiveKit voice by default: each stage, by name.
+      expect(text).toContain('TTS LiveKit · cartesia/sonic-3.5 (Sonic-3.5)');
       expect(text).toContain('LLM anthropic · claude-haiku-5-5');
       expect(text).toContain('Claude Haiku 5.5');
       expect(text).toContain('Claude Opus 5.5');

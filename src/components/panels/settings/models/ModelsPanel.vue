@@ -15,7 +15,13 @@ import RealtimeTab from './tabs/RealtimeTab.vue';
 import BrainFlow from './BrainFlow.vue';
 import BrainSettings from './BrainSettings.vue';
 import { JARVIS_VOICE, voiceProviderHasKey } from '@/lib/brain';
-import { GEMINI_STANDARD, JARVIS_STANDARD, VOICE_PERSONAS } from '@/lib/voicePersonas';
+import {
+  ELEVENLABS_TTS,
+  GEMINI_STANDARD,
+  JARVIS_STANDARD,
+  VOICE_PERSONAS,
+  isLiveKitVoice,
+} from '@/lib/voicePersonas';
 import { hybridModelFor, type PipelineMode } from '@/lib/voiceEngines';
 import { engineSwitchFields, sendRawConfigUpdate } from '@/lib/agentConfigUpdate';
 import { useKwami } from '@/composables/useKwami';
@@ -25,12 +31,13 @@ const { t } = useI18n();
 const { llm, stt, tts, realtime, pipelineMode, modelsUI, brainStatus, engineNotice } =
   storeToRefs(voiceStore);
 
-// Jarvis's voice: Deepgram listening, Claude thinking and ElevenLabs speaking
-// (a paid TTS instead of the free-tier Gemini one), or one of the
-// other character engines (Gemini TTS, Gemini Live). Offered when the voice is
-// on none of them, or when one of its providers has no key on the agent.
+// Jarvis's voice: Deepgram listening, Claude thinking and his LiveKit voice
+// speaking (Cartesia Sonic 3.5 through LiveKit Inference, no key of ours), or one
+// of the other character engines (ElevenLabs, Gemini TTS, Gemini Live). Offered
+// when the voice is on none of them, or when one of its providers has no key.
 const CHARACTER_TTS: readonly string[] = [
   JARVIS_STANDARD.tts.provider,
+  ELEVENLABS_TTS.provider,
   GEMINI_STANDARD.tts.provider,
 ];
 // Gemini thinking is the user's choice too ("the voice also answers"), and older saves.
@@ -51,7 +58,9 @@ const voiceIsJarvis = computed(() => {
 const voiceProviderMissingKey = computed(() => {
   const status = brainStatus.value;
   const realtimeMissing = !voiceProviderHasKey(status, 'realtime', realtime.value.provider);
-  const ttsMissing = !voiceProviderHasKey(status, 'tts', tts.value.provider);
+  // A LiveKit voice speaks through LiveKit Inference: no Cartesia key is needed.
+  const ttsMissing =
+    !isLiveKitVoice(tts.value.voice) && !voiceProviderHasKey(status, 'tts', tts.value.provider);
   const missing =
     pipelineMode.value === 'realtime'
       ? realtimeMissing
@@ -66,7 +75,7 @@ function useJarvisVoice() {
   const jarvis = VOICE_PERSONAS[0];
   voiceStore.updateSTT({ ...JARVIS_STANDARD.stt });
   voiceStore.updateLLM({ ...JARVIS_STANDARD.llm });
-  // The direction is kept although ElevenLabs does not read it: a set
+  // The direction is kept although Sonic does not read it: a set
   // direction is what locks the voice against the agent's own switching.
   voiceStore.updateTTS({ ...JARVIS_STANDARD.tts, style: jarvis.style });
   voiceStore.updateRealtime({ ...JARVIS_VOICE, style: jarvis.style });

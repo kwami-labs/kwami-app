@@ -15,8 +15,10 @@ import {
   VOICE_PERSONAS,
   activePersona,
   engineVoices,
+  isLiveKitVoice,
   personaVoice,
   voiceSampleUrl,
+  type LiveKitCustomVoice,
   type VoiceEngine,
   type VoicePersona,
 } from './voicePersonas';
@@ -28,7 +30,12 @@ export interface PickableVoice extends Voice {
   character?: string;
   /** The first choice for that character on this engine. */
   suggested?: boolean;
+  /** A LiveKit voice the user added by id: no catalogue knows it, so nothing can speak a sample. */
+  custom?: boolean;
 }
+
+/** The section the LiveKit voices are shown under in a Cartesia list. */
+export const LIVEKIT_CATEGORY = 'LiveKit';
 
 /** OpenAI voices tts-1 and tts-1-hd do not take. */
 const OPENAI_NEWEST = new Set(['ballad', 'verse', 'marin', 'cedar']);
@@ -45,7 +52,7 @@ const SPOKEN_ON_REQUEST = new Set(['cartesia', 'rime', 'openai', 'gemini']);
 
 /** Whether a voice can be heard before choosing it. Not a character's voice from another list. */
 export function canHear(provider: string, voice: PickableVoice): boolean {
-  return Boolean(voice.preview_url) || SPOKEN_ON_REQUEST.has(provider);
+  return Boolean(voice.preview_url) || (SPOKEN_ON_REQUEST.has(provider) && !voice.custom);
 }
 
 /** The key of a favourite: the same id on two providers is two voices. */
@@ -97,11 +104,16 @@ function engineOf(kind: VoiceKind, provider: string): VoiceEngine | null {
   return TTS_ENGINE_BY_PROVIDER[provider] ?? null;
 }
 
+/**
+ * A character's voices on an engine. On Cartesia its LiveKit voices come first:
+ * they travel as Cartesia ("v_" ids through LiveKit Inference).
+ */
 function characterEntries(persona: VoicePersona, engine: VoiceEngine) {
   const own = engineVoices(persona, engine);
-  return own
+  const entries = own
     ? own.map((v) => ({ id: v.id, name: v.name }))
     : [persona.voice, ...persona.alternatives].map((id) => ({ id, name: id }));
+  return engine === 'cartesia' ? [...persona.livekit, ...entries] : entries;
 }
 
 /**
@@ -109,13 +121,15 @@ function characterEntries(persona: VoicePersona, engine: VoiceEngine) {
  *
  * A voice the catalogue does not list is added, except where the list is the
  * account's own (`live`): a designed voice missing from it does not exist for this
- * deployment, and choosing it would be silence until the fallback spoke.
+ * deployment, and choosing it would be silence until the fallback spoke. On
+ * Cartesia, the LiveKit voices the user added (`custom`) follow the characters'.
  */
 export function withCharacterVoices(
   kind: VoiceKind,
   provider: string,
   voices: readonly Voice[],
   live: boolean,
+  custom: readonly LiveKitCustomVoice[] = [],
 ): PickableVoice[] {
   const engine = engineOf(kind, provider);
   const rest: PickableVoice[] = voices.map((v) => ({ ...v }));
@@ -128,18 +142,38 @@ export function withCharacterVoices(
       if (!listed && live) return;
       const already = first.find((v) => v.id === entry.id);
       if (already) return;
+      const livekit = isLiveKitVoice(entry.id);
       first.push({
         id: entry.id,
         name: listed?.name ?? entry.name,
-        category: listed?.category ?? null,
+        category: listed?.category ?? (livekit ? LIVEKIT_CATEGORY : null),
         gender: listed?.gender ?? persona.gender,
         language: listed?.language ?? null,
         description: listed?.description ?? null,
-        preview_url: listed?.preview_url ?? voiceSampleUrl(persona, engine, entry.id),
+        preview_url:
+          listed?.preview_url ?? voiceSampleUrl(persona, livekit ? 'livekit' : engine, entry.id),
         character: persona.name,
         suggested: index === 0,
       });
     });
+  }
+  if (engine === 'cartesia') {
+    for (const voice of custom) {
+      if (first.some((v) => v.id === voice.id)) continue;
+      const at = rest.findIndex((v) => v.id === voice.id);
+      const listed = at === -1 ? null : rest.splice(at, 1)[0];
+      first.push({
+        id: voice.id,
+        name: voice.name,
+        category: LIVEKIT_CATEGORY,
+        gender: listed?.gender ?? null,
+        language: listed?.language ?? null,
+        description: listed?.description ?? null,
+        preview_url: listed?.preview_url ?? null,
+        // A catalogue that knows it can speak a sample; otherwise none can.
+        custom: !listed,
+      });
+    }
   }
   return [...first, ...rest];
 }

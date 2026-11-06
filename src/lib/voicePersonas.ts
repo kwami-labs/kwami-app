@@ -40,8 +40,11 @@ export type VoiceGender = 'male' | 'female';
  * audio on the agent: about 1.3 s on the standard pipeline with a fast ear,
  * about 2 s on either realtime model.
  *
+ * - livekit: voices designed in LiveKit Cloud ("v_" ids), served through LiveKit
+ *   Inference on Cartesia Sonic 3.5 -- no key of our own, billed to the project.
+ *   Jarvis's main voice since 2026-11-06 (0.6-1.2 s to first audio from here);
  * - elevenlabs: Flash v2.5, the fastest TTS (0.24 s to first audio);
- * - cartesia: Sonic 3.5, a designed voice of its own and Spanish ones (0.44 s);
+ * - cartesia: Sonic 3.5 with Cartesia's own Spanish voices (0.44 s);
  * - deepgram: Aura 2, whose Spanish voices are models (0.74 s);
  * - openai-tts: tts-1, about 1 s;
  * - gemini-tts: the sound the user chose on 2026-10-09 -- but a free-tier key
@@ -50,6 +53,7 @@ export type VoiceGender = 'male' | 'female';
  *   only engines that can see the camera or a shared screen.
  */
 export type VoiceEngine =
+  | 'livekit'
   | 'elevenlabs'
   | 'cartesia'
   | 'deepgram'
@@ -59,6 +63,7 @@ export type VoiceEngine =
   | 'openai-realtime';
 
 export const VOICE_ENGINES: readonly VoiceEngine[] = [
+  'livekit',
   'elevenlabs',
   'cartesia',
   'deepgram',
@@ -81,6 +86,9 @@ export interface EngineSpec {
 }
 
 export const ENGINE_SPECS: Record<VoiceEngine, EngineSpec> = {
+  // The agent sends a Cartesia "v_" voice through LiveKit Inference, so a LiveKit
+  // voice travels as Cartesia: an agent that predates this engine still speaks it.
+  livekit: { kind: 'standard', provider: 'cartesia', model: 'sonic-3.5', readsDirection: false },
   elevenlabs: {
     kind: 'standard',
     provider: 'elevenlabs',
@@ -147,11 +155,29 @@ export const GEMINI_STANDARD = {
 } as const;
 
 /**
- * Jarvis on the standard pipeline (2026-10-19): Gemini listens and thinks,
- * ElevenLabs speaks. Flash v2.5 was the fastest TTS measured (0.19 s to first
- * audio) and is billed per use; Gemini TTS on a free-tier key allows ten
- * requests a day, and a spent quota leaves Jarvis mute. The voice is the one
- * designed for him, Cine: a deep, controlled, cinematic butler.
+ * A voice designed in LiveKit Cloud: "v_" and letters. LiveKit lists no API for
+ * them, so the app knows them by id (the characters' own, and the ones the user
+ * adds); the agent serves them through LiveKit Inference.
+ */
+const LIVEKIT_VOICE_ID = /^v_[A-Za-z0-9]{6,40}$/;
+export const isLiveKitVoice = (voice: string) => LIVEKIT_VOICE_ID.test(voice.trim());
+
+/** A voice of the user's own, designed in LiveKit Cloud and added by id. */
+export interface LiveKitCustomVoice {
+  id: string;
+  name: string;
+}
+
+/**
+ * Jarvis's main voice (the user's choice, 2026-11-06): the one they designed in
+ * LiveKit Cloud on Cartesia Sonic 3.5. It needs no key of ours -- LiveKit
+ * Inference bills the project -- so it speaks on every deployment.
+ */
+export const JARVIS_LIVEKIT_VOICE = 'v_ZMPWZvfoRpsC';
+export const LIVEKIT_TTS = { provider: 'cartesia', model: 'sonic-3.5' } as const;
+/**
+ * Cine, designed for him on ElevenLabs: a deep, controlled, cinematic butler.
+ * His voice on ElevenLabs, and the main one until 2026-11-06.
  */
 export const JARVIS_ELEVENLABS_VOICE = 'hJ8c5S51sAyQqz7QaCFy';
 export const ELEVENLABS_TTS = { provider: 'elevenlabs', model: 'eleven_flash_v2_5' } as const;
@@ -161,7 +187,7 @@ export const JARVIS_STANDARD = {
   // to the first token, measured with ~120 tools. It answers through the API key:
   // a call's turns need streaming and tools, which the PC's account does not give.
   llm: CLAUDE_VOICE_LLM,
-  tts: { ...ELEVENLABS_TTS, voice: JARVIS_ELEVENLABS_VOICE },
+  tts: { ...LIVEKIT_TTS, voice: JARVIS_LIVEKIT_VOICE },
 } as const;
 
 /** A provider's voice by its id, with the name the panel shows. */
@@ -182,6 +208,8 @@ export interface VoicePersona {
   alternatives: string[];
   /** Direction for the realtime model, in the language it will speak. */
   style: string;
+  /** Voices designed for the character in LiveKit Cloud ("v_" ids); may be empty. */
+  livekit: readonly EngineVoice[];
   /** ElevenLabs voices for the character, designed then stock; the first is the suggested one. */
   elevenlabs: readonly EngineVoice[];
   /** Voices on the other engines, suggested first (Spanish ones where they exist). */
@@ -205,6 +233,8 @@ export const VOICE_PERSONAS: readonly VoicePersona[] = [
     provider: 'google',
     voice: 'Charon',
     alternatives: ['Orus', 'Iapetus', 'Algieba'],
+    // His main voice: designed by the user in LiveKit Cloud on Cartesia Sonic 3.5.
+    livekit: [{ id: JARVIS_LIVEKIT_VOICE, name: 'Sonic-3.5' }],
     // Measured in Spanish on Flash v2.5. Designed for Jarvis with Voice Design
     // from his designPrompt, aimed at a deeper, cinematic butler register: Cine
     // 97 Hz with a very flat, controlled contour; Grave 115 Hz with more presence;
@@ -225,12 +255,10 @@ export const VOICE_PERSONAS: readonly VoicePersona[] = [
       { id: 'onwK4e9ZLuTAKqWW03F9', name: 'Daniel' },
       { id: 'nPczCjzI2devNBz1zQrb', name: 'Brian' },
     ],
-    // Sonic-3.5 is Jarvis's own voice, designed in Cartesia Sonic 3.5 and served
-    // through LiveKit Inference (a "v_" id, not a UUID). Marcos and Gonzalo are
-    // Cartesia's own Spanish (Spain) male voices, calm and warmer. Deepgram's
-    // Spanish Aura voice for a man is Néstor.
+    // Marcos and Gonzalo are Cartesia's own Spanish (Spain) male voices, calm and
+    // warmer; his designed Sonic voice is on the LiveKit engine. Deepgram's Spanish
+    // Aura voice for a man is Néstor.
     cartesia: [
-      { id: 'v_ZMPWZvfoRpsC', name: 'Sonic-3.5' },
       { id: '13ff5deb-2591-42ad-a356-63a04e524411', name: 'Marcos' },
       { id: '58e531e3-b212-49df-adee-c335a19c2429', name: 'Gonzalo' },
     ],
@@ -287,6 +315,8 @@ export const VOICE_PERSONAS: readonly VoicePersona[] = [
     provider: 'google',
     voice: 'Aoede',
     alternatives: ['Kore', 'Sulafat', 'Despina'],
+    // None designed yet: the LiveKit engine offers her the voices the user adds.
+    livekit: [],
     // Irlandesa, designed: 185 Hz, soft with a light lilt. Serena, designed: 167 Hz,
     // lower and flatter. Of the stock ones: Jessica young, bright and warm (205 Hz); Alice
     // the most melodic and quickest, Sarah bright, Lily velvety.
@@ -375,6 +405,11 @@ export function voiceSampleUrl(
     case 'gemini-tts':
     case 'gemini-live':
       return sampleUrl(persona.id, voice);
+    case 'livekit':
+      // Only the character's own LiveKit voices have a take; one the user added has none.
+      return persona.livekit.some((v) => v.id === voice)
+        ? engineSampleUrl(persona.id, engine, voiceLabel(voice))
+        : null;
     case 'elevenlabs':
     case 'cartesia':
     case 'deepgram':
@@ -392,6 +427,8 @@ export function engineVoices(
   engine: VoiceEngine,
 ): readonly EngineVoice[] | null {
   switch (engine) {
+    case 'livekit':
+      return persona.livekit;
     case 'elevenlabs':
       return persona.elevenlabs;
     case 'cartesia':
@@ -414,20 +451,30 @@ export const TTS_ENGINE_BY_PROVIDER: Record<string, VoiceEngine> = {
   openai: 'openai-tts',
 };
 
-/** The engine a voice config is on, as the character panel sees it. */
+/**
+ * The engine a voice config is on, as the character panel sees it. A LiveKit
+ * voice travels as Cartesia, so its "v_" id is what tells the two apart.
+ */
 export function voiceEngine(
   pipelineMode: string,
   ttsProvider: string,
   realtimeProvider = 'google',
+  ttsVoice = '',
 ): VoiceEngine {
   if (pipelineMode === 'realtime') {
     return realtimeProvider === 'openai' ? 'openai-realtime' : 'gemini-live';
   }
+  if (ttsProvider === 'cartesia' && isLiveKitVoice(ttsVoice)) return 'livekit';
   return TTS_ENGINE_BY_PROVIDER[ttsProvider] ?? 'gemini-tts';
 }
 
-/** The voice a persona speaks with on an engine: its suggested one there. */
+/**
+ * The voice a persona speaks with on an engine: its suggested one there. On
+ * LiveKit a character may have none of its own (empty string): the panel then
+ * offers the voices the user added.
+ */
 export function personaVoice(persona: VoicePersona, engine: VoiceEngine): string {
+  if (engine === 'livekit') return persona.livekit[0]?.id ?? '';
   return engineVoices(persona, engine)?.[0]?.id ?? persona.voice;
 }
 
@@ -450,10 +497,11 @@ export function ttsFor(
   return { provider: spec.provider, model: spec.model, voice };
 }
 
-/** A voice id as the panel shows it: provider ids by their name. */
-export function voiceLabel(voice: string): string {
+/** A voice id as the panel shows it: provider ids by their name, the user's LiveKit ones too. */
+export function voiceLabel(voice: string, custom: readonly LiveKitCustomVoice[] = []): string {
   for (const persona of VOICE_PERSONAS) {
     for (const list of [
+      persona.livekit,
       persona.elevenlabs,
       persona.cartesia,
       persona.deepgram,
@@ -464,7 +512,7 @@ export function voiceLabel(voice: string): string {
       if (match) return match.name;
     }
   }
-  return voice;
+  return custom.find((v) => v.id === voice)?.name || voice;
 }
 
 /**
@@ -497,7 +545,11 @@ export function voiceLock(
   return { persona: activePersona(active.voice, active.style ?? ''), voice: active.voice };
 }
 
-/** The persona whose voice and style are both in use, if any. */
+/**
+ * The persona whose voice and style are both in use, if any. A LiveKit voice the
+ * user added counts as the character whose direction it speaks under: it was
+ * picked from that character's card.
+ */
 export function activePersona(voice: string, style: string): VoicePersona | null {
   return (
     VOICE_PERSONAS.find(
@@ -505,11 +557,32 @@ export function activePersona(voice: string, style: string): VoicePersona | null
         p.style === style &&
         (p.voice === voice ||
           p.alternatives.includes(voice) ||
-          [p.elevenlabs, p.cartesia, p.deepgram, p.openai, p.openaiRealtime].some((list) =>
-            list.some((v) => v.id === voice),
+          isLiveKitVoice(voice) ||
+          [p.livekit, p.elevenlabs, p.cartesia, p.deepgram, p.openai, p.openaiRealtime].some(
+            (list) => list.some((v) => v.id === voice),
           )),
     ) ?? null
   );
+}
+
+/**
+ * A LiveKit voice id the user typed, cleaned and checked: the id, or null when it
+ * is not a "v_" voice. The name defaults to the id.
+ */
+export function parseLiveKitVoice(id: string, name = ''): LiveKitCustomVoice | null {
+  const clean = id.trim();
+  if (!isLiveKitVoice(clean)) return null;
+  return { id: clean, name: name.trim().slice(0, 40) || clean };
+}
+
+/** The user's LiveKit voices with one added (or renamed), the characters' own left out. */
+export function withLiveKitVoice(
+  voices: readonly LiveKitCustomVoice[],
+  voice: LiveKitCustomVoice,
+): LiveKitCustomVoice[] {
+  if (VOICE_PERSONAS.some((p) => p.livekit.some((v) => v.id === voice.id))) return [...voices];
+  const rest = voices.filter((v) => v.id !== voice.id);
+  return [...rest, voice];
 }
 
 /** Gemini's own one-word character for each voice, in Spanish for the panel. */

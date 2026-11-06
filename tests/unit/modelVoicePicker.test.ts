@@ -117,6 +117,39 @@ describe('the characters among the voices', () => {
     expect(withCharacterVoices('realtime', 'google', [], false)[0].id).toBe('Charon');
     expect(withCharacterVoices('realtime', 'openai', [], false).length).toBeGreaterThan(0);
   });
+
+  it("puts the LiveKit voices first on Cartesia: Jarvis's, then the user's", () => {
+    const custom = [{ id: 'v_Mine12345', name: 'Mía' }];
+    const list = withCharacterVoices('tts', 'cartesia', [v('a')], false, custom);
+    expect(list[0]).toMatchObject({
+      id: 'v_ZMPWZvfoRpsC',
+      name: 'Sonic-3.5',
+      category: 'LiveKit',
+      character: 'Jarvis',
+      suggested: true,
+      preview_url: '/voices/jarvis-livekit-sonic-3.5.wav',
+    });
+    const mine = list.find((x) => x.id === 'v_Mine12345')!;
+    expect(mine).toMatchObject({ name: 'Mía', category: 'LiveKit', custom: true });
+    expect(mine.character).toBeUndefined();
+    // No catalogue knows it: nothing can speak a sample, so none is offered.
+    expect(canHear('cartesia', mine)).toBe(false);
+    expect(list.at(-1)!.id).toBe('a');
+    // The user's voices are Cartesia's only.
+    expect(withCharacterVoices('tts', 'elevenlabs', [], false, custom).some((x) => x.custom)).toBe(
+      false,
+    );
+  });
+
+  it('keeps a LiveKit voice the catalogue lists once, with what it says of it', () => {
+    const custom = [{ id: 'v_Mine12345', name: 'Mía' }];
+    const listed = v('v_Mine12345', { name: 'Del catálogo', language: 'es-ES' });
+    const list = withCharacterVoices('tts', 'cartesia', [listed], false, custom);
+    expect(list.filter((x) => x.id === 'v_Mine12345')).toHaveLength(1);
+    const mine = list.find((x) => x.id === 'v_Mine12345')!;
+    expect(mine).toMatchObject({ name: 'Mía', language: 'es-ES', custom: false });
+    expect(canHear('cartesia', mine)).toBe(true);
+  });
 });
 
 describe('finding a voice', () => {

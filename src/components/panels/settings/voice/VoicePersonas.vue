@@ -17,12 +17,14 @@ import {
   activePersona,
   isRealtimeEngine,
   liveSampleUrl,
+  parseLiveKitVoice,
   personaVoice,
   personaVoices,
   ttsFor,
   voiceEngine,
   voiceLabel,
   voiceSampleUrl,
+  withLiveKitVoice,
   type VoiceEngine,
   type VoicePersona,
 } from '@/lib/voicePersonas';
@@ -43,11 +45,11 @@ import { useAgentVideo } from '@/composables/useAgentVideo';
  */
 const { t, locale } = useI18n();
 const voiceStore = useVoiceStore();
-const { realtime, tts, pipelineMode, brainStatus } = storeToRefs(voiceStore);
+const { realtime, tts, pipelineMode, brainStatus, modelsUI } = storeToRefs(voiceStore);
 const { kwami, isConnected } = useKwami();
 
 const engine = computed<VoiceEngine>(() =>
-  voiceEngine(pipelineMode.value, tts.value.provider, realtime.value.provider),
+  voiceEngine(pipelineMode.value, tts.value.provider, realtime.value.provider, tts.value.voice),
 );
 const realtimeEngine = computed(() => isRealtimeEngine(engine.value));
 const activeVoice = computed(() => (realtimeEngine.value ? realtime.value.voice : tts.value.voice));
@@ -61,13 +63,60 @@ const current = computed(() =>
   onCharacterProvider.value ? activePersona(activeVoice.value, activeStyle.value) : null,
 );
 
-/** An engine whose provider the agent reported without a key cannot be picked. */
+/**
+ * An engine whose provider the agent reported without a key cannot be picked.
+ * LiveKit needs none: Inference bills the project.
+ */
 function engineHasKey(next: VoiceEngine): boolean {
+  if (next === 'livekit') return true;
   const spec = ENGINE_SPECS[next];
   const stage = spec.kind === 'realtime' ? 'realtime' : 'tts';
   return voiceProviderHasKey(brainStatus.value, stage, spec.provider);
 }
+
+// -- LiveKit voices -------------------------------------------------------------------
+
+/** The voices the user designed in LiveKit Cloud and added here, by id. */
+const customVoices = computed(() => modelsUI.value.livekitVoices ?? []);
+
+/** A character's LiveKit voice: its own, else the first the user added; '' when none. */
+function liveKitVoiceFor(persona: VoicePersona): string {
+  return personaVoice(persona, 'livekit') || customVoices.value[0]?.id || '';
+}
+
+/** Whether an engine can speak for the character in use (LiveKit: one voice at least). */
+function engineUsable(next: VoiceEngine): boolean {
+  if (!engineHasKey(next)) return false;
+  return next !== 'livekit' || liveKitVoiceFor(current.value ?? VOICE_PERSONAS[0]!) !== '';
+}
+
+function engineHint(next: VoiceEngine): string {
+  if (!engineHasKey(next)) return t('brainPanel.noKey');
+  if (!engineUsable(next)) return t('voicePersonas.livekitNoVoice');
+  return t(ENGINE_LABELS[next][1]);
+}
+
+const newVoiceId = ref('');
+const newVoiceName = ref('');
+const newVoiceError = ref(false);
+
+function addCustomVoice() {
+  const voice = parseLiveKitVoice(newVoiceId.value, newVoiceName.value);
+  newVoiceError.value = voice === null;
+  if (!voice) return;
+  modelsUI.value.livekitVoices = withLiveKitVoice(customVoices.value, voice);
+  newVoiceId.value = '';
+  newVoiceName.value = '';
+}
+
+function removeCustomVoice(id: string) {
+  modelsUI.value.livekitVoices = customVoices.value.filter((v) => v.id !== id);
+}
+
+const label = (voice: string) => voiceLabel(voice, customVoices.value);
+
 const ENGINE_LABELS: Record<VoiceEngine, [string, string]> = {
+  livekit: ['voicePersonas.engineLivekit', 'voicePersonas.engineLivekitHint'],
   elevenlabs: ['voicePersonas.engineElevenlabs', 'voicePersonas.engineElevenlabsHint'],
   cartesia: ['voicePersonas.engineCartesia', 'voicePersonas.engineCartesiaHint'],
   deepgram: ['voicePersonas.engineDeepgram', 'voicePersonas.engineDeepgramHint'],
@@ -104,8 +153,13 @@ watch(
  */
 const locked = computed(() => activeStyle.value.trim() !== '');
 const isOn = (p: VoicePersona) => !locked.value || current.value?.id === p.id;
-const voicesOf = (p: VoicePersona) =>
-  locked.value ? [activeVoice.value] : personaVoices(p, engine.value);
+function voicesOf(p: VoicePersona): string[] {
+  if (locked.value) return [activeVoice.value];
+  const own = personaVoices(p, engine.value);
+  if (engine.value !== 'livekit') return own;
+  // On LiveKit every character can also speak with the voices the user added.
+  return [...own, ...customVoices.value.map((v) => v.id).filter((id) => !own.includes(id))];
+}
 const showDesign = ref<string | null>(null);
 const copied = ref<string | null>(null);
 
@@ -235,25 +289,42 @@ function geminiVoiceOf(persona: VoicePersona | null): string {
   return [persona.voice, ...persona.alternatives].includes(kept) ? kept : persona.voice;
 }
 
-function apply(persona: VoicePersona, voice = personaVoice(persona, engine.value)) {
-  cancelDraft();
-  if (usesGeminiVoice(engine.value)) {
-    setVoices(voice, voice, persona.style, engine.value);
-  } else {
-    setVoices(geminiVoiceOf(persona), voice, persona.style, engine.value);
+/** The voice a character takes on an engine when none is picked. */
+function defaultVoice(persona: VoicePersona, on: VoiceEngine): string {
+  return on === 'livekit' ? liveKitVoiceFor(persona) : personaVoice(persona, on);
+}
+
+/** Where a character with no LiveKit voice speaks instead: the first engine with a key. */
+const FALLBACK_ENGINES: readonly VoiceEngine[] = ['elevenlabs', 'cartesia', 'deepgram'];
+
+function apply(persona: VoicePersona, voice?: string) {
+  const from = engine.value;
+  let on = from;
+  let chosen = voice ?? defaultVoice(persona, on);
+  if (!chosen) {
+    // A character with no LiveKit voice, and none added: it keeps its own voice
+    // on another engine rather than nothing happening.
+    on = FALLBACK_ENGINES.find(engineHasKey) ?? 'gemini-tts';
+    chosen = defaultVoice(persona, on);
   }
-  pushToAgent(false);
+  cancelDraft();
+  if (usesGeminiVoice(on)) {
+    setVoices(chosen, chosen, persona.style, on);
+  } else {
+    setVoices(geminiVoiceOf(persona), chosen, persona.style, on);
+  }
+  pushToAgent(on !== from);
 }
 
 function setEngine(next: VoiceEngine) {
-  if (next === engine.value || !engineHasKey(next)) return;
+  if (next === engine.value || !engineUsable(next)) return;
   cancelDraft();
   // The character travels with the switch.
   const persona = current.value;
   const geminiVoice = geminiVoiceOf(persona);
   const engineVoice = usesGeminiVoice(next)
     ? geminiVoice
-    : personaVoice(persona ?? VOICE_PERSONAS[0]!, next);
+    : defaultVoice(persona ?? VOICE_PERSONAS[0]!, next);
   const hybrid = pipelineMode.value === 'hybrid';
   setVoices(geminiVoice, engineVoice, activeStyle.value, next);
   if (isRealtimeEngine(next)) {
@@ -324,15 +395,65 @@ const summary = (p: VoicePersona) => (locale.value.startsWith('es') ? p.summary.
             :key="e"
             class="engine-btn"
             :class="{ on: engine === e }"
-            :disabled="engine !== e && !engineHasKey(e)"
-            :title="engineHasKey(e) ? undefined : t('brainPanel.noKey')"
+            :disabled="engine !== e && !engineUsable(e)"
+            :title="engineUsable(e) ? undefined : engineHint(e)"
             @click="setEngine(e)"
           >
             <strong>{{ t(ENGINE_LABELS[e][0]) }}</strong>
-            <span>{{ engineHasKey(e) ? t(ENGINE_LABELS[e][1]) : t('brainPanel.noKey') }}</span>
+            <span>{{ engineHint(e) }}</span>
           </button>
         </div>
       </template>
+      <!-- Voices designed in LiveKit Cloud: LiveKit lists none, so they are added by id. -->
+      <section class="livekit" aria-labelledby="livekit-voices-title">
+        <span id="livekit-voices-title" class="option-label">{{
+          t('voicePersonas.livekitTitle')
+        }}</span>
+        <p class="hint small">{{ t('voicePersonas.livekitHint') }}</p>
+        <ul class="livekit-list">
+          <li v-for="p in VOICE_PERSONAS.filter((x) => x.livekit.length)" :key="p.id">
+            <span v-for="v in p.livekit" :key="v.id" class="livekit-voice">
+              <strong>{{ v.name }}</strong>
+              <code>{{ v.id }}</code>
+              <span class="hint small">{{ p.name }}</span>
+            </span>
+          </li>
+          <li v-for="v in customVoices" :key="v.id" class="livekit-voice">
+            <strong>{{ v.name }}</strong>
+            <code>{{ v.id }}</code>
+            <button
+              class="link"
+              :aria-label="t('voicePersonas.livekitRemove', { voice: v.name })"
+              @click="removeCustomVoice(v.id)"
+            >
+              {{ t('voicePersonas.livekitRemoveShort') }}
+            </button>
+          </li>
+        </ul>
+        <form class="livekit-add" @submit.prevent="addCustomVoice">
+          <input
+            v-model="newVoiceId"
+            :aria-label="t('voicePersonas.livekitId')"
+            :placeholder="t('voicePersonas.livekitId')"
+            :aria-invalid="newVoiceError"
+            autocomplete="off"
+            spellcheck="false"
+            @input="newVoiceError = false"
+          />
+          <input
+            v-model="newVoiceName"
+            :aria-label="t('voicePersonas.livekitName')"
+            :placeholder="t('voicePersonas.livekitName')"
+            maxlength="40"
+          />
+          <BaseButton size="sm" icon="ph:plus-bold" type="submit">{{
+            t('voicePersonas.livekitAdd')
+          }}</BaseButton>
+        </form>
+        <span v-if="newVoiceError" class="hint small error">{{
+          t('voicePersonas.livekitInvalid')
+        }}</span>
+      </section>
       <!-- Multimodal: what the realtime model sees, while connected. -->
       <div v-if="realtimeEngine" class="vision">
         <span class="hint small">{{ t('voicePersonas.visionHint') }}</span>
@@ -405,16 +526,19 @@ const summary = (p: VoicePersona) => (locale.value.startsWith('es') ? p.summary.
             <button
               v-if="sampleOf(p, v)"
               class="play"
-              :aria-label="t('voicePersonas.listen', { voice: voiceLabel(v) })"
+              :aria-label="t('voicePersonas.listen', { voice: label(v) })"
               @click="play(p, v)"
             >
               <iconify-icon :icon="playing === `${p.id}-${v}` ? 'ph:stop-fill' : 'ph:play-fill'" />
             </button>
             <button class="pick" :disabled="locked" @click="apply(p, v)">
-              {{ voiceLabel(v)
-              }}<span v-if="v === personaVoice(p, engine) && !locked" class="suggested"> ★</span>
+              {{ label(v)
+              }}<span v-if="v === defaultVoice(p, engine) && !locked" class="suggested"> ★</span>
             </button>
           </div>
+          <span v-if="!voicesOf(p).length" class="hint small">{{
+            t('voicePersonas.livekitNoVoice')
+          }}</span>
         </div>
 
         <details class="style">
@@ -708,5 +832,54 @@ textarea {
   color: var(--accent-primary);
   font-size: 11px;
   cursor: pointer;
+}
+.livekit {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 10px;
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+.livekit-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.livekit-voice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 12px;
+}
+.livekit-voice code {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.livekit-add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.livekit-add input {
+  flex: 1 1 120px;
+  min-width: 0;
+  padding: 6px 10px;
+  background: var(--surface-1, var(--surface-2));
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-family: inherit;
+  outline: none;
+}
+.livekit-add input[aria-invalid='true'] {
+  border-color: var(--danger, #e5484d);
 }
 </style>
