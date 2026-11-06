@@ -10,7 +10,10 @@ Vue composables under [`src/composables/`](../../src/composables/).
 | `useKwamiConfigSync` | Build / apply / save / revert workspace snapshots |
 | `useKwamiConfigWatchers` | Draft watcher + apply-on-switch (mounted from `App.vue`) |
 | `useKwamiActions` | Create / rename / delete companions + memory purge |
-| `useWorkspaceAgentTools` | Register client tools the LiveKit agent can call |
+| `useWorkspaceAgentTools` | Register the app's client tools, as one batch, filed by group |
+| `useUserToolRegistration` | Register the user's webhook tools, ahead of the app's |
+| `useMcpServers` | Connect the kwami's MCP servers and register their tools |
+| `useToolInventorySync` | Keep the agent's `tool_inventory` report in its store |
 | `useSceneBackground` | Push scene store onto the SDK scene |
 | `useAvatarInteractions` | Click / drag / hover → SDK + events |
 
@@ -63,3 +66,8 @@ Catalog helpers: [`src/lib/catalogResource.ts`](../../src/lib/catalogResource.ts
 | `src/lib/supabase.ts` | Supabase JS client |
 | `src/lib/userAppSettings.ts` | Locale load/save |
 | `src/lib/catalogResource.ts` | Cached catalogue GETs |
+| `src/lib/toolRegistration.ts` | `registerToolBatch`, tool groups, `moveToolsToFront` |
+| `src/lib/userTools.ts` | Webhook tool checks, schema, request building, handler |
+| `src/lib/mcpClient.ts` | MCP over Streamable HTTP; schema reduction; exposed names |
+| `src/lib/mcpServers.ts` | Saved MCP servers; keys kept on the device |
+| `src/lib/toolSchema.ts` | Parameter rows from either schema shape |
