@@ -85,3 +85,23 @@ export function registerToolBatch(
     }
   }
 }
+
+/**
+ * Re-insert every other tool after `names`, so `names` lead the registry.
+ *
+ * The agent sends the model at most 128 tools and, when the app's ~100 plus its
+ * own built-ins go over, cuts from the tail -- where anything registered after
+ * the app's always landed. Tools the user chose to add go first instead.
+ *
+ * The registry is a Map: re-setting a key keeps its slot, so the only way to
+ * reorder is to take the others out and put them back. Each entry keeps its
+ * handler; the agent's dispatch table is keyed by name and untouched.
+ */
+export function moveToolsToFront(live: Kwami, names: ReadonlySet<string>): void {
+  if (!names.size) return;
+  for (const tool of live.tools.getAll()) {
+    if (names.has(tool.name)) continue;
+    live.tools.unregister(tool.name);
+    live.tools.register(tool);
+  }
+}

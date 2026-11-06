@@ -33,7 +33,7 @@ describe('kwami config and user tools', () => {
   it('puts the tools in the saved config', () => {
     useUserToolsStore().save(weather);
     const config = useKwamiConfigSync().getConfig();
-    expect(config.tools).toEqual({ webhooks: [weather] });
+    expect(config.tools).toEqual({ webhooks: [weather], mcpServers: [] });
     // Plain JSON: the row is written as-is to user_kwamis.config.
     expect(JSON.parse(JSON.stringify(config.tools))).toEqual(config.tools);
   });

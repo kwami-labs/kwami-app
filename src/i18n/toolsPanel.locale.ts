@@ -204,6 +204,51 @@ export const toolsPanelEn = {
       copy: 'Copy result',
       copied: 'Result copied',
     },
+    mcp: {
+      intro:
+        'Connect MCP (Model Context Protocol) servers over HTTP. Their tools join the catalog with the server name in front, and the agent can use them.',
+      examples: 'Try one',
+      exampleDeepwiki: 'Ask about any public GitHub repository',
+      exampleGitmcp: 'Documentation of any GitHub project',
+      add: 'Add a server',
+      name: 'Name',
+      namePlaceholder: 'deepwiki',
+      url: 'Server address',
+      urlHint:
+        'The Streamable HTTP endpoint, often ending in /mcp. It must accept calls from this app (CORS).',
+      key: 'API key (optional)',
+      keyHint: 'Sent as a Bearer token. It is never saved with the kwami.',
+      remember: 'Remember the key on this device',
+      connect: 'Connect',
+      connecting: 'Connecting…',
+      connected: 'Connected',
+      failed: 'Not connected',
+      empty: 'No servers yet. Add one below or start from an example.',
+      toolCount: 'no tools | 1 tool | {n} tools',
+      enabledCount: '{enabled} of {total} active',
+      showTools: 'Choose tools',
+      hideTools: 'Hide tools',
+      reconnect: 'Reconnect',
+      remove: 'Remove',
+      removeConfirm: 'Remove the server "{name}"? Its tools stop being available to the agent.',
+      saved: 'Connected to {name}: {count} tools. Save the kwami to keep it.',
+      setKey: 'Use this key',
+      issues: {
+        nameRequired: 'Give the server a short name (40 characters at most).',
+        nameTaken: 'A server with this name is already added.',
+        urlInvalid: 'Enter a full http(s) address.',
+        urlInsecure: 'Use https: the key and the arguments would travel unencrypted.',
+      },
+      errors: {
+        network:
+          'Could not reach the server. It may be down, or it may not accept calls from this app (CORS).',
+        unauthorized: 'The server wants a key, or does not accept this one.',
+        legacy:
+          'This address does not answer the Streamable HTTP transport. Older servers use /sse; look for an address ending in /mcp.',
+        timeout: 'The server did not answer in time.',
+        other: 'The server answered with an error: {message}',
+      },
+    },
     templates: {
       weather: {
         label: 'Current weather',
@@ -365,6 +410,52 @@ export const toolsPanelEs: typeof toolsPanelEn = {
       duration: '{ms} ms',
       copy: 'Copiar resultado',
       copied: 'Resultado copiado',
+    },
+    mcp: {
+      intro:
+        'Conecta servidores MCP (Model Context Protocol) por HTTP. Sus herramientas se suman al catálogo con el nombre del servidor delante y el agente puede usarlas.',
+      examples: 'Prueba uno',
+      exampleDeepwiki: 'Pregunta por cualquier repositorio público de GitHub',
+      exampleGitmcp: 'Documentación de cualquier proyecto de GitHub',
+      add: 'Añadir un servidor',
+      name: 'Nombre',
+      namePlaceholder: 'deepwiki',
+      url: 'Dirección del servidor',
+      urlHint:
+        'El punto de acceso Streamable HTTP, que suele acabar en /mcp. Debe aceptar llamadas desde esta app (CORS).',
+      key: 'Clave de API (opcional)',
+      keyHint: 'Se envía como token Bearer. Nunca se guarda con el kwami.',
+      remember: 'Recordar la clave en este dispositivo',
+      connect: 'Conectar',
+      connecting: 'Conectando…',
+      connected: 'Conectado',
+      failed: 'Sin conexión',
+      empty: 'Aún no hay servidores. Añade uno abajo o empieza con un ejemplo.',
+      toolCount: 'sin herramientas | 1 herramienta | {n} herramientas',
+      enabledCount: '{enabled} de {total} activas',
+      showTools: 'Elegir herramientas',
+      hideTools: 'Ocultar herramientas',
+      reconnect: 'Reconectar',
+      remove: 'Quitar',
+      removeConfirm:
+        '¿Quitar el servidor «{name}»? Sus herramientas dejarán de estar disponibles para el agente.',
+      saved: 'Conectado a «{name}»: {count} herramientas. Guarda el kwami para conservarlo.',
+      setKey: 'Usar esta clave',
+      issues: {
+        nameRequired: 'Ponle al servidor un nombre corto (40 caracteres como máximo).',
+        nameTaken: 'Ya hay un servidor con este nombre.',
+        urlInvalid: 'Escribe una dirección http(s) completa.',
+        urlInsecure: 'Usa https: la clave y los argumentos viajarían sin cifrar.',
+      },
+      errors: {
+        network:
+          'No se pudo llegar al servidor. Puede estar caído o no aceptar llamadas desde esta app (CORS).',
+        unauthorized: 'El servidor pide una clave o no acepta esta.',
+        legacy:
+          'Esta dirección no responde al transporte Streamable HTTP. Los servidores antiguos usan /sse; busca una dirección que acabe en /mcp.',
+        timeout: 'El servidor no respondió a tiempo.',
+        other: 'El servidor respondió con un error: {message}',
+      },
     },
     templates: {
       weather: {
