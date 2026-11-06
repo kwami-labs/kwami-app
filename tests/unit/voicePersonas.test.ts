@@ -59,7 +59,7 @@ describe('voice personas', () => {
 
   it('gives each character its designed ElevenLabs voices first, then the stock ones', () => {
     const [jarvis, friday] = VOICE_PERSONAS;
-    expect(jarvis.elevenlabs[0]).toEqual({ id: JARVIS_ELEVENLABS_VOICE, name: 'Británico' });
+    expect(jarvis.elevenlabs[0]).toEqual({ id: JARVIS_ELEVENLABS_VOICE, name: 'Cine' });
     expect(friday.elevenlabs[0]!.name).toBe('Irlandesa');
     // ElevenLabs ids are 20 characters: the agent refuses shorter ones.
     for (const p of VOICE_PERSONAS) for (const v of p.elevenlabs) expect(v.id).toHaveLength(20);
@@ -196,7 +196,7 @@ describe('voice personas section', () => {
     });
     expect(store.realtime).toMatchObject({ provider: 'google', voice: 'Charon' });
     expect(wrapper.findAll('.persona')[0].classes()).toContain('active');
-    expect(wrapper.find('.pick').text()).toBe('Británico');
+    expect(wrapper.find('.pick').text()).toBe('Cine');
 
     // Friday on ElevenLabs speaks with her own voice there.
     const switchTo = wrapper
@@ -271,7 +271,11 @@ describe('voice personas section', () => {
     await wrapper.vm.$nextTick();
     const jarvis = wrapper.findAll('.persona')[0];
     expect(jarvis.findAll('.pick').map((b) => b.text())).toEqual([
-      'Británico ★',
+      'Cine ★',
+      'Grave',
+      'Sobrio',
+      'Claro',
+      'Británico',
       'Seco',
       'George',
       'Roger',
@@ -280,10 +284,10 @@ describe('voice personas section', () => {
     ]);
     await jarvis.findAll('.play')[3]!.trigger('click');
     expect(vi.mocked(globalThis.Audio).mock.calls[0][0]).toBe(
-      '/voices/jarvis-elevenlabs-roger.wav',
+      '/voices/jarvis-elevenlabs-claro.wav',
     );
     await jarvis.findAll('.pick')[3]!.trigger('click');
-    expect(store.tts.voice).toBe('CwhRBWXzGAHq8TQ4Fs17');
+    expect(store.tts.voice).toBe('TPiookPUZQ1R0cC2Enwe');
     expect(store.realtime.voice).toBe('Charon');
     vi.unstubAllGlobals();
   });
