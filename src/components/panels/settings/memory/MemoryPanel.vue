@@ -255,6 +255,8 @@ const entityTypeNames = [
   'Skill',
   'Goal',
   'Procedure',
+  'Task',
+  'Asset',
   'Pet',
   'Activity',
   'Attribute',

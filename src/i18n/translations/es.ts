@@ -1599,6 +1599,11 @@ export const es = {
     applyFailed: 'Aplicacion fallida: {message}',
     doneReport: 'Listo! {orphans} huerfanos eliminados, {merges} fusiones',
     noActionsSelected: 'Ninguna accion seleccionada',
+    orphansKept: '{n} conservados: ya tienen hechos.',
+    leftUntouched: '{n} sin tocar para no arriesgar hechos.',
+    differentTypes: 'tipos distintos',
+    differentTypesHint:
+      'Se parecen, pero son cosas de distinto tipo; no se fusionan salvo que lo marques.',
   },
   memoryOps: {
     reorganizeTitle: 'Reorganizar',
