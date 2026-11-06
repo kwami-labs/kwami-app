@@ -690,6 +690,8 @@ export const fr = {
     performance: 'Performance',
     preemptiveGeneration: 'Génération anticipée',
     preemptiveGenerationDesc: 'Commencer à générer la réponse avant la fin du tour',
+    thinkingSound: 'Son de réflexion',
+    thinkingSoundDesc: "Un léger bruit de clavier pendant que l'agent prépare sa réponse",
   },
   metrics: {
     title: 'Métriques',

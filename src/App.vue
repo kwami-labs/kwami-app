@@ -26,12 +26,14 @@ import { isBareShortcut, isEditableTarget } from '@/utils/keyboard';
 import { useWorkspaceAgentTools } from '@/composables/useWorkspaceAgentTools';
 import { useUserToolRegistration } from '@/composables/useUserToolRegistration';
 import { useMcpServers } from '@/composables/useMcpServers';
+import { useToolInventorySync } from '@/composables/useToolInventorySync';
 import { useAvatarStore } from '@/stores/avatar';
 import { useBlobXyzSync } from '@/composables/avatar/sync/useBlobXyzSync';
 import { useBlackHoleSync } from '@/composables/avatar/sync/useBlackHoleSync';
 import { useParticlesFaceSync } from '@/composables/avatar/sync/useParticlesFaceSync';
 import { useEyeIrisSync } from '@/composables/avatar/sync/useEyeIrisSync';
 import { useJarvisSync } from '@/composables/avatar/sync/useJarvisSync';
+import { useJarvisSignals } from '@/composables/avatar/useJarvisSignals';
 import { useBrainSync } from '@/composables/useBrainSync';
 import { randomizeAvatarPanel } from '@/composables/avatar/randomizeAvatarPanel';
 import { useBlobXyzStore } from '@/stores/avatar.blob-xyz';
@@ -183,6 +185,8 @@ useWorkspaceAgentTools();
 useUserToolRegistration();
 // And the MCP servers saved on it, connected again on every load.
 useMcpServers().startSync();
+// What the agent reports it offers the model, for the Tools panel's budget.
+useToolInventorySync();
 useUiLayoutSync();
 useBrowserFrames();
 
@@ -219,6 +223,10 @@ const { applyToKwami: applyJarvisToKwami } = useJarvisSync({
   kwami,
   getJarvis: () => kwami.value?.avatar.getJarvis() ?? undefined,
 });
+// The HUD acknowledges what the session does: link, messages, tool calls, failures, balance.
+const { syncStatus: syncJarvisStatus } = useJarvisSignals(
+  () => kwami.value?.avatar.getJarvis() ?? undefined,
+);
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 
@@ -309,6 +317,7 @@ function applySavedAvatarState() {
       break;
     case 'jarvis':
       applyJarvisToKwami();
+      syncJarvisStatus();
       break;
   }
 
@@ -470,6 +479,7 @@ function onGlobalKeydown(e: KeyboardEvent) {
       avatarStore.setRendererType('jarvis');
       switchRenderer('jarvis');
       applyJarvisToKwami();
+      syncJarvisStatus();
       avatarStore.saveSettings();
       break;
     case 'r':

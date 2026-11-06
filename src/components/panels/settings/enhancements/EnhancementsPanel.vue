@@ -32,7 +32,10 @@ onMounted(() => {
   try {
     const livekitVoice = kwami.value.agent.getConfig().livekit?.voice;
     if (livekitVoice?.enhancements) {
-      const e = livekitVoice.enhancements;
+      // thinkingSound is read by the agent but not yet typed in the SDK.
+      const e = livekitVoice.enhancements as typeof livekitVoice.enhancements & {
+        thinkingSound?: boolean;
+      };
       if (e.turnDetection) {
         turnDetection.enabled = e.turnDetection.enabled ?? turnDetection.enabled;
         // "manual" is no longer offered: nothing commits the user's turns.
@@ -61,6 +64,7 @@ onMounted(() => {
       if (e.autoGainControl !== undefined) audioProcessing.autoGainControl = e.autoGainControl;
       if (e.preemptiveGeneration !== undefined)
         performance.preemptiveGeneration = e.preemptiveGeneration;
+      if (e.thinkingSound !== undefined) performance.thinkingSound = e.thinkingSound;
     }
     if (livekitVoice?.vad) {
       const v = livekitVoice.vad;
@@ -88,7 +92,7 @@ function setVocabulary(text: string) {
 function applySettings() {
   if (!kwami.value) return;
 
-  const config: VoiceEnhancementsConfig & { vocabulary: string[] } = {
+  const config: VoiceEnhancementsConfig & { vocabulary: string[]; thinkingSound: boolean } = {
     vocabulary: enhancementsState.value.vocabulary,
     turnDetection: {
       enabled: turnDetection.enabled,
@@ -104,6 +108,7 @@ function applySettings() {
     echoCancellation: audioProcessing.echoCancellation,
     autoGainControl: audioProcessing.autoGainControl,
     preemptiveGeneration: performance.preemptiveGeneration,
+    thinkingSound: performance.thinkingSound,
   };
 
   const vadConfig: VADConfig = {
@@ -174,6 +179,7 @@ watch(() => audioProcessing.echoCancellation, debouncedApply);
 watch(() => audioProcessing.autoGainControl, debouncedApply);
 
 watch(() => performance.preemptiveGeneration, debouncedApply);
+watch(() => performance.thinkingSound, debouncedApply);
 </script>
 
 <template>
@@ -353,6 +359,13 @@ watch(() => performance.preemptiveGeneration, debouncedApply);
             <span class="desc">{{ t('enhancements.preemptiveGenerationDesc') }}</span>
           </div>
           <BaseToggle v-model="performance.preemptiveGeneration" />
+        </div>
+        <div class="row">
+          <div class="info">
+            <span class="label">{{ t('enhancements.thinkingSound') }}</span>
+            <span class="desc">{{ t('enhancements.thinkingSoundDesc') }}</span>
+          </div>
+          <BaseToggle v-model="performance.thinkingSound" />
         </div>
       </PanelSection>
     </div>

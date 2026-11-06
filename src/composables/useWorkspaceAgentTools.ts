@@ -48,6 +48,7 @@ import { useKwamiAdminAgentTools } from '@/composables/useKwamiAdminAgentTools';
 import { useWorkspaceExtrasAgentTools } from '@/composables/useWorkspaceExtrasAgentTools';
 import { registerToolBatch, type ToolBatchScope } from '@/lib/toolRegistration';
 import { useToolCatalogStore } from '@/stores/toolCatalog';
+import { useUserToolsStore } from '@/stores/userTools';
 import { soulPresets } from '@/presets/agent/soul-presets';
 import { sceneImagePresets } from '@/presets/scene/image-presets';
 import { sceneVideoPresets } from '@/presets/scene/video-presets';
@@ -261,6 +262,7 @@ export function useWorkspaceAgentTools() {
   const navigationStore = useNavigationStore();
   const workspaceStore = useWorkspaceStore();
   const toolCatalog = useToolCatalogStore();
+  const userTools = useUserToolsStore();
   const { switchToKwami } = useKwamiConfigSync();
   const { messages } = useTranscriptionState();
   const actionState = useAgentActionState();
@@ -2480,7 +2482,12 @@ export function useWorkspaceAgentTools() {
    * the Tools panel. Runs on every new instance and every language switch.
    */
   function registerTools(live: Kwami) {
-    registerToolBatch(live, registerInto, toolCatalog.record);
+    registerToolBatch(live, registerInto, toolCatalog.record, {
+      // Groups switched off in the Tools panel, to make room under the
+      // model's tool limit: filed for the panel, not offered to the agent.
+      skip: (group) => userTools.disabledGroups.includes(group),
+      onSkipped: toolCatalog.recordOff,
+    });
     toolCatalog.touch();
   }
 
@@ -3150,6 +3157,14 @@ export function useWorkspaceAgentTools() {
 
   watch(
     () => i18n.global.locale.value,
+    () => {
+      if (kwami.value) registerTools(kwami.value);
+    },
+  );
+
+  // A group switched on or off, or another kwami's choice applied.
+  watch(
+    () => userTools.disabledGroups.join(','),
     () => {
       if (kwami.value) registerTools(kwami.value);
     },

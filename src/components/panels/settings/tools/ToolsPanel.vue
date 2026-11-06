@@ -9,7 +9,9 @@ import PanelSection from '@/components/ui/PanelSection.vue';
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue';
 import PanelHeaderControls from '@/components/ui/PanelHeaderControls.vue';
 import { useToolCatalogStore } from '@/stores/toolCatalog';
-import { USER_TOOL_GROUPS } from '@/lib/toolRegistration';
+import { USER_TOOL_GROUPS, type ToolGroupId } from '@/lib/toolRegistration';
+import { useToolInventoryStore } from '@/stores/toolInventory';
+import ToolBudget from './ToolBudget.vue';
 import ToolCatalog from './ToolCatalog.vue';
 import CustomToolEditor from './CustomToolEditor.vue';
 import McpServers from './McpServers.vue';
@@ -23,6 +25,7 @@ const { t } = useI18n();
 
 const { kwami } = useKwami();
 const catalog = useToolCatalogStore();
+const userTools = useUserToolsStore();
 
 type Tab = 'catalog' | 'create' | 'mcp' | 'test';
 const activeTab = ref<Tab>('catalog');
@@ -44,10 +47,36 @@ const tools = computed<ToolDefinition[]>(() => {
   return kwami.value?.tools.getAll() ?? [];
 });
 
-const groupCount = computed(() => new Set(tools.value.map((t) => catalog.groupOf(t.name))).size);
+const inventoryStore = useToolInventoryStore();
+const inventory = computed(() => inventoryStore.inventory);
+const agentNames = computed(() => new Set(inventory.value?.builtin ?? []));
+
+/**
+ * Everything the catalog lists: the registered tools, the app tools whose
+ * group is switched off (kept by the catalog store) and, once the agent has
+ * reported them, its own server-side tools.
+ */
+const catalogTools = computed<ToolDefinition[]>(() => [
+  ...tools.value,
+  ...Object.values(catalog.off),
+  ...[...agentNames.value].map((name) => ({ name, description: '' })),
+]);
+
+function groupOfAny(name: string): ToolGroupId {
+  return agentNames.value.has(name) ? 'agent' : catalog.groupOf(name);
+}
+
+const offGroups = computed(() => new Set<ToolGroupId>(userTools.disabledGroups));
+const dropped = computed(() => new Set(inventory.value?.dropped ?? []));
+
+const groupCount = computed(() => new Set(catalogTools.value.map((t) => groupOfAny(t.name))).size);
 const yourCount = computed(
   () => tools.value.filter((tool) => USER_TOOL_GROUPS.has(catalog.groupOf(tool.name))).length,
 );
+
+function toggleGroup(group: ToolGroupId, enabled: boolean) {
+  userTools.setGroupEnabled(group, enabled);
+}
 
 // The Test tab's selection, so the catalog's Test button can hand a tool over.
 const testToolName = ref('');
@@ -58,7 +87,6 @@ function runTool(name: string, args: Record<string, unknown>) {
 }
 
 // Your tools: created and edited in the Create tab, kept on the kwami's config.
-const userTools = useUserToolsStore();
 const mcp = useMcpServers();
 const editingTool = ref<UserWebhookTool | null>(null);
 const takenNames = computed(() => new Set(tools.value.map((tool) => tool.name)));
@@ -147,9 +175,13 @@ function testTool(name: string) {
         <PanelSection>
           <div class="summary">
             <div class="stat">
-              <strong>{{ tools.length }}</strong>
+              <strong>{{ catalogTools.length }}</strong>
               <span>{{
-                t(tools.length === 1 ? 'toolsPanel.summary.tool' : 'toolsPanel.summary.tools')
+                t(
+                  catalogTools.length === 1
+                    ? 'toolsPanel.summary.tool'
+                    : 'toolsPanel.summary.tools',
+                )
               }}</span>
             </div>
             <div class="stat">
@@ -164,9 +196,14 @@ function testTool(name: string) {
             </div>
           </div>
           <p class="intro">{{ t('toolsPanel.summary.intro') }}</p>
+          <ToolBudget :inventory="inventory" :client-tools="tools" :group-of="catalog.groupOf" />
           <ToolCatalog
-            :tools="tools"
-            :group-of="catalog.groupOf"
+            :tools="catalogTools"
+            :group-of="groupOfAny"
+            :off-groups="offGroups"
+            :dropped="dropped"
+            :limit="inventory?.limit ?? 128"
+            @toggle-group="toggleGroup"
             @test="testTool"
             @edit="editTool"
             @remove="pendingRemoval = $event"

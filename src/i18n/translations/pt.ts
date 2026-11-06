@@ -687,6 +687,8 @@ export const pt = {
     performance: 'Desempenho',
     preemptiveGeneration: 'Geração antecipada',
     preemptiveGenerationDesc: 'Começar a gerar a resposta antes de a vez terminar',
+    thinkingSound: 'Som enquanto pensa',
+    thinkingSoundDesc: 'Um teclado suave enquanto o agente prepara a resposta',
   },
   metrics: {
     title: 'Métricas',
