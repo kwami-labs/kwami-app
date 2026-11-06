@@ -14,6 +14,8 @@ import TTSTab from './tabs/TTSTab.vue';
 import RealtimeTab from './tabs/RealtimeTab.vue';
 import BrainFlow from './BrainFlow.vue';
 import BrainSettings from './BrainSettings.vue';
+import BrainCloud from './BrainCloud.vue';
+import BrainAgents from './BrainAgents.vue';
 import { JARVIS_VOICE, voiceProviderHasKey } from '@/lib/brain';
 import {
   ELEVENLABS_TTS,
@@ -148,6 +150,21 @@ function getProviderIcon(provider: string): string {
     <!-- Who does what: voice -> bridge -> brain -->
     <PanelSection :title="t('brainPanel.flowTitle')" icon="ph:flow-arrow-duotone" collapsible>
       <BrainFlow />
+    </PanelSection>
+
+    <!-- Where the brain works when nobody is on a call: the PC, or the cloud -->
+    <PanelSection :title="t('brainCloud.title')" icon="ph:cloud-arrow-up-duotone" collapsible>
+      <BrainCloud />
+    </PanelSection>
+
+    <!-- The user's agents: specialists the brain hands work to -->
+    <PanelSection
+      :title="t('brainAgents.title')"
+      icon="ph:robot-duotone"
+      collapsible
+      default-collapsed
+    >
+      <BrainAgents />
     </PanelSection>
 
     <!-- Voice -->

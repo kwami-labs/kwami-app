@@ -3,6 +3,7 @@ import { workspaceAgentToolsEn, workspaceAgentToolsEs } from './workspaceAgentTo
 import { appLocaleEn, appLocaleEs } from './appLocale.locale';
 import { charterEn, charterEs } from './charter.locale';
 import { brainEn, brainEs } from './brain.locale';
+import { brainCloudEn, brainCloudEs } from './brainCloud.locale';
 import { enginesEn, enginesEs } from './engines.locale';
 import { commsAgentToolsEn, commsAgentToolsEs } from './commsAgentTools.locale';
 import { assistantEn, assistantEs } from './assistant.locale';
@@ -64,6 +65,7 @@ export const messages = {
     ...extrasEn,
     ...charterEn,
     ...brainEn,
+    ...brainCloudEn,
     ...avatarUnavailableEn,
     ...enginesEn,
     ...toolsPanelEn,
@@ -82,6 +84,7 @@ export const messages = {
     ...extrasEs,
     ...charterEs,
     ...brainEs,
+    ...brainCloudEs,
     ...avatarUnavailableEs,
     ...enginesEs,
     ...toolsPanelEs,
