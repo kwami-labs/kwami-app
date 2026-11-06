@@ -1,4 +1,9 @@
 export const pt = {
+  orphansKept: '{n} mantidos: já têm factos.',
+  leftUntouched: '{n} deixados intactos para não arriscar perder factos.',
+  differentTypes: 'tipos diferentes',
+  differentTypesHint:
+    'Parecem iguais mas são coisas de tipos diferentes; não se fundem a menos que marques.',
   sidebar: {
     visual: 'Visual',
     agent: 'Agente',
