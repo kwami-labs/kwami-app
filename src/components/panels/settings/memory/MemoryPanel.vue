@@ -14,6 +14,7 @@ import BaseToggle from '@/components/ui/BaseToggle.vue';
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue';
 import PanelHeaderControls from '@/components/ui/PanelHeaderControls.vue';
 import ReorganizePreview from '@/components/memory/ReorganizePreview.vue';
+import MemorySessions from '@/components/memory/MemorySessions.vue';
 import { MemoryGraph } from '@/components/memory';
 import { intlLocaleTag, getCurrentLocale } from '@/i18n';
 import { translateApiUserMessage } from '@/utils/translateApiMessage';
@@ -47,7 +48,45 @@ const {
   isDeleting,
   communitiesLoading,
   duplicatesLoading,
+  sessions,
+  sessionsNextOffset,
+  sessionsSupported,
+  status,
+  conversationCount,
 } = storeToRefs(memoryStore);
+
+/**
+ * Why the memory looks the way it does. An empty panel used to say only "0",
+ * whether this kwami had never stored a conversation, the facts of the last
+ * one were still being extracted, or memory was down.
+ */
+const statusNote = computed(() => {
+  const s = status.value;
+  if (!s) return '';
+  if (!s.user_exists || s.thread_count === 0) return t('memory.statusNeverRecorded');
+  if (!edges.value.length && !nodes.value.length && conversationCount.value > 0) {
+    return t('memory.statusProcessing');
+  }
+  return '';
+});
+
+function relativeTime(value: string | null): string {
+  if (!value) return '';
+  const then = new Date(value).getTime();
+  if (Number.isNaN(then)) return '';
+  const minutes = Math.round((then - Date.now()) / 60_000);
+  const rtf = new Intl.RelativeTimeFormat(intlLocaleTag(getCurrentLocale()), { numeric: 'auto' });
+  if (Math.abs(minutes) < 60) return rtf.format(minutes, 'minute');
+  const hours = Math.round(minutes / 60);
+  if (Math.abs(hours) < 48) return rtf.format(hours, 'hour');
+  return rtf.format(Math.round(hours / 24), 'day');
+}
+
+const lastSessionLabel = computed(() => {
+  const at = status.value?.last_session_at || sessions.value[0]?.started_at || null;
+  const ago = relativeTime(at);
+  return ago ? t('memory.statusLastSession', { when: ago }) : '';
+});
 
 const loadError = ref('');
 
@@ -659,6 +698,19 @@ onMounted(() => {
             </div>
           </div>
           <div
+            v-if="sessionsSupported"
+            class="stat-card"
+            :class="{ active: activeTab === 'messages' }"
+            @click="activeTab = 'messages'"
+          >
+            <div class="stat-value">
+              {{ conversationCount }}{{ sessionsNextOffset !== null ? '+' : '' }}
+            </div>
+            <div class="stat-label">{{ t('memory.conversations') }}</div>
+            <div v-if="lastSessionLabel" class="stat-sub">{{ lastSessionLabel }}</div>
+          </div>
+          <div
+            v-else
             class="stat-card"
             :class="{ active: activeTab === 'messages' }"
             @click="activeTab = 'messages'"
@@ -671,6 +723,10 @@ onMounted(() => {
             </div>
           </div>
         </div>
+        <p v-if="!isLoading && !loadError && statusNote" class="memory-status-note">
+          <iconify-icon icon="ph:info-duotone"></iconify-icon>
+          {{ statusNote }}
+        </p>
       </PanelSection>
 
       <PanelSection :title="t('memory.contextRetrieval')">
@@ -935,7 +991,13 @@ onMounted(() => {
       </PanelSection>
 
       <!-- Messages (Conversation History) -->
-      <PanelSection v-if="activeTab === 'messages'" :title="t('memory.conversationHistory')">
+      <PanelSection
+        v-if="activeTab === 'messages' && sessionsSupported"
+        :title="t('memory.conversationHistory')"
+      >
+        <MemorySessions />
+      </PanelSection>
+      <PanelSection v-else-if="activeTab === 'messages'" :title="t('memory.conversationHistory')">
         <div v-if="isLoading" class="loading-state small">
           <iconify-icon icon="ph:spinner-gap-duotone" class="spin"></iconify-icon>
         </div>
@@ -1698,6 +1760,22 @@ body.compact-mode .stat-label {
 }
 .edit-actions-row .cancel-btn {
   background: var(--surface-3);
+}
+
+/* Why the memory looks the way it does */
+.memory-status-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 10px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-tertiary);
+}
+.memory-status-note iconify-icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--accent-primary);
 }
 
 /* Messages List */
