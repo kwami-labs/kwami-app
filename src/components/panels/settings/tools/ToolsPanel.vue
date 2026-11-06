@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { panelIcons } from '@/constants/panel-icons';
 import { useToast } from 'vue-toastification';
@@ -9,16 +9,45 @@ import PanelSection from '@/components/ui/PanelSection.vue';
 import BaseButton from '@/components/ui/BaseButton.vue';
 import BaseInput from '@/components/ui/BaseInput.vue';
 import BaseSelect from '@/components/ui/BaseSelect.vue';
+import ConfirmDialog from '@/components/ui/ConfirmDialog.vue';
 import PanelHeaderControls from '@/components/ui/PanelHeaderControls.vue';
 import { translateApiUserMessage } from '@/utils/translateApiMessage';
+import { useToolCatalogStore } from '@/stores/toolCatalog';
+import { USER_TOOL_GROUPS } from '@/lib/toolRegistration';
+import ToolCatalog from './ToolCatalog.vue';
 
 const toast = useToast();
 const { t } = useI18n();
 
 const { kwami } = useKwami();
+const catalog = useToolCatalogStore();
+
+type Tab = 'catalog' | 'create' | 'mcp' | 'test';
+const activeTab = ref<Tab>('catalog');
+
+const TABS: { id: Tab; icon: string }[] = [
+  { id: 'catalog', icon: 'ph:books-duotone' },
+  { id: 'create', icon: 'ph:plus-circle-duotone' },
+  { id: 'mcp', icon: 'ph:plugs-connected-duotone' },
+  { id: 'test', icon: 'ph:play-circle-duotone' },
+];
+
+/**
+ * The registry is not reactive; the catalog store's revision is bumped whenever
+ * the app registers its tools (connect, language switch) or this panel adds or
+ * removes one, and that is what makes the list follow.
+ */
+const tools = computed<ToolDefinition[]>(() => {
+  void catalog.revision;
+  return kwami.value?.tools.getAll() ?? [];
+});
+
+const groupCount = computed(() => new Set(tools.value.map((t) => catalog.groupOf(t.name))).size);
+const yourCount = computed(
+  () => tools.value.filter((tool) => USER_TOOL_GROUPS.has(catalog.groupOf(tool.name))).length,
+);
 
 // State
-const tools = ref<ToolDefinition[]>([]);
 const newTool = ref({
   name: '',
   description: '',
@@ -111,15 +140,21 @@ const templates: Record<string, ToolTemplate> = {
   },
 };
 
-function refreshTools() {
-  if (kwami.value) tools.value = kwami.value.tools.getAll();
+// Removal goes through a dialog, and only for tools the user added: the catalog
+// offers no remove action on the app's own.
+const pendingRemoval = ref<string | null>(null);
+
+function removeTool() {
+  const name = pendingRemoval.value;
+  pendingRemoval.value = null;
+  if (!name || !kwami.value) return;
+  kwami.value.unregisterTool(name);
+  catalog.forget(name);
 }
 
-function removeTool(name: string) {
-  if (confirm(t('tools.removeToolConfirm', { name }))) {
-    kwami.value?.unregisterTool(name);
-    refreshTools();
-  }
+function testTool(name: string) {
+  exec.value = { ...exec.value, toolName: name, result: '', error: '' };
+  activeTab.value = 'test';
 }
 
 function useTemplate(key: string) {
@@ -164,18 +199,24 @@ function addTool() {
     parameters: parsedParams,
     handler: createWebhookHandler(url, newTool.value.method),
   });
+  catalog.record(newTool.value.name, 'custom');
+  catalog.touch();
   newTool.value = { name: '', description: '', parameters: '', url: '', method: 'POST' };
-  refreshTools();
+  activeTab.value = 'catalog';
 }
 
 async function connectMCP() {
   if (!mcp.value.name || !mcp.value.url) return;
   try {
+    const before = new Set(kwami.value?.tools.getAll().map((tool) => tool.name));
     await kwami.value?.tools.connectMCP({
       name: mcp.value.name,
       url: mcp.value.url,
       apiKey: mcp.value.apiKey || undefined,
     });
+    for (const tool of kwami.value?.tools.getAll() ?? []) {
+      if (!before.has(tool.name)) catalog.record(tool.name, 'mcp');
+    }
     mcps.value.push({ name: mcp.value.name, url: mcp.value.url });
     mcp.value = { name: '', url: '', apiKey: '' };
     // connectMCP registers into the ToolRegistry but never announces the new
@@ -184,7 +225,7 @@ async function connectMCP() {
     if (kwami.value?.agent) {
       kwami.value.agent.syncConfigToBackend('tools', kwami.value.tools.getToolDefinitions());
     }
-    refreshTools();
+    catalog.touch();
   } catch (e) {
     toast.error(
       t('tools.mcpConnectionFailed', {
@@ -219,8 +260,6 @@ async function executeTool() {
     exec.value.loading = false;
   }
 }
-
-onMounted(refreshTools);
 </script>
 
 <template>
@@ -231,129 +270,267 @@ onMounted(refreshTools);
       <PanelHeaderControls />
     </div>
 
+    <div class="tabs" role="tablist">
+      <button
+        v-for="tab in TABS"
+        :id="`tools-tab-${tab.id}`"
+        :key="tab.id"
+        type="button"
+        role="tab"
+        class="tab"
+        :class="{ active: activeTab === tab.id }"
+        :aria-selected="activeTab === tab.id"
+        :aria-controls="`tools-tabpanel-${tab.id}`"
+        @click="activeTab = tab.id"
+      >
+        <iconify-icon :icon="tab.icon" class="tab-icon" aria-hidden="true"></iconify-icon>
+        {{ t(`toolsPanel.tabs.${tab.id}`) }}
+      </button>
+    </div>
+
     <div class="panel-body">
-      <!-- Registered -->
-      <PanelSection :title="t('tools.registeredTools')">
-        <div class="tools-list">
-          <div v-if="!tools.length" class="empty">{{ t('tools.noToolsRegistered') }}</div>
-          <div v-for="tool in tools" :key="tool.name" class="card">
-            <div class="head">
-              <iconify-icon icon="ph:function-duotone"></iconify-icon>
-              <span class="name" translate="no">{{ tool.name }}</span>
-              <button
-                class="remove"
-                :title="t('tools.removeTool')"
-                :aria-label="t('tools.removeTool')"
-                @click="removeTool(tool.name)"
-              >
-                ×
-              </button>
+      <!-- Catalog -->
+      <div
+        v-if="activeTab === 'catalog'"
+        id="tools-tabpanel-catalog"
+        role="tabpanel"
+        aria-labelledby="tools-tab-catalog"
+      >
+        <PanelSection>
+          <div class="summary">
+            <div class="stat">
+              <strong>{{ tools.length }}</strong>
+              <span>{{
+                t(tools.length === 1 ? 'toolsPanel.summary.tool' : 'toolsPanel.summary.tools')
+              }}</span>
             </div>
-            <p class="desc">{{ tool.description }}</p>
-            <details v-if="tool.parameters" class="params">
-              <summary>{{ t('tools.params') }}</summary>
-              <pre translate="no">{{ JSON.stringify(tool.parameters, null, 2) }}</pre>
-            </details>
+            <div class="stat">
+              <strong>{{ groupCount }}</strong>
+              <span>{{
+                t(groupCount === 1 ? 'toolsPanel.summary.group' : 'toolsPanel.summary.groups')
+              }}</span>
+            </div>
+            <div class="stat" :class="{ dim: !yourCount }">
+              <strong>{{ yourCount }}</strong>
+              <span>{{ t('toolsPanel.catalog.filterYours') }}</span>
+            </div>
           </div>
-        </div>
-        <BaseButton
-          size="sm"
-          icon="ph:arrows-clockwise-duotone"
-          @click="refreshTools"
-          style="margin-top: 8px"
-          >{{ t('tools.refresh') }}</BaseButton
-        >
-      </PanelSection>
+          <p class="intro">{{ t('toolsPanel.summary.intro') }}</p>
+          <ToolCatalog
+            :tools="tools"
+            :group-of="catalog.groupOf"
+            @test="testTool"
+            @remove="pendingRemoval = $event"
+          />
+        </PanelSection>
+      </div>
 
       <!-- Add Tool -->
-      <PanelSection :title="t('tools.addCustomTool')">
-        <div class="form">
-          <BaseInput :label="t('tools.name')" v-model="newTool.name" placeholder="my_tool" />
-          <BaseInput
-            :label="t('tools.webhookUrl')"
-            v-model="newTool.url"
-            placeholder="https://example.com/hook"
-          />
-          <BaseSelect
-            :label="t('tools.httpMethod')"
-            v-model="newTool.method"
-            :options="HTTP_METHOD_OPTIONS"
-          />
-          <p class="hint">{{ t('tools.webhookHint') }}</p>
-          <div class="group">
-            <label>{{ t('tools.description') }}</label
-            ><textarea v-model="newTool.description" rows="2"></textarea>
+      <div
+        v-else-if="activeTab === 'create'"
+        id="tools-tabpanel-create"
+        role="tabpanel"
+        aria-labelledby="tools-tab-create"
+      >
+        <PanelSection :title="t('tools.addCustomTool')">
+          <div class="form">
+            <BaseInput :label="t('tools.name')" v-model="newTool.name" placeholder="my_tool" mono />
+            <BaseInput
+              :label="t('tools.webhookUrl')"
+              v-model="newTool.url"
+              placeholder="https://example.com/hook"
+            />
+            <BaseSelect
+              :label="t('tools.httpMethod')"
+              v-model="newTool.method"
+              :options="HTTP_METHOD_OPTIONS"
+            />
+            <p class="hint">{{ t('tools.webhookHint') }}</p>
+            <div class="group">
+              <label>{{ t('tools.description') }}</label
+              ><textarea v-model="newTool.description" rows="2"></textarea>
+            </div>
+            <div class="group">
+              <label>{{ t('tools.parametersJson') }}</label
+              ><textarea
+                v-model="newTool.parameters"
+                rows="3"
+                placeholder="{}"
+                translate="no"
+              ></textarea>
+            </div>
+            <BaseButton variant="primary" icon="ph:plus-duotone" @click="addTool">{{
+              t('tools.addTool')
+            }}</BaseButton>
           </div>
-          <div class="group">
-            <label>{{ t('tools.parametersJson') }}</label
-            ><textarea v-model="newTool.parameters" rows="3" placeholder="{}"></textarea>
+          <div class="tmpls">
+            <span class="tmpl-label">{{ t('tools.templates') }}</span>
+            <button v-for="(_, k) in templates" :key="k" @click="useTemplate(k as string)">
+              {{ k }}
+            </button>
           </div>
-          <BaseButton variant="primary" icon="ph:plus-duotone" @click="addTool">{{
-            t('tools.addTool')
-          }}</BaseButton>
-        </div>
-        <div class="tmpls">
-          <span class="tmpl-label">{{ t('tools.templates') }}</span>
-          <button v-for="(_, k) in templates" :key="k" @click="useTemplate(k as string)">
-            {{ k }}
-          </button>
-        </div>
-      </PanelSection>
+        </PanelSection>
+      </div>
 
       <!-- MCP -->
-      <PanelSection :title="t('tools.mcpServers')">
-        <div class="tools-list">
-          <div v-if="!mcps.length" class="empty">{{ t('tools.noMcpServers') }}</div>
-          <div v-for="s in mcps" :key="s.name" class="card">
-            <div class="head">
-              <iconify-icon icon="ph:plugs-connected-duotone"></iconify-icon>
-              <span class="name" translate="no">{{ s.name }}</span>
-              <span class="badg">{{ t('tools.connected') }}</span>
+      <div
+        v-else-if="activeTab === 'mcp'"
+        id="tools-tabpanel-mcp"
+        role="tabpanel"
+        aria-labelledby="tools-tab-mcp"
+      >
+        <PanelSection :title="t('tools.mcpServers')">
+          <div class="tools-list">
+            <div v-if="!mcps.length" class="empty">{{ t('tools.noMcpServers') }}</div>
+            <div v-for="s in mcps" :key="s.name" class="card">
+              <div class="head">
+                <iconify-icon icon="ph:plugs-connected-duotone"></iconify-icon>
+                <span class="name" translate="no">{{ s.name }}</span>
+                <span class="badg">{{ t('tools.connected') }}</span>
+              </div>
+              <span class="url" translate="no">{{ s.url }}</span>
             </div>
-            <span class="url" translate="no">{{ s.url }}</span>
           </div>
-        </div>
-        <div class="form" style="margin-top: 12px">
-          <BaseInput :label="t('tools.name')" v-model="mcp.name" placeholder="my-mcp" />
-          <BaseInput
-            :label="t('tools.url')"
-            v-model="mcp.url"
-            placeholder="http://localhost:3001"
-          />
-          <BaseInput :label="t('tools.apiKey')" v-model="mcp.apiKey" type="password" />
-          <BaseButton icon="ph:plugs-connected-duotone" @click="connectMCP">{{
-            t('tools.connectMcp')
-          }}</BaseButton>
-        </div>
-      </PanelSection>
+          <div class="form" style="margin-top: 12px">
+            <BaseInput :label="t('tools.name')" v-model="mcp.name" placeholder="my-mcp" />
+            <BaseInput
+              :label="t('tools.url')"
+              v-model="mcp.url"
+              placeholder="http://localhost:3001"
+            />
+            <BaseInput :label="t('tools.apiKey')" v-model="mcp.apiKey" type="password" />
+            <BaseButton icon="ph:plugs-connected-duotone" @click="connectMCP">{{
+              t('tools.connectMcp')
+            }}</BaseButton>
+          </div>
+        </PanelSection>
+      </div>
 
       <!-- Test -->
-      <PanelSection :title="t('tools.testToolExecution')">
-        <div class="form">
-          <BaseSelect
-            :label="t('tools.tool')"
-            v-model="exec.toolName"
-            :options="tools.map((tool) => ({ label: tool.name, value: tool.name }))"
-          />
-          <div class="group">
-            <label>{{ t('tools.parametersJson') }}</label
-            ><textarea v-model="exec.params" rows="2" placeholder="{}"></textarea>
-          </div>
-          <BaseButton :disabled="exec.loading" icon="ph:play-duotone" @click="executeTool">{{
-            exec.loading ? t('tools.running') : t('tools.execute')
-          }}</BaseButton>
+      <div v-else id="tools-tabpanel-test" role="tabpanel" aria-labelledby="tools-tab-test">
+        <PanelSection :title="t('tools.testToolExecution')">
+          <div class="form">
+            <BaseSelect
+              :label="t('tools.tool')"
+              v-model="exec.toolName"
+              :options="tools.map((tool) => ({ label: tool.name, value: tool.name }))"
+            />
+            <div class="group">
+              <label>{{ t('tools.parametersJson') }}</label
+              ><textarea v-model="exec.params" rows="2" placeholder="{}" translate="no"></textarea>
+            </div>
+            <BaseButton :disabled="exec.loading" icon="ph:play-duotone" @click="executeTool">{{
+              exec.loading ? t('tools.running') : t('tools.execute')
+            }}</BaseButton>
 
-          <div v-if="exec.result" class="res success">
-            <pre translate="no">{{ exec.result }}</pre>
+            <div v-if="exec.result" class="res success">
+              <pre translate="no">{{ exec.result }}</pre>
+            </div>
+            <div v-if="exec.error" class="res error">{{ exec.error }}</div>
           </div>
-          <div v-if="exec.error" class="res error">{{ exec.error }}</div>
-        </div>
-      </PanelSection>
+        </PanelSection>
+      </div>
     </div>
+
+    <ConfirmDialog
+      :open="pendingRemoval !== null"
+      :title="t('toolsPanel.catalog.remove')"
+      icon="ph:trash-duotone"
+      :confirm-label="t('toolsPanel.catalog.remove')"
+      confirm-icon="ph:trash-duotone"
+      confirm-variant="danger"
+      @confirm="removeTool"
+      @cancel="pendingRemoval = null"
+    >
+      <p class="confirm-text">
+        {{ t('toolsPanel.catalog.removeConfirm', { name: pendingRemoval ?? '' }) }}
+      </p>
+    </ConfirmDialog>
   </div>
 </template>
 
 <style scoped>
+/* Tabs — the Energy panel's idiom, so the two read as one app. */
+.tabs {
+  display: flex;
+  gap: 2px;
+  padding: 4px 20px;
+  border-bottom: 1px solid var(--glass-border);
+}
+.tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 10px 6px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-size: 11px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.tab:hover {
+  color: var(--text-primary);
+}
+.tab.active {
+  color: var(--accent-primary);
+  border-bottom-color: var(--accent-primary);
+}
+.tab:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: -2px;
+}
+.tab-icon {
+  font-size: 14px;
+}
+
+/* Catalog summary */
+.summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+  border: 1px solid var(--glass-border);
+}
+.stat strong {
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+.stat span {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.stat.dim strong {
+  color: var(--text-muted);
+}
+.intro {
+  margin: 0 0 12px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+.confirm-text {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
 .tools-list {
   display: flex;
   flex-direction: column;
@@ -384,38 +561,17 @@ onMounted(refreshTools);
   font-size: 13px;
   flex: 1;
 }
-.remove {
-  background: none;
-  border: none;
-  color: var(--text-tertiary);
-  cursor: pointer;
-  font-size: 16px;
-  padding: 0;
-}
-.remove:hover {
-  color: var(--accent-error);
-}
-.desc {
-  font-size: 12px;
-  color: var(--text-secondary);
-  margin: 0 0 6px 0;
-  line-height: 1.3;
-}
-.params {
-  font-size: 11px;
-}
-.params pre {
-  background: var(--surface-2);
-  padding: 8px;
-  border-radius: 4px;
-  overflow-x: auto;
-  margin: 4px 0 0 0;
-}
 
 .form {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+.hint {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-muted);
 }
 .group {
   display: flex;
