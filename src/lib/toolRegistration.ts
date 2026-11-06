@@ -3,11 +3,14 @@ import type { Kwami, ToolDefinition } from 'kwami';
 /**
  * What a client tool is for, as the Tools panel groups it.
  *
- * Ordered as the panel lists them. `custom` and `mcp` are the ones a user adds;
- * `other` catches anything registered outside a labelled batch, so a tool is
- * never missing from the panel just because nobody gave it a group.
+ * Ordered as the panel lists them: the user's own first (`custom`, `mcp`),
+ * then the app's. `other` catches anything registered outside a labelled
+ * batch, so a tool is never missing from the panel just because nobody gave it
+ * a group.
  */
 export const TOOL_GROUPS = [
+  'custom',
+  'mcp',
   'interface',
   'appearance',
   'personality',
@@ -20,8 +23,6 @@ export const TOOL_GROUPS = [
   'google',
   'companions',
   'extras',
-  'custom',
-  'mcp',
   'other',
 ] as const;
 

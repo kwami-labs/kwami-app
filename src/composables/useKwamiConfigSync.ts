@@ -6,6 +6,7 @@ import { useVoiceStore } from '@/stores/voice';
 import { useSceneStore } from '@/stores/scene';
 import { useThemeStore } from '@/stores/theme';
 import { useCommunicationsStore } from '@/stores/communications';
+import { useUserToolsStore } from '@/stores/userTools';
 
 export type KwamiConfig = {
   avatar?: unknown;
@@ -13,6 +14,8 @@ export type KwamiConfig = {
   scene?: unknown;
   theme?: unknown;
   telephony?: unknown;
+  /** Webhook tools the user added to this kwami (see stores/userTools). */
+  tools?: unknown;
 };
 
 /** Clone config to a plain JSON-serializable object so DB/store never holds reactive refs and round-trip is safe. */
@@ -32,6 +35,7 @@ export function useKwamiConfigSync() {
   const sceneStore = useSceneStore();
   const themeStore = useThemeStore();
   const communicationsStore = useCommunicationsStore();
+  const userToolsStore = useUserToolsStore();
 
   function getConfig(): KwamiConfig {
     return {
@@ -40,6 +44,7 @@ export function useKwamiConfigSync() {
       scene: sceneStore.getSnapshot(),
       theme: themeStore.getSnapshot(), // mode, accent, glass, ui, accessibility, flashlight, effects
       telephony: communicationsStore.getSnapshot(),
+      tools: userToolsStore.getSnapshot(),
     };
   }
 
@@ -88,6 +93,9 @@ export function useKwamiConfigSync() {
           config.telephony as Parameters<typeof communicationsStore.applySnapshot>[0],
         );
       }
+      // Always, unlike the look above: a kwami saved without tools must not
+      // keep the previous kwami's webhooks (and their URLs) live.
+      userToolsStore.applySnapshot(config.tools ?? null);
       window.dispatchEvent(new CustomEvent('kwami:configApplied'));
     } catch (e) {
       console.warn('Failed to apply kwami config:', e);
@@ -102,6 +110,7 @@ export function useKwamiConfigWatchers() {
   const workspaceStore = useWorkspaceStore();
   const themeStore = useThemeStore();
   const sceneStore = useSceneStore();
+  const userToolsStore = useUserToolsStore();
 
   // When active workspace changes, apply that kwami's config then rebase
   // savedConfig to what the stores actually emit. This ensures fields that were
@@ -116,6 +125,9 @@ export function useKwamiConfigWatchers() {
       const config = workspaceStore.getActiveWorkspace()?.config;
       if (config && typeof config === 'object' && Object.keys(config as object).length > 0) {
         applyConfig(config as KwamiConfig);
+      } else {
+        // An empty config skips applyConfig; its tools still have to go.
+        userToolsStore.applySnapshot(null);
       }
       // Wait for the post-flush syncDraftConfig watcher to run first,
       // then rebase so the normalized store output becomes the clean baseline.

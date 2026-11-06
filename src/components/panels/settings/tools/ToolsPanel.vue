@@ -15,6 +15,9 @@ import { translateApiUserMessage } from '@/utils/translateApiMessage';
 import { useToolCatalogStore } from '@/stores/toolCatalog';
 import { USER_TOOL_GROUPS } from '@/lib/toolRegistration';
 import ToolCatalog from './ToolCatalog.vue';
+import CustomToolEditor from './CustomToolEditor.vue';
+import { useUserToolsStore } from '@/stores/userTools';
+import type { UserWebhookTool } from '@/lib/userTools';
 
 const toast = useToast();
 const { t } = useI18n();
@@ -47,98 +50,31 @@ const yourCount = computed(
   () => tools.value.filter((tool) => USER_TOOL_GROUPS.has(catalog.groupOf(tool.name))).length,
 );
 
-// State
-const newTool = ref({
-  name: '',
-  description: '',
-  parameters: '',
-  url: '',
-  method: 'POST' as 'GET' | 'POST',
-});
-
-const HTTP_METHOD_OPTIONS = [
-  { label: 'POST', value: 'POST' },
-  { label: 'GET', value: 'GET' },
-];
-
-/** A user-defined tool call should not hang the agent turn. */
-const TOOL_TIMEOUT_MS = 15_000;
-
-/**
- * Build the handler the agent will invoke.
- *
- * Calls the user's webhook with the tool arguments. Deliberately a plain fetch
- * rather than the app's api client: the target is an arbitrary third-party URL,
- * not the Kwami backend, so it must not receive the user's bearer token.
- */
-function createWebhookHandler(url: string, method: 'GET' | 'POST') {
-  return async (params: Record<string, unknown>) => {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), TOOL_TIMEOUT_MS);
-    try {
-      const target =
-        method === 'GET'
-          ? `${url}${url.includes('?') ? '&' : '?'}${new URLSearchParams(
-              Object.entries(params).map(([k, v]) => [k, String(v)]),
-            )}`
-          : url;
-
-      const res = await fetch(target, {
-        method,
-        headers: method === 'POST' ? { 'Content-Type': 'application/json' } : undefined,
-        body: method === 'POST' ? JSON.stringify(params) : undefined,
-        signal: controller.signal,
-      });
-
-      const text = await res.text();
-      let data: unknown = text;
-      try {
-        data = JSON.parse(text);
-      } catch {
-        // Not JSON; hand the agent the raw body.
-      }
-      return { ok: res.ok, status: res.status, data };
-    } catch (e: unknown) {
-      const aborted = e instanceof DOMException && e.name === 'AbortError';
-      return {
-        ok: false,
-        error: aborted ? `Tool timed out after ${TOOL_TIMEOUT_MS}ms` : String(e),
-      };
-    } finally {
-      clearTimeout(timer);
-    }
-  };
-}
 const mcp = ref({ name: '', url: '', apiKey: '' });
 const mcps = ref<Array<{ name: string; url: string }>>([]);
-interface ToolTemplate {
-  name: string;
-  description: string;
-  parameters: Record<string, { type: string; enum?: string[] }>;
-}
 
 const exec = ref({ toolName: '', params: '', result: '', loading: false, error: '' });
 
-const templates: Record<string, ToolTemplate> = {
-  weather: {
-    name: 'get_weather',
-    description: t('tools.templateWeatherDescription'),
-    parameters: {
-      location: { type: 'string' },
-      units: { type: 'string', enum: ['metric', 'imperial'] },
-    },
-  },
-  search: {
-    name: 'web_search',
-    description: t('tools.templateSearchDescription'),
-    parameters: { query: { type: 'string' }, limit: { type: 'number' } },
-  },
-  calc: {
-    name: 'calculate',
-    description: t('tools.templateCalcDescription'),
-    parameters: { expression: { type: 'string' } },
-  },
-};
+// Your tools: created and edited in the Create tab, kept on the kwami's config.
+const userTools = useUserToolsStore();
+const editingTool = ref<UserWebhookTool | null>(null);
+const takenNames = computed(() => new Set(tools.value.map((tool) => tool.name)));
+
+function saveUserTool(tool: UserWebhookTool, previousName?: string) {
+  userTools.save(tool, previousName);
+  toast.success(
+    t(previousName ? 'toolsPanel.create.updated' : 'toolsPanel.create.saved', { name: tool.name }),
+  );
+  editingTool.value = null;
+  activeTab.value = 'catalog';
+}
+
+function editTool(name: string) {
+  const tool = userTools.find(name);
+  if (!tool) return;
+  editingTool.value = tool;
+  activeTab.value = 'create';
+}
 
 // Removal goes through a dialog, and only for tools the user added: the catalog
 // offers no remove action on the app's own.
@@ -148,6 +84,11 @@ function removeTool() {
   const name = pendingRemoval.value;
   pendingRemoval.value = null;
   if (!name || !kwami.value) return;
+  if (userTools.find(name)) {
+    // The registration composable unregisters it and tells the agent.
+    userTools.remove(name);
+    return;
+  }
   kwami.value.unregisterTool(name);
   catalog.forget(name);
 }
@@ -155,54 +96,6 @@ function removeTool() {
 function testTool(name: string) {
   exec.value = { ...exec.value, toolName: name, result: '', error: '' };
   activeTab.value = 'test';
-}
-
-function useTemplate(key: string) {
-  const tmpl = templates[key];
-  if (tmpl) {
-    newTool.value = {
-      ...newTool.value,
-      name: tmpl.name,
-      description: tmpl.description,
-      parameters: JSON.stringify(tmpl.parameters, null, 2),
-    };
-  }
-}
-
-function addTool() {
-  if (!newTool.value.name || !newTool.value.description) {
-    toast.warning(t('tools.requiredNameDescription'));
-    return;
-  }
-  let parsedParams;
-  try {
-    if (newTool.value.parameters) parsedParams = JSON.parse(newTool.value.parameters);
-  } catch {
-    toast.error(t('tools.invalidJsonParams'));
-    return;
-  }
-
-  const url = newTool.value.url.trim();
-  if (!/^https?:\/\//i.test(url)) {
-    toast.error(t('tools.invalidUrl'));
-    return;
-  }
-
-  // kwami.registerTool(), NOT kwami.tools.register(). The latter only writes
-  // the local ToolRegistry; registerTool additionally populates the agent's
-  // clientTools dispatch table and syncs the definition to the backend, which
-  // is what tells the model the tool exists. Tools created here were
-  // previously invisible to the LLM and undispatchable even if it knew.
-  kwami.value?.registerTool({
-    name: newTool.value.name,
-    description: newTool.value.description,
-    parameters: parsedParams,
-    handler: createWebhookHandler(url, newTool.value.method),
-  });
-  catalog.record(newTool.value.name, 'custom');
-  catalog.touch();
-  newTool.value = { name: '', description: '', parameters: '', url: '', method: 'POST' };
-  activeTab.value = 'catalog';
 }
 
 async function connectMCP() {
@@ -320,6 +213,7 @@ async function executeTool() {
             :tools="tools"
             :group-of="catalog.groupOf"
             @test="testTool"
+            @edit="editTool"
             @remove="pendingRemoval = $event"
           />
         </PanelSection>
@@ -332,43 +226,13 @@ async function executeTool() {
         role="tabpanel"
         aria-labelledby="tools-tab-create"
       >
-        <PanelSection :title="t('tools.addCustomTool')">
-          <div class="form">
-            <BaseInput :label="t('tools.name')" v-model="newTool.name" placeholder="my_tool" mono />
-            <BaseInput
-              :label="t('tools.webhookUrl')"
-              v-model="newTool.url"
-              placeholder="https://example.com/hook"
-            />
-            <BaseSelect
-              :label="t('tools.httpMethod')"
-              v-model="newTool.method"
-              :options="HTTP_METHOD_OPTIONS"
-            />
-            <p class="hint">{{ t('tools.webhookHint') }}</p>
-            <div class="group">
-              <label>{{ t('tools.description') }}</label
-              ><textarea v-model="newTool.description" rows="2"></textarea>
-            </div>
-            <div class="group">
-              <label>{{ t('tools.parametersJson') }}</label
-              ><textarea
-                v-model="newTool.parameters"
-                rows="3"
-                placeholder="{}"
-                translate="no"
-              ></textarea>
-            </div>
-            <BaseButton variant="primary" icon="ph:plus-duotone" @click="addTool">{{
-              t('tools.addTool')
-            }}</BaseButton>
-          </div>
-          <div class="tmpls">
-            <span class="tmpl-label">{{ t('tools.templates') }}</span>
-            <button v-for="(_, k) in templates" :key="k" @click="useTemplate(k as string)">
-              {{ k }}
-            </button>
-          </div>
+        <PanelSection>
+          <CustomToolEditor
+            :editing="editingTool"
+            :taken-names="takenNames"
+            @save="saveUserTool"
+            @cancel="editingTool = null"
+          />
         </PanelSection>
       </div>
 
@@ -567,12 +431,6 @@ async function executeTool() {
   flex-direction: column;
   gap: 10px;
 }
-.hint {
-  margin: 0;
-  font-size: 11px;
-  line-height: 1.4;
-  color: var(--text-muted);
-}
 .group {
   display: flex;
   flex-direction: column;
@@ -590,30 +448,6 @@ textarea {
   color: var(--text-secondary);
   font-size: 12px;
   resize: vertical;
-}
-
-.tmpls {
-  display: flex;
-  gap: 8px;
-  margin-top: 8px;
-  align-items: center;
-}
-.tmpl-label {
-  font-size: 11px;
-  color: var(--text-tertiary);
-}
-.tmpls button {
-  background: var(--surface-2);
-  border: 1px solid var(--glass-border);
-  border-radius: 4px;
-  padding: 2px 8px;
-  font-size: 10px;
-  cursor: pointer;
-  color: var(--text-secondary);
-}
-.tmpls button:hover {
-  color: var(--text-primary);
-  border-color: var(--text-secondary);
 }
 
 .badg {
