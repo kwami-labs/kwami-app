@@ -24,6 +24,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'test', name: string): void;
   (e: 'remove', name: string): void;
+  (e: 'edit', name: string): void;
 }>();
 
 const { t } = useI18n();
@@ -308,6 +309,15 @@ function sourceLabel(name: string) {
                 @click="copyDefinition(tool)"
               >
                 {{ t('toolsPanel.catalog.copy') }}
+              </BaseButton>
+              <BaseButton
+                v-if="groupOf(tool.name) === 'custom'"
+                size="sm"
+                variant="ghost"
+                icon="ph:pencil-simple-duotone"
+                @click="emit('edit', tool.name)"
+              >
+                {{ t('toolsPanel.catalog.edit') }}
               </BaseButton>
               <BaseButton
                 v-if="isUserTool(tool.name)"

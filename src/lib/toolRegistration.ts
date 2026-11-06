@@ -3,11 +3,14 @@ import type { Kwami, ToolDefinition } from 'kwami';
 /**
  * What a client tool is for, as the Tools panel groups it.
  *
- * Ordered as the panel lists them. `custom` and `mcp` are the ones a user adds;
- * `other` catches anything registered outside a labelled batch, so a tool is
- * never missing from the panel just because nobody gave it a group.
+ * Ordered as the panel lists them: the user's own first (`custom`, `mcp`),
+ * then the app's. `other` catches anything registered outside a labelled
+ * batch, so a tool is never missing from the panel just because nobody gave it
+ * a group.
  */
 export const TOOL_GROUPS = [
+  'custom',
+  'mcp',
   'interface',
   'appearance',
   'personality',
@@ -20,8 +23,6 @@ export const TOOL_GROUPS = [
   'google',
   'companions',
   'extras',
-  'custom',
-  'mcp',
   'other',
 ] as const;
 
@@ -82,5 +83,25 @@ export function registerToolBatch(
     if (live.isConnected()) {
       live.agent.syncConfigToBackend('tools', live.tools.getToolDefinitions());
     }
+  }
+}
+
+/**
+ * Re-insert every other tool after `names`, so `names` lead the registry.
+ *
+ * The agent sends the model at most 128 tools and, when the app's ~100 plus its
+ * own built-ins go over, cuts from the tail -- where anything registered after
+ * the app's always landed. Tools the user chose to add go first instead.
+ *
+ * The registry is a Map: re-setting a key keeps its slot, so the only way to
+ * reorder is to take the others out and put them back. Each entry keeps its
+ * handler; the agent's dispatch table is keyed by name and untouched.
+ */
+export function moveToolsToFront(live: Kwami, names: ReadonlySet<string>): void {
+  if (!names.size) return;
+  for (const tool of live.tools.getAll()) {
+    if (names.has(tool.name)) continue;
+    live.tools.unregister(tool.name);
+    live.tools.register(tool);
   }
 }
