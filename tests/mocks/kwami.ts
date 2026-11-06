@@ -74,6 +74,8 @@ export function createAgentStub() {
     updateTtsLive: vi.fn(),
     updateVoiceLive: vi.fn(),
     updateRealtimeLive: vi.fn(),
+    registerTool: vi.fn(),
+    unregisterTool: vi.fn(),
   };
 }
 
@@ -84,8 +86,16 @@ export function createKwamiStub() {
     agent: createAgentStub(),
     soul: { getConfig: vi.fn(() => ({})), updateConfig: vi.fn() },
     memory: { search: vi.fn(async () => []), clear: vi.fn(async () => undefined) },
-    tools: { register: vi.fn(), unregister: vi.fn(), getToolDefinitions: vi.fn(() => []) },
+    tools: {
+      register: vi.fn(),
+      unregister: vi.fn(),
+      getAll: vi.fn(() => []),
+      getToolDefinitions: vi.fn(() => []),
+    },
     skills: { register: vi.fn(), unregister: vi.fn() },
+    registerTool: vi.fn(),
+    unregisterTool: vi.fn(),
+    isConnected: vi.fn(() => false),
     connect: vi.fn(async () => undefined),
     disconnect: vi.fn(async () => undefined),
     dispose: vi.fn(),
