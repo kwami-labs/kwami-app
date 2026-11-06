@@ -47,6 +47,27 @@
   --error: #f87171;
   --error-glow: rgba(248, 113, 113, 0.15);
 
+  /* Names components already use, defined at last.
+     Nothing declared these, so every rule reading one without a fallback was
+     dropped: 66 "muted" captions rendered in full-strength text colour, error
+     and "connected" states had no colour, and every rgba(var(--accent-primary-rgb), a)
+     highlight in the Memory panel was invalid and painted nothing. They point at
+     the real tokens, so they follow the theme store's light/dark and contrast
+     values instead of hard-coding one palette. tests/unit/cssTokens.test.ts
+     fails if a new undefined one appears. */
+  --text-tertiary: var(--text-muted);
+  --accent-error: var(--error);
+  --accent-success: var(--success);
+  --danger: var(--error);
+  --accent-primary-rgb: 0, 217, 255; /* the theme store rewrites it with the accent */
+  --accent-success-rgb: 34, 211, 238;
+  --surface-0: #0a0c14; /* opaque base under the glass; light mode sets its own */
+  --surface-elevated: var(--surface-3);
+  --bg-primary: var(--surface-0);
+  --bg-hover: var(--surface-3);
+  --border-color: var(--surface-3);
+  --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Code', Consolas, monospace;
+
   /* Typography - DM Sans for modern, friendly feel */
   font-family:
     'DM Sans',
