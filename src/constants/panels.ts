@@ -28,6 +28,7 @@ export const SETTINGS_AGENT_PANELS = [
   'enhancements',
   'communications',
   'tools',
+  'access',
 ] as const;
 
 /** Diagnostics. */

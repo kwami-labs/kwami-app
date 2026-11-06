@@ -18,6 +18,7 @@ export const es = {
       memory: 'Memoria',
       enhancements: 'Mejoras',
       tools: 'Herramientas',
+      access: 'Accesos',
       transcription: 'Transcripcion',
       history: 'Historial',
       communications: 'Comunicaciones',
