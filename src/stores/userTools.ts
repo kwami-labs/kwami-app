@@ -2,10 +2,13 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { parseUserTools, type UserWebhookTool } from '@/lib/userTools';
 import { parseMcpServers, type SavedMcpServer } from '@/lib/mcpServers';
+import { OPTIONAL_TOOL_GROUPS, type ToolGroupId } from '@/lib/toolRegistration';
 
 export interface UserToolsSnapshot {
   webhooks: UserWebhookTool[];
   mcpServers: SavedMcpServer[];
+  /** App tool groups the user switched off for this kwami. */
+  disabledGroups: ToolGroupId[];
 }
 
 /**
@@ -19,11 +22,13 @@ export interface UserToolsSnapshot {
 export const useUserToolsStore = defineStore('userTools', () => {
   const webhooks = ref<UserWebhookTool[]>([]);
   const mcpServers = ref<SavedMcpServer[]>([]);
+  const disabledGroups = ref<ToolGroupId[]>([]);
 
   function getSnapshot(): UserToolsSnapshot {
     return {
       webhooks: webhooks.value.map((tool) => toPlain(tool)),
       mcpServers: mcpServers.value.map((server) => toPlain(server)),
+      disabledGroups: [...disabledGroups.value],
     };
   }
 
@@ -35,6 +40,20 @@ export const useUserToolsStore = defineStore('userTools', () => {
     >;
     webhooks.value = parseUserTools(raw.webhooks);
     mcpServers.value = parseMcpServers(raw.mcpServers);
+    disabledGroups.value = Array.isArray(raw.disabledGroups)
+      ? [...new Set(raw.disabledGroups)].filter((g): g is ToolGroupId =>
+          OPTIONAL_TOOL_GROUPS.has(g as ToolGroupId),
+        )
+      : [];
+  }
+
+  /** Switch one of the app's tool groups on or off for the agent. */
+  function setGroupEnabled(group: ToolGroupId, enabled: boolean) {
+    if (!OPTIONAL_TOOL_GROUPS.has(group)) return;
+    const next = new Set(disabledGroups.value);
+    if (enabled) next.delete(group);
+    else next.add(group);
+    disabledGroups.value = [...next].sort();
   }
 
   /** Add, or replace the tool called `previousName` (a rename keeps its place). */
@@ -77,6 +96,8 @@ export const useUserToolsStore = defineStore('userTools', () => {
   return {
     webhooks,
     mcpServers,
+    disabledGroups,
+    setGroupEnabled,
     getSnapshot,
     applySnapshot,
     save,

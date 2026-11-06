@@ -11,6 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { defineComponent, h, nextTick, ref } from 'vue';
 import { getCurrentLocale, setLocale } from '@/i18n';
 import { useToolCatalogStore } from '@/stores/toolCatalog';
+import { useUserToolsStore } from '@/stores/userTools';
 import { createPinia, setActivePinia } from 'pinia';
 import { mount, type VueWrapper } from '@vue/test-utils';
 import { useWorkspaceAgentTools } from '@/composables/useWorkspaceAgentTools';
@@ -40,11 +41,14 @@ const kwamiStub = {
   registerTool: (def: ToolDef) => registered.set(def.name, def),
   isConnected: () => isConnected.value,
   tools: {
+    get: (name: string) => registered.get(name),
+    unregister: (name: string) => registered.delete(name),
     register: (def: ToolDef) => registered.set(def.name, def),
     getToolDefinitions: () => [...registered.values()].map(({ handler: _h, ...def }) => def),
   },
   agent: {
     registerTool: vi.fn(),
+    unregisterTool: vi.fn(),
     getConfig: () => ({}),
     updateConfig: vi.fn(),
     syncConfigToBackend: vi.fn(),
@@ -197,6 +201,27 @@ describe('registration', () => {
     expect(toolSyncs).toHaveLength(1);
     expect((toolSyncs[0][1] as unknown[]).length).toBe(registered.size);
     setLocale('en');
+  });
+
+  it('takes a switched-off group away from the agent and brings it back', async () => {
+    isConnected.value = true;
+    kwamiStub.agent.syncConfigToBackend.mockClear();
+    const total = registered.size;
+
+    useUserToolsStore().setGroupEnabled('email', false);
+    await nextTick();
+    expect(registered.has('send_email')).toBe(false);
+    expect(registered.has('set_theme_control')).toBe(true);
+    expect(useToolCatalogStore().off.send_email?.name).toBe('send_email');
+    const syncs = kwamiStub.agent.syncConfigToBackend.mock.calls.filter(
+      ([type]) => type === 'tools',
+    );
+    expect(syncs).toHaveLength(1);
+
+    useUserToolsStore().setGroupEnabled('email', true);
+    await nextTick();
+    expect(registered.size).toBe(total);
+    expect(useToolCatalogStore().off.send_email).toBeUndefined();
   });
 
   it('offers eye-iris as a renderer', () => {
