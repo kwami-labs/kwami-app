@@ -33,7 +33,7 @@
     "@tauri-apps/plugin-deep-link": "^2.6.2",
     "@tauri-apps/plugin-opener": "^2.7.2",
     "iconify-icon": "^3.0.2",
-    "kwami": "file:vendor/kwami-2.2.1-dev.3.jarvis3d.tgz",
+    "kwami": "file:vendor/kwami-2.2.1-dev.4.tgz",
     "pinia": "^4.0.3",
     "three": "^0.186.0",
     "vue": "^3.5.30",
