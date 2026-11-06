@@ -396,6 +396,63 @@ watch(
   max-height: 100%;
   min-height: 0;
   /* height is animated via JS; default is auto */
+  position: relative;
+  isolation: isolate;
+}
+
+/* A thin line of light runs round the rail's edge, and a soft scan crosses it now
+   and then: the rail reads as a live instrument, not a row of buttons. Both sit
+   under the buttons and let every click through. */
+@property --rail-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.switcher-column::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  z-index: -1;
+  padding: 1px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--rail-angle),
+    transparent 0deg,
+    color-mix(in srgb, var(--accent-primary) 85%, transparent) 40deg,
+    transparent 110deg,
+    transparent 180deg,
+    color-mix(in srgb, var(--accent-primary) 45%, transparent) 220deg,
+    transparent 290deg
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+  animation: rail-orbit 9s linear infinite;
+  pointer-events: none;
+}
+
+.switcher-column::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    color-mix(in srgb, var(--accent-primary) 10%, transparent) 50%,
+    transparent 100%
+  );
+  background-size: 100% 220px;
+  background-repeat: no-repeat;
+  background-position: 0 -220px;
+  animation: rail-scan 7s ease-in-out infinite;
+  pointer-events: none;
 }
 
 .header-section {
@@ -648,6 +705,22 @@ watch(
   opacity: 0.9;
 }
 
+@keyframes rail-orbit {
+  to {
+    --rail-angle: 360deg;
+  }
+}
+
+@keyframes rail-scan {
+  0%,
+  55% {
+    background-position: 0 -220px;
+  }
+  100% {
+    background-position: 0 calc(100% + 220px);
+  }
+}
+
 @keyframes nav-in {
   from {
     opacity: 0;
@@ -671,6 +744,8 @@ watch(
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .switcher-column::before,
+  .switcher-column::after,
   .nav-btn,
   .nav-btn.active::before,
   .nav-badge {
