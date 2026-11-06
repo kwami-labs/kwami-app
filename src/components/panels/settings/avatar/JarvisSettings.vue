@@ -80,6 +80,14 @@ const qualityOptions = computed(() => [
       v-model="state.parallax"
     />
     <BaseSlider
+      :label="t('jarvisAvatar.depth')"
+      :description="t('jarvisAvatar.depthDesc')"
+      :min="0"
+      :max="2"
+      :step="0.05"
+      v-model="state.depth"
+    />
+    <BaseSlider
       :label="t('jarvisAvatar.scale')"
       :min="0.5"
       :max="1.6"
@@ -97,6 +105,8 @@ const qualityOptions = computed(() => [
     />
     <div class="toggle-stack">
       <BaseToggle :label="t('jarvisAvatar.labels')" v-model="state.labels" />
+      <BaseToggle :label="t('jarvisAvatar.panels')" v-model="state.panels" />
+      <BaseToggle :label="t('jarvisAvatar.grid')" v-model="state.grid" />
       <BaseToggle :label="t('jarvisAvatar.backdrop')" v-model="state.backdrop" />
     </div>
     <BaseSelect

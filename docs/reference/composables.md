@@ -13,6 +13,7 @@ Vue composables under [`src/composables/`](../../src/composables/).
 | `useWorkspaceAgentTools` | Register client tools the LiveKit agent can call |
 | `useSceneBackground` | Push scene store onto the SDK scene |
 | `useAvatarInteractions` | Click / drag / hover → SDK + events |
+| `useJarvisSignals` | Forward the session (voice link, messages, agent actions, balance) to the Jarvis HUD |
 
 ## Avatar sync
 
@@ -22,6 +23,7 @@ Vue composables under [`src/composables/`](../../src/composables/).
 | `useBlackHoleSync` | `black-hole` |
 | `useParticlesFaceSync` | `particles-face` |
 | `useEyeIrisSync` | `eye-iris` |
+| `useJarvisSync` | `jarvis` |
 | `randomizeAvatarPanel` | All four |
 
 Each exposes `applyToKwami` used on init, config apply, and randomize.

@@ -30,6 +30,7 @@ import { useBlackHoleSync } from '@/composables/avatar/sync/useBlackHoleSync';
 import { useParticlesFaceSync } from '@/composables/avatar/sync/useParticlesFaceSync';
 import { useEyeIrisSync } from '@/composables/avatar/sync/useEyeIrisSync';
 import { useJarvisSync } from '@/composables/avatar/sync/useJarvisSync';
+import { useJarvisSignals } from '@/composables/avatar/useJarvisSignals';
 import { useBrainSync } from '@/composables/useBrainSync';
 import { randomizeAvatarPanel } from '@/composables/avatar/randomizeAvatarPanel';
 import { useBlobXyzStore } from '@/stores/avatar.blob-xyz';
@@ -213,6 +214,10 @@ const { applyToKwami: applyJarvisToKwami } = useJarvisSync({
   kwami,
   getJarvis: () => kwami.value?.avatar.getJarvis() ?? undefined,
 });
+// The HUD acknowledges what the session does: link, messages, tool calls, failures, balance.
+const { syncStatus: syncJarvisStatus } = useJarvisSignals(
+  () => kwami.value?.avatar.getJarvis() ?? undefined,
+);
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 
@@ -303,6 +308,7 @@ function applySavedAvatarState() {
       break;
     case 'jarvis':
       applyJarvisToKwami();
+      syncJarvisStatus();
       break;
   }
 
@@ -464,6 +470,7 @@ function onGlobalKeydown(e: KeyboardEvent) {
       avatarStore.setRendererType('jarvis');
       switchRenderer('jarvis');
       applyJarvisToKwami();
+      syncJarvisStatus();
       avatarStore.saveSettings();
       break;
     case 'r':

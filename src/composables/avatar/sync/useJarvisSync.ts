@@ -61,6 +61,18 @@ export function useJarvisSync(options: UseJarvisSyncOptions) {
     () => state.scale,
     (v) => getJarvis()?.setScale(v),
   );
+  watch(
+    () => state.panels,
+    (v) => getJarvis()?.setPanels(v),
+  );
+  watch(
+    () => state.grid,
+    (v) => getJarvis()?.setGrid(v),
+  );
+  watch(
+    () => state.depth,
+    (v) => getJarvis()?.setDepth(v),
+  );
 
   function syncFromKwami(): void {
     const renderer = getJarvis();
@@ -81,6 +93,9 @@ export function useJarvisSync(options: UseJarvisSyncOptions) {
     renderer.setLabels(state.labels);
     renderer.setTitle(state.title);
     renderer.setScale(state.scale);
+    renderer.setPanels(state.panels);
+    renderer.setGrid(state.grid);
+    renderer.setDepth(state.depth);
   }
 
   return { syncFromKwami, applyToKwami };
