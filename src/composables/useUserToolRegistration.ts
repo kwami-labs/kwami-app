@@ -3,7 +3,7 @@ import type { Kwami } from 'kwami';
 import { useKwami } from '@/composables/useKwami';
 import { useToolCatalogStore } from '@/stores/toolCatalog';
 import { useUserToolsStore } from '@/stores/userTools';
-import { registerToolBatch } from '@/lib/toolRegistration';
+import { moveToolsToFront, registerToolBatch } from '@/lib/toolRegistration';
 import { createWebhookHandler, toParametersSchema } from '@/lib/userTools';
 
 /**
@@ -55,7 +55,7 @@ export function useUserToolRegistration() {
           });
           registered.add(tool.name);
         }
-        moveToFront(live, registered);
+        moveToolsToFront(live, registered);
       },
       catalog.record,
     );
@@ -70,20 +70,4 @@ export function useUserToolRegistration() {
     },
     { immediate: true },
   );
-}
-
-/**
- * Re-insert every other tool after `names`, so `names` lead the registry.
- *
- * The registry is a Map: re-setting a key keeps its slot, so the only way to
- * reorder is to take the others out and put them back. Each entry keeps its
- * handler; the agent's dispatch table is keyed by name and untouched.
- */
-function moveToFront(live: Kwami, names: ReadonlySet<string>) {
-  if (!names.size) return;
-  for (const tool of live.tools.getAll()) {
-    if (names.has(tool.name)) continue;
-    live.tools.unregister(tool.name);
-    live.tools.register(tool);
-  }
 }

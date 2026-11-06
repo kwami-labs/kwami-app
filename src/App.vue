@@ -25,6 +25,7 @@ import { useNavigation } from '@/composables/useNavigation';
 import { isBareShortcut, isEditableTarget } from '@/utils/keyboard';
 import { useWorkspaceAgentTools } from '@/composables/useWorkspaceAgentTools';
 import { useUserToolRegistration } from '@/composables/useUserToolRegistration';
+import { useMcpServers } from '@/composables/useMcpServers';
 import { useAvatarStore } from '@/stores/avatar';
 import { useBlobXyzSync } from '@/composables/avatar/sync/useBlobXyzSync';
 import { useBlackHoleSync } from '@/composables/avatar/sync/useBlackHoleSync';
@@ -180,6 +181,8 @@ const isSplitWithBrowser = computed(() => navState.hasView.value && navState.isD
 useWorkspaceAgentTools();
 // The webhooks the user added to this kwami, ahead of the app's own in the list.
 useUserToolRegistration();
+// And the MCP servers saved on it, connected again on every load.
+useMcpServers().startSync();
 useUiLayoutSync();
 useBrowserFrames();
 

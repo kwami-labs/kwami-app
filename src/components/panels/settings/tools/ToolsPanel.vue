@@ -7,15 +7,15 @@ import { useKwami } from '@/composables/useKwami';
 import type { ToolDefinition } from 'kwami';
 import PanelSection from '@/components/ui/PanelSection.vue';
 import BaseButton from '@/components/ui/BaseButton.vue';
-import BaseInput from '@/components/ui/BaseInput.vue';
 import BaseSelect from '@/components/ui/BaseSelect.vue';
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue';
 import PanelHeaderControls from '@/components/ui/PanelHeaderControls.vue';
-import { translateApiUserMessage } from '@/utils/translateApiMessage';
 import { useToolCatalogStore } from '@/stores/toolCatalog';
 import { USER_TOOL_GROUPS } from '@/lib/toolRegistration';
 import ToolCatalog from './ToolCatalog.vue';
 import CustomToolEditor from './CustomToolEditor.vue';
+import McpServers from './McpServers.vue';
+import { useMcpServers } from '@/composables/useMcpServers';
 import { useUserToolsStore } from '@/stores/userTools';
 import type { UserWebhookTool } from '@/lib/userTools';
 
@@ -50,13 +50,11 @@ const yourCount = computed(
   () => tools.value.filter((tool) => USER_TOOL_GROUPS.has(catalog.groupOf(tool.name))).length,
 );
 
-const mcp = ref({ name: '', url: '', apiKey: '' });
-const mcps = ref<Array<{ name: string; url: string }>>([]);
-
 const exec = ref({ toolName: '', params: '', result: '', loading: false, error: '' });
 
 // Your tools: created and edited in the Create tab, kept on the kwami's config.
 const userTools = useUserToolsStore();
+const mcp = useMcpServers();
 const editingTool = ref<UserWebhookTool | null>(null);
 const takenNames = computed(() => new Set(tools.value.map((tool) => tool.name)));
 
@@ -89,6 +87,14 @@ function removeTool() {
     userTools.remove(name);
     return;
   }
+  // An MCP tool is switched off on its server, so it stays off after a reload.
+  for (const [server, state] of Object.entries(mcp.states)) {
+    const original = Object.entries(state.exposed).find(([, exposed]) => exposed === name)?.[0];
+    if (original) {
+      userTools.setServerToolEnabled(server, original, false);
+      return;
+    }
+  }
   kwami.value.unregisterTool(name);
   catalog.forget(name);
 }
@@ -96,36 +102,6 @@ function removeTool() {
 function testTool(name: string) {
   exec.value = { ...exec.value, toolName: name, result: '', error: '' };
   activeTab.value = 'test';
-}
-
-async function connectMCP() {
-  if (!mcp.value.name || !mcp.value.url) return;
-  try {
-    const before = new Set(kwami.value?.tools.getAll().map((tool) => tool.name));
-    await kwami.value?.tools.connectMCP({
-      name: mcp.value.name,
-      url: mcp.value.url,
-      apiKey: mcp.value.apiKey || undefined,
-    });
-    for (const tool of kwami.value?.tools.getAll() ?? []) {
-      if (!before.has(tool.name)) catalog.record(tool.name, 'mcp');
-    }
-    mcps.value.push({ name: mcp.value.name, url: mcp.value.url });
-    mcp.value = { name: '', url: '', apiKey: '' };
-    // connectMCP registers into the ToolRegistry but never announces the new
-    // definitions, so a server connected after the initial connect stayed
-    // invisible to the agent until the next reconnect.
-    if (kwami.value?.agent) {
-      kwami.value.agent.syncConfigToBackend('tools', kwami.value.tools.getToolDefinitions());
-    }
-    catalog.touch();
-  } catch (e) {
-    toast.error(
-      t('tools.mcpConnectionFailed', {
-        message: translateApiUserMessage((e as Error).message, t),
-      }),
-    );
-  }
 }
 
 async function executeTool() {
@@ -243,30 +219,8 @@ async function executeTool() {
         role="tabpanel"
         aria-labelledby="tools-tab-mcp"
       >
-        <PanelSection :title="t('tools.mcpServers')">
-          <div class="tools-list">
-            <div v-if="!mcps.length" class="empty">{{ t('tools.noMcpServers') }}</div>
-            <div v-for="s in mcps" :key="s.name" class="card">
-              <div class="head">
-                <iconify-icon icon="ph:plugs-connected-duotone"></iconify-icon>
-                <span class="name" translate="no">{{ s.name }}</span>
-                <span class="badg">{{ t('tools.connected') }}</span>
-              </div>
-              <span class="url" translate="no">{{ s.url }}</span>
-            </div>
-          </div>
-          <div class="form" style="margin-top: 12px">
-            <BaseInput :label="t('tools.name')" v-model="mcp.name" placeholder="my-mcp" />
-            <BaseInput
-              :label="t('tools.url')"
-              v-model="mcp.url"
-              placeholder="http://localhost:3001"
-            />
-            <BaseInput :label="t('tools.apiKey')" v-model="mcp.apiKey" type="password" />
-            <BaseButton icon="ph:plugs-connected-duotone" @click="connectMCP">{{
-              t('tools.connectMcp')
-            }}</BaseButton>
-          </div>
+        <PanelSection>
+          <McpServers />
         </PanelSection>
       </div>
 
@@ -395,37 +349,6 @@ async function executeTool() {
   color: var(--text-secondary);
 }
 
-.tools-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.empty {
-  text-align: center;
-  padding: 12px;
-  color: var(--text-tertiary);
-  font-size: 13px;
-  background: var(--surface-1);
-  border-radius: 8px;
-}
-.card {
-  background: var(--surface-1);
-  border: 1px solid var(--glass-border);
-  border-radius: 8px;
-  padding: 10px;
-}
-.head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 4px;
-}
-.name {
-  font-weight: 600;
-  font-size: 13px;
-  flex: 1;
-}
-
 .form {
   display: flex;
   flex-direction: column;
@@ -448,19 +371,6 @@ textarea {
   color: var(--text-secondary);
   font-size: 12px;
   resize: vertical;
-}
-
-.badg {
-  font-size: 10px;
-  color: var(--accent-success);
-  background: rgba(var(--accent-success-rgb), 0.1);
-  padding: 2px 6px;
-  border-radius: 10px;
-}
-.url {
-  font-size: 11px;
-  color: var(--text-tertiary);
-  word-break: break-all;
 }
 
 .res {
