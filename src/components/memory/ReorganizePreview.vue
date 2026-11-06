@@ -31,9 +31,21 @@ interface OrphanPreview {
 }
 interface MergePreview {
   score: number;
-  keep: { uuid: string; name: string; edge_count: number };
-  remove: { uuid: string; name: string; edge_count: number };
+  /** False when both have a type and the types differ: Apple the company and
+   *  Apple the fruit. The API never auto-merges those; neither does a click. */
+  compatible?: boolean;
+  keep: { uuid: string; name: string; edge_count: number; labels?: string[] };
+  remove: { uuid: string; name: string; edge_count: number; labels?: string[] };
   selected: boolean;
+}
+
+interface ApplyReport {
+  orphans_removed: number;
+  merges_performed: number;
+  /** Orphans that had gained a fact since the preview, so were not deleted. */
+  orphans_kept?: number;
+  /** Actions stopped before they could lose anything. */
+  errors?: string[];
 }
 
 const showDialog = ref(false);
@@ -57,7 +69,7 @@ async function fetchPreview() {
     }));
     previewMerges.value = (data.duplicates || []).map((d: MergePreview) => ({
       ...d,
-      selected: true,
+      selected: d.compatible !== false,
     }));
     previewCommunities.value = data.communities_estimate || 0;
     showDialog.value = true;
@@ -87,19 +99,22 @@ async function apply() {
 
   applying.value = true;
   try {
-    const result = await api.post<{
-      report: { orphans_removed: number; merges_performed: number };
-    }>(
+    const result = await api.post<{ report: ApplyReport }>(
       `/memory/${props.userId}/reorganize/apply`,
       { orphan_uuids: selectedOrphans, merge_pairs: selectedMerges },
       // Destructive graph surgery: never retried, and it can run long.
       { retry: false, timeoutMs: 120_000 },
     );
     const r = result.report;
-    toast.success(
-      t('memoryReorg.doneReport', { orphans: r.orphans_removed, merges: r.merges_performed }),
-      { timeout: 5000 },
-    );
+    const done = t('memoryReorg.doneReport', {
+      orphans: r.orphans_removed,
+      merges: r.merges_performed,
+    });
+    const kept = r.orphans_kept ? t('memoryReorg.orphansKept', { n: r.orphans_kept }) : '';
+    const failed = r.errors?.length ? t('memoryReorg.leftUntouched', { n: r.errors.length }) : '';
+    const message = [done, kept, failed].filter(Boolean).join(' ');
+    if (failed) toast.warning(message, { timeout: 8000 });
+    else toast.success(message, { timeout: 5000 });
     showDialog.value = false;
     emit('done');
   } catch (e) {
@@ -185,6 +200,12 @@ defineExpose({ fetchPreview, loading, applying });
               <iconify-icon icon="ph:arrow-left-duotone" class="merge-arrow-icon"></iconify-icon>
               <span class="merge-remove">{{ merge.remove.name }}</span>
               <span class="merge-score-badge">{{ merge.score }}%</span>
+              <span
+                v-if="merge.compatible === false"
+                class="merge-type-warning"
+                :title="t('memoryReorg.differentTypesHint')"
+                >{{ t('memoryReorg.differentTypes') }}</span
+              >
             </div>
           </div>
         </label>
@@ -295,6 +316,14 @@ defineExpose({ fetchPreview, loading, applying });
 .merge-arrow-icon {
   font-size: 12px;
   color: var(--text-muted);
+}
+.merge-type-warning {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: var(--warning, #f59e0b);
+  border: 1px solid currentColor;
+  white-space: nowrap;
 }
 .merge-score-badge {
   font-size: 9px;

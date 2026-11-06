@@ -1587,6 +1587,11 @@ export const en = {
     applyFailed: 'Apply failed: {message}',
     doneReport: 'Done! {orphans} orphans removed, {merges} merges',
     noActionsSelected: 'No actions selected',
+    orphansKept: '{n} kept: they now have facts.',
+    leftUntouched: '{n} left untouched rather than risk losing facts.',
+    differentTypes: 'different types',
+    differentTypesHint:
+      'These look alike but are different kinds of thing; not merged unless you tick it.',
   },
   memoryOps: {
     reorganizeTitle: 'Reorganize',
