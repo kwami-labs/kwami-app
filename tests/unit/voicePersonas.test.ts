@@ -221,8 +221,8 @@ describe('voice personas section', () => {
     await button('Cartesia').trigger('click');
     expect(store.tts).toMatchObject({
       provider: 'cartesia',
-      model: 'sonic-3',
-      voice: '13ff5deb-2591-42ad-a356-63a04e524411',
+      model: 'sonic-3.5',
+      voice: 'v_ZMPWZvfoRpsC',
     });
     await button('Deepgram').trigger('click');
     // A Deepgram Aura voice is a model.
