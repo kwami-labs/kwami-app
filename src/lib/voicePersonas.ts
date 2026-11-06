@@ -41,7 +41,7 @@ export type VoiceGender = 'male' | 'female';
  * about 2 s on either realtime model.
  *
  * - elevenlabs: Flash v2.5, the fastest TTS (0.24 s to first audio);
- * - cartesia: Sonic 3 with Spanish voices of its own (0.44 s);
+ * - cartesia: Sonic 3.5, a designed voice of its own and Spanish ones (0.44 s);
  * - deepgram: Aura 2, whose Spanish voices are models (0.74 s);
  * - openai-tts: tts-1, about 1 s;
  * - gemini-tts: the sound the user chose on 2026-10-09 -- but a free-tier key
@@ -87,7 +87,7 @@ export const ENGINE_SPECS: Record<VoiceEngine, EngineSpec> = {
     model: 'eleven_flash_v2_5',
     readsDirection: false,
   },
-  cartesia: { kind: 'standard', provider: 'cartesia', model: 'sonic-3', readsDirection: false },
+  cartesia: { kind: 'standard', provider: 'cartesia', model: 'sonic-3.5', readsDirection: false },
   // A Deepgram Aura voice *is* a model ("aura-2-nestor-es"): see `ttsFor`.
   deepgram: { kind: 'standard', provider: 'deepgram', model: 'aura-2', readsDirection: false },
   // tts-1, not gpt-4o-mini-tts: the latter took 7-9 s for a sentence on
@@ -225,9 +225,12 @@ export const VOICE_PERSONAS: readonly VoicePersona[] = [
       { id: 'onwK4e9ZLuTAKqWW03F9', name: 'Daniel' },
       { id: 'nPczCjzI2devNBz1zQrb', name: 'Brian' },
     ],
-    // Cartesia's own Spanish (Spain) male voices: Marcos calm and measured,
-    // Gonzalo warmer. Deepgram's Spanish Aura voice for a man is Néstor.
+    // Sonic is Jarvis's own voice, designed in Cartesia Sonic 3.5 and served
+    // through LiveKit Inference (a "v_" id, not a UUID). Marcos and Gonzalo are
+    // Cartesia's own Spanish (Spain) male voices, calm and warmer. Deepgram's
+    // Spanish Aura voice for a man is Néstor.
     cartesia: [
+      { id: 'v_ZMPWZvfoRpsC', name: 'Sonic' },
       { id: '13ff5deb-2591-42ad-a356-63a04e524411', name: 'Marcos' },
       { id: '58e531e3-b212-49df-adee-c335a19c2429', name: 'Gonzalo' },
     ],
