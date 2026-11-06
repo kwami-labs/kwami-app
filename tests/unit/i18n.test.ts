@@ -1,8 +1,17 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { en } from '../../src/i18n/translations/en';
 import { es } from '../../src/i18n/translations/es';
-import { workspaceAgentToolsEn, workspaceAgentToolsEs } from '../../src/i18n/workspaceAgentTools.locale';
-import { normalizeLocale, intlLocaleTag, SUPPORTED_LOCALES } from '../../src/i18n';
+import {
+  workspaceAgentToolsEn,
+  workspaceAgentToolsEs,
+} from '../../src/i18n/workspaceAgentTools.locale';
+import {
+  normalizeLocale,
+  intlLocaleTag,
+  SUPPORTED_LOCALES,
+  getCurrentLocale,
+  setLocale,
+} from '../../src/i18n';
 
 /** Flattens a nested message object to dotted leaf paths. */
 function leafKeys(obj: unknown, prefix = ''): string[] {
@@ -54,5 +63,23 @@ describe('locale helpers', () => {
   it('maps locales to BCP 47 tags', () => {
     expect(intlLocaleTag('en')).toBe('en-US');
     expect(intlLocaleTag('es')).toBe('es-ES');
+  });
+});
+
+describe('document language', () => {
+  const initial = getCurrentLocale();
+  afterEach(() => setLocale(initial));
+
+  it('declares the current locale on <html> from the start', () => {
+    expect(document.documentElement.lang).toBe(getCurrentLocale());
+  });
+
+  // A Spanish page that says it is English gets machine-translated by the
+  // browser, which renamed tool identifiers in the Tools panel.
+  it('follows every locale change', () => {
+    setLocale('es');
+    expect(document.documentElement.lang).toBe('es');
+    setLocale('en');
+    expect(document.documentElement.lang).toBe('en');
   });
 });
