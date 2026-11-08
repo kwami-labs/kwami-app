@@ -237,14 +237,30 @@ export const fr = {
     installDesktop:
       "Cliquez sur Installer la PWA, ou sur l'icône d'installation dans la barre d'adresse. Sur Safari ou Firefox, ouvrez ce site dans Chrome ou Edge pour l'installer.",
     pwaInsideNative: "La PWA s'installe depuis un navigateur : ouvrez-y kwami.io.",
-    nativeTitle: 'Application de bureau (Tauri)',
+    nativeTitle: 'Application native (Tauri)',
     nativeHint:
-      'Un programme Windows avec sa propre fenêtre et son raccourci, sans navigateur. Il ouvre kwami.io dans une enveloppe écrite en Rust.',
-    nativeDownload: 'Télécharger pour Windows (.exe)',
-    nativeUnsigned:
-      'Pas encore signée : si Windows vous avertit, choisissez Informations complémentaires, puis Exécuter quand même.',
+      'Sa propre fenêtre et son icône, sans navigateur. Elle ouvre kwami.io dans une enveloppe écrite en Rust. Le bouton choisit la version de cet appareil.',
+    nativeDownload: 'Télécharger pour {os} ({format})',
+    nativeOs: {
+      windows: 'Windows',
+      macos: 'Mac',
+      linux: 'Linux',
+      android: 'Android',
+      ios: 'iPhone ou iPad',
+      other: 'cet appareil',
+    },
+    nativeSteps: {
+      windows:
+        'Pas encore signée : si Windows vous avertit, choisissez Informations complémentaires, puis Exécuter quand même.',
+      macos: 'Pas encore signée : la première fois, ouvrez-la avec clic droit, Ouvrir.',
+      linux: 'Rendez le fichier exécutable (chmod +x) et lancez-le.',
+      android:
+        "Ouvrez le fichier téléchargé. Si Android le demande, autorisez l'installation depuis ce navigateur.",
+    },
+    nativeIos:
+      "Apple n'autorise sur iPhone et iPad que les apps de l'App Store : utilisez l'application web (PWA) ci-dessus, elle fonctionne pareil.",
     nativeUnsupported:
-      "Windows uniquement pour l'instant : ouvrez kwami.io sur un PC Windows pour l'obtenir.",
+      "Pas encore de version native pour {os} : utilisez l'application web (PWA) ci-dessus.",
     nativeRunning: 'Vous utilisez déjà cette application',
   },
   models: {
