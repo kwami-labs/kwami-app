@@ -3,14 +3,39 @@ import { useI18n } from 'vue-i18n';
 import PanelSection from '@/components/ui/PanelSection.vue';
 import BaseButton from '@/components/ui/BaseButton.vue';
 import { usePwaInstall } from '@/composables/usePwaInstall';
-import { detectNativeInstall, downloadWindowsInstaller } from '@/lib/nativeInstall';
+import { computed, onMounted, ref } from 'vue';
+import {
+  detectDevice,
+  detectDeviceAccurately,
+  detectNativeInstall,
+  downloadNativeBuild,
+  pickNativeBuild,
+  type DeviceInfo,
+} from '@/lib/nativeInstall';
 
 const { t } = useI18n();
 
 const { canPrompt, isInstalled, isPrompting, platform, showManualSteps, install } = usePwaInstall();
-const nativeState = detectNativeInstall();
+// The user agent answers at once; client hints may correct the processor a moment later.
+const device = ref<DeviceInfo>(detectDevice());
+onMounted(async () => {
+  device.value = await detectDeviceAccurately();
+});
+const nativeState = computed(() => detectNativeInstall(device.value));
+const nativeBuild = computed(() => pickNativeBuild(device.value));
 // The PWA prompt only exists in a browser, so inside the native app its button would do nothing.
-const insideNative = nativeState === 'running';
+const insideNative = computed(() => nativeState.value === 'running');
+const osName = computed(() => t(`account.nativeOs.${nativeBuild.value?.os ?? device.value.os}`));
+const OS_ICONS: Record<string, string> = {
+  windows: 'ph:windows-logo-duotone',
+  macos: 'ph:apple-logo-duotone',
+  linux: 'ph:linux-logo-duotone',
+  android: 'ph:android-logo-duotone',
+};
+
+function handleNativeDownload() {
+  if (nativeBuild.value) downloadNativeBuild(nativeBuild.value);
+}
 
 async function handleDownload() {
   await install();
@@ -71,7 +96,7 @@ async function handleDownload() {
       <section class="install-card" data-testid="native-card">
         <div class="install-copy">
           <span class="install-icon install-icon--native">
-            <iconify-icon icon="ph:desktop-tower-duotone"></iconify-icon>
+            <iconify-icon icon="ph:devices-duotone"></iconify-icon>
           </span>
           <div class="install-text">
             <span class="install-heading">
@@ -87,22 +112,27 @@ async function handleDownload() {
           {{ t('account.nativeRunning') }}
         </div>
 
-        <template v-else-if="nativeState === 'windows'">
+        <template v-else-if="nativeState === 'available' && nativeBuild">
           <BaseButton
             class="native-download"
             variant="secondary"
-            icon="ph:windows-logo-duotone"
+            :icon="OS_ICONS[nativeBuild.os]"
             block
             data-testid="native-download"
-            @click="downloadWindowsInstaller"
+            @click="handleNativeDownload"
           >
-            {{ t('account.nativeDownload') }}
+            {{ t('account.nativeDownload', { os: osName, format: nativeBuild.format }) }}
           </BaseButton>
-          <p class="install-steps">{{ t('account.nativeUnsigned') }}</p>
+          <p class="install-steps" data-testid="native-steps">
+            {{ t(`account.nativeSteps.${nativeBuild.os}`) }}
+          </p>
         </template>
 
+        <p v-else-if="device.os === 'ios'" class="install-steps" data-testid="native-unsupported">
+          {{ t('account.nativeIos') }}
+        </p>
         <p v-else class="install-steps" data-testid="native-unsupported">
-          {{ t('account.nativeUnsupported') }}
+          {{ t('account.nativeUnsupported', { os: osName }) }}
         </p>
       </section>
     </div>

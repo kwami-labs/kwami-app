@@ -236,14 +236,29 @@ export const pt = {
     installDesktop:
       'Clique em Instalar PWA, ou no ícone de instalação na barra de endereço. No Safari ou Firefox, abra este site no Chrome ou Edge para instalar.',
     pwaInsideNative: 'A PWA instala-se a partir de um navegador: abra lá o kwami.io.',
-    nativeTitle: 'Aplicação de ambiente de trabalho (Tauri)',
+    nativeTitle: 'Aplicação nativa (Tauri)',
     nativeHint:
-      'Um programa do Windows com janela e atalho próprios, sem navegador. Abre o kwami.io numa estrutura escrita em Rust.',
-    nativeDownload: 'Descarregar para Windows (.exe)',
-    nativeUnsigned:
-      'Ainda não está assinada: se o Windows avisar, escolha Mais informações e Executar mesmo assim.',
-    nativeUnsupported:
-      'Por agora só para Windows: abra o kwami.io num PC com Windows para a obter.',
+      'Com janela e ícone próprios, sem navegador. Abre o kwami.io numa estrutura escrita em Rust. O botão escolhe a versão deste dispositivo.',
+    nativeDownload: 'Descarregar para {os} ({format})',
+    nativeOs: {
+      windows: 'Windows',
+      macos: 'Mac',
+      linux: 'Linux',
+      android: 'Android',
+      ios: 'iPhone ou iPad',
+      other: 'este dispositivo',
+    },
+    nativeSteps: {
+      windows:
+        'Ainda não está assinada: se o Windows avisar, escolha Mais informações e Executar mesmo assim.',
+      macos: 'Ainda não está assinada: da primeira vez abra-a com clique direito, Abrir.',
+      linux: 'Torne o ficheiro executável (chmod +x) e abra-o.',
+      android:
+        'Abra o ficheiro descarregado. Se o Android pedir, permita instalar apps a partir deste navegador.',
+    },
+    nativeIos:
+      'A Apple só deixa instalar no iPhone e iPad apps da App Store: use a app web (PWA) acima, funciona igual.',
+    nativeUnsupported: 'Ainda não há versão nativa para {os}: use a app web (PWA) acima.',
     nativeRunning: 'Já está a usar esta aplicação',
   },
   models: {
