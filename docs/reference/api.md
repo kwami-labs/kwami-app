@@ -131,6 +131,10 @@ Catalog fetches use a 10s timeout and resolve `null` on failure.
 | POST | `/wallets/kwamis/{kwamiId}/fund/{route}` |
 | POST | `/wallets/allowlist` |
 
+## Other groups
+
+Also called through `apiClient` (see the callers for bodies): `/access*` (site access rules, `useSiteAccess`), `/assistant/*` (settings, tasks, express sends), `/brain/*` (agents, jobs, cloud, sync), `/google/*` (Workspace: calendar, contacts, gmail, docs, sheets, slides, tasks), `/providers*` (BYOK keys, OpenRouter connect), `/pc/*` (sites, orders, status), `/voices/library`, `/voices/preview`.
+
 ## Error shape
 
 The client normalizes FastAPI bodies:
