@@ -55,6 +55,7 @@ These participate in `useKwamiConfigSync` snapshots (except where noted).
 | `avatar.black-hole` | `avatar.black-hole.ts` | via avatar façade | (nested) |
 | `avatar.particles-face` | `avatar.particles-face.ts` | via avatar façade | (nested) |
 | `avatar.eye-iris` | `avatar.eye-iris.ts` | via avatar façade | (nested) |
+| `avatar.jarvis` | `avatar.jarvis.ts` | via avatar façade | (nested) |
 | `voice` | `voice.ts` | `kwami-voice-config` + workspace | `voice` |
 | `scene` | `scene.ts` | `kwami-scene` + workspace | `scene` |
 | `theme` | `theme.ts` | `localStorage` + workspace | `theme` |

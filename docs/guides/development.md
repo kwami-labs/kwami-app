@@ -24,15 +24,15 @@
 | `bun run cf:deploy:dry` | Same as deploy, without publishing |
 | `bun run cf:deploy:dev` | Dev Worker `kwami-app-dev` (`dev.kwami.io`) |
 
-CI runs typecheck, lint, format, unit tests with coverage, production build, then e2e. See [Testing](testing.md).
+CI runs typecheck, lint, format and CI-script tests (`lint`), unit tests with coverage, e2e, `bun audit --prod`, and the production build as parallel jobs. See [Testing](testing.md).
 
 ## Tooling
 
 | Tool | Config |
 | --- | --- |
 | TypeScript 5.9 | `tsconfig.json`, `tsconfig.app.json`, `tsconfig.node.json` |
-| Vite 7 | [`vite.config.ts`](../../vite.config.ts) |
-| ESLint 9 flat | [`eslint.config.js`](../../eslint.config.js) |
+| Vite 8 | [`vite.config.ts`](../../vite.config.ts) |
+| ESLint 10 flat | [`eslint.config.js`](../../eslint.config.js) |
 | Prettier | [`.prettierrc`](../../.prettierrc) — 2-space, semicolons, single quotes, width 100 |
 | Vue language tools | `.vscode/extensions.json` |
 

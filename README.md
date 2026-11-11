@@ -17,7 +17,7 @@ This repository is the **frontend**. The voice agent, token issuer, memory servi
 | | |
 |---|---|
 | Version | [Latest release](https://github.com/kwami-labs/kwami-app/releases/latest) — semantic-release on `main` |
-| Runtime | Vue 3, TypeScript 5.9, Vite 7, bun 1.2 |
+| Runtime | Vue 3, TypeScript 5.9, Vite 8, bun 1.2 |
 | Host | Cloudflare Workers — `kwami.io` (`kwami-app`), `dev.kwami.io` (`kwami-app-dev`) |
 | Auth | [Supabase](https://supabase.com/) — email, phone OTP, Google, Phantom, MetaMask |
 | License | [Apache License 2.0](./LICENSE) |
@@ -51,7 +51,7 @@ This repository is the **frontend**. The voice agent, token issuer, memory servi
 ## Features
 
 - **Voice pipeline** — STT → LLM → TTS or a realtime speech-to-speech model, streamed over [LiveKit](https://livekit.io)
-- **3D avatars** — Blob, black hole, particles-face, and eye-iris renderers on [Three.js](https://threejs.org/) via the [Kwami SDK](https://github.com/kwami-labs/kwami)
+- **3D avatars** — Blob, black hole, particles-face, eye-iris, and Jarvis HUD renderers on [Three.js](https://threejs.org/) via the [Kwami SDK](https://github.com/kwami-labs/kwami)
 - **Soul** — Per-companion personality, traits, and system prompt, synced to the live agent
 - **Memory** — Per-companion knowledge graph ([Zep](https://www.getzep.com/) behind the API), 2D/3D explorer
 - **Workspaces** — Multiple named companions with isolated config, memory, and channels
@@ -100,15 +100,15 @@ Deep dive: [Architecture overview](docs/architecture/overview.md) · [Data flow]
 | Area | Choice |
 |---|---|
 | UI | Vue 3 (Composition API, `<script setup>`), TypeScript 5.9 |
-| Build | Vite 7, bun |
+| Build | Vite 8, bun |
 | State | Pinia |
-| 3D / voice runtime | `kwami` 2.2.0-dev.1, Three.js 0.186 |
+| 3D / voice runtime | `kwami` 2.2.1-dev.4, Three.js 0.186 |
 | Auth | `@supabase/supabase-js` |
 | i18n | `vue-i18n` |
 | PWA | `vite-plugin-pwa` |
 | Desktop | Tauri 2 |
 | Tests | Vitest + MSW, Playwright |
-| Lint / format | ESLint 9, Prettier |
+| Lint / format | ESLint 10, Prettier |
 | Host | Cloudflare Workers (`infra/wrangler.jsonc`) |
 | Release | semantic-release on `main` |
 
