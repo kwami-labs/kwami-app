@@ -19,6 +19,7 @@ Order comes from [`src/constants/panels.ts`](../../src/constants/panels.ts) (vis
 | `enhancements` | `EnhancementsPanel` | VAD, turn detection, AEC, interruptions |
 | `communications` | settings `PhonePanel` | Number inventory (not the Phone **app**) |
 | `tools` | `ToolsPanel` | Catalog of every tool and the model's budget; create webhook tools; MCP servers; test any tool |
+| `access` | `AccessPanel` | Per-site access level rules (`useSiteAccess`) |
 | `metrics` | `MetricsPanel` | Live session metrics |
 | `info` | `InfoPanel` | Connection and runtime status |
 | `credits` | `EnergyPanel` | Balance, packs, usage (pinned) |

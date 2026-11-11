@@ -41,10 +41,14 @@ flowchart TB
 
 | Job | What |
 | --- | --- |
-| `verify` | `bun install --frozen-lockfile`, typecheck, lint, format, `test:unit --coverage`, `build` |
+| `pr-title` / `commits` | Conventional Commits on the PR title and on each commit the branch adds |
+| `lint` | `typecheck`, `lint:check`, `format:check`, `test:ci-scripts` |
+| `unit` | `test:unit --coverage` (floors in `vitest.config.ts`) |
 | `e2e` | Playwright + Chromium deps, `bun run test:e2e` |
+| `vuln` | `bun audit --prod` |
+| `build` | `bun run build` |
 
-Concurrency cancels in-flight runs on the same ref. bun version is pinned to **1.2.21**.
+Jobs run in parallel. Concurrency cancels in-flight runs on the same ref, except `main`. bun version is pinned to **1.2.21**.
 
 CI does not need production secrets. Unit and e2e use injected / `.env.test` values.
 
