@@ -4,6 +4,41 @@ All notable changes to this client are documented here. This file is generated f
 
 `v0.1.0` is a baseline tag placed at the commit that introduced this automation. Everything before it lives in the git log rather than here: it shipped before there was a release line to put it on.
 
+## [0.1.10](https://github.com/kwami-labs/kwami-app/compare/v0.1.9...v0.1.10) (2026-11-12)
+
+
+### Bug Fixes
+
+* **db:** what Supabase's advisors flag in the app's own tables ([#94](https://github.com/kwami-labs/kwami-app/issues/94)) ([cd73f53](https://github.com/kwami-labs/kwami-app/commit/cd73f538ec24f1d9ca231fba988958d879820159)), closes [kwami-lk-api#97](https://github.com/kwami-lk-api/issues/97)
+* **i18n:** declare the app's language on the page so browsers stop translating it ([f921bbe](https://github.com/kwami-labs/kwami-app/commit/f921bbe50b414ae51d0ba0e18dbcbd18323e8c9b))
+* **memory:** do not pre-tick merging two different kinds of thing ([#88](https://github.com/kwami-labs/kwami-app/issues/88)) ([ae45b37](https://github.com/kwami-labs/kwami-app/commit/ae45b374e3081f2ff68ca217e924d8c924001d0e)), closes [kwami-lk-api#85](https://github.com/kwami-lk-api/issues/85)
+* **theme:** define the colour tokens components already read ([b276865](https://github.com/kwami-labs/kwami-app/commit/b2768654c5003fcbb4c526f3a6cb6ee7fe4b19c2))
+
+
+### Features
+
+* **access:** a panel for the sites Jarvis may visit, and a livelier rail ([#92](https://github.com/kwami-labs/kwami-app/issues/92)) ([9754f05](https://github.com/kwami-labs/kwami-app/commit/9754f05b7846b2bd6303cd6b134639af281ff634)), closes [kwami-labs/kwami-lk-api#96](https://github.com/kwami-labs/kwami-lk-api/issues/96) [kwami-labs/kwami-lk-agent#136](https://github.com/kwami-labs/kwami-lk-agent/issues/136)
+* **avatar:** a three-dimensional jarvis HUD that answers to the session ([#74](https://github.com/kwami-labs/kwami-app/issues/74)) ([79ad629](https://github.com/kwami-labs/kwami-app/commit/79ad629f2a0383deb01903ce262d147e823df4ad)), closes [#150](https://github.com/kwami-labs/kwami-app/issues/150) [#152](https://github.com/kwami-labs/kwami-app/issues/152) [#153](https://github.com/kwami-labs/kwami-app/issues/153) [kwami#151](https://github.com/kwami/issues/151) [#153](https://github.com/kwami-labs/kwami-app/issues/153) [#153](https://github.com/kwami-labs/kwami-app/issues/153) [kwami#151](https://github.com/kwami/issues/151)
+* **avatar:** every jarvis preset brings the three-dimensional interface ([#84](https://github.com/kwami-labs/kwami-app/issues/84)) ([62102fa](https://github.com/kwami-labs/kwami-app/commit/62102faa730aadcab2b8a20d9a52a6b89ea45922)), closes [#74](https://github.com/kwami-labs/kwami-app/issues/74)
+* **enhancements:** switch the agent's thinking sound on or off ([#81](https://github.com/kwami-labs/kwami-app/issues/81)) ([b5a3c23](https://github.com/kwami-labs/kwami-app/commit/b5a3c23cb026f4d4a0ddb525fd6101e1f7214a31)), closes [kwami-labs/kwami-lk-agent#126](https://github.com/kwami-labs/kwami-lk-agent/issues/126)
+* **install:** pick the native build for the device that opens the page ([#98](https://github.com/kwami-labs/kwami-app/issues/98)) ([2e99aa4](https://github.com/kwami-labs/kwami-app/commit/2e99aa4405f9a897f4fa522004699cdfdc07f142))
+* **memory:** colour and offer the Task and Asset types ([#90](https://github.com/kwami-labs/kwami-app/issues/90)) ([553e840](https://github.com/kwami-labs/kwami-app/commit/553e84076534a9de8ceeee6fbd83f1c305f5c879)), closes [kwami-lk-agent#128](https://github.com/kwami-lk-agent/issues/128)
+* **memory:** show the whole graph and keep conversations whole ([#80](https://github.com/kwami-labs/kwami-app/issues/80)) ([fa0a9de](https://github.com/kwami-labs/kwami-app/commit/fa0a9decdbfbc2bee2f1ed6a65a3921ba130a524)), closes [kwami-lk-api#85](https://github.com/kwami-lk-api/issues/85) [kwami-lk-api#85](https://github.com/kwami-lk-api/issues/85) [#89](https://github.com/kwami-labs/kwami-app/issues/89) [#90](https://github.com/kwami-labs/kwami-app/issues/90)
+* **models:** work in the background and the user's agents ([#76](https://github.com/kwami-labs/kwami-app/issues/76)) ([ef3b786](https://github.com/kwami-labs/kwami-app/commit/ef3b786eeb3622760f2c112350038e0df498ce73)), closes [#87](https://github.com/kwami-labs/kwami-app/issues/87) [#88](https://github.com/kwami-labs/kwami-app/issues/88)
+* **tools:** a searchable catalog of the agent's tools, grouped by what they do ([5ae8a0b](https://github.com/kwami-labs/kwami-app/commit/5ae8a0bcc889f1acfa756ea5acf5dca6797f4b71))
+* **tools:** connect MCP servers for real, saved with the kwami ([a57fe92](https://github.com/kwami-labs/kwami-app/commit/a57fe9228109fdaa45000e94becaf015bded0613))
+* **tools:** show what reaches the model, and switch groups off to make room ([a787bbe](https://github.com/kwami-labs/kwami-app/commit/a787bbe64d0ee0abf0bd72780f39fa994b0fdeb8)), closes [kwami-lk-agent#125](https://github.com/kwami-lk-agent/issues/125)
+* **tools:** test a tool from a form built from its schema ([6753f48](https://github.com/kwami-labs/kwami-app/commit/6753f4869aaaa0359d178ffc2978ab7745da027f))
+* **tools:** webhook tools that are saved with the kwami, checked, and reach the model ([2b77e93](https://github.com/kwami-labs/kwami-app/commit/2b77e93f9456a66f87c432c1accb1053ce1d1079))
+* **voice:** give Jarvis a Cartesia Sonic 3.5 voice by default ([7157a95](https://github.com/kwami-labs/kwami-app/commit/7157a951f01452fffcf16fbbef1443592331cc3e))
+* **voice:** give Jarvis a cinematic butler ElevenLabs voice by default ([a48ff7a](https://github.com/kwami-labs/kwami-app/commit/a48ff7ae3d94b09b83a41c791d4c9915d999b0fd))
+* **voices:** jarvis speaks with his livekit voice, and custom livekit voices get a section ([#87](https://github.com/kwami-labs/kwami-app/issues/87)) ([9a01eb1](https://github.com/kwami-labs/kwami-app/commit/9a01eb16d06385acbc365ca883c63dbf5cc9e241))
+
+
+### Performance Improvements
+
+* **tools:** register the app's tools as one change, filed by group ([c0cd96a](https://github.com/kwami-labs/kwami-app/commit/c0cd96a04e3c1145edf2440e73eb43b434869e4b))
+
 ## [0.1.9](https://github.com/kwami-labs/kwami-app/compare/v0.1.8...v0.1.9) (2026-11-04)
 
 
