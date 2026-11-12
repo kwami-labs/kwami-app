@@ -10,6 +10,7 @@ import BaseButton from '@/components/ui/BaseButton.vue';
 import BaseSelect from '@/components/ui/BaseSelect.vue';
 import PanelHeaderControls from '@/components/ui/PanelHeaderControls.vue';
 import AppInstallSection from '@/components/panels/settings/account/AppInstallSection.vue';
+import AppUpdateSection from '@/components/panels/settings/account/AppUpdateSection.vue';
 
 const authStore = useAuthStore();
 const { t } = useI18n();
@@ -84,6 +85,7 @@ async function handleLogout() {
 
       <AppInstallSection />
 
+      <AppUpdateSection />
       <!-- Sign Out -->
       <PanelSection :title="t('account.actions')">
         <div class="action-buttons">

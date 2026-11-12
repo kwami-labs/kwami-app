@@ -251,6 +251,22 @@ export const fr = {
     installDesktop:
       "Cliquez sur Installer la PWA, ou sur l'icône d'installation dans la barre d'adresse. Sur Safari ou Firefox, ouvrez ce site dans Chrome ou Edge pour l'installer.",
     pwaInsideNative: "La PWA s'installe depuis un navigateur : ouvrez-y kwami.io.",
+    update: {
+      title: "Version de l'app",
+      version: 'Build {sha}',
+      check: 'Rechercher une mise à jour',
+      force: 'Recharger proprement',
+      forceHint:
+        "Si l'app affiche encore une ancienne version, ceci efface sa copie hors ligne et la recharge. Votre compte et vos réglages restent.",
+      result: {
+        updating:
+          "Une nouvelle version se télécharge. L'app se recharge seule quand elle est prête (après l'appel, s'il y en a un).",
+        latest: 'Vous avez la dernière version.',
+        offline: 'Pas de connexion : réessayez une fois en ligne.',
+        unavailable:
+          'Les mises à jour ne sont pas disponibles dans cette fenêtre (développement ou navigation privée).',
+      },
+    },
     nativeTitle: 'Application native (Tauri)',
     nativeHint:
       'Sa propre fenêtre et son icône, sans navigateur. Elle ouvre kwami.io dans une enveloppe écrite en Rust. Le bouton choisit la version de cet appareil.',
