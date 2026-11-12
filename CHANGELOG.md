@@ -4,6 +4,13 @@ All notable changes to this client are documented here. This file is generated f
 
 `v0.1.0` is a baseline tag placed at the commit that introduced this automation. Everything before it lives in the git log rather than here: it shipped before there was a release line to put it on.
 
+## [0.1.11](https://github.com/kwami-labs/kwami-app/compare/v0.1.10...v0.1.11) (2026-11-12)
+
+
+### Bug Fixes
+
+* **install:** real PWA install steps on iPhone, plus a check for update button ([#102](https://github.com/kwami-labs/kwami-app/issues/102)) ([2d2efab](https://github.com/kwami-labs/kwami-app/commit/2d2efabf90bebd21f8ddeeb1a158a8c3c36de156))
+
 ## [0.1.10](https://github.com/kwami-labs/kwami-app/compare/v0.1.9...v0.1.10) (2026-11-12)
 
 
