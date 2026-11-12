@@ -230,13 +230,43 @@ export const fr = {
       'Installée par votre navigateur et exécutée par son moteur. Se met à jour toute seule, sur mobile et ordinateur.',
     downloadApp: 'Installer la PWA',
     installed: 'Installée sur cet appareil',
-    installIos:
-      "Dans Safari, appuyez sur Partager, puis sur Sur l'écran d'accueil, puis sur Ajouter.",
-    installAndroid:
-      "Appuyez sur Installer la PWA, ou ouvrez le menu du navigateur et choisissez Installer l'application.",
+    pwaGuide: {
+      title: "Comment l'installer",
+      shareSafari:
+        'Appuyez sur Partager (le carré avec une flèche vers le haut) dans la barre de Safari.',
+      shareChrome:
+        "Appuyez sur Partager (le carré avec une flèche vers le haut) à côté de la barre d'adresse, en haut à droite.",
+      shareMenu: 'Ouvrez le menu du navigateur et appuyez sur Partager.',
+      addToHome: "Faites défiler et appuyez sur Sur l'écran d'accueil.",
+      confirmAdd: "Appuyez sur Ajouter. Kwami apparaît sur l'écran d'accueil avec sa propre icône.",
+      safariOnly:
+        "Ce navigateur ne peut pas ajouter d'apps web à l'écran d'accueil. Ouvrez kwami.io dans Safari.",
+      openInSafari: "Ouvrez Safari et collez le lien dans la barre d'adresse.",
+      copyLink: 'Copier le lien',
+      linkCopied: 'Lien copié',
+      androidMenu: 'Ouvrez le menu du navigateur (⋮).',
+      androidInstall:
+        "Appuyez sur Installer l'application ou Ajouter à l'écran d'accueil, puis Installer.",
+    },
     installDesktop:
       "Cliquez sur Installer la PWA, ou sur l'icône d'installation dans la barre d'adresse. Sur Safari ou Firefox, ouvrez ce site dans Chrome ou Edge pour l'installer.",
     pwaInsideNative: "La PWA s'installe depuis un navigateur : ouvrez-y kwami.io.",
+    update: {
+      title: "Version de l'app",
+      version: 'Build {sha}',
+      check: 'Rechercher une mise à jour',
+      force: 'Recharger proprement',
+      forceHint:
+        "Si l'app affiche encore une ancienne version, ceci efface sa copie hors ligne et la recharge. Votre compte et vos réglages restent.",
+      result: {
+        updating:
+          "Une nouvelle version se télécharge. L'app se recharge seule quand elle est prête (après l'appel, s'il y en a un).",
+        latest: 'Vous avez la dernière version.',
+        offline: 'Pas de connexion : réessayez une fois en ligne.',
+        unavailable:
+          'Les mises à jour ne sont pas disponibles dans cette fenêtre (développement ou navigation privée).',
+      },
+    },
     nativeTitle: 'Application native (Tauri)',
     nativeHint:
       'Sa propre fenêtre et son icône, sans navigateur. Elle ouvre kwami.io dans une enveloppe écrite en Rust. Le bouton choisit la version de cet appareil.',

@@ -1,5 +1,6 @@
 import { registerSW } from 'virtual:pwa-register';
 import { createReloader, type StaleVersionOptions } from '@/lib/staleVersion';
+import { setUpdateRegistration } from '@/lib/appUpdate';
 
 const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000;
 
@@ -25,6 +26,7 @@ export function registerServiceWorker(options: StaleVersionOptions): void {
     },
     onRegisteredSW: (_url, registration) => {
       if (!registration) return;
+      setUpdateRegistration(registration);
       const check = () => {
         if (navigator.onLine) registration.update().catch(() => {});
       };

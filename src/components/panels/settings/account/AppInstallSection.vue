@@ -15,7 +15,17 @@ import {
 
 const { t } = useI18n();
 
-const { canPrompt, isInstalled, isPrompting, platform, showManualSteps, install } = usePwaInstall();
+const { isInstalled, isPrompting, mode, iosBrowser, install } = usePwaInstall();
+// Without a browser install prompt (always the case on iOS) the button opens the steps
+// for this browser instead of doing nothing.
+const guideOpen = ref(false);
+const linkCopied = ref(false);
+const shareStepKey = computed(() => {
+  if (mode.value === 'ios-open-safari' || iosBrowser.value === 'safari')
+    return 'account.pwaGuide.shareSafari';
+  if (iosBrowser.value === 'chrome') return 'account.pwaGuide.shareChrome';
+  return 'account.pwaGuide.shareMenu';
+});
 // The user agent answers at once; client hints may correct the processor a moment later.
 const device = ref<DeviceInfo>(detectDevice());
 onMounted(async () => {
@@ -38,7 +48,20 @@ function handleNativeDownload() {
 }
 
 async function handleDownload() {
-  await install();
+  if (mode.value === 'prompt') {
+    const outcome = await install();
+    if (outcome !== 'unavailable') return;
+  }
+  guideOpen.value = !guideOpen.value;
+}
+
+async function copyLink() {
+  try {
+    await navigator.clipboard.writeText(window.location.origin);
+    linkCopied.value = true;
+  } catch {
+    linkCopied.value = false;
+  }
 }
 </script>
 
@@ -81,15 +104,48 @@ async function handleDownload() {
             {{ t('account.downloadApp') }}
           </BaseButton>
 
-          <p v-if="showManualSteps && platform === 'ios'" class="install-steps">
-            {{ t('account.installIos') }}
-          </p>
-          <p v-else-if="showManualSteps && platform === 'android'" class="install-steps">
-            {{ t('account.installAndroid') }}
-          </p>
-          <p v-else-if="showManualSteps && !canPrompt" class="install-steps">
-            {{ t('account.installDesktop') }}
-          </p>
+          <div
+            v-if="!isInstalled && guideOpen"
+            class="install-steps install-guide"
+            data-testid="pwa-guide"
+            role="region"
+            :aria-label="t('account.pwaGuide.title')"
+          >
+            <span class="install-guide-title">{{ t('account.pwaGuide.title') }}</span>
+
+            <template v-if="mode === 'ios-open-safari'">
+              <p class="install-guide-note" data-testid="pwa-guide-safari-only">
+                {{ t('account.pwaGuide.safariOnly') }}
+              </p>
+              <BaseButton
+                variant="secondary"
+                size="sm"
+                :icon="linkCopied ? 'ph:check-duotone' : 'ph:copy-duotone'"
+                block
+                data-testid="pwa-copy-link"
+                @click="copyLink"
+              >
+                {{ linkCopied ? t('account.pwaGuide.linkCopied') : t('account.pwaGuide.copyLink') }}
+              </BaseButton>
+            </template>
+
+            <ol
+              v-if="mode === 'ios-share' || mode === 'ios-open-safari'"
+              data-testid="pwa-guide-ios"
+            >
+              <li v-if="mode === 'ios-open-safari'">{{ t('account.pwaGuide.openInSafari') }}</li>
+              <li>{{ t(shareStepKey) }}</li>
+              <li>{{ t('account.pwaGuide.addToHome') }}</li>
+              <li>{{ t('account.pwaGuide.confirmAdd') }}</li>
+            </ol>
+            <ol v-else-if="mode === 'android-menu'" data-testid="pwa-guide-android">
+              <li>{{ t('account.pwaGuide.androidMenu') }}</li>
+              <li>{{ t('account.pwaGuide.androidInstall') }}</li>
+            </ol>
+            <p v-else class="install-guide-note" data-testid="pwa-guide-desktop">
+              {{ t('account.installDesktop') }}
+            </p>
+          </div>
         </template>
       </section>
 
@@ -257,5 +313,28 @@ async function handleDownload() {
   font-size: 11px;
   line-height: 1.5;
   color: var(--text-muted);
+}
+
+.install-guide {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.install-guide-title {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.install-guide ol {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding-left: 18px;
+}
+
+.install-guide-note {
+  margin: 0;
 }
 </style>

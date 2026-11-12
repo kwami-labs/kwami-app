@@ -1,3 +1,4 @@
+import { execSync } from 'node:child_process';
 import { realpathSync } from 'node:fs';
 import { join, normalize, sep } from 'node:path';
 import { fileURLToPath, URL } from 'node:url';
@@ -48,8 +49,29 @@ function watchLinkedKwami(): Plugin {
   };
 }
 
+/**
+ * Which build a tab is running, shown next to the update button so a phone stuck on
+ * an old deploy can be told apart from one on the current build at a glance.
+ */
+function buildInfo(): { sha: string; builtAt: string } {
+  let sha = process.env.GITHUB_SHA ?? '';
+  if (!sha) {
+    try {
+      sha = execSync('git rev-parse HEAD', { stdio: ['ignore', 'pipe', 'ignore'] })
+        .toString()
+        .trim();
+    } catch {
+      sha = '';
+    }
+  }
+  return { sha: sha.slice(0, 7) || 'dev', builtAt: new Date().toISOString() };
+}
+
 // https://vite.dev/config/
 export default defineConfig({
+  define: {
+    __APP_BUILD__: JSON.stringify(buildInfo()),
+  },
   plugins: [
     watchLinkedKwami(),
     vue({
