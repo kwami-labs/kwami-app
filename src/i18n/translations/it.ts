@@ -230,8 +230,23 @@ export const it = {
       'La installa il browser e funziona con il suo motore. Si aggiorna da sola, su telefono e computer.',
     downloadApp: 'Installa PWA',
     installed: 'Installata su questo dispositivo',
-    installIos: 'In Safari, tocca Condividi, poi Aggiungi a Home e infine Aggiungi.',
-    installAndroid: 'Tocca Installa PWA, oppure apri il menu del browser e scegli Installa app.',
+    pwaGuide: {
+      title: 'Come installarla',
+      shareSafari:
+        'Tocca Condividi (il quadrato con la freccia verso l’alto) nella barra di Safari.',
+      shareChrome:
+        'Tocca Condividi (il quadrato con la freccia verso l’alto) accanto alla barra degli indirizzi, in alto a destra.',
+      shareMenu: 'Apri il menu del browser e tocca Condividi.',
+      addToHome: 'Scorri verso il basso e tocca Aggiungi alla schermata Home.',
+      confirmAdd: 'Tocca Aggiungi. Kwami compare nella schermata Home con la sua icona.',
+      safariOnly:
+        'Questo browser non può aggiungere app web alla schermata Home. Apri kwami.io in Safari.',
+      openInSafari: 'Apri Safari e incolla il link nella barra degli indirizzi.',
+      copyLink: 'Copia link',
+      linkCopied: 'Link copiato',
+      androidMenu: 'Apri il menu del browser (⋮).',
+      androidInstall: 'Tocca Installa app o Aggiungi a schermata Home, poi Installa.',
+    },
     installDesktop:
       "Clicca su Installa PWA, o sull'icona di installazione nella barra degli indirizzi. Su Safari o Firefox, apri questo sito in Chrome o Edge per installarlo.",
     pwaInsideNative: 'La PWA si installa da un browser: apri lì kwami.io.',
