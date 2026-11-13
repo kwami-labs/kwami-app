@@ -21,6 +21,7 @@ import {
   type PipelineMode,
 } from '@/lib/voiceEngines';
 import {
+  applyInstructionsChange,
   brainPayload,
   defaultBrain,
   normalizeBrain,
@@ -221,6 +222,18 @@ export const useVoiceStore = defineStore('voice', () => {
     }
   } catch {
     brainStatus.value = null;
+  }
+
+  /**
+   * Instructions the user changed by voice. Saved like a typed change (the
+   * auto-save below). Returns who changed, '' for the whole brain, or null
+   * when the message does not apply.
+   */
+  function applyBrainInstructions(raw: unknown): string | null {
+    const change = applyInstructionsChange(brain.value, raw);
+    if (!change) return null;
+    brain.value = change.config;
+    return change.label;
   }
 
   function applyBrainStatus(raw: unknown) {
@@ -517,6 +530,7 @@ export const useVoiceStore = defineStore('voice', () => {
     brain,
     brainStatus,
     applyBrainStatus,
+    applyBrainInstructions,
     memoryUI,
     enhancementsState,
     updateSTT,
