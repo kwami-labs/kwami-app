@@ -43,6 +43,18 @@ export function useBrainSync(kwami: Ref<Kwami | null>, isConnected: Ref<boolean>
   function onAgentMessage(event: Event) {
     const detail = (event as CustomEvent).detail as { type?: string } | undefined;
     if (detail?.type === 'brain_status') voiceStore.applyBrainStatus(detail);
+    // The user changed instructions by voice: save them and say so, since the
+    // Models panel changes without anyone touching it.
+    if (detail?.type === 'brain_instructions') {
+      const label = voiceStore.applyBrainInstructions(detail);
+      if (label !== null) {
+        toast.info(
+          label
+            ? t('brainPanel.voiceChangedModel', { model: label })
+            : t('brainPanel.voiceChangedBrain'),
+        );
+      }
+    }
     // The realtime model failed for good and the agent moved the call to the
     // standard pipeline rather than hang up: say so, or the new voice is a mystery.
     if (detail?.type === 'voice_fallback') toast.warning(t('voicePersonas.realtimeFellBack'));

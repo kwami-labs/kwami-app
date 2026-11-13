@@ -205,6 +205,9 @@ export const brainEn = {
   },
   brainPanel: {
     onAccount: 'on your account',
+    briefed: 'Your instructions reached: {models}',
+    voiceChangedModel: 'Instructions for {model} changed by voice and saved.',
+    voiceChangedBrain: 'Instructions for the whole brain changed by voice and saved.',
     directorRole: 'Director ({name}): plans each task and hands out the parts',
     roleXSearch: 'Search X',
     roleXSearchHint: 'what people say on X: only Grok can read it',
@@ -534,6 +537,9 @@ export const brainEs: typeof brainEn = {
   },
   brainPanel: {
     onAccount: 'con tu cuenta',
+    briefed: 'Tus instrucciones llegaron a: {models}',
+    voiceChangedModel: 'Instrucciones de {model} cambiadas por voz y guardadas.',
+    voiceChangedBrain: 'Instrucciones de todo el cerebro cambiadas por voz y guardadas.',
     directorRole: 'Director ({name}): planifica cada tarea y reparte las partes',
     roleXSearch: 'Buscar en X',
     roleXSearchHint: 'lo que se dice en X: solo Grok puede leerlo',
