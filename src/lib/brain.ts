@@ -92,6 +92,8 @@ export interface BrainTaskStatus {
   finishedAt: string;
   result?: string;
   steps?: { goal: string; difficulty: string; model: string; ok: boolean }[];
+  /** Models whose prompt carried the user's instructions and answered. Absent from older agents. */
+  briefed?: string[];
 }
 
 /** A stage of the voice pipeline, as the agent reports its providers. */
@@ -544,6 +546,32 @@ export function parseBrainStatus(raw: unknown): BrainStatus | null {
     tasks: Array.isArray(r.tasks) ? (r.tasks as BrainTaskStatus[]) : [],
     hybridRealtime: prefixMap(r.hybridRealtime),
     receivedAt: Date.now(),
+  };
+}
+
+/**
+ * The user changed instructions by voice: the agent sends
+ * `{type: 'brain_instructions', target: 'brain' | <model id>, instructions}`.
+ * Returns the new config and who changed (empty label for the whole brain), or
+ * null when the message is not one or names a model this roster does not have.
+ */
+export function applyInstructionsChange(
+  config: BrainConfig,
+  raw: unknown,
+): { config: BrainConfig; label: string } | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Record<string, unknown>;
+  if (r.type !== 'brain_instructions' || typeof r.instructions !== 'string') return null;
+  const instructions = r.instructions.slice(0, MAX_INSTRUCTIONS);
+  if (r.target === 'brain') return { config: { ...config, instructions }, label: '' };
+  const model = config.models.find((m) => m.id === r.target);
+  if (!model) return null;
+  return {
+    config: {
+      ...config,
+      models: config.models.map((m) => (m.id === model.id ? { ...m, instructions } : m)),
+    },
+    label: model.label || model.model,
   };
 }
 

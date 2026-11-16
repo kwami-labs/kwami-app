@@ -471,6 +471,10 @@ const taskStatusLabel = (s: string) =>
             }}<template v-if="task.council"> · {{ t('brainPanel.council') }}</template> ·
             {{ task.costUsd.toFixed(3) }} $</span
           >
+          <span v-if="task.briefed?.length" class="task-briefed" data-testid="task-briefed">
+            <iconify-icon icon="ph:check-circle-duotone"></iconify-icon>
+            {{ t('brainPanel.briefed', { models: task.briefed.join(' · ') }) }}
+          </span>
           <ol v-if="task.steps?.length" class="task-steps">
             <li v-for="(step, si) in task.steps" :key="si" :class="{ failed: !step.ok }">
               <span class="step-model">{{ step.model }}</span> · {{ step.goal }}
@@ -512,6 +516,16 @@ const taskStatusLabel = (s: string) =>
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+.task-briefed {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: var(--text-muted);
+}
+.task-briefed iconify-icon {
+  color: #4ade80;
 }
 .account-badge {
   background: rgba(74, 222, 128, 0.15);
