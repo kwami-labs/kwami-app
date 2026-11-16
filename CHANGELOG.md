@@ -4,6 +4,13 @@ All notable changes to this client are documented here. This file is generated f
 
 `v0.1.0` is a baseline tag placed at the commit that introduced this automation. Everything before it lives in the git log rather than here: it shipped before there was a release line to put it on.
 
+## [0.1.12](https://github.com/kwami-labs/kwami-app/compare/v0.1.11...v0.1.12) (2026-11-16)
+
+
+### Features
+
+* **brain:** instructions changed by voice are saved, and each task shows who got them ([#104](https://github.com/kwami-labs/kwami-app/issues/104)) ([5872fa5](https://github.com/kwami-labs/kwami-app/commit/5872fa55529c25cdf291064e3ca68d5a1522d303)), closes [kwami-labs/kwami-lk-agent#158](https://github.com/kwami-labs/kwami-lk-agent/issues/158)
+
 ## [0.1.11](https://github.com/kwami-labs/kwami-app/compare/v0.1.10...v0.1.11) (2026-11-12)
 
 
