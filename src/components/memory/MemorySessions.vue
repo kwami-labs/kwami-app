@@ -234,6 +234,8 @@ async function toggle(session: MemorySession) {
   overflow-y: auto;
 }
 .session-card {
+  /* In a height-capped flex column the cards shrank to slivers instead of the list scrolling. */
+  flex-shrink: 0;
   border: 1px solid var(--glass-border);
   border-radius: 8px;
   background: var(--surface-1);
