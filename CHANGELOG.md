@@ -4,6 +4,13 @@ All notable changes to this client are documented here. This file is generated f
 
 `v0.1.0` is a baseline tag placed at the commit that introduced this automation. Everything before it lives in the git log rather than here: it shipped before there was a release line to put it on.
 
+## [0.1.17](https://github.com/kwami-labs/kwami-app/compare/v0.1.16...v0.1.17) (2026-11-21)
+
+
+### Features
+
+* **desktop:** route each download to its folder and make Install app lead somewhere ([#114](https://github.com/kwami-labs/kwami-app/issues/114)) ([dfaeecd](https://github.com/kwami-labs/kwami-app/commit/dfaeecd996bd9bf7963a5cd156ab5375bbd74873))
+
 ## [0.1.16](https://github.com/kwami-labs/kwami-app/compare/v0.1.15...v0.1.16) (2026-11-21)
 
 
