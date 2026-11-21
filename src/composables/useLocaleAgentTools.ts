@@ -177,20 +177,19 @@ export function useLocaleAgentTools() {
   }
 
   function registerLocaleTools(instance: Kwami) {
+    // One tool for both: reading and switching are one subject to the model, and
+    // a request carries 128 tools at most.
     instance.registerTool({
-      name: 'get_app_language',
-      description: t('appLocale.toolDescGetAppLanguage'),
-      parameters: {},
-      handler: async () => getAppLanguage(),
-    });
-
-    instance.registerTool({
-      name: 'set_app_language',
-      description: t('appLocale.toolDescSetAppLanguage'),
+      name: 'app_language',
+      description: t('appLocale.toolDescAppLanguage'),
       parameters: {
+        action: { type: 'string', enum: ['get', 'set'] },
         language: { type: 'string', enum: [...SUPPORTED_LOCALES] },
       },
-      handler: async ({ language }) => setAppLanguage(language),
+      handler: async ({ action, language }) =>
+        action === 'set' || (action !== 'get' && language)
+          ? setAppLanguage(language)
+          : getAppLanguage(),
     });
   }
 

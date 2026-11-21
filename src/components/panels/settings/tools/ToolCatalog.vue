@@ -31,8 +31,10 @@ const props = withDefaults(
     dropped?: ReadonlySet<string>;
     /** The model's tool ceiling, for the dropped-tool explanation. */
     limit?: number;
+    /** The left-out tools wait on a shelf the agent brings them in from. */
+    shelf?: boolean;
   }>(),
-  { offGroups: () => new Set(), dropped: () => new Set(), limit: 128 },
+  { offGroups: () => new Set(), dropped: () => new Set(), limit: 128, shelf: false },
 );
 
 const emit = defineEmits<{
@@ -299,8 +301,15 @@ function sourceLabel(name: string) {
                 <span
                   v-if="dropped.has(tool.name)"
                   class="dropped"
-                  :title="t('toolsPanel.catalog.droppedHint', { limit })"
-                  >{{ t('toolsPanel.catalog.dropped') }}</span
+                  :class="{ shelved: shelf }"
+                  :title="
+                    shelf
+                      ? t('toolsPanel.catalog.shelvedHint', { limit })
+                      : t('toolsPanel.catalog.droppedHint', { limit })
+                  "
+                  >{{
+                    shelf ? t('toolsPanel.catalog.shelved') : t('toolsPanel.catalog.dropped')
+                  }}</span
                 >
               </span>
               <span v-if="openTool !== tool.name" class="tool-summary">{{
@@ -318,8 +327,12 @@ function sourceLabel(name: string) {
             <p v-if="offGroups.has(groupOf(tool.name))" class="note">
               {{ t('toolsPanel.catalog.offTool') }}
             </p>
-            <p v-if="dropped.has(tool.name)" class="note warn">
-              {{ t('toolsPanel.catalog.droppedHint', { limit }) }}
+            <p v-if="dropped.has(tool.name)" class="note" :class="{ warn: !shelf }">
+              {{
+                shelf
+                  ? t('toolsPanel.catalog.shelvedHint', { limit })
+                  : t('toolsPanel.catalog.droppedHint', { limit })
+              }}
             </p>
             <p v-if="tool.description" class="desc">{{ tool.description }}</p>
 
@@ -689,6 +702,10 @@ function sourceLabel(name: string) {
   line-height: 16px;
   color: var(--warning);
   background: var(--warning-glow);
+}
+.dropped.shelved {
+  color: var(--accent-primary);
+  background: var(--accent-glow);
 }
 .note {
   margin: 0;

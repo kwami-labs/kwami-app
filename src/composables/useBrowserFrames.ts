@@ -1,4 +1,4 @@
-import { watch } from 'vue';
+import { onScopeDispose, watch } from 'vue';
 import { useKwami } from '@/composables/useKwami';
 import { useNavigationStore } from '@/stores/navigation';
 
@@ -43,15 +43,18 @@ export function useBrowserFrames() {
   const { kwami, isConnected } = useKwami();
   const store = useNavigationStore();
 
-  watch(
-    isConnected,
-    (connected) => {
-      if (!connected) return;
-      const pipeline = kwami.value?.agent.getPipeline() as { room?: FrameRoom | null } | null;
-      if (pipeline?.room?.registerByteStreamHandler) {
-        listenForFrames(pipeline.room, store.showFrame);
-      }
-    },
-    { immediate: true },
-  );
+  function attach() {
+    const pipeline = kwami.value?.agent.getPipeline() as { room?: FrameRoom | null } | null;
+    if (pipeline?.room?.registerByteStreamHandler) {
+      listenForFrames(pipeline.room, store.showFrame);
+    }
+  }
+
+  // `isConnected` turns true as soon as the session starts initialising, before the
+  // SDK has made the call's new room, so on its own it registered on the last call's
+  // room and no frame ever showed (seen 2026-11-16). `kwami:connected` comes once
+  // the room is the one in use; the WeakSet keeps either from registering twice.
+  watch(isConnected, (connected) => connected && attach(), { immediate: true });
+  window.addEventListener('kwami:connected', attach);
+  onScopeDispose(() => window.removeEventListener('kwami:connected', attach));
 }

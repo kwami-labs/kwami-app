@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
 import { useVoiceStore } from '@/stores/voice';
 import BaseSelect from '@/components/ui/BaseSelect.vue';
-import { MAX_INSTRUCTIONS, modelUsable } from '@/lib/brain';
+import { MAX_INSTRUCTIONS, automaticDirector, modelUsable } from '@/lib/brain';
 
 /** Who plans the brain's work, and the brief every worker gets. */
 const { t } = useI18n();
@@ -13,11 +13,12 @@ const { brain, brainStatus } = storeToRefs(useVoiceStore());
 const thinkers = computed(() =>
   brain.value.models.filter((m) => m.provider !== 'local' && m.enabled),
 );
-/** What the agent's router falls back on: the first model doing normal work. */
+/** What the agent picks when the user chose none: the expert, Opus, by default. */
 const automatic = computed(
   () =>
-    thinkers.value.find((m) => m.roles.includes('standard') && modelUsable(m, brainStatus.value)) ??
-    thinkers.value[0],
+    automaticDirector(
+      thinkers.value.filter((m) => modelUsable(m, brainStatus.value, brain.value.billing)),
+    ) ?? thinkers.value[0],
 );
 const options = computed(() => [
   {

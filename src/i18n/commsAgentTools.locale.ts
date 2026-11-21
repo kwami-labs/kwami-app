@@ -104,51 +104,51 @@ export const commsAgentToolsEn = {
 export const commsAgentToolsEs = {
   comms: {
     recipientRequired:
-      'Di a quien contactar, con un nombre de los contactos o un numero de telefono.',
-    recipientLabel: '{name} en el numero terminado en {tail}',
+      'Di a quién contactar, con un nombre de los contactos o un número de teléfono.',
+    recipientLabel: '{name} en el número terminado en {tail}',
     contactNotFound:
-      'No hay ningun contacto llamado "{name}". Revisa el nombre o da el numero directamente.',
+      'No hay ningún contacto llamado "{name}". Revisa el nombre o da el número directamente.',
     contactAmbiguous:
-      'Hay mas de un contacto que coincide con "{name}": {list}. Pregunta a cual se refiere antes de enviar nada.',
-    contactHasNoNumber: 'El contacto {name} no tiene numero guardado para {channel}.',
+      'Hay más de un contacto que coincide con "{name}": {list}. Pregunta a cuál se refiere antes de enviar nada.',
+    contactHasNoNumber: 'El contacto {name} no tiene número guardado para {channel}.',
     contactLookupFailed: 'No se pudieron leer los contactos: {error}',
-    noActiveKwami: 'No hay ningun Kwami seleccionado, asi que no hay desde donde enviar.',
+    noActiveKwami: 'No hay ningún Kwami seleccionado, así que no hay desde dónde enviar.',
 
     channelsFound: 'Se han encontrado {count} canales conectados.',
-    noChannels: 'Este Kwami aun no tiene ningun canal de telefono, SMS o WhatsApp conectado.',
+    noChannels: 'Este Kwami aún no tiene ningún canal de teléfono, SMS o WhatsApp conectado.',
     channelsFailed: 'No se pudieron leer los canales: {error}',
-    numbersFound: 'Se han encontrado {count} numeros disponibles.',
-    noNumbersFound: 'Ningun numero disponible coincide con esa busqueda.',
-    numberSearchFailed: 'No se pudo buscar numeros: {error}',
+    numbersFound: 'Se han encontrado {count} números disponibles.',
+    noNumbersFound: 'Ningún número disponible coincide con esa búsqueda.',
+    numberSearchFailed: 'No se pudo buscar números: {error}',
 
-    bodyRequired: 'Di que debe decir el mensaje.',
+    bodyRequired: 'Di qué debe decir el mensaje.',
     confirmSmsTitle: 'Enviar este mensaje de texto',
     confirmWhatsappTitle: 'Enviar este mensaje de WhatsApp',
     confirmSendBody: 'Para {recipient}. Mensaje: {text}',
     confirmSend: 'Enviar',
     confirmCancel: 'Cancelar',
-    sendCancelled: 'No enviado. Se cancelo el mensaje a {recipient}.',
+    sendCancelled: 'No enviado. Se canceló el mensaje a {recipient}.',
     sendAccepted: 'El proveedor acepto el mensaje a {recipient} para su entrega.',
-    sendFailed: 'El mensaje a {recipient} no se envio: {error}',
-    errSend: 'Fallo el envio',
+    sendFailed: 'El mensaje a {recipient} no se envió: {error}',
+    errSend: 'Falló el envío',
     actionSentSms: 'Mensaje enviado',
     actionSentWhatsapp: 'WhatsApp enviado',
 
     confirmCallTitle: 'Realizar esta llamada',
-    confirmCallBody: 'Llamando a {recipient}. Numero completo: {number}',
-    callCancelled: 'No se ha llamado. Se cancelo la llamada a {recipient}.',
+    confirmCallBody: 'Llamando a {recipient}. Número completo: {number}',
+    callCancelled: 'No se ha llamado. Se canceló la llamada a {recipient}.',
     callStarted: 'Marcando a {recipient} ahora.',
-    callFailed: 'La llamada a {recipient} no se inicio: {error}',
-    errCall: 'Fallo la llamada',
+    callFailed: 'La llamada a {recipient} no se inició: {error}',
+    errCall: 'Falló la llamada',
     actionPlacedCall: 'Llamada realizada',
 
     contactsFound: 'Se han encontrado {count} contactos.',
-    noContacts: 'Todavia no hay contactos guardados.',
+    noContacts: 'Todavía no hay contactos guardados.',
     contactSingle: 'Una coincidencia: {name}, en {phone}.',
-    contactMultiple: 'Coinciden {count} contactos. Pregunta a cual se refiere.',
+    contactMultiple: 'Coinciden {count} contactos. Pregunta a cuál se refiere.',
     contactNameRequired: 'Un contacto necesita un nombre.',
-    contactPhoneRequired: 'Un contacto necesita un numero de telefono.',
-    contactTargetRequired: 'Di que contacto, por nombre o por id.',
+    contactPhoneRequired: 'Un contacto necesita un número de teléfono.',
+    contactTargetRequired: 'Di qué contacto, por nombre o por id.',
     contactNothingToChange: 'No se ha indicado nada que cambiar en ese contacto.',
     contactCreated: 'Se ha guardado {name} en los contactos.',
     contactUpdated: 'Se ha actualizado {name}.',
@@ -161,33 +161,33 @@ export const commsAgentToolsEs = {
     actionUpdatedContact: 'Contacto actualizado',
     actionDeletedContact: 'Contacto eliminado',
 
-    noWallet: 'Este Kwami todavia no tiene monedero.',
+    noWallet: 'Este Kwami todavía no tiene monedero.',
     walletEmpty: 'El monedero existe pero no tiene saldo.',
     walletSummary: 'El monedero tiene {list}.',
     walletFailed: 'No se pudo leer el monedero: {error}',
 
     toolDescListPhoneChannels:
-      'Lista los canales de telefono, SMS y WhatsApp que tiene conectados este Kwami, con sus numeros y su estado. Consultalo antes de enviar nada si no se sabe ya si existe un canal, porque enviar sin uno falla.',
+      'Lista los canales de teléfono, SMS y WhatsApp que tiene conectados este Kwami, con sus números y su estado. Consúltalo antes de enviar nada si no se sabe ya si existe un canal, porque enviar sin uno falla.',
     toolDescSearchPhoneNumbers:
-      'Busca numeros de telefono disponibles para comprar, por codigo de pais y opcionalmente un prefijo o unos digitos que deba contener. Solo busca y nunca puede comprar un numero, porque aprovisionar gasta dinero real. Di al usuario que tiene que comprarlo el mismo en el panel de telefono.',
+      'Busca números de teléfono disponibles para comprar, por código de país y opcionalmente un prefijo o unos dígitos que deba contener. Solo busca y nunca puede comprar un número, porque aprovisionar gasta dinero real. Di al usuario que tiene que comprarlo el mismo en el panel de teléfono.',
     toolDescSendSms:
-      'Envia un mensaje de texto. El destinatario puede ser un nombre de contacto o un numero, y un nombre se busca en los contactos en lugar de adivinarse: si coincide mas de un contacto, la herramienta se niega y los lista, asi que pregunta a cual se refiere. La app pide confirmacion al usuario antes de que salga nada, asi que di a quien va dirigido y lee el mensaje en voz alta primero, luego espera el resultado y no digas al usuario que se ha enviado mientras el dialogo sigue abierto. Informa de lo que devuelve la herramienta, no de lo que pediste. Un mensaje puede ser rechazado por la operadora y un numero puede estar inaccesible; el campo accepted dice si el proveedor lo acepto para entrega, que no es lo mismo que que el destinatario lo haya leido. Si fallo, dilo claramente en lugar de suavizarlo, porque el usuario actuara creyendo que se envio.',
+      'Envía un mensaje de texto. El destinatario puede ser un nombre de contacto o un número, y un nombre se busca en los contactos en lugar de adivinarse: si coincide más de un contacto, la herramienta se niega y los lista, así que pregunta a cuál se refiere. La app pide confirmación al usuario antes de que salga nada, así que di a quién va dirigido y lee el mensaje en voz alta primero, luego espera el resultado y no digas al usuario que se ha enviado mientras el diálogo sigue abierto. Informa de lo que devuelve la herramienta, no de lo que pediste. Un mensaje puede ser rechazado por la operadora y un número puede estar inaccesible; el campo accepted dice si el proveedor lo acepto para entrega, que no es lo mismo que que el destinatario lo haya leído. Si falló, dilo claramente en lugar de suavizarlo, porque el usuario actuará creyendo que se envió.',
     toolDescSendWhatsapp:
-      'Envia un mensaje de WhatsApp. El destinatario puede ser un nombre de contacto o un numero, y un nombre se resuelve contra los contactos en lugar de adivinarse: un nombre ambiguo se rechaza listando los candidatos, asi que pregunta a cual se refiere. Usa la direccion de WhatsApp guardada del contacto si la hay y su numero de telefono si no. La app pide confirmacion primero, asi que lee el mensaje en voz alta y luego espera el resultado en lugar de anunciar exito mientras el dialogo sigue abierto. Informa del campo accepted en lugar de dar por hecho que llego.',
+      'Envía un mensaje de WhatsApp. El destinatario puede ser un nombre de contacto o un número, y un nombre se resuelve contra los contactos en lugar de adivinarse: un nombre ambiguo se rechaza listando los candidatos, así que pregunta a cuál se refiere. Usa la dirección de WhatsApp guardada del contacto si la hay y su número de teléfono si no. La app pide confirmación primero, así que lee el mensaje en voz alta y luego espera el resultado en lugar de anunciar éxito mientras el diálogo sigue abierto. Informa del campo accepted en lugar de dar por hecho que llegó.',
     toolDescPlaceCall:
-      'Realiza una llamada a un contacto o a un numero. Tratalo como algo mas serio que enviar un mensaje: un texto se lee despues, una llamada suena en el telefono de una persona real de inmediato y no se puede retirar. Di siempre a quien se llama y a que numero antes de llamar a esta herramienta, y cuando el numero venga de los contactos y no del usuario, di el nombre y los ultimos digitos juntos para que se pueda detectar una coincidencia equivocada. La app pide confirmacion al usuario, asi que espera el resultado. El campo dialling dice si la llamada se inicio de verdad; informa de eso en lugar de anunciar una conexion, porque desde aqui no se puede saber si alguien descuelga.',
+      'Realiza una llamada a un contacto o a un número. Trátalo como algo más serio que enviar un mensaje: un texto se lee después, una llamada suena en el teléfono de una persona real de inmediato y no se puede retirar. Di siempre a quién se llama y a qué número antes de llamar a esta herramienta, y cuando el número venga de los contactos y no del usuario, di el nombre y los últimos dígitos juntos para que se pueda detectar una coincidencia equivocada. La app pide confirmación al usuario, así que espera el resultado. El campo dialling dice si la llamada se inició de verdad; informa de eso en lugar de anunciar una conexión, porque desde aquí no se puede saber si alguien descuelga.',
     toolDescListContacts:
-      'Lista los contactos guardados, opcionalmente filtrados por una palabra de busqueda. Solo lectura y seguro de usar siempre que haya que comprobar un nombre.',
+      'Lista los contactos guardados, opcionalmente filtrados por una palabra de búsqueda. Solo lectura y seguro de usar siempre que haya que comprobar un nombre.',
     toolDescFindContact:
-      'Busca un contacto por nombre y lee su numero. Usalo antes de enviar o llamar cuando el usuario haya nombrado a una persona en lugar de un numero, para poder confirmar el numero en voz alta. Devuelve todas las coincidencias en lugar de elegir una, y el campo unique dice si habia exactamente una.',
+      'Busca un contacto por nombre y lee su número. Úsalo antes de enviar o llamar cuando el usuario haya nombrado a una persona en lugar de un número, para poder confirmar el número en voz alta. Devuelve todas las coincidencias en lugar de elegir una, y el campo unique dice si había exactamente una.',
     toolDescCreateContact:
-      'Guarda un contacto nuevo con nombre y numero de telefono, y opcionalmente una direccion de WhatsApp y un correo. Es seguro y reversible, asi que no pide confirmacion al usuario.',
+      'Guarda un contacto nuevo con nombre y número de teléfono, y opcionalmente una dirección de WhatsApp y un correo. Es seguro y reversible, así que no pide confirmación al usuario.',
     toolDescUpdateContact:
-      'Cambia algunos datos de un contacto existente, indicado por nombre o por id. Solo se cambian los campos que se indican y el resto se deja igual, asi que es seguro llamarlo solo con lo que cambia. Un nombre ambiguo se rechaza listando los candidatos en lugar de adivinarse.',
+      'Cambia algunos datos de un contacto existente, indicado por nombre o por id. Solo se cambian los campos que se indican y el resto se deja igual, así que es seguro llamarlo solo con lo que cambia. Un nombre ambiguo se rechaza listando los candidatos en lugar de adivinarse.',
     toolDescDeleteContact:
-      'Elimina un contacto, indicado por nombre o por id. No se puede deshacer, asi que la app pide confirmacion al usuario y nombra antes el contacto y su numero. Espera el resultado en lugar de decir que ya no esta mientras el dialogo sigue abierto.',
+      'Elimina un contacto, indicado por nombre o por id. No se puede deshacer, así que la app pide confirmación al usuario y nombra antes el contacto y su número. Espera el resultado en lugar de decir que ya no está mientras el diálogo sigue abierto.',
     toolDescGetWalletSummary:
-      'Lee el monedero: si existe, en que red esta y que saldos tiene. Solo lectura. No puede mover, enviar ni gastar nada, y el campo canSpend siempre es false, asi que si el usuario pide transferir o anadir fondos dile que eso hay que hacerlo a mano en el panel del monedero.',
+      'Lee el monedero: si existe, en qué red está y qué saldos tiene. Solo lectura. No puede mover, enviar ni gastar nada, y el campo canSpend siempre es false, así que si el usuario pide transferir o añadir fondos dile que eso hay que hacerlo a mano en el panel del monedero.',
   },
 } as const;
 

@@ -89,7 +89,10 @@ function runTool(name: string, args: Record<string, unknown>) {
 // Your tools: created and edited in the Create tab, kept on the kwami's config.
 const mcp = useMcpServers();
 const editingTool = ref<UserWebhookTool | null>(null);
-const takenNames = computed(() => new Set(tools.value.map((tool) => tool.name)));
+// Every name the model could already hold: the registered tools, those of a group
+// switched off (they come back with it) and the agent's own. A second tool of a name
+// is skipped by the agent, so the one the user just made would never be called.
+const takenNames = computed(() => new Set(catalogTools.value.map((tool) => tool.name)));
 
 function saveUserTool(tool: UserWebhookTool, previousName?: string) {
   userTools.save(tool, previousName);
@@ -203,6 +206,7 @@ function testTool(name: string) {
             :off-groups="offGroups"
             :dropped="dropped"
             :limit="inventory?.limit ?? 128"
+            :shelf="inventory?.shelf ?? false"
             @toggle-group="toggleGroup"
             @test="testTool"
             @edit="editTool"

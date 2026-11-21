@@ -78,6 +78,14 @@ export function useAssistantAgentTools() {
     });
   }
 
+  /** Where scheduled work runs, in the voice's words or the API's. Empty: wherever fits. */
+  function workTarget(value: unknown): 'pc' | 'cloud' | '' {
+    const said = asText(value).trim().toLowerCase();
+    if (['cloud', 'nube', 'la nube', 'server', 'servidor'].includes(said)) return 'cloud';
+    if (['pc', 'ordenador', 'computer', 'mi pc', 'el pc'].includes(said)) return 'pc';
+    return '';
+  }
+
   async function scheduleWork(args: Record<string, unknown>) {
     return attempt(async () => {
       const { task } = await api.post<{ task: Record<string, unknown> }>('/assistant/tasks', {
@@ -89,6 +97,8 @@ export function useAssistantAgentTools() {
         recurrence: asText(args.recurrence) || null,
         weekdays: Array.isArray(args.weekdays) ? args.weekdays : null,
         local_time: asText(args.local_time) || null,
+        // Only when said: the API and the clock have taken it since migration 029.
+        ...(workTarget(args.where) ? { target: workTarget(args.where) } : {}),
       });
       actionState.recordAction(t('assistant.actionWork'), asText(args.title));
       return { success: true, id: task.id, next_run_at: task.next_run_at };
@@ -308,6 +318,7 @@ export function useAssistantAgentTools() {
         recurrence: { type: 'string' },
         weekdays: { type: 'array' },
         local_time: { type: 'string' },
+        where: { type: 'string' },
       },
       handler: async (args) => scheduleWork(args),
     });

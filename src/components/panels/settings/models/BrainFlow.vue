@@ -3,7 +3,13 @@ import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
 import { useVoiceStore } from '@/stores/voice';
-import { BRAIN_ROLES, modelUsable, type BrainModel, type BrainRole } from '@/lib/brain';
+import {
+  BRAIN_ROLES,
+  automaticDirector,
+  modelUsable,
+  type BrainModel,
+  type BrainRole,
+} from '@/lib/brain';
 import { isLiveKitVoice, voiceLabel } from '@/lib/voicePersonas';
 
 /**
@@ -60,7 +66,7 @@ const roleKey: Record<BrainRole, string> = {
 const rows = computed(() =>
   BRAIN_ROLES.map((role) => {
     const inRole = brain.value.models.filter((m) => m.roles.includes(role) && m.enabled);
-    const usable = inRole.filter((m) => modelUsable(m, brainStatus.value));
+    const usable = inRole.filter((m) => modelUsable(m, brainStatus.value, brain.value.billing));
     return {
       role,
       primary: usable[0] as BrainModel | undefined,
@@ -75,13 +81,14 @@ const directorName = computed(() => {
   const models = brain.value.models;
   const id = brainStatus.value?.director || brain.value.director;
   const chosen =
-    models.find((m) => m.id === id) ?? models.find((m) => m.roles.includes('standard'));
+    models.find((m) => m.id === id) ??
+    automaticDirector(models.filter((m) => m.provider !== 'local' && m.enabled));
   return chosen ? name(chosen) : t('brainPanel.nobody');
 });
 
 const councilMembers = computed(() => {
   const remote = brain.value.models.filter(
-    (m) => m.provider !== 'local' && modelUsable(m, brainStatus.value),
+    (m) => m.provider !== 'local' && modelUsable(m, brainStatus.value, brain.value.billing),
   );
   const members = remote.filter((m) => m.council);
   if (members.length < 2) {
@@ -128,7 +135,7 @@ function name(m: BrainModel) {
       <div class="node-body">
         <span class="node-title">{{ t('brainPanel.bridge') }}</span>
         <span class="node-sub">{{ t('brainPanel.bridgeRole') }}</span>
-        <span v-if="brain.splitTasks" class="node-sub planner">
+        <span v-if="brain.splitTasks || brain.orchestrate" class="node-sub planner">
           <iconify-icon icon="ph:tree-structure-duotone" />
           {{ t('brainPanel.directorRole', { name: directorName }) }}
         </span>

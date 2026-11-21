@@ -26,6 +26,13 @@ export type BrainRole = 'fast' | 'standard' | 'expert' | 'search' | 'x_search' |
  * the API key only when that cannot. account: never the key. api: never the account.
  */
 export type BrainAccess = 'auto' | 'account' | 'api';
+/**
+ * How the whole brain pays (the agent's brain/plan.py). account_first: the Claude plan
+ * on the PC until it runs out, then the API key. api_first: the key, the plan without
+ * one. account_only: never paid per use (no Gemini, GPT, Grok, Tavily or cloud either).
+ * api_only: never the plan. "Only" wins over a model's own `access`; "first" does not.
+ */
+export type BrainBilling = 'account_first' | 'api_first' | 'account_only' | 'api_only';
 /** everything: the voice passes all the thinking on. work_only: it also answers what it knows. */
 export type BrainRelay = 'everything' | 'work_only';
 export type BrainCouncil = 'important' | 'on_request' | 'research';
@@ -62,11 +69,18 @@ export interface BrainConfig {
   onHangup: BrainOnHangup;
   /** Split normal and hard tasks so each part runs on the cheapest model that can do it. */
   splitTasks: boolean;
-  /** The model that plans and hands out the work. Empty: the router's choice. */
+  /**
+   * The director holds normal and hard tasks and hands pieces to the other models as it
+   * goes (the agent's brain/orchestrator.py), instead of a plan made up front.
+   */
+  orchestrate: boolean;
+  /** The model that plans and hands out the work. Empty: the expert (Opus). */
   director: string;
   relay: BrainRelay;
   /** The user's brief for the whole brain, added to every worker. */
   instructions: string;
+  /** How the brain pays: the Claude plan, the API key, which first, or only one. */
+  billing: BrainBilling;
   models: BrainModel[];
   executor: {
     folder: string;
@@ -88,12 +102,24 @@ export interface BrainTaskStatus {
   costUsd: number;
   /** Answered on the Claude account of the user's PC, not on an API key. */
   viaAccount?: boolean;
+  /** Where it ran: the user's PC, the cloud's work thread, or inside the call. Absent from
+   * older agents, and empty for work that never ran. */
+  ranOn?: 'pc' | 'cloud' | 'here' | '';
+  /** Who paid: the Claude plan on the PC, or an API key per token. Empty when nothing was spent. */
+  paidBy?: 'account' | 'api' | '';
   startedAt: string;
   finishedAt: string;
   result?: string;
   steps?: { goal: string; difficulty: string; model: string; ok: boolean }[];
   /** Models whose prompt carried the user's instructions and answered. Absent from older agents. */
   briefed?: string[];
+  /** Sent to the user's PC to run there. */
+  onPc?: boolean;
+  /** What it is doing now, in a line (`Bash: npm test`). */
+  progress?: string;
+  /** What it did, line by line, for the HUD's live log. Absent from older agents. */
+  activity?: { at: string; text: string }[];
+  sources?: string[];
 }
 
 /** A stage of the voice pipeline, as the agent reports its providers. */
@@ -105,8 +131,13 @@ export interface BrainStatus {
   providers: Partial<Record<BrainProvider, boolean>>;
   /** Whether each provider has an API key, apart from the Claude account. */
   apiKeys?: Partial<Record<BrainProvider, boolean>>;
-  /** The PC's work thread, and whether it is signed in to a Claude account. */
-  account?: { pcOnline: boolean; loggedIn: boolean };
+  /**
+   * The PC's work thread, whether it is signed in to a Claude account, and whether its
+   * plan has room now (`usable`: absent from older agents, where signed in is all).
+   */
+  account?: { pcOnline: boolean; loggedIn: boolean; usable?: boolean };
+  /** How the brain pays now, and what is left of the plan. Absent from older agents. */
+  billing?: BrainBillingState;
   /** The model that is planning the work now. */
   director?: string;
   /** Realtime providers by name (google, openai, aws): the agent's older, flat report. */
@@ -125,6 +156,36 @@ export interface BrainStatus {
   hybridRealtime?: Record<string, string[]>;
   receivedAt: number;
 }
+
+/** What the agent says about paying, as things stand (`Bridge.billing_state`). */
+export interface BrainBillingState {
+  mode: BrainBilling;
+  /** What a piece of Claude work would use this moment: the plan, the key, or nothing. */
+  now: 'account' | 'api' | 'none';
+  /** What moved it off the user's first choice, in the user's language. */
+  why: string;
+  apiKey: boolean;
+  plan: {
+    out: boolean;
+    until: string | null;
+    status: string;
+    /** five_hour, seven_day, seven_day_opus... as Claude Code names its windows. */
+    window: string;
+    /** 0..1 of the window used, when Claude Code said. */
+    utilization: number | null;
+    resetsAt: string | null;
+    seenAt: string | null;
+  };
+  /** Gemini, GPT, Grok and Tavily may be paid per use: false with the plan only. */
+  otherProvidersPaid: boolean;
+}
+
+export const BRAIN_BILLING: readonly BrainBilling[] = [
+  'account_first',
+  'api_first',
+  'account_only',
+  'api_only',
+];
 
 export const BRAIN_PROVIDERS: readonly BrainProvider[] = [
   'anthropic',
@@ -203,13 +264,24 @@ export const PROVIDER_KEY_PAGES: Partial<Record<BrainProvider, string>> = {
   mistral: 'https://console.mistral.ai/api-keys',
 };
 
+/**
+ * The director the agent picks when the user chose none: the expert, then whoever the
+ * agent's role fallbacks reach next (`director_of` in brain/router.py).
+ */
+export function automaticDirector<T extends { roles: string[] }>(models: T[]): T | undefined {
+  for (const role of ['expert', 'standard', 'fast', 'search']) {
+    const found = models.find((m) => m.roles.includes(role));
+    if (found) return found;
+  }
+  return undefined;
+}
+
 /** Suggestions for the "add a model" form. Any id the provider accepts works. */
 export const MODEL_SUGGESTIONS: Record<BrainProvider, { model: string; label: string }[]> = {
   anthropic: [
     { model: 'claude-haiku-5-5', label: 'Claude Haiku 5.5' },
     { model: 'claude-sonnet-5-5', label: 'Claude Sonnet 5.5' },
     { model: 'claude-opus-5-5', label: 'Claude Opus 5.5' },
-    { model: 'claude-fable-5-1', label: 'Claude Fable 5.1' },
   ],
   google: [
     { model: 'gemini-3.5-flash', label: 'Gemini 3.5 Flash' },
@@ -289,9 +361,12 @@ export function defaultBrain(): BrainConfig {
     delivery: 'next_pause',
     onHangup: 'finish',
     splitTasks: true,
+    orchestrate: true,
     director: '',
     relay: 'everything',
     instructions: '',
+    // The user's rule (2026-11-17): the plan until it runs out, then the API key.
+    billing: 'account_first',
     models: defaultBrainModels(),
     executor: { folder: EXECUTOR_ROOT, permissions: 'full_no_push', maxTurns: 40, maxTaskUsd: 2 },
   };
@@ -370,10 +445,12 @@ export function normalizeBrain(raw: unknown): BrainConfig {
     delivery: pick(r.delivery, ['next_pause', 'interrupt', 'on_request'] as const, base.delivery),
     onHangup: pick(r.onHangup, ['finish', 'cancel'] as const, base.onHangup),
     splitTasks: r.splitTasks !== false,
+    orchestrate: r.orchestrate !== false,
     director: typeof r.director === 'string' ? r.director : '',
     relay: pick(r.relay, ['everything', 'work_only'] as const, base.relay),
     instructions:
       typeof r.instructions === 'string' ? r.instructions.slice(0, MAX_INSTRUCTIONS) : '',
+    billing: pick(r.billing, BRAIN_BILLING, base.billing),
     models,
     executor: {
       folder: typeof ex.folder === 'string' && ex.folder ? ex.folder : base.executor.folder,
@@ -401,25 +478,70 @@ export function brainPayload(config: BrainConfig): BrainConfig {
 export function roleFor(kind: string, difficulty: 'simple' | 'normal' | 'hard'): BrainRole {
   if (kind === 'code') return 'code';
   if (kind === 'x_search') return 'x_search';
-  if (kind === 'research')
-    return difficulty === 'simple' ? 'search' : difficulty === 'hard' ? 'expert' : 'standard';
-  return difficulty === 'simple' ? 'fast' : difficulty === 'hard' ? 'expert' : 'standard';
+  // The user's rule (2026-11-13): Sonnet writes and reads, Opus does most of the rest,
+  // Haiku the lookups and chores.
+  if (kind === 'writing' || kind === 'reading') return 'standard';
+  if (difficulty === 'simple') return kind === 'research' ? 'search' : 'fast';
+  return 'expert';
+}
+
+/** How a Claude model is reached once the user's billing applies (the agent's `reach`). */
+export function modelReach(
+  model: BrainModel,
+  billing: BrainBilling,
+): 'account_first' | 'api_first' | 'account' | 'api' {
+  if (billing === 'account_only') return 'account';
+  if (billing === 'api_only') return 'api';
+  if (model.access === 'account' || model.access === 'api') return model.access;
+  return billing;
 }
 
 /** Whether a model can run, given what the agent last reported. Unknown counts as usable. */
-export function modelUsable(model: BrainModel, status: BrainStatus | null): boolean {
+export function modelUsable(
+  model: BrainModel,
+  status: BrainStatus | null,
+  billing: BrainBilling = 'account_first',
+): boolean {
   if (!model.enabled) return false;
+  const claude = model.provider === 'anthropic' || model.provider === 'local';
+  // Every other provider is paid per use, which the plan only rules out.
+  if (!claude && billing === 'account_only') return false;
   if (!status) return true;
-  if (model.provider !== 'anthropic' && model.provider !== 'local') {
-    return status.providers[model.provider] !== false;
-  }
+  if (!claude) return status.providers[model.provider] !== false;
   // An older agent reports neither: then "providers" is all there is to go on.
   if (!status.account || !status.apiKeys) return status.providers[model.provider] !== false;
   const hasKey = status.apiKeys[model.provider] !== false;
-  const hasAccount = status.account.loggedIn;
-  if (model.access === 'api') return hasKey;
-  if (model.access === 'account') return hasAccount;
+  const hasAccount = status.account.usable ?? status.account.loggedIn;
+  const way = modelReach(model, billing);
+  if (way === 'api') return hasKey;
+  if (way === 'account') return hasAccount;
   return hasKey || hasAccount;
+}
+
+function parseBilling(raw: unknown): BrainBillingState | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const r = raw as Record<string, unknown>;
+  const plan = (r.plan && typeof r.plan === 'object' ? r.plan : {}) as Record<string, unknown>;
+  const text = (value: unknown) => (typeof value === 'string' ? value : null);
+  return {
+    mode: pick(r.mode, BRAIN_BILLING, 'account_first'),
+    now: pick(r.now, ['account', 'api', 'none'] as const, 'none'),
+    why: typeof r.why === 'string' ? r.why : '',
+    apiKey: r.apiKey === true,
+    plan: {
+      out: plan.out === true,
+      until: text(plan.until),
+      status: text(plan.status) ?? '',
+      window: text(plan.window) ?? '',
+      utilization:
+        typeof plan.utilization === 'number' && Number.isFinite(plan.utilization)
+          ? Math.min(Math.max(plan.utilization, 0), 1)
+          : null,
+      resetsAt: text(plan.resetsAt),
+      seenAt: text(plan.seenAt),
+    },
+    otherProvidersPaid: r.otherProvidersPaid !== false,
+  };
 }
 
 /** The env var each voice provider needs on the agent, for the "no key" hint. */
@@ -531,8 +653,12 @@ export function parseBrainStatus(raw: unknown): BrainStatus | null {
         ? {
             pcOnline: (r.account as Record<string, unknown>).pcOnline === true,
             loggedIn: (r.account as Record<string, unknown>).loggedIn === true,
+            ...(typeof (r.account as Record<string, unknown>).usable === 'boolean'
+              ? { usable: (r.account as Record<string, unknown>).usable as boolean }
+              : {}),
           }
         : undefined,
+    billing: parseBilling(r.billing),
     director: typeof r.director === 'string' ? r.director : undefined,
     ...parseVoiceProviders(r.voiceProviders),
     tavily: r.tavily === true,
@@ -573,6 +699,20 @@ export function applyInstructionsChange(
     },
     label: model.label || model.model,
   };
+}
+
+/**
+ * The user changed how the brain pays by voice: the agent sends
+ * `{type: 'brain_billing', billing}`. Null when the message is not one, or says nothing
+ * this app knows.
+ */
+export function applyBillingChange(config: BrainConfig, raw: unknown): BrainConfig | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Record<string, unknown>;
+  if (r.type !== 'brain_billing' || !BRAIN_BILLING.includes(r.billing as BrainBilling)) {
+    return null;
+  }
+  return { ...config, billing: r.billing as BrainBilling };
 }
 
 /** The voice chosen for Jarvis: Gemini Live speaks, the brain works. */

@@ -27,8 +27,12 @@ describe('tool_inventory', () => {
       builtin: ['web_search', 'navigate_to'],
       client: 2,
       dropped: ['send_email'],
+      shelf: false,
       receivedAt: 5,
     });
+    // Only a real true: an older agent never says, and a string is not a yes.
+    expect(parseToolInventory({ ...REPORT, shelf: true })?.shelf).toBe(true);
+    expect(parseToolInventory({ ...REPORT, shelf: 'yes' })?.shelf).toBe(false);
     expect(parseToolInventory({ type: 'brain_status' })).toBeNull();
     expect(parseToolInventory(null)).toBeNull();
   });
@@ -37,7 +41,15 @@ describe('tool_inventory', () => {
   it('survives junk fields', () => {
     expect(
       parseToolInventory({ type: 'tool_inventory', builtin: [1, 'a'], dropped: 'x', total: -3 }, 1),
-    ).toEqual({ limit: 128, total: 0, builtin: ['a'], client: 0, dropped: [], receivedAt: 1 });
+    ).toEqual({
+      limit: 128,
+      total: 0,
+      builtin: ['a'],
+      client: 0,
+      dropped: [],
+      shelf: false,
+      receivedAt: 1,
+    });
   });
 
   it('keeps the latest report from the agent message event', () => {
@@ -72,6 +84,19 @@ describe('ToolBudget', () => {
     expect(w.findAll('.legend b').map((b) => b.text())).toEqual(['2', '1', '1']);
     expect(w.find('.dropped').text()).toContain('1 tool does not reach the model');
     expect(w.find('.names').text()).toBe('send_email');
+    expect(w.find('.budget').classes()).toContain('warn');
+  });
+
+  it('says the left-out tools are on a shelf when the agent keeps one', () => {
+    const w = mount(ToolBudget, {
+      props: {
+        inventory: parseToolInventory({ ...REPORT, shelf: true }),
+        clientTools: tools,
+        groupOf: (n: string) => groups[n] ?? 'other',
+      },
+    });
+    expect(w.find('.dropped').text()).toContain('wait on a shelf');
+    expect(w.find('.budget').classes()).not.toContain('warn');
   });
 
   it('says what it knows when the agent has not reported', () => {
@@ -151,16 +176,27 @@ describe('ToolCatalog with the budget', () => {
     web_search: 'agent',
   };
 
-  function mountCatalog(off: ToolGroupId[] = []) {
+  function mountCatalog(off: ToolGroupId[] = [], shelf = false) {
     return mount(ToolCatalog, {
       props: {
         tools,
         groupOf: (n: string) => groups[n] ?? 'other',
         offGroups: new Set(off),
         dropped: new Set(['send_email']),
+        shelf,
       },
     });
   }
+
+  it('marks a shelved tool as within the agent’s reach', async () => {
+    const w = mountCatalog([], true);
+    await w.find('.search-input').setValue('send_email');
+    expect(w.find('.dropped').text()).toBe('On the shelf');
+    expect(w.find('.dropped').classes()).toContain('shelved');
+    await w.find('.row-head').trigger('click');
+    const note = w.findAll('.detail .note').find((n) => n.text().includes('shelf'));
+    expect(note?.classes()).not.toContain('warn');
+  });
 
   it('offers a switch on the app groups, not on the agent’s', async () => {
     const w = mountCatalog();

@@ -176,17 +176,11 @@ export function useWorkspaceExtrasAgentTools() {
     });
 
     instance.registerTool({
-      name: 'get_performance_metrics',
-      description: t('extras.toolDescGetPerformanceMetrics'),
-      parameters: {},
-      handler: async () => getPerformanceMetrics(),
-    });
-
-    instance.registerTool({
-      name: 'reset_performance_metrics',
-      description: t('extras.toolDescResetPerformanceMetrics'),
-      parameters: {},
-      handler: async () => resetPerformanceMetrics(),
+      name: 'performance_metrics',
+      description: t('extras.toolDescPerformanceMetrics'),
+      parameters: { action: { type: 'string', enum: ['read', 'reset'] } },
+      handler: async ({ action }) =>
+        action === 'reset' ? resetPerformanceMetrics() : getPerformanceMetrics(),
     });
 
     instance.registerTool({

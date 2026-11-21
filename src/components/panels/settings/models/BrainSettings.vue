@@ -8,6 +8,7 @@ import BaseButton from '@/components/ui/BaseButton.vue';
 import BaseInput from '@/components/ui/BaseInput.vue';
 import BaseSelect from '@/components/ui/BaseSelect.vue';
 import BaseToggle from '@/components/ui/BaseToggle.vue';
+import BrainBillingCard from './BrainBillingCard.vue';
 import BrainModelCard from './BrainModelCard.vue';
 import ClaudeAccountCard from './ClaudeAccountCard.vue';
 import MindDirector from './MindDirector.vue';
@@ -205,6 +206,7 @@ const taskStatusLabel = (s: string) =>
     </p>
 
     <ClaudeAccountCard />
+    <BrainBillingCard />
     <MindDirector />
     <ModelConnections @add="addFromProvider" />
     <VoiceKeyConnections />
@@ -297,6 +299,13 @@ const taskStatusLabel = (s: string) =>
         @update:model-value="patch({ splitTasks: $event })"
       />
       <p class="hint small" style="margin: 0 0 8px">{{ t('brainPanel.splitTasksHint') }}</p>
+      <BaseToggle
+        :model-value="brain.orchestrate"
+        :label="t('brainPanel.orchestrate')"
+        size="sm"
+        @update:model-value="patch({ orchestrate: $event })"
+      />
+      <p class="hint small" style="margin: 0 0 8px">{{ t('brainPanel.orchestrateHint') }}</p>
       <div class="option-group">
         <span class="option-label">{{ t('brainPanel.routing') }}</span>
         <div class="toggle-group">
@@ -461,8 +470,16 @@ const taskStatusLabel = (s: string) =>
         <li v-for="task in tasks" :key="task.id" class="task" :class="task.status">
           <div class="task-head">
             <span class="task-title">{{ task.title }}</span>
-            <span v-if="task.viaAccount" class="badge account-badge">{{
-              t('brainPanel.onAccount')
+            <span v-if="task.ranOn" class="badge where-badge" data-testid="task-ran-on">{{
+              t(`brainPanel.ranOn.${task.ranOn}`)
+            }}</span>
+            <span
+              v-if="task.paidBy === 'account' || (!task.paidBy && task.viaAccount)"
+              class="badge account-badge"
+              >{{ t('brainPanel.onAccount') }}</span
+            >
+            <span v-else-if="task.paidBy === 'api'" class="badge" data-testid="task-paid-api">{{
+              t('brainPanel.onApi')
             }}</span>
             <span class="badge">{{ taskStatusLabel(task.status) }}</span>
           </div>
@@ -530,6 +547,10 @@ const taskStatusLabel = (s: string) =>
 .account-badge {
   background: rgba(74, 222, 128, 0.15);
   color: #4ade80;
+}
+.where-badge {
+  background: rgba(96, 165, 250, 0.15);
+  color: #60a5fa;
 }
 .nokey-badge {
   background: rgba(251, 191, 36, 0.15);

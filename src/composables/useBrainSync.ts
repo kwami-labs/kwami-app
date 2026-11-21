@@ -55,6 +55,10 @@ export function useBrainSync(kwami: Ref<Kwami | null>, isConnected: Ref<boolean>
         );
       }
     }
+    // How the brain pays, changed by voice: saved like a click in the panel.
+    if (detail?.type === 'brain_billing' && voiceStore.applyBrainBilling(detail)) {
+      toast.info(t('brainPanel.voiceChangedBilling'));
+    }
     // The realtime model failed for good and the agent moved the call to the
     // standard pipeline rather than hang up: say so, or the new voice is a mystery.
     if (detail?.type === 'voice_fallback') toast.warning(t('voicePersonas.realtimeFellBack'));

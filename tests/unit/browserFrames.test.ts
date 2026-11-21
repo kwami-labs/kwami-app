@@ -2,8 +2,19 @@
  * The agent's built-in browser has no live view: the panel shows its screenshots.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { effectScope, shallowRef, ref } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
-import { BROWSER_FRAME_TOPIC, listenForFrames } from '@/composables/useBrowserFrames';
+import {
+  BROWSER_FRAME_TOPIC,
+  listenForFrames,
+  useBrowserFrames,
+} from '@/composables/useBrowserFrames';
+
+const live = vi.hoisted(() => ({ kwami: null as unknown, connected: null as unknown }));
+
+vi.mock('@/composables/useKwami', () => ({
+  useKwami: () => ({ kwami: live.kwami, isConnected: live.connected }),
+}));
 import { useNavigationStore } from '@/stores/navigation';
 
 beforeEach(() => {
@@ -34,6 +45,42 @@ describe('listenForFrames', () => {
     );
 
     await vi.waitFor(() => expect(show).toHaveBeenCalledWith('blob:frame'));
+  });
+});
+
+describe('useBrowserFrames', () => {
+  it('registers on the room the call ends up using, not the one before it', () => {
+    const oldRoom = { registerByteStreamHandler: vi.fn() };
+    const newRoom = { registerByteStreamHandler: vi.fn() };
+    const pipeline = { room: oldRoom as typeof oldRoom | null };
+    live.kwami = shallowRef({ agent: { getPipeline: () => pipeline } });
+    live.connected = ref(false);
+    const scope = effectScope();
+    scope.run(() => useBrowserFrames());
+
+    // The session reports itself connected while the SDK still holds the old room...
+    (live.connected as { value: boolean }).value = true;
+    return Promise.resolve().then(() => {
+      // ...then makes the new one and says so.
+      pipeline.room = newRoom;
+      window.dispatchEvent(new CustomEvent('kwami:connected'));
+      expect(newRoom.registerByteStreamHandler).toHaveBeenCalledTimes(1);
+      window.dispatchEvent(new CustomEvent('kwami:connected'));
+      expect(newRoom.registerByteStreamHandler).toHaveBeenCalledTimes(1);
+
+      scope.stop();
+      pipeline.room = { registerByteStreamHandler: vi.fn() } as never;
+      window.dispatchEvent(new CustomEvent('kwami:connected'));
+      expect((pipeline.room as typeof oldRoom).registerByteStreamHandler).not.toHaveBeenCalled();
+    });
+  });
+
+  it('waits when there is no room at all', () => {
+    live.kwami = shallowRef(null);
+    live.connected = ref(true);
+    const scope = effectScope();
+    expect(() => scope.run(() => useBrowserFrames())).not.toThrow();
+    scope.stop();
   });
 });
 

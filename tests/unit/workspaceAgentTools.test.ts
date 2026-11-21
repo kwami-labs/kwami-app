@@ -132,10 +132,62 @@ const Host = defineComponent({
   },
 });
 
-function call(name: string, args: Record<string, unknown> = {}) {
-  const tool = registered.get(name);
-  if (!tool) throw new Error(`tool ${name} was never registered`);
-  return tool.handler(args) as Promise<Record<string, unknown>>;
+type Args = Record<string, unknown>;
+
+/**
+ * The domain tools now reached through set_ui_control, and the list/apply pairs
+ * now one tool with an action, so the whole list fits under the model's 128.
+ * What these tests check is what each one did; each old name maps to the call
+ * the model makes now, through the real registered tool.
+ */
+const FOLDED: Record<string, (args: Args) => [string, Args]> = {
+  set_panel_control: (a) => ['set_ui_control', { domain: 'panel', ...a }],
+  set_theme_control: (a) => ['set_ui_control', { domain: 'theme', ...a }],
+  set_avatar_control: (a) => ['set_ui_control', { domain: 'avatar', ...a }],
+  set_scene_control: (a) => ['set_ui_control', { domain: 'scene', ...a }],
+  set_voice_control: (a) => ['set_ui_control', { domain: 'voice', ...a }],
+  set_enhancement_control: (a) => ['set_ui_control', { domain: 'enhancements', ...a }],
+  set_memory_ui_control: (a) => ['set_ui_control', { domain: 'memory', ...a }],
+  set_browser_panel: (a) => ['set_ui_control', { domain: 'browser', ...a }],
+  set_soul_control: (a) => ['set_ui_control', { domain: 'soul', ...a }],
+  set_workspace_renderer: (a) => [
+    'set_ui_control',
+    { domain: 'workspace', control: 'renderer', value: a.renderer },
+  ],
+  open_workspace_panel: (a) => [
+    'set_ui_control',
+    { domain: 'workspace', control: 'openPanel', value: a.panelName },
+  ],
+  close_workspace_panel: () => ['set_ui_control', { domain: 'workspace', control: 'closePanel' }],
+  focus_transcription_panel: () => [
+    'set_ui_control',
+    { domain: 'workspace', control: 'focusTranscription' },
+  ],
+  set_response_length: (a) => [
+    'set_ui_control',
+    { domain: 'workspace', control: 'responseLength', value: a.length, confirm: a.confirm },
+  ],
+  show_workspace_status: () => ['set_ui_control', { domain: 'workspace', control: 'status' }],
+  list_ui_controls: () => ['set_ui_control', { domain: 'workspace', control: 'listControls' }],
+  clear_search_results: () => ['set_ui_control', { domain: 'search', control: 'clear' }],
+  reset_ui_domain: (a) => [
+    'set_ui_control',
+    { domain: a.domain, control: 'reset', confirm: a.confirm },
+  ],
+  get_soul_profile: () => ['soul_profile', { action: 'read' }],
+  list_soul_presets: (a) => ['soul_profile', { action: 'presets', ...a }],
+  apply_soul_preset: (a) => ['soul_profile', { action: 'apply', ...a }],
+  list_scene_presets: (a) => ['scene_presets', { action: 'list', ...a }],
+  apply_scene_preset: (a) => ['scene_presets', { action: 'apply', ...a }],
+  list_kwami_profiles: () => ['kwami_profiles', { action: 'list' }],
+  switch_kwami_profile: (a) => ['kwami_profiles', { action: 'switch', ...a }],
+};
+
+function call(name: string, args: Args = {}) {
+  const [real, realArgs] = FOLDED[name]?.(args) ?? [name, args];
+  const tool = registered.get(real);
+  if (!tool) throw new Error(`tool ${real} was never registered`);
+  return tool.handler(realArgs) as Promise<Record<string, unknown>>;
 }
 
 // Unmounted after each test: a host left mounted keeps its locale watcher, and
@@ -163,16 +215,32 @@ beforeEach(() => {
 
 describe('registration', () => {
   it('registers every tool the agent is told about', () => {
-    for (const name of [
-      'set_browser_panel',
-      'list_scene_presets',
-      'apply_scene_preset',
-      'list_kwami_profiles',
-      'switch_kwami_profile',
-      'set_workspace_renderer',
-      'set_ui_control',
-    ]) {
+    for (const name of ['set_ui_control', 'scene_presets', 'kwami_profiles', 'soul_profile']) {
       expect(registered.has(name), `${name} is missing`).toBe(true);
+    }
+  });
+
+  // A request carries 128 tools at most, the agent's own (46) among them; past
+  // that the tail waits on a shelf the model has to think of searching. Each
+  // domain setter was a second way to what set_ui_control already does.
+  // Seen in Tauri: asked for the voice controls, the model tried the voice domain
+  // first and lost a call before trying workspace.
+  it('lists the controls from whichever domain it is asked in', async () => {
+    const fromWorkspace = await call('set_ui_control', {
+      domain: 'workspace',
+      control: 'listControls',
+    });
+    const fromVoice = await call('set_ui_control', { domain: 'voice', control: 'listControls' });
+    expect(fromVoice).toEqual(fromWorkspace);
+  });
+
+  it('reaches every domain through one tool, not one per domain', () => {
+    for (const folded of Object.keys(FOLDED)) {
+      expect(registered.has(folded), `${folded} is registered again`).toBe(false);
+    }
+    const description = registered.get('set_ui_control')?.description ?? '';
+    for (const domain of ['workspace', 'theme', 'voice', 'browser', 'soul', 'reset', 'eye-iris']) {
+      expect(description).toContain(domain);
     }
   });
 
@@ -181,10 +249,10 @@ describe('registration', () => {
   it('files every app tool under a real group', () => {
     const catalog = useToolCatalogStore();
     const ungrouped = [...registered.keys()].filter((name) => catalog.groupOf(name) === 'other');
-    expect(registered.size).toBeGreaterThan(90);
+    expect(registered.size).toBeGreaterThan(60);
     expect(ungrouped).toEqual([]);
     expect(catalog.groupOf('send_email')).toBe('email');
-    expect(catalog.groupOf('set_theme_control')).toBe('appearance');
+    expect(catalog.groupOf('scene_presets')).toBe('appearance');
     expect(catalog.groupOf('open_search_result')).toBe('search');
   });
 
@@ -211,7 +279,7 @@ describe('registration', () => {
     useUserToolsStore().setGroupEnabled('email', false);
     await nextTick();
     expect(registered.has('send_email')).toBe(false);
-    expect(registered.has('set_theme_control')).toBe(true);
+    expect(registered.has('set_ui_control')).toBe(true);
     expect(useToolCatalogStore().off.send_email?.name).toBe('send_email');
     const syncs = kwamiStub.agent.syncConfigToBackend.mock.calls.filter(
       ([type]) => type === 'tools',
@@ -224,11 +292,10 @@ describe('registration', () => {
     expect(useToolCatalogStore().off.send_email).toBeUndefined();
   });
 
-  it('offers eye-iris as a renderer', () => {
-    const renderers = registered.get('set_workspace_renderer')?.parameters?.renderer as {
-      enum: string[];
-    };
-    expect(renderers.enum).toContain('eye-iris');
+  it('offers eye-iris as a renderer', async () => {
+    expect(registered.get('set_ui_control')?.description).toContain('eye-iris');
+    const result = await call('set_workspace_renderer', { renderer: 'eye-iris' });
+    expect(result.success).toBe(true);
   });
 
   it('gives every tool a real description rather than an unresolved key', () => {

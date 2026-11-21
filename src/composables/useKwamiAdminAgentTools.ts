@@ -315,7 +315,7 @@ export function useKwamiAdminAgentTools() {
    * panel's dice. That logic lives inside `SceneBackground.vue` and reaching
    * into it from here would mean a second copy that drifts. Instead this
    * picks one of the curated backgrounds at random -- the same presets
-   * `apply_scene_preset` uses, through the same setters. The description says
+   * `scene_presets` applies, through the same setters. The description says
    * so, so the model does not promise a kind of randomness it will not get.
    */
   function randomizeAppearance(target: unknown) {

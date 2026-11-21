@@ -198,6 +198,29 @@ describe('task list', () => {
     );
   });
 
+  it('says where each task ran and who paid for it', async () => {
+    const wrapper = mountWithPinia(BrainSettings, { global: { plugins: [i18n] } });
+    useVoiceStore().applyBrainStatus(
+      statusWith([
+        { ...task, ranOn: 'cloud', paidBy: 'api' },
+        { ...task, id: 't2', ranOn: 'pc', paidBy: 'account' },
+        { ...task, id: 't3', viaAccount: true },
+      ]),
+    );
+    await wrapper.vm.$nextTick();
+    const ran = wrapper.findAll('[data-testid="task-ran-on"]').map((b) => b.text());
+    // Newest first, as the panel lists them.
+    expect(ran).toEqual(['en tu PC', 'en la nube']);
+    expect(wrapper.findAll('[data-testid="task-paid-api"]').map((b) => b.text())).toEqual([
+      'por la API',
+    ]);
+    // On the account: the task that said so, and the older agent's viaAccount.
+    expect(wrapper.findAll('.account-badge').map((b) => b.text())).toEqual([
+      'con tu cuenta',
+      'con tu cuenta',
+    ]);
+  });
+
   it('says nothing when none did, or the agent is older', async () => {
     const wrapper = mountWithPinia(BrainSettings, { global: { plugins: [i18n] } });
     useVoiceStore().applyBrainStatus(statusWith([task, { ...task, id: 't2', briefed: [] }]));

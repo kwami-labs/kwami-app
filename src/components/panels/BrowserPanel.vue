@@ -4,7 +4,7 @@
  *
  * It renders in three layouts (see `stores/navigation.ts`): docked as a split
  * pane, floating as a draggable window, or expanded to fullscreen. The agent
- * drives the same actions by voice through `set_browser_panel`, so everything
+ * drives the same actions by voice through `set_ui_control` (domain `browser`), so everything
  * here goes through the store rather than local component state -- otherwise
  * "make the browser bigger" and clicking the expand button would diverge.
  *

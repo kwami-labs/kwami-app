@@ -120,7 +120,7 @@ describe('the card of one model', () => {
       ...global,
       props: { model: opus, first: false },
     });
-    expect(claude.text()).toContain('Primero la cuenta');
+    expect(claude.text()).toContain('Como pague el cerebro');
     expect(claude.text()).toContain('Buscar en la web');
     expect(claude.text()).not.toContain('Buscar en X');
 
@@ -129,7 +129,7 @@ describe('the card of one model', () => {
       props: { model: rosterModel('g', 'Grok', 'xai', 'grok-4.7', 'x_search'), first: false },
     });
     expect(grok.text()).toContain('Buscar en X');
-    expect(grok.text()).not.toContain('Primero la cuenta');
+    expect(grok.text()).not.toContain('Como pague el cerebro');
 
     const groq = mountWithPinia(BrainModelCard, {
       ...global,
@@ -144,13 +144,13 @@ describe('the card of one model', () => {
       props: { model: opus, first: false },
     });
     const chip = (text: string) => wrapper.findAll('.chip').find((c) => c.text() === text)!;
-    await chip('Normal').trigger('click');
+    await chip('Redacción y lectura').trigger('click');
     expect(wrapper.emitted('change')!.at(-1)![0]).toEqual({
       roles: ['expert', 'standard'],
       role: 'expert',
     });
     const before = wrapper.emitted('change')!.length;
-    await chip('Experto').trigger('click');
+    await chip('Razonar y dirigir').trigger('click');
     expect(wrapper.emitted('change')!.length).toBe(before);
   });
 
@@ -222,7 +222,8 @@ describe('the director', () => {
   it('lists the models that think, and falls back when the chosen one is gone', async () => {
     const wrapper = mountWithPinia(MindDirector, global);
     const store = useVoiceStore();
-    expect(wrapper.text()).toContain('Automático (Claude Sonnet 5.5)');
+    // The agent directs with the expert when the user chose none.
+    expect(wrapper.text()).toContain('Automático (Claude Opus 5.5)');
     store.brain = { ...store.brain, director: 'gone' };
     await wrapper.vm.$nextTick();
     expect(wrapper.text()).toContain('Automático');
