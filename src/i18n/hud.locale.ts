@@ -15,6 +15,7 @@ export const hudEn = {
       web: 'Web',
       image: 'Image',
       browser: 'Browser',
+      tool: 'Tool',
     },
     window: {
       minimize: 'Minimise to the dock',
@@ -240,6 +241,28 @@ export const hudEn = {
       underPanel:
         'The side panel is over this window. Close the panel or move the window to see the page.',
     },
+    tool: {
+      refresh: 'Run it again now',
+      every: 'How often it runs again by itself',
+      byHand: 'By hand',
+      seconds: 'Every {n} s',
+      minutes: 'Every {n} min',
+      hours: 'Every {n} h',
+      toDocument: 'Open what it shows as a document',
+      running: 'Running…',
+      waiting: 'Waiting for the tool to be ready…',
+      updated: 'Updated {time}',
+      empty: 'The tool answered with nothing.',
+      more: '{n} more not shown.',
+      timeout: 'The tool took over a minute and was left.',
+      missing:
+        'There is no tool called "{tool}" right now: its MCP server may be off or still connecting.',
+      writes:
+        'A window only runs tools that read; this one sends, changes or deletes something. Call it yourself instead.',
+      needsTool: 'A tool window needs the name of the tool to run (tool).',
+      notATool: 'That window is not a tool window.',
+      refreshed: 'Ran "{title}" again.',
+    },
     image: {
       zoomIn: 'Zoom in',
       zoomOut: 'Zoom out',
@@ -300,7 +323,7 @@ export const hudEn = {
       unknownAction: 'That is not something the screen can do.',
     },
     toolDescShowOnScreen:
-      "Run your own screen (the HUD) while you talk and work, in real time, with everything the user can do there by hand. Every window on it (a video, a report or notes, a page, a picture, a task, the mirror of your browser) is this tool's: to move, size, close or arrange any of them use it, not set_ui_control. Use it on your own initiative and keep it calm: show what is worth looking at, never clutter. action open shows something: a report or notes (kind document, content in Markdown), a video (kind video, url: YouTube or a video file, start in seconds), a page or a live channel (kind web, url) or a picture (kind image, url) -- this only shows: to work inside a page yourself (read it for the user, click, type, sign in) use navigate_to, and never both for the same page. What you open to be looked at takes centre stage at a size made for it (a video 16:9, a report the full height), your other windows go to the side, and your own figure moves aside to the free space; where the user last put a kind of window by hand, the next one goes there. action list says what is open: ids, screens, state, each shown window's place (x, y, w, h in percent of the free screen), where your figure is, and where the user likes each kind (likedPlaces). Then, naming a window by id or by words of its title or kind as the user said them (in id): close, minimize (fold into the dock), restore (bring it back, or out of maximised), maximize, focus (to the front), pin and unpin (a pinned window never folds by itself), feature (centre stage again), move (zone left, right, top, bottom, center, topLeft, topRight, bottomLeft or bottomRight, or x and y), resize (size small, medium or large, or w and h), place (x, y, w, h at once), snap (zone left or right for a half, top for all, a corner for a quarter), tab_with (make it a tab of the window named in with), detach, rename (name), move_to_screen (screen: its number, its name, or a new name to make one). x, y, w and h are percent of the free screen from its top left; a video keeps its picture at 16:9, so give it w and its height follows. Windows you move, size or place stay where you put them. Screens: new_screen (name), switch_screen, rename_screen and remove_screen (screen, name). organize lays this screen out as a grid, and it stays one until the user moves a window by hand. tidy puts your windows back: the featured one centre stage, the rest at the sides beside the user's, folding the oldest. edit_mode (on true or false) shows the user handles and big buttons to arrange every window by hand: turn it on when they want to arrange things themselves. Manners: never cover what the user placed or is watching; fold or close what is finished or no longer talked about; prefer one window with tabs to many windows; open nothing the user does not need. It never waits on anything: use it while delegated tasks run.",
+      "Run your own screen (the HUD) while you talk and work, in real time, with everything the user can do there by hand. Every window on it (a video, a report or notes, a page, a picture, a task, the mirror of your browser) is this tool's: to move, size, close or arrange any of them use it, not set_ui_control. Use it on your own initiative and keep it calm: show what is worth looking at, never clutter. action open shows something: a report or notes (kind document, content in Markdown), a video (kind video, url: YouTube or a video file, start in seconds), a page or a live channel (kind web, url), a picture (kind image, url), or a tool kept running in view (kind tool: tool is the name of one of your client tools that only reads -- an MCP server's server__tool, the agenda, the mail list --, args its arguments, refresh how often to run it again in seconds, 15 or more, or none for by hand; it answers with what the tool returned, and the window shows it as a table or text) -- this only shows: to work inside a page yourself (read it for the user, click, type, sign in) use navigate_to, and never both for the same page. What you open to be looked at takes centre stage at a size made for it (a video 16:9, a report the full height), your other windows go to the side, and your own figure moves aside to the free space; where the user last put a kind of window by hand, the next one goes there. action list says what is open: ids, screens, state, each shown window's place (x, y, w, h in percent of the free screen), where your figure is, and where the user likes each kind (likedPlaces); a tool window also says its tool, args, refreshEvery and what it shows. Then, naming a window by id or by words of its title or kind as the user said them (in id): close, minimize (fold into the dock), restore (bring it back, or out of maximised), maximize, focus (to the front), pin and unpin (a pinned window never folds by itself), feature (centre stage again), move (zone left, right, top, bottom, center, topLeft, topRight, bottomLeft or bottomRight, or x and y), resize (size small, medium or large, or w and h), place (x, y, w, h at once), snap (zone left or right for a half, top for all, a corner for a quarter), tab_with (make it a tab of the window named in with), detach, rename (name), move_to_screen (screen: its number, its name, or a new name to make one), refresh (a tool window: run it again now and get its answer; refresh in seconds changes how often, 0 stops the timer). A tool that sends, buys, changes or deletes never goes in a window: call it yourself. x, y, w and h are percent of the free screen from its top left; a video keeps its picture at 16:9, so give it w and its height follows. Windows you move, size or place stay where you put them. Screens: new_screen (name), switch_screen, rename_screen and remove_screen (screen, name). organize lays this screen out as a grid, and it stays one until the user moves a window by hand. tidy puts your windows back: the featured one centre stage, the rest at the sides beside the user's, folding the oldest. edit_mode (on true or false) shows the user handles and big buttons to arrange every window by hand: turn it on when they want to arrange things themselves. Manners: never cover what the user placed or is watching; fold or close what is finished or no longer talked about; prefer one window with tabs to many windows; open nothing the user does not need. It never waits on anything: use it while delegated tasks run.",
     shown: 'Showing "{title}" on screen.',
     closedOne: 'Closed that window.',
     closedAll: 'Closed the HUD windows.',
@@ -321,6 +344,7 @@ export const hudEs = {
       web: 'Web',
       image: 'Imagen',
       browser: 'Navegador',
+      tool: 'Herramienta',
     },
     window: {
       minimize: 'Minimizar al dock',
@@ -547,6 +571,28 @@ export const hudEs = {
       underPanel:
         'El panel lateral tapa esta ventana. Ciérralo o mueve la ventana para ver la página.',
     },
+    tool: {
+      refresh: 'Volver a ejecutarla ahora',
+      every: 'Cada cuánto se vuelve a ejecutar sola',
+      byHand: 'A mano',
+      seconds: 'Cada {n} s',
+      minutes: 'Cada {n} min',
+      hours: 'Cada {n} h',
+      toDocument: 'Abrir lo que muestra como documento',
+      running: 'Ejecutando…',
+      waiting: 'Esperando a que la herramienta esté lista…',
+      updated: 'Actualizado {time}',
+      empty: 'La herramienta no ha devuelto nada.',
+      more: '{n} más sin mostrar.',
+      timeout: 'La herramienta ha tardado más de un minuto y se ha dejado.',
+      missing:
+        'Ahora no hay ninguna herramienta «{tool}»: puede que su servidor MCP esté apagado o aún conectándose.',
+      writes:
+        'Una ventana solo ejecuta herramientas que leen; esta envía, cambia o borra algo. Llámala tú directamente.',
+      needsTool: 'Una ventana de herramienta necesita el nombre de la herramienta (tool).',
+      notATool: 'Esa ventana no es de herramienta.',
+      refreshed: 'He vuelto a ejecutar «{title}».',
+    },
     image: {
       zoomIn: 'Ampliar',
       zoomOut: 'Reducir',
@@ -608,7 +654,7 @@ export const hudEs = {
       unknownAction: 'Eso no lo puede hacer la pantalla.',
     },
     toolDescShowOnScreen:
-      "Run your own screen (the HUD) while you talk and work, in real time, with everything the user can do there by hand. Every window on it (a video, a report or notes, a page, a picture, a task, the mirror of your browser) is this tool's: to move, size, close or arrange any of them use it, not set_ui_control. Use it on your own initiative and keep it calm: show what is worth looking at, never clutter. action open shows something: a report or notes (kind document, content in Markdown), a video (kind video, url: YouTube or a video file, start in seconds), a page or a live channel (kind web, url) or a picture (kind image, url) -- this only shows: to work inside a page yourself (read it for the user, click, type, sign in) use navigate_to, and never both for the same page. What you open to be looked at takes centre stage at a size made for it (a video 16:9, a report the full height), your other windows go to the side, and your own figure moves aside to the free space; where the user last put a kind of window by hand, the next one goes there. action list says what is open: ids, screens, state, each shown window's place (x, y, w, h in percent of the free screen), where your figure is, and where the user likes each kind (likedPlaces). Then, naming a window by id or by words of its title or kind as the user said them (in id): close, minimize (fold into the dock), restore (bring it back, or out of maximised), maximize, focus (to the front), pin and unpin (a pinned window never folds by itself), feature (centre stage again), move (zone left, right, top, bottom, center, topLeft, topRight, bottomLeft or bottomRight, or x and y), resize (size small, medium or large, or w and h), place (x, y, w, h at once), snap (zone left or right for a half, top for all, a corner for a quarter), tab_with (make it a tab of the window named in with), detach, rename (name), move_to_screen (screen: its number, its name, or a new name to make one). x, y, w and h are percent of the free screen from its top left; a video keeps its picture at 16:9, so give it w and its height follows. Windows you move, size or place stay where you put them. Screens: new_screen (name), switch_screen, rename_screen and remove_screen (screen, name). organize lays this screen out as a grid, and it stays one until the user moves a window by hand. tidy puts your windows back: the featured one centre stage, the rest at the sides beside the user's, folding the oldest. edit_mode (on true or false) shows the user handles and big buttons to arrange every window by hand: turn it on when they want to arrange things themselves. Manners: never cover what the user placed or is watching; fold or close what is finished or no longer talked about; prefer one window with tabs to many windows; open nothing the user does not need. It never waits on anything: use it while delegated tasks run.",
+      "Run your own screen (the HUD) while you talk and work, in real time, with everything the user can do there by hand. Every window on it (a video, a report or notes, a page, a picture, a task, the mirror of your browser) is this tool's: to move, size, close or arrange any of them use it, not set_ui_control. Use it on your own initiative and keep it calm: show what is worth looking at, never clutter. action open shows something: a report or notes (kind document, content in Markdown), a video (kind video, url: YouTube or a video file, start in seconds), a page or a live channel (kind web, url), a picture (kind image, url), or a tool kept running in view (kind tool: tool is the name of one of your client tools that only reads -- an MCP server's server__tool, the agenda, the mail list --, args its arguments, refresh how often to run it again in seconds, 15 or more, or none for by hand; it answers with what the tool returned, and the window shows it as a table or text) -- this only shows: to work inside a page yourself (read it for the user, click, type, sign in) use navigate_to, and never both for the same page. What you open to be looked at takes centre stage at a size made for it (a video 16:9, a report the full height), your other windows go to the side, and your own figure moves aside to the free space; where the user last put a kind of window by hand, the next one goes there. action list says what is open: ids, screens, state, each shown window's place (x, y, w, h in percent of the free screen), where your figure is, and where the user likes each kind (likedPlaces); a tool window also says its tool, args, refreshEvery and what it shows. Then, naming a window by id or by words of its title or kind as the user said them (in id): close, minimize (fold into the dock), restore (bring it back, or out of maximised), maximize, focus (to the front), pin and unpin (a pinned window never folds by itself), feature (centre stage again), move (zone left, right, top, bottom, center, topLeft, topRight, bottomLeft or bottomRight, or x and y), resize (size small, medium or large, or w and h), place (x, y, w, h at once), snap (zone left or right for a half, top for all, a corner for a quarter), tab_with (make it a tab of the window named in with), detach, rename (name), move_to_screen (screen: its number, its name, or a new name to make one), refresh (a tool window: run it again now and get its answer; refresh in seconds changes how often, 0 stops the timer). A tool that sends, buys, changes or deletes never goes in a window: call it yourself. x, y, w and h are percent of the free screen from its top left; a video keeps its picture at 16:9, so give it w and its height follows. Windows you move, size or place stay where you put them. Screens: new_screen (name), switch_screen, rename_screen and remove_screen (screen, name). organize lays this screen out as a grid, and it stays one until the user moves a window by hand. tidy puts your windows back: the featured one centre stage, the rest at the sides beside the user's, folding the oldest. edit_mode (on true or false) shows the user handles and big buttons to arrange every window by hand: turn it on when they want to arrange things themselves. Manners: never cover what the user placed or is watching; fold or close what is finished or no longer talked about; prefer one window with tabs to many windows; open nothing the user does not need. It never waits on anything: use it while delegated tasks run.",
     shown: 'Mostrando «{title}» en pantalla.',
     closedOne: 'He cerrado esa ventana.',
     closedAll: 'He cerrado las ventanas del HUD.',

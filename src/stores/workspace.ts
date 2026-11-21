@@ -354,6 +354,39 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     return cloneConfig(ws.config);
   }
 
+  /**
+   * Save one part of the active kwami's config as it is now (its tools, when Jarvis
+   * connects a server by voice), over what was saved before: whatever else the user
+   * changed and has not saved stays a draft, neither saved nor lost.
+   */
+  async function saveActiveConfigPart<K extends keyof KwamiConfig>(
+    key: K,
+    value: KwamiConfig[K],
+    userId: string | null,
+  ): Promise<boolean> {
+    const ws = getActiveWorkspace();
+    if (!ws) return false;
+    const next = {
+      ...(cloneConfig(ws.savedConfig) ?? {}),
+      [key]: JSON.parse(JSON.stringify(value ?? null)),
+    } as KwamiConfig;
+    const id = activeWorkspaceId.value;
+    if (userId && id && isPersistedKwamiId(id)) {
+      const { error } = await supabase
+        .from('user_kwamis')
+        .update({ config: next })
+        .eq('id', id)
+        .eq('user_id', userId);
+      if (error) {
+        console.warn('Failed to save part of the kwami config:', error.message);
+        return false;
+      }
+    }
+    ws.savedConfig = next;
+    syncDirtyState(ws);
+    return true;
+  }
+
   async function saveActiveConfig(config: KwamiConfig, userId: string | null): Promise<boolean> {
     if (!activeWorkspaceId.value) return false;
     const ws = workspaces.value.find((w) => w.id === activeWorkspaceId.value);
@@ -406,6 +439,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     discardActiveConfigChanges,
     loadFromDb,
     saveActiveConfig,
+    saveActiveConfigPart,
     ensureLocalWorkspace,
     deleteKwami,
   };

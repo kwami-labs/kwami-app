@@ -18,6 +18,7 @@ const ICONS: Record<HudKind, string> = {
   web: 'ph:globe-hemisphere-west-duotone',
   image: 'ph:image-duotone',
   browser: 'ph:browser-duotone',
+  tool: 'ph:plugs-connected-duotone',
 };
 
 const menu = ref<'archive' | 'settings' | null>(null);

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useHudStore, type HudAction } from '@/stores/hud';
 import { lookOf, tidyToolName } from '@/lib/hud/actions';
@@ -17,11 +17,35 @@ const position = computed(() => ({ right: `${16 + (hud.viewport.right ?? 0)}px` 
 
 const now = ref(Date.now());
 let ticker: ReturnType<typeof setInterval> | null = null;
+
+// Where it sits, for Jarvis's figure to keep clear of it (hud.avatar).
+const root = ref<HTMLElement | null>(null);
+let observer: ResizeObserver | null = null;
+function report() {
+  const el = root.value;
+  hud.setLogRect(
+    el && el.offsetWidth
+      ? { x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight }
+      : null,
+  );
+}
+watch(
+  () => [hud.viewport.width, hud.viewport.height, hud.viewport.right],
+  () => requestAnimationFrame(report),
+);
+
 onMounted(() => {
   ticker = setInterval(() => (now.value = Date.now()), 500);
+  if (typeof ResizeObserver !== 'undefined' && root.value) {
+    observer = new ResizeObserver(report);
+    observer.observe(root.value);
+  }
+  report();
 });
 onBeforeUnmount(() => {
   if (ticker) clearInterval(ticker);
+  observer?.disconnect();
+  hud.setLogRect(null);
 });
 
 function label(action: HudAction): string {
@@ -47,6 +71,7 @@ const rows = computed(() =>
 
 <template>
   <aside
+    ref="root"
     class="action-log"
     :class="{ collapsed }"
     :style="position"

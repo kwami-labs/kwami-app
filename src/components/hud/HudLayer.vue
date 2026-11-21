@@ -12,6 +12,7 @@ import VideoWidget from './widgets/VideoWidget.vue';
 import WebWidget from './widgets/WebWidget.vue';
 import ImageWidget from './widgets/ImageWidget.vue';
 import BrowserWidget from './widgets/BrowserWidget.vue';
+import ToolWidget from './widgets/ToolWidget.vue';
 import { closeOrphans } from '@/lib/hud/nativeWeb';
 import { taskKey } from '@/lib/hud/actions';
 import { isEditableTarget } from '@/utils/keyboard';
@@ -35,6 +36,7 @@ const WIDGETS: Record<HudKind, Component> = {
   web: WebWidget,
   image: ImageWidget,
   browser: BrowserWidget,
+  tool: ToolWidget,
 };
 
 const root = ref<HTMLElement | null>(null);

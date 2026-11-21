@@ -47,6 +47,7 @@ const KIND_ICONS: Record<HudKind, string> = {
   web: 'ph:globe-hemisphere-west-duotone',
   image: 'ph:image-duotone',
   browser: 'ph:browser-duotone',
+  tool: 'ph:plugs-connected-duotone',
 };
 
 const rect = computed(() => hud.rectOf(props.widget));
