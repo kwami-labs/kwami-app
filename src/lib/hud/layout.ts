@@ -8,7 +8,7 @@
  * panel floats over (`left` / `right`), which would hide a window.
  */
 
-export type HudKind = 'task' | 'document' | 'video' | 'web' | 'image' | 'browser';
+export type HudKind = 'task' | 'document' | 'video' | 'web' | 'image' | 'browser' | 'tool';
 
 export interface HudRect {
   x: number;
@@ -41,6 +41,7 @@ export const DEFAULT_SIZES: Record<HudKind, { w: number; h: number }> = {
   web: { w: 900, h: 620 },
   image: { w: 600, h: 520 },
   browser: { w: 620, h: 460 },
+  tool: { w: 460, h: 380 },
 };
 
 /** The free band of the HUD, between whatever the sidebar covers on either side. */
@@ -628,6 +629,7 @@ const STAGE_MAX_W: Record<HudKind, number> = {
   image: 1000,
   task: 560,
   browser: 900,
+  tool: 760,
 };
 
 /** The least room worth a stage: a window at its size and a column beside it. */

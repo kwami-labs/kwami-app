@@ -67,6 +67,10 @@ export interface HudWidget {
   taskId?: string;
   /** Seconds into a video to start at. */
   start?: number;
+  /** A tool window: the tool it runs, with what, and how often (seconds; none is by hand). */
+  tool?: string;
+  args?: Record<string, unknown>;
+  refresh?: number;
 }
 
 export interface HudScreen {
@@ -110,6 +114,9 @@ export interface OpenSpec {
   docId?: string;
   taskId?: string;
   start?: number;
+  tool?: string;
+  args?: Record<string, unknown>;
+  refresh?: number;
   source?: 'agent' | 'user';
   /** Open without taking the front: a task Jarvis started while the user reads. */
   background?: boolean;
@@ -150,7 +157,7 @@ const MAX_SCREENS = 9;
 /** Windows on screen at once before the oldest of Jarvis's own get folded into the dock. */
 const MAX_OPEN = 6;
 /** Windows that are worth reopening after a reload; tasks and the browser belong to a call. */
-const KEPT_KINDS: readonly HudKind[] = ['document', 'web', 'video', 'image'];
+const KEPT_KINDS: readonly HudKind[] = ['document', 'web', 'video', 'image', 'tool'];
 
 const DEFAULT_PREFS: HudPrefs = {
   enabled: true,
@@ -386,6 +393,7 @@ export const useHudStore = defineStore('hud', () => {
     if (spec.taskId) return `task:${spec.taskId}`;
     if (spec.docId) return `doc:${spec.docId}`;
     if (spec.url) return `url:${spec.url}`;
+    if (spec.tool) return `tool:${spec.tool}:${JSON.stringify(spec.args ?? {})}`;
     return newId(spec.kind);
   }
 
@@ -396,6 +404,7 @@ export const useHudStore = defineStore('hud', () => {
       existing.title = spec.title || existing.title;
       if (spec.url) existing.url = spec.url;
       if (spec.start !== undefined) existing.start = spec.start;
+      if (spec.refresh !== undefined) existing.refresh = spec.refresh;
       if (!spec.background) {
         // Asked for again from another screen: it comes to this one.
         if (existing.screen !== activeScreen.value) moveToScreen(existing.id, activeScreen.value);
@@ -425,6 +434,7 @@ export const useHudStore = defineStore('hud', () => {
       docId: spec.docId,
       taskId: spec.taskId,
       start: spec.start,
+      ...(spec.tool ? { tool: spec.tool, args: spec.args ?? {}, refresh: spec.refresh ?? 0 } : {}),
     };
     widgets.value.push(widget);
     if (!spec.background) focusedId.value = widget.id;
@@ -536,6 +546,12 @@ export const useHudStore = defineStore('hud', () => {
     if (!widget || !name) return;
     widget.title = name.slice(0, 120);
     if (widget.docId) updateDocument(widget.docId, { title: widget.title });
+  }
+
+  /** How often a tool window runs its tool again, in seconds (0 is only by hand). */
+  function setRefresh(id: string, seconds: number): void {
+    const widget = byId(id);
+    if (widget?.kind === 'tool') widget.refresh = Math.max(0, Math.round(seconds));
   }
 
   // -- tabs -------------------------------------------------------------------------------
@@ -843,8 +859,21 @@ export const useHudStore = defineStore('hud', () => {
       return { x: view.width / 2, y: view.height / 2, scale: 1 };
     }
     const side = Math.max(1, Math.min(view.width, view.height) * 0.95);
-    return avatarSpot(view, visible.value.map(rectOf), { w: side, h: side });
+    const blocks = visible.value.map(rectOf);
+    // The action log sits in a corner over the scene: the figure keeps clear of it too.
+    if (logRect.value) blocks.push(logRect.value);
+    return avatarSpot(view, blocks, { w: side, h: side });
   });
+
+  /** Where the action log is, in the HUD's pixels, while it is on screen. */
+  const logRect = ref<HudRect | null>(null);
+  function setLogRect(rect: HudRect | null): void {
+    const same =
+      rect &&
+      logRect.value &&
+      (['x', 'y', 'w', 'h'] as const).every((k) => Math.abs(rect[k] - logRect.value![k]) < 1);
+    if (!same && (rect || logRect.value)) logRect.value = rect;
+  }
 
   /**
    * No column left beside the user's windows: Jarvis folds its older ones and shows the
@@ -1074,6 +1103,7 @@ export const useHudStore = defineStore('hud', () => {
     setRect,
     rectOf,
     rename,
+    setRefresh,
     joinTabs,
     activateTab,
     detachTab,
@@ -1093,6 +1123,8 @@ export const useHudStore = defineStore('hud', () => {
     stageId,
     learned,
     avatar,
+    logRect,
+    setLogRect,
     place,
     resizeTo,
     maximize,
