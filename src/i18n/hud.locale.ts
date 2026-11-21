@@ -280,6 +280,15 @@ export const hudEn = {
       flip: 'Mirror',
       download: 'Download',
     },
+    downloads: {
+      saved: 'Saved {name} in {folder}.',
+      savedOpen: 'Saved {name} in {folder}. Click to open the folder.',
+      failed: 'The download of {name} did not finish.',
+      jarvis: 'Jarvis downloaded {name} into his folder, Documents › Jarvis › descargas.',
+      jarvisOpen:
+        'Jarvis downloaded {name} into his folder, Documents › Jarvis › descargas. Click to open it.',
+      jarvisFailed: "Jarvis's download of {name} did not finish.",
+    },
     browser: {
       title: "Jarvis's browser",
       live: 'Live',
@@ -290,7 +299,7 @@ export const hudEn = {
       signInHint:
         'Google and others refuse to sign in on a window Jarvis drives. This opens the page in a normal Chrome where you sign in yourself.',
       signInOpen:
-        'A clean Chrome window is open on your desktop. Sign in there and close it when you are done.',
+        'A clean Chrome window is open on your desktop. Sign in there: it closes by itself once you are in.',
       signInDone: 'Done: the sign-in is saved for Jarvis.',
       closed: 'Browser closed',
       close: 'Close the browser',
@@ -619,6 +628,15 @@ export const hudEs = {
       flip: 'Espejo',
       download: 'Descargar',
     },
+    downloads: {
+      saved: 'Guardado {name} en {folder}.',
+      savedOpen: 'Guardado {name} en {folder}. Pulsa para abrir la carpeta.',
+      failed: 'La descarga de {name} no ha terminado.',
+      jarvis: 'Jarvis ha descargado {name} en su carpeta, Documentos › Jarvis › descargas.',
+      jarvisOpen:
+        'Jarvis ha descargado {name} en su carpeta, Documentos › Jarvis › descargas. Pulsa para abrirla.',
+      jarvisFailed: 'La descarga de {name} que hacía Jarvis no ha terminado.',
+    },
     browser: {
       title: 'Navegador de Jarvis',
       live: 'En vivo',
@@ -629,7 +647,7 @@ export const hudEs = {
       signInHint:
         'Google y otras webs no dejan iniciar sesión en una ventana que maneja Jarvis. Esto abre la página en un Chrome normal donde entras tú.',
       signInOpen:
-        'Hay una ventana de Chrome limpia abierta en tu escritorio. Inicia sesión allí y ciérrala cuando termines.',
+        'Hay una ventana de Chrome limpia abierta en tu escritorio. Inicia sesión allí: se cierra sola cuando entras.',
       signInDone: 'Listo: el inicio de sesión queda guardado para Jarvis.',
       closed: 'Navegador cerrado',
       close: 'Cerrar el navegador',

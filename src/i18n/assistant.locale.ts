@@ -53,7 +53,7 @@ export const assistantEn = {
     pcClaudeChange: 'Change Claude account',
     pcClaudeWaiting: 'Sign in in the window that opened. The change applies to all of this PC.',
     pcSiteHelp:
-      "Sign in to your trusted websites one at a time. Each opens in Jarvis's Chrome: you type the password, then close the window. Jarvis visits them once a day and tells you here if one asks to sign in again.",
+      "Sign in to your trusted websites one at a time. Each opens in Jarvis's Chrome: you type the password, and the window closes by itself once you are in. Jarvis visits them once a day and tells you here if one asks to sign in again.",
     pcSiteLabel: 'Website',
     pcSiteOpen: 'Open to sign in',
     pcSiteForget: 'Remove',
@@ -63,7 +63,7 @@ export const assistantEn = {
       signed_out: 'Asks to sign in again',
       refused: 'Refuses this browser',
     },
-    pcSiteWaiting: "Sign in in Jarvis's Chrome, then close that window.",
+    pcSiteWaiting: "Sign in in Jarvis's Chrome: the window closes by itself once you are in.",
     pcFailed: 'That could not be done. Check that Jarvis is running on your PC and try again.',
     confirmDraftBody: 'This sends the draft to {recipient}.',
     draftRecipient: 'its recipients',
@@ -154,7 +154,7 @@ export const assistantEs: typeof assistantEn = {
     pcClaudeChange: 'Cambiar cuenta de Claude',
     pcClaudeWaiting: 'Entra en la ventana que se ha abierto. El cambio afecta a todo este PC.',
     pcSiteHelp:
-      'Entra poco a poco en tus webs de confianza. Cada una se abre en el Chrome de Jarvis: escribes tú la contraseña y luego cierras la ventana. Jarvis las visita una vez al día y aquí te avisa si alguna pide entrar de nuevo.',
+      'Entra poco a poco en tus webs de confianza. Cada una se abre en el Chrome de Jarvis: escribes tú la contraseña y la ventana se cierra sola cuando entras. Jarvis las visita una vez al día y aquí te avisa si alguna pide entrar de nuevo.',
     pcSiteLabel: 'Web',
     pcSiteOpen: 'Abrir para entrar',
     pcSiteForget: 'Quitar',
@@ -164,7 +164,7 @@ export const assistantEs: typeof assistantEn = {
       signed_out: 'Pide entrar de nuevo',
       refused: 'No admite este navegador',
     },
-    pcSiteWaiting: 'Entra en el Chrome de Jarvis y luego cierra esa ventana.',
+    pcSiteWaiting: 'Entra en el Chrome de Jarvis: la ventana se cierra sola cuando entras.',
     pcFailed:
       'No se ha podido hacer. Comprueba que Jarvis está en marcha en tu PC y vuelve a intentarlo.',
     confirmDraftBody: 'Esto envía el borrador a {recipient}.',

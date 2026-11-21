@@ -250,6 +250,7 @@ export const it = {
     installDesktop:
       "Clicca su Installa PWA, o sull'icona di installazione nella barra degli indirizzi. Su Safari o Firefox, apri questo sito in Chrome o Edge per installarlo.",
     pwaInsideNative: 'La PWA si installa da un browser: apri lì kwami.io.',
+    pwaOpenInBrowser: 'Apri kwami.io nel mio browser',
     update: {
       title: "Versione dell'app",
       version: 'Build {sha}',
@@ -291,6 +292,7 @@ export const it = {
     nativeUnsupported:
       'Non esiste ancora una versione nativa per {os}: usa la web app (PWA) qui sopra.',
     nativeRunning: 'Stai già usando questa app',
+    nativeOpenInstalled: 'Già installata? Apri KWAMI',
   },
   models: {
     title: 'Modelli',

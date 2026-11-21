@@ -240,6 +240,7 @@ export const en = {
     installDesktop:
       'Click Install PWA, or the install icon in the address bar. On Safari or Firefox, open this site in Chrome or Edge to install.',
     pwaInsideNative: 'The PWA installs from a browser: open kwami.io there.',
+    pwaOpenInBrowser: 'Open kwami.io in my browser',
     update: {
       title: 'App version',
       version: 'Build {sha}',
@@ -278,6 +279,7 @@ export const en = {
       'Apple only lets iPhone and iPad install apps from the App Store: use the web app (PWA) above, it works the same.',
     nativeUnsupported: 'There is no native build for {os} yet: use the web app (PWA) above.',
     nativeRunning: 'You are using this app now',
+    nativeOpenInstalled: 'Already installed? Open KWAMI',
   },
   models: {
     title: 'Models',
