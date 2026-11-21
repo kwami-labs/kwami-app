@@ -1,4 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+
+const { openUrl } = vi.hoisted(() => ({ openUrl: vi.fn() }));
+vi.mock('@tauri-apps/plugin-opener', () => ({ openUrl }));
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { flushPromises, mount } from '@vue/test-utils';
@@ -225,5 +228,26 @@ describe('AppInstallSection', () => {
     expect(wrapper.find('[data-testid="pwa-download"]').exists()).toBe(false);
     expect(wrapper.get('[data-testid="native-running"]').text()).toContain('using this app');
     expect(wrapper.get('[data-testid="pwa-inside-native"]').text()).toContain('kwami.io');
+    expect(wrapper.find('[data-testid="native-open-installed"]').exists()).toBe(false);
+  });
+
+  it('sends the PWA to the system browser from inside the native app', async () => {
+    setUserAgent(WINDOWS_UA);
+    enterTauri();
+    const wrapper = mount(AppInstallSection);
+
+    await wrapper.get('[data-testid="pwa-open-browser"]').trigger('click');
+
+    expect(openUrl).toHaveBeenCalledWith('https://kwami.io');
+  });
+
+  it('opens the native app already installed from a browser', async () => {
+    setUserAgent(WINDOWS_UA);
+    const wrapper = mount(AppInstallSection);
+    await flushPromises();
+
+    const open = wrapper.get('[data-testid="native-open-installed"]');
+    expect(open.attributes('href')).toBe('kwami://open');
+    expect(open.text()).toContain('Open KWAMI');
   });
 });
