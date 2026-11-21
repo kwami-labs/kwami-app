@@ -38,6 +38,7 @@ import { useKwamiConfigSync } from '@/composables/useKwamiConfigSync';
 import { useSearchPanelAgentTools } from '@/composables/useSearchPanelAgentTools';
 import { useCommsAgentTools } from '@/composables/useCommsAgentTools';
 import { useAssistantAgentTools } from '@/composables/useAssistantAgentTools';
+import { useMcpAgentControls } from '@/composables/useMcpAgentControls';
 import { useGoogleWorkspaceAgentTools } from '@/composables/useGoogleWorkspaceAgentTools';
 import { useLayoutAgentTools } from '@/composables/useLayoutAgentTools';
 import { useHudAgentTools } from '@/composables/useHudAgentTools';
@@ -168,6 +169,7 @@ const UI_CONTROL_DOMAINS = [
   'search',
   'browser',
   'soul',
+  'tools',
 ] as const;
 
 type UiControlDomain = (typeof UI_CONTROL_DOMAINS)[number];
@@ -192,6 +194,10 @@ const UI_DOMAIN_ALIASES: Record<string, UiControlDomain> = {
   persona: 'soul',
   profile: 'soul',
   theme: 'theme',
+  tools: 'tools',
+  tool: 'tools',
+  mcp: 'tools',
+  mcpservers: 'tools',
   ui: 'workspace',
   voice: 'voice',
   workspace: 'workspace',
@@ -252,6 +258,7 @@ function buildSoulConfig(voiceStore: ReturnType<typeof useVoiceStore>) {
 export function useWorkspaceAgentTools() {
   const { t } = useI18n();
   const { kwami, rendererType, isConnected } = useKwami();
+  const mcpControls = useMcpAgentControls();
 
   function humanizePanel(panel: WorkspacePanel): string {
     return t(`workspaceAgentTools.panels.${panel}`);
@@ -1658,6 +1665,7 @@ export function useWorkspaceAgentTools() {
         'preemptiveGeneration',
       ],
       memoryUiControls: ['activeTab', 'openGraphView'],
+      toolsControls: ['listMcp', 'connectMcp', 'removeMcp', 'reconnectMcp'],
       resettableDomains: [...RESETTABLE_DOMAINS],
       message: t('workspaceAgentTools.listUiMessage'),
     };
@@ -2480,6 +2488,10 @@ export function useWorkspaceAgentTools() {
 
     if (normalizedDomain === 'memory') {
       return setMemoryUiControl(control, value);
+    }
+
+    if (normalizedDomain === 'tools') {
+      return mcpControls.control(normalizedControl, value);
     }
 
     if (normalizedDomain === 'search') {

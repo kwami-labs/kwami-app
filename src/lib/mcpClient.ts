@@ -27,6 +27,8 @@ export interface McpTool {
   name: string;
   description?: string;
   inputSchema?: Record<string, unknown>;
+  /** What the server says the tool does: only reads, or destroys something. */
+  annotations?: { title?: string; readOnlyHint?: boolean; destructiveHint?: boolean };
 }
 
 export interface McpServerInfo {

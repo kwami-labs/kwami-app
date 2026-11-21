@@ -14,12 +14,15 @@ import {
 import { useAgentActionState } from '@/composables/useAgentActionState';
 import { titleOf } from '@/lib/hud/markdown';
 import { openUrlInHud } from '@/lib/hud/open';
+import { baseToolName, clampRefresh, toolSummary } from '@/lib/hud/toolWidget';
+import { useToolWidgets, type ToolRun } from '@/composables/useToolWidgets';
 
 /**
  * `show_on_screen`: Jarvis runs its own screen by voice, as it works.
  *
  * It opens what it produces or finds (a report or notes as a document, a video, a
- * page, a picture), and arranges it with everything the user has by hand: folds,
+ * page, a picture, a tool it keeps running in view: an MCP server's, the agenda), and
+ * arranges it with everything the user has by hand: folds,
  * brings back, closes, moves, resizes, places, maximises, brings to the front, pins,
  * snaps, gathers windows as tabs, moves them between screens, makes and switches
  * screens, lays a screen out, puts one on centre stage (its own figure moving aside),
@@ -59,6 +62,7 @@ const ACTIONS = [
   'unpin',
   'feature',
   'edit_mode',
+  'refresh',
 ] as const;
 
 const ZONES: readonly SnapZone[] = [
@@ -84,7 +88,11 @@ const KIND_WORDS: Record<string, string[]> = {
   web: ['web', 'page', 'página', 'pagina'],
   image: ['image', 'imagen', 'foto', 'picture'],
   browser: ['browser', 'navegador', 'chrome'],
+  tool: ['tool', 'herramienta', 'widget', 'panel', 'mcp'],
 };
+
+/** How long a spoken reply waits for a tool window's first answer. */
+const FIRST_RUN_WAIT_MS = 20_000;
 
 function asString(value: unknown): string {
   return typeof value === 'string' ? value : typeof value === 'number' ? String(value) : '';
@@ -122,6 +130,7 @@ export function useHudAgentTools() {
   const { t } = useI18n();
   const hud = useHudStore();
   const actionState = useAgentActionState();
+  const tools = useToolWidgets();
 
   /** A window by id, or by words of its title or kind; the newest wins a tie. */
   function findWindow(ref: string): HudWidget | undefined {
@@ -174,7 +183,79 @@ export function useHudAgentTools() {
       ...(widget.pinned ? { pinned: true } : {}),
       ...(widget.manual ? { placedByHand: true } : {}),
       ...(hud.stageId === widget.id ? { featured: true } : {}),
+      ...(widget.kind === 'tool'
+        ? {
+            tool: widget.tool,
+            args: widget.args,
+            refreshEvery: widget.refresh || 'by hand',
+            ...(tools.runs[widget.id]?.view
+              ? { shows: toolSummary(tools.runs[widget.id].view!, 240) }
+              : {}),
+          }
+        : {}),
     };
+  }
+
+  /** What a tool window answered, for the spoken reply: the first run, or its state. */
+  async function firstAnswer(widget: HudWidget): Promise<Record<string, unknown>> {
+    const run = tools.run(widget);
+    const settled = await Promise.race([
+      run,
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), FIRST_RUN_WAIT_MS)),
+    ]);
+    return answerOf(settled);
+  }
+
+  function answerOf(run: ToolRun | null): Record<string, unknown> {
+    if (!run) return { result: 'still running; it shows when it comes' };
+    if (run.status === 'error') return { error: run.error };
+    return run.view ? { result: toolSummary(run.view) } : {};
+  }
+
+  async function refreshTool(widget: HudWidget, args: Record<string, unknown>) {
+    if (widget.kind !== 'tool') return { success: false, message: t('hud.tool.notATool') };
+    if (args.refresh !== undefined) hud.setRefresh(widget.id, clampRefresh(args.refresh));
+    const answer = answerOf(await tools.run(widget));
+    return done(t('hud.tool.refreshed', { title: widget.title }), {
+      refreshEvery: widget.refresh || 'by hand',
+      ...answer,
+    });
+  }
+
+  async function openTool(args: Record<string, unknown>, title: string) {
+    const name = asString(args.tool).trim();
+    if (!name) {
+      return { success: false, message: t('hud.tool.needsTool'), showable: tools.showable() };
+    }
+    const allowed = tools.check(name);
+    if (!allowed.ok) {
+      return {
+        success: false,
+        message: t(allowed.reason === 'missing' ? 'hud.tool.missing' : 'hud.tool.writes', {
+          tool: name,
+        }),
+        ...(allowed.reason === 'missing' ? { showable: tools.showable() } : {}),
+      };
+    }
+    const toolArgs =
+      args.args && typeof args.args === 'object' && !Array.isArray(args.args)
+        ? (args.args as Record<string, unknown>)
+        : {};
+    const widget = hud.open({
+      kind: 'tool',
+      title: title || baseToolName(name).replace(/_/g, ' '),
+      tool: name,
+      args: toolArgs,
+      refresh: clampRefresh(args.refresh),
+      source: 'agent',
+    });
+    const answer = await firstAnswer(widget);
+    return done(t('hud.shown', { title: widget.title }), {
+      id: widget.id,
+      kind: 'tool',
+      refreshEvery: widget.refresh || 'by hand',
+      ...answer,
+    });
   }
 
   /** Where Jarvis's figure is now, in % of the whole HUD, and how big (100 is full size). */
@@ -242,8 +323,9 @@ export function useHudAgentTools() {
   function open(args: Record<string, unknown>) {
     if (!hud.prefs.enabled) return { success: false, message: t('hud.disabled') };
     const url = asString(args.url);
-    const kind = asString(args.kind) || (url ? 'web' : 'document');
+    const kind = asString(args.kind) || (args.tool ? 'tool' : url ? 'web' : 'document');
     const title = asString(args.title).trim();
+    if (kind === 'tool') return openTool(args, title);
     if (kind === 'document') {
       const content = asString(args.content);
       if (!content.trim()) return { success: false, message: t('hud.needsContent') };
@@ -257,6 +339,7 @@ export function useHudAgentTools() {
     return done(t('hud.shown', { title: widget.title }), { id: widget.id, kind: widget.kind });
   }
 
+  // Synchronous for every action but a tool window's, which waits for the tool's answer.
   function showOnScreen(args: Record<string, unknown>) {
     const action = asString(args.action) || 'open';
     const target = asString(args.id);
@@ -353,6 +436,8 @@ export function useHudAgentTools() {
       case 'feature':
         hud.feature(widget.id);
         return done(t('hud.voice.featured', { title: widget.title }));
+      case 'refresh':
+        return refreshTool(widget, args);
       case 'move': {
         const zone = PLACES.find((z) => z === asString(args.zone));
         if (!zone && percent(args.x) === undefined && percent(args.y) === undefined) {
@@ -426,7 +511,10 @@ export function useHudAgentTools() {
       description: t('hud.toolDescShowOnScreen'),
       parameters: {
         action: { type: 'string', enum: [...ACTIONS] },
-        kind: { type: 'string', enum: ['document', 'video', 'web', 'image'] },
+        kind: { type: 'string', enum: ['document', 'video', 'web', 'image', 'tool'] },
+        tool: { type: 'string' },
+        args: { type: 'object' },
+        refresh: { type: 'number' },
         title: { type: 'string' },
         content: { type: 'string' },
         url: { type: 'string' },
