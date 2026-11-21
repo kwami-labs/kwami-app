@@ -4,6 +4,13 @@ All notable changes to this client are documented here. This file is generated f
 
 `v0.1.0` is a baseline tag placed at the commit that introduced this automation. Everything before it lives in the git log rather than here: it shipped before there was a release line to put it on.
 
+## [0.1.16](https://github.com/kwami-labs/kwami-app/compare/v0.1.15...v0.1.16) (2026-11-21)
+
+
+### Bug Fixes
+
+* **hud:** reload cleanly, size the interface per screen, cap the avatar at 60 ([#112](https://github.com/kwami-labs/kwami-app/issues/112)) ([83d0560](https://github.com/kwami-labs/kwami-app/commit/83d0560a74708ae7c2813063597fff77f4c8f1ff)), closes [#108](https://github.com/kwami-labs/kwami-app/issues/108) [#110](https://github.com/kwami-labs/kwami-app/issues/110)
+
 ## [0.1.15](https://github.com/kwami-labs/kwami-app/compare/v0.1.14...v0.1.15) (2026-11-21)
 
 
