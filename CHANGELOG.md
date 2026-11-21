@@ -4,6 +4,13 @@ All notable changes to this client are documented here. This file is generated f
 
 `v0.1.0` is a baseline tag placed at the commit that introduced this automation. Everything before it lives in the git log rather than here: it shipped before there was a release line to put it on.
 
+## [0.1.15](https://github.com/kwami-labs/kwami-app/compare/v0.1.14...v0.1.15) (2026-11-21)
+
+
+### Features
+
+* **hud:** tool windows, and MCP servers by voice ([#110](https://github.com/kwami-labs/kwami-app/issues/110)) ([1f5c77c](https://github.com/kwami-labs/kwami-app/commit/1f5c77c289ebe74cabcd9ccb220d209f1a15d1df)), closes [#108](https://github.com/kwami-labs/kwami-app/issues/108)
+
 ## [0.1.14](https://github.com/kwami-labs/kwami-app/compare/v0.1.13...v0.1.14) (2026-11-21)
 
 
