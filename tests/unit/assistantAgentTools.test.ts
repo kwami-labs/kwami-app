@@ -135,6 +135,31 @@ describe('reminders and follow-ups', () => {
     });
   });
 
+  it('schedules work in the cloud or on the PC when the user says where', async () => {
+    await tool('schedule_work')({
+      title: 'Nube',
+      instruction: 'x',
+      local_time: '07:00',
+      where: 'nube',
+    });
+    await tool('schedule_work')({
+      title: 'PC',
+      instruction: 'x',
+      local_time: '07:00',
+      where: 'pc',
+    });
+    await tool('schedule_work')({
+      title: 'Igual',
+      instruction: 'x',
+      local_time: '07:00',
+      where: 'marte',
+    });
+    expect(api.post.mock.calls[0]?.[1]).toMatchObject({ kind: 'work', target: 'cloud' });
+    expect(api.post.mock.calls[1]?.[1]).toMatchObject({ target: 'pc' });
+    // Not said, or not a place: wherever fits, as before.
+    expect(api.post.mock.calls[2]?.[1]).not.toHaveProperty('target');
+  });
+
   it('adds a follow-up with no time', async () => {
     await tool('add_followup')({ title: 'Reforma' });
     expect(api.post.mock.calls[0]?.[1]).toMatchObject({ kind: 'followup' });

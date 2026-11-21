@@ -40,6 +40,7 @@ import { useCommsAgentTools } from '@/composables/useCommsAgentTools';
 import { useAssistantAgentTools } from '@/composables/useAssistantAgentTools';
 import { useGoogleWorkspaceAgentTools } from '@/composables/useGoogleWorkspaceAgentTools';
 import { useLayoutAgentTools } from '@/composables/useLayoutAgentTools';
+import { useHudAgentTools } from '@/composables/useHudAgentTools';
 import { useOutboundGate } from '@/composables/useOutboundGate';
 import { useLocaleAgentTools } from '@/composables/useLocaleAgentTools';
 import { useCharterAgentTools } from '@/composables/useCharterAgentTools';
@@ -279,6 +280,7 @@ export function useWorkspaceAgentTools() {
   const assistantTools = useAssistantAgentTools();
   const googleWorkspaceTools = useGoogleWorkspaceAgentTools();
   const layoutTools = useLayoutAgentTools();
+  const hudTools = useHudAgentTools();
   const outboundGate = useOutboundGate();
   const localeTools = useLocaleAgentTools();
   const charterTools = useCharterAgentTools();
@@ -2414,6 +2416,19 @@ export function useWorkspaceAgentTools() {
 
     const normalizedControl = normalizeKey(control);
 
+    // Asked for in any domain, the list answers: the model need not know it lives
+    // under workspace, and a miss would cost the user a turn.
+    if (normalizedControl === 'listcontrols') return listUiControls();
+
+    // Avatar, theme and scene go back to their defaults. The browser panel's own
+    // `reset` is its layout, so it keeps it.
+    if (
+      normalizedControl === 'reset' &&
+      (RESETTABLE_DOMAINS as readonly string[]).includes(normalizedDomain)
+    ) {
+      return resetUiDomain(normalizedDomain, confirm);
+    }
+
     if (normalizedDomain === 'workspace') {
       if (normalizedControl === 'openpanel') return openPanel(value);
       if (normalizedControl === 'closepanel') return closePanel();
@@ -2516,6 +2531,7 @@ export function useWorkspaceAgentTools() {
     group('google');
     googleWorkspaceTools.registerGoogleWorkspaceTools(instance);
     group('interface');
+    hudTools.registerHudTools(instance);
     layoutTools.registerLayoutTools(instance);
     localeTools.registerLocaleTools(instance);
     group('memory');
@@ -2547,172 +2563,28 @@ export function useWorkspaceAgentTools() {
         setUiControl(domain, control, value, confirm),
     });
 
-    instance.registerTool({
-      name: 'open_workspace_panel',
-      description: t('workspaceAgentTools.toolDescOpenWorkspacePanel'),
-      parameters: { panelName: { type: 'string', enum: [...WORKSPACE_PANELS] } },
-      handler: async ({ panelName }) => openPanel(panelName),
-    });
-
-    instance.registerTool({
-      name: 'close_workspace_panel',
-      description: t('workspaceAgentTools.toolDescCloseWorkspacePanel'),
-      handler: async () => closePanel(),
-    });
-
-    instance.registerTool({
-      name: 'focus_transcription_panel',
-      description: t('workspaceAgentTools.toolDescFocusTranscription'),
-      handler: async () => openPanel('history'),
-    });
-
-    instance.registerTool({
-      name: 'set_panel_control',
-      description: t('workspaceAgentTools.toolDescSetPanelControl'),
-      parameters: {
-        control: { type: 'string', enum: ['activePanel', 'isOpen', 'sizePreset'] },
-        value: { type: 'string' },
-      },
-      handler: async ({ control, value }) => setPanelControl(control, value),
-    });
-
-    group('appearance');
-    instance.registerTool({
-      name: 'set_theme_control',
-      description: t('workspaceAgentTools.toolDescSetThemeControl'),
-      parameters: {
-        control: { type: 'string' },
-        value: {},
-      },
-      handler: async ({ control, value }) => setThemeControl(control, value),
-    });
-
-    instance.registerTool({
-      name: 'set_avatar_control',
-      description: t('workspaceAgentTools.toolDescSetAvatarControl'),
-      parameters: {
-        control: { type: 'string' },
-        value: {},
-      },
-      handler: async ({ control, value }) => setAvatarControl(control, value),
-    });
-
-    instance.registerTool({
-      name: 'set_scene_control',
-      description: t('workspaceAgentTools.toolDescSetSceneControl'),
-      parameters: {
-        control: { type: 'string' },
-        value: {},
-      },
-      handler: async ({ control, value }) => setSceneControl(control, value),
-    });
+    // Panels, theme, avatar, scene, voice, listening, the memory view, the
+    // browser panel, the soul and the workspace itself (renderer, response
+    // length, status, the list of controls, a reset) all go through
+    // set_ui_control above. One tool, not one per domain: a request carries 128
+    // tools at most, and every duplicate pushed out one that does something no
+    // other tool can.
 
     group('personality');
     instance.registerTool({
-      name: 'set_voice_control',
-      description: t('workspaceAgentTools.toolDescSetVoiceControl'),
+      name: 'soul_profile',
+      description: t('workspaceAgentTools.toolDescSoulProfile'),
       parameters: {
-        control: { type: 'string' },
-        value: {},
-        confirm: { type: 'boolean' },
-      },
-      handler: async ({ control, value, confirm }) => setVoiceControl(control, value, confirm),
-    });
-
-    group('appearance');
-    instance.registerTool({
-      name: 'set_enhancement_control',
-      description: t('workspaceAgentTools.toolDescSetEnhancementControl'),
-      parameters: {
-        control: { type: 'string' },
-        value: {},
-      },
-      handler: async ({ control, value }) => setEnhancementControl(control, value),
-    });
-
-    group('interface');
-    instance.registerTool({
-      name: 'set_memory_ui_control',
-      description: t('workspaceAgentTools.toolDescSetMemoryUi'),
-      parameters: {
-        control: {
-          type: 'string',
-          enum: ['activeTab', 'openGraphView', 'knowledgeGraph', 'graphView'],
-        },
-        value: {},
-      },
-      handler: async ({ control, value }) => setMemoryUiControl(control, value),
-    });
-
-    instance.registerTool({
-      name: 'set_workspace_renderer',
-      description: t('workspaceAgentTools.toolDescSetRenderer'),
-      parameters: {
-        renderer: { type: 'string', enum: [...AVATAR_RENDERERS] },
-      },
-      handler: async ({ renderer }) => setRenderer(renderer),
-    });
-
-    group('search');
-    instance.registerTool({
-      name: 'set_browser_panel',
-      description: t('workspaceAgentTools.toolDescSetBrowserPanel'),
-      parameters: {
-        control: {
-          type: 'string',
-          enum: ['layout', 'expand', 'position', 'size', 'center', 'reset'],
-        },
-        value: {},
-      },
-      handler: async ({ control, value }) => setBrowserPanelControl(control, value),
-    });
-
-    group('personality');
-    instance.registerTool({
-      name: 'set_soul_control',
-      description: t('workspaceAgentTools.toolDescSetSoulControl'),
-      parameters: {
-        control: {
-          type: 'string',
-          enum: [
-            'name',
-            'personality',
-            'systemPrompt',
-            'conversationStyle',
-            'language',
-            'traits',
-            'emotionalTraits',
-            'emotionalTone',
-            'responseLength',
-          ],
-        },
-        value: {},
-        confirm: { type: 'boolean' },
-      },
-      handler: async ({ control, value, confirm }) => setSoulControl(control, value, confirm),
-    });
-
-    instance.registerTool({
-      name: 'get_soul_profile',
-      description: t('workspaceAgentTools.toolDescGetSoulProfile'),
-      handler: async () => getSoulProfile(),
-    });
-
-    instance.registerTool({
-      name: 'list_soul_presets',
-      description: t('workspaceAgentTools.toolDescListSoulPresets'),
-      parameters: { category: { type: 'string' } },
-      handler: async ({ category }) => listSoulPresets(category),
-    });
-
-    instance.registerTool({
-      name: 'apply_soul_preset',
-      description: t('workspaceAgentTools.toolDescApplySoulPreset'),
-      parameters: {
+        action: { type: 'string', enum: ['read', 'presets', 'apply'] },
+        category: { type: 'string' },
         name: { type: 'string' },
         confirm: { type: 'boolean' },
       },
-      handler: async ({ name, confirm }) => applySoulPreset(name, confirm),
+      handler: async ({ action, category, name, confirm }) => {
+        if (action === 'apply') return applySoulPreset(name, confirm);
+        if (action === 'presets') return listSoulPresets(category);
+        return getSoulProfile();
+      },
     });
 
     group('appearance');
@@ -2727,79 +2599,28 @@ export function useWorkspaceAgentTools() {
     });
 
     instance.registerTool({
-      name: 'list_scene_presets',
-      description: t('workspaceAgentTools.toolDescListScenePresets'),
+      name: 'scene_presets',
+      description: t('workspaceAgentTools.toolDescScenePresets'),
       parameters: {
+        action: { type: 'string', enum: ['list', 'apply'] },
         kind: { type: 'string', enum: ['image', 'video', 'hdri', 'all'] },
-      },
-      handler: async ({ kind }) => listScenePresets(kind),
-    });
-
-    instance.registerTool({
-      name: 'apply_scene_preset',
-      description: t('workspaceAgentTools.toolDescApplyScenePreset'),
-      parameters: {
-        kind: { type: 'string', enum: ['image', 'video', 'hdri'] },
         name: { type: 'string' },
       },
-      handler: async ({ kind, name }) => applyScenePreset(kind, name),
+      handler: async ({ action, kind, name }) =>
+        action === 'apply' ? applyScenePreset(kind, name) : listScenePresets(kind),
     });
 
     group('personality');
     instance.registerTool({
-      name: 'list_kwami_profiles',
-      description: t('workspaceAgentTools.toolDescListKwamiProfiles'),
-      handler: async () => listKwamiProfiles(),
-    });
-
-    instance.registerTool({
-      name: 'switch_kwami_profile',
-      description: t('workspaceAgentTools.toolDescSwitchKwamiProfile'),
+      name: 'kwami_profiles',
+      description: t('workspaceAgentTools.toolDescKwamiProfiles'),
       parameters: {
+        action: { type: 'string', enum: ['list', 'switch'] },
         name: { type: 'string' },
         confirm: { type: 'boolean' },
       },
-      handler: async ({ name, confirm }) => switchKwamiProfile(name, confirm),
-    });
-
-    instance.registerTool({
-      name: 'set_response_length',
-      description: t('workspaceAgentTools.toolDescSetResponseLength'),
-      parameters: {
-        length: { type: 'string', enum: ['short', 'medium', 'long'] },
-        confirm: { type: 'boolean' },
-      },
-      handler: async ({ length, confirm }) => setResponseLength(length, confirm),
-    });
-
-    group('search');
-    instance.registerTool({
-      name: 'clear_search_results',
-      description: t('workspaceAgentTools.toolDescClearSearch'),
-      handler: async () => clearSearchResults(),
-    });
-
-    group('interface');
-    instance.registerTool({
-      name: 'reset_ui_domain',
-      description: t('workspaceAgentTools.toolDescResetUiDomain'),
-      parameters: {
-        domain: { type: 'string', enum: [...RESETTABLE_DOMAINS] },
-        confirm: { type: 'boolean' },
-      },
-      handler: async ({ domain, confirm }) => resetUiDomain(domain, confirm),
-    });
-
-    instance.registerTool({
-      name: 'list_ui_controls',
-      description: t('workspaceAgentTools.toolDescListUiControls'),
-      handler: async () => listUiControls(),
-    });
-
-    instance.registerTool({
-      name: 'show_workspace_status',
-      description: t('workspaceAgentTools.toolDescShowWorkspaceStatus'),
-      handler: async () => showWorkspaceStatus(),
+      handler: async ({ action, name, confirm }) =>
+        action === 'switch' ? switchKwamiProfile(name, confirm) : listKwamiProfiles(),
     });
 
     // ---- Email Smart Hub tools ----

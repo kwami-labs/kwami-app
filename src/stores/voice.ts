@@ -21,6 +21,7 @@ import {
   type PipelineMode,
 } from '@/lib/voiceEngines';
 import {
+  applyBillingChange,
   applyInstructionsChange,
   brainPayload,
   defaultBrain,
@@ -234,6 +235,14 @@ export const useVoiceStore = defineStore('voice', () => {
     if (!change) return null;
     brain.value = change.config;
     return change.label;
+  }
+
+  /** The user changed how the brain pays by voice. True when it changed. */
+  function applyBrainBilling(raw: unknown): boolean {
+    const changed = applyBillingChange(brain.value, raw);
+    if (!changed || changed.billing === brain.value.billing) return false;
+    brain.value = changed;
+    return true;
   }
 
   function applyBrainStatus(raw: unknown) {
@@ -531,6 +540,7 @@ export const useVoiceStore = defineStore('voice', () => {
     brainStatus,
     applyBrainStatus,
     applyBrainInstructions,
+    applyBrainBilling,
     memoryUI,
     enhancementsState,
     updateSTT,

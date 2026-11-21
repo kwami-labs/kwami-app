@@ -2,6 +2,7 @@ import { onScopeDispose, watch } from 'vue';
 import type { JarvisHandle } from './sync/rendererTypes';
 import { useAgentActionState } from '@/composables/useAgentActionState';
 import { useCreditsStore } from '@/stores/credits';
+import { tidyToolName } from '@/lib/hud/actions';
 
 /**
  * Tells the Jarvis HUD what the app is doing.
@@ -36,6 +37,13 @@ interface MessageDetail {
 
 interface BrowserSessionDetail {
   action?: string;
+}
+
+interface AgentActionDetail {
+  type?: string;
+  name?: string;
+  phase?: string;
+  status?: string;
 }
 
 export function useJarvisSignals(getJarvis: () => JarvisHandle | undefined) {
@@ -94,7 +102,25 @@ export function useJarvisSignals(getJarvis: () => JarvisHandle | undefined) {
     else if (action === 'close') getJarvis()?.log('Browser session closed');
   }
 
+  // Each tool the agent itself runs (navigate, search, delegate...), as it starts; a
+  // failed one is an alert. The app's own tools arrive through `lastAction` below.
+  const running = new Map<string, string>();
+  function onAgentMessage(event: Event): void {
+    const detail = (event as CustomEvent<AgentActionDetail & { id?: string }>).detail;
+    if (detail?.type !== 'agent_action' || !detail.id) return;
+    if (detail.phase === 'start' && detail.name) {
+      const label = tidyToolName(detail.name).toUpperCase();
+      running.set(detail.id, label);
+      getJarvis()?.signal('tool', label);
+    } else if (detail.phase === 'end') {
+      const label = running.get(detail.id);
+      running.delete(detail.id);
+      if (label && detail.status === 'error') getJarvis()?.signal('error', `${label} FAILED`);
+    }
+  }
+
   const listeners: Array<[string, (event: Event) => void]> = [
+    ['kwami:agent_message', onAgentMessage],
     ['kwami:connected', onConnected],
     ['kwami:disconnected', onDisconnected],
     ['kwami:connectFailed', onConnectFailed],

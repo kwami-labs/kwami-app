@@ -62,13 +62,7 @@ beforeEach(() => {
 
 describe('registration', () => {
   it('registers every tool', () => {
-    for (const name of [
-      'export_theme',
-      'import_theme',
-      'get_performance_metrics',
-      'reset_performance_metrics',
-      'create_wallet',
-    ]) {
+    for (const name of ['export_theme', 'import_theme', 'performance_metrics', 'create_wallet']) {
       expect(registered.has(name), `${name} is missing`).toBe(true);
     }
   });
@@ -118,7 +112,7 @@ describe('theme transfer', () => {
 
 describe('performance metrics', () => {
   it('flags that there is nothing to report before a turn completes', async () => {
-    const result = await call('get_performance_metrics');
+    const result = await call('performance_metrics', { action: 'read' });
     // The panel shows an em dash; reading that out as a latency is nonsense.
     expect(result.hasData).toBe(false);
     expect(String(result.message)).not.toContain('—');
@@ -129,7 +123,7 @@ describe('performance metrics', () => {
     metrics.latency.overall = '820ms';
     metrics.stats.turns = 3;
 
-    const result = await call('get_performance_metrics');
+    const result = await call('performance_metrics', { action: 'read' });
     expect(result.hasData).toBe(true);
     expect(result.turns).toBe(3);
     expect(String(result.message)).toContain('820ms');
@@ -138,7 +132,7 @@ describe('performance metrics', () => {
   it('resets the counters', async () => {
     const metrics = useMetricsState();
     metrics.stats.turns = 5;
-    await call('reset_performance_metrics');
+    await call('performance_metrics', { action: 'reset' });
     expect(metrics.stats.turns).toBe(0);
   });
 });
@@ -206,10 +200,12 @@ describe('locale messages', () => {
     it(`compiles every ${locale} message without losing a branch`, () => {
       const i18n = createI18n({ legacy: false, locale, messages: { [locale]: bundle } });
       for (const key of leafKeys(bundle)) {
-        const raw = key.split('.').reduce<unknown>(
-          (node, part) => (node as Record<string, unknown> | undefined)?.[part],
-          bundle,
-        ) as string;
+        const raw = key
+          .split('.')
+          .reduce<unknown>(
+            (node, part) => (node as Record<string, unknown> | undefined)?.[part],
+            bundle,
+          ) as string;
         let rendered = '';
         expect(() => {
           rendered = i18n.global.t(key, { overall: 'x', network: 'x', error: 'x' });

@@ -58,7 +58,10 @@ const time = computed(() =>
 </script>
 
 <template>
-  <section class="budget" :class="{ warn: inventory && inventory.dropped.length }">
+  <section
+    class="budget"
+    :class="{ warn: inventory && inventory.dropped.length && !inventory.shelf }"
+  >
     <template v-if="inventory && split">
       <div class="head">
         <span class="title">{{ t('toolsPanel.budget.title') }}</span>
@@ -95,7 +98,11 @@ const time = computed(() =>
         <p>
           <iconify-icon icon="ph:warning-duotone" aria-hidden="true"></iconify-icon>
           {{ t('toolsPanel.budget.dropped', inventory.dropped.length) }}.
-          {{ t('toolsPanel.budget.droppedHint') }}
+          {{
+            inventory.shelf
+              ? t('toolsPanel.budget.shelvedHint')
+              : t('toolsPanel.budget.droppedHint')
+          }}
         </p>
         <div class="names">
           <code

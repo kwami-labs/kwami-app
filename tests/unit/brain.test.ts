@@ -10,6 +10,8 @@ import { createPinia, setActivePinia } from 'pinia';
 import { useVoiceStore } from '@/stores/voice';
 import {
   JARVIS_VOICE,
+  automaticDirector,
+  MODEL_SUGGESTIONS,
   brainPayload,
   defaultBrain,
   modelUsable,
@@ -17,6 +19,23 @@ import {
   parseBrainStatus,
   roleFor,
 } from '@/lib/brain';
+
+describe('the director', () => {
+  it('is the expert when the user chose none, as the agent picks it', () => {
+    const models = defaultBrain().models;
+    expect(automaticDirector(models)?.model).toBe('claude-opus-5-5');
+    const noExpert = models.filter((m) => !m.roles.includes('expert'));
+    expect(automaticDirector(noExpert)?.model).toBe('claude-sonnet-5-5');
+    expect(automaticDirector([])).toBeUndefined();
+  });
+
+  it('can be told not to hand out the work, and the agent is told so', () => {
+    expect(normalizeBrain({}).orchestrate).toBe(true);
+    const off = normalizeBrain({ orchestrate: false });
+    expect(off.orchestrate).toBe(false);
+    expect(brainPayload(off).orchestrate).toBe(false);
+  });
+});
 
 describe('brain config', () => {
   it('defaults to the Jarvis roster with Anthropic as the brain', () => {
@@ -29,6 +48,7 @@ describe('brain config', () => {
       ['claude-sonnet-5-5', 'code'],
     ]);
     expect(brain.splitTasks).toBe(true);
+    expect(brain.orchestrate).toBe(true);
     expect(brain.budgetPolicy).toBe('stop');
     expect(brain.monthlyBudgetUsd).toBe(150);
   });
@@ -60,12 +80,23 @@ describe('brain config', () => {
     });
   });
 
-  it('routes like the agent: Haiku only for the simplest, Gemini for quick lookups', () => {
+  it('routes like the agent: Opus most, Sonnet writes and reads, Haiku lookups', () => {
     expect(roleFor('question', 'simple')).toBe('fast');
+    expect(roleFor('question', 'normal')).toBe('expert');
     expect(roleFor('research', 'simple')).toBe('search');
-    expect(roleFor('research', 'normal')).toBe('standard');
+    expect(roleFor('research', 'normal')).toBe('expert');
+    expect(roleFor('analysis', 'normal')).toBe('expert');
     expect(roleFor('analysis', 'hard')).toBe('expert');
+    for (const difficulty of ['simple', 'normal', 'hard'] as const) {
+      expect(roleFor('writing', difficulty)).toBe('standard');
+      expect(roleFor('reading', difficulty)).toBe('standard');
+    }
     expect(roleFor('code', 'simple')).toBe('code');
+  });
+
+  it('never suggests Fable', () => {
+    const all = Object.values(MODEL_SUGGESTIONS).flat();
+    expect(all.some((s) => s.model.includes('fable'))).toBe(false);
   });
 
   it('marks a model unusable only when the agent reported its key missing', () => {

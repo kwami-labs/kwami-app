@@ -82,37 +82,37 @@ afterEach(() => {
 
 describe('set_app_language', () => {
   it('switches the interface locale', async () => {
-    const result = await call('set_app_language', { language: 'es' });
+    const result = await call('app_language', { action: 'set', language: 'es' });
     expect(result.success).toBe(true);
     expect(result.changed).toBe(true);
     expect(getCurrentLocale()).toBe('es');
   });
 
   it('accepts the language named in words rather than as a code', async () => {
-    const result = await call('set_app_language', { language: 'Spanish' });
+    const result = await call('app_language', { action: 'set', language: 'Spanish' });
     expect(result.success).toBe(true);
     expect(getCurrentLocale()).toBe('es');
   });
 
   it('accepts the language named in its own language, accents and all', async () => {
-    const result = await call('set_app_language', { language: 'Español' });
+    const result = await call('app_language', { action: 'set', language: 'Español' });
     expect(result.success).toBe(true);
     expect(getCurrentLocale()).toBe('es');
   });
 
   it('accepts a regional tag', async () => {
-    await call('set_app_language', { language: 'es-ES' });
+    await call('app_language', { action: 'set', language: 'es-ES' });
     expect(getCurrentLocale()).toBe('es');
   });
 
   it('reports a no-op rather than claiming it changed something', async () => {
-    const result = await call('set_app_language', { language: 'en' });
+    const result = await call('app_language', { action: 'set', language: 'en' });
     expect(result.success).toBe(true);
     expect(result.changed).toBe(false);
   });
 
   it('refuses a language the app does not ship, without changing anything', async () => {
-    const result = await call('set_app_language', { language: 'Klingon' });
+    const result = await call('app_language', { action: 'set', language: 'Klingon' });
     expect(result.success).toBe(false);
     expect(getCurrentLocale()).toBe('en');
     expect(String(result.message)).toContain('es');
@@ -121,7 +121,7 @@ describe('set_app_language', () => {
   it('remembers the choice the way the account panel does', async () => {
     // `userId` is a computed over `user`, so the user is what a test sets.
     useAuthStore().user = { id: 'user-1' } as never;
-    await call('set_app_language', { language: 'es' });
+    await call('app_language', { action: 'set', language: 'es' });
     // A preference that only sticks when it was set by clicking is a
     // preference that looks broken when it was set by speaking.
     expect(savedLocales).toEqual([{ userId: 'user-1', locale: 'es' }]);
@@ -129,14 +129,14 @@ describe('set_app_language', () => {
 
   it('still switches when there is no signed-in user to save against', async () => {
     useAuthStore().user = null;
-    const result = await call('set_app_language', { language: 'es' });
+    const result = await call('app_language', { action: 'set', language: 'es' });
     expect(result.success).toBe(true);
     expect(getCurrentLocale()).toBe('es');
     expect(savedLocales).toHaveLength(0);
   });
 
   it('answers in the language it just switched to', async () => {
-    const result = await call('set_app_language', { language: 'es' });
+    const result = await call('app_language', { action: 'set', language: 'es' });
     // The reply is itself the proof to the user that the switch took.
     // Accented, because the name now comes from Intl rather than a
     // hand-written table -- which is the whole point of the change.
@@ -146,7 +146,7 @@ describe('set_app_language', () => {
 
 describe('get_app_language', () => {
   it('reports the current language and what else there is', async () => {
-    const result = await call('get_app_language');
+    const result = await call('app_language', { action: 'get' });
     expect(result.language).toBe('en');
     // Read from the app rather than hardcoded: the list grows whenever a
     // locale is added, and this test should not be the thing that blocks it.
@@ -154,7 +154,7 @@ describe('get_app_language', () => {
   });
 
   it('names every language in the language being read', async () => {
-    const result = await call('get_app_language');
+    const result = await call('app_language', { action: 'get' });
     const names = result.languageNames as Record<string, string>;
     for (const locale of SUPPORTED_LOCALES) {
       expect(names[locale], `no name for ${locale}`).toBeTruthy();
@@ -172,7 +172,7 @@ describe('derived aliases', () => {
     for (const locale of SUPPORTED_LOCALES) {
       const own = new Intl.DisplayNames([locale], { type: 'language' }).of(locale)!;
       setLocale('en');
-      const result = await call('set_app_language', { language: own });
+      const result = await call('app_language', { action: 'set', language: own });
       expect(result.success, `${own} did not resolve`).toBe(true);
       expect(result.language).toBe(locale);
     }
@@ -181,13 +181,13 @@ describe('derived aliases', () => {
   it('resolves a language named in a different language', async () => {
     // "francese" is Italian for French; nobody hand-wrote that pair.
     if (!SUPPORTED_LOCALES.includes('fr' as never)) return;
-    const result = await call('set_app_language', { language: 'francese' });
+    const result = await call('app_language', { action: 'set', language: 'francese' });
     expect(result.success).toBe(true);
     expect(result.language).toBe('fr');
   });
 
   it('keeps the one alias no locale data lists', async () => {
-    const result = await call('set_app_language', { language: 'castellano' });
+    const result = await call('app_language', { action: 'set', language: 'castellano' });
     expect(result.success).toBe(true);
     expect(result.language).toBe('es');
   });
@@ -204,7 +204,7 @@ describe('registration', () => {
   it('tells the model how this differs from change_language', () => {
     // The two are easy to confuse and the confusion is silent, so the
     // distinction has to live in the description the model actually reads.
-    const description = registered.get('set_app_language')?.description ?? '';
+    const description = registered.get('app_language')?.description ?? '';
     expect(description).toContain('change_language');
   });
 });

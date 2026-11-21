@@ -15,6 +15,8 @@ import SearchOrbitCards from '@/components/search/SearchOrbitCards.vue';
 import SearchPanel from '@/components/search/SearchPanel.vue';
 import SidebarModeSwitch from '@/components/sidebar/SidebarModeSwitch.vue';
 import BrowserPanel from '@/components/panels/BrowserPanel.vue';
+import HudLayer from '@/components/hud/HudLayer.vue';
+import { useHud } from '@/composables/useHud';
 import AvatarUnavailable from '@/components/AvatarUnavailable.vue';
 import { isWebGLAvailable, type AvatarUnavailableReason } from '@/lib/webgl';
 
@@ -192,6 +194,8 @@ useMcpServers().startSync();
 useToolInventorySync();
 useUiLayoutSync();
 useBrowserFrames();
+// Jarvis's own screen: tasks, reports, videos and pages it opens as it works.
+useHud();
 
 // Sync per-kwami config: apply config when switching kwami, debounced save to DB
 useKwamiConfigWatchers();
@@ -559,6 +563,7 @@ onUnmounted(() => {
                itself when the other is the current layout. -->
           <SearchOrbitCards />
           <SearchPanel />
+          <HudLayer />
           <!-- Control Bar (top-right of main area; moves with canvas when nav opens) -->
           <div class="control-bar-container">
             <EnergyBadge />

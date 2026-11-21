@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useToast } from 'vue-toastification';
 import { panelIcons } from '@/constants/panel-icons';
@@ -24,36 +24,67 @@ import AccessLevelPicker from './AccessLevelPicker.vue';
 const { t } = useI18n();
 const toast = useToast();
 const access = useSiteAccess();
-const { defaultLevel, sites, pending, loaded, unavailable, blockedCount } = access;
+const { defaultLevel, sites, pending, loaded, unavailable, stale, blockedCount } = access;
+
+/** The counts under the title, each a plural with its number in bold. */
+const stats = computed(() => [
+  { key: 'sites', n: sites.value.length, class: '' },
+  { key: 'blocked', n: blockedCount.value, class: 'danger' },
+  { key: 'requests', n: pending.value.length, class: pending.value.length ? 'attention' : '' },
+]);
+
+/** How long a row, or the default, shows that it was just saved. */
+const SAVED_MS = 1400;
+/** Long enough to read "removed" and change one's mind. */
+const UNDO_MS = 8000;
 
 // -- adding --------------------------------------------------------------------
 const newAddress = ref('');
 const newLevel = ref<SiteAccessLevel>('browse');
 const adding = ref(false);
+const addressInput = ref<HTMLInputElement | null>(null);
 const newHost = computed(() => siteHost(newAddress.value));
 const newInvalid = computed(() => newAddress.value.trim() !== '' && newHost.value === null);
+const newExisting = computed(() => sites.value.find((s) => s.pattern === newHost.value) ?? null);
 const suggestions = computed(() =>
   SITE_SUGGESTIONS.filter((s) => !sites.value.some((r) => r.pattern === s.host)).slice(0, 6),
 );
+
+/** Save a site at a level, and say whether it was new or moved. */
+async function save(address: string, level: SiteAccessLevel): Promise<boolean> {
+  try {
+    const { rule, existed } = await access.setSite(address, level);
+    const key = existed ? 'siteAccess.add.updated' : 'siteAccess.add.added';
+    toast.success(t(key, { host: rule.pattern, level: levelLabel(rule.access) }));
+    flash(rule.id);
+    return true;
+  } catch {
+    toast.error(t('siteAccess.saveFailed'));
+    return false;
+  }
+}
 
 async function addSite() {
   if (!newHost.value || adding.value) return;
   adding.value = true;
   try {
-    const rule = await access.setSite(newAddress.value, newLevel.value);
-    toast.success(t('siteAccess.add.added', { host: rule.pattern }));
-    flash(rule.id);
-    newAddress.value = '';
-  } catch {
-    toast.error(t('siteAccess.saveFailed'));
+    if (await save(newAddress.value, newLevel.value)) newAddress.value = '';
   } finally {
     adding.value = false;
   }
+  await nextTick();
+  addressInput.value?.focus();
 }
 
-function useSuggestion(host: string, level: SiteAccessLevel) {
-  newAddress.value = host;
-  newLevel.value = level;
+/** One tap: the site goes in at the level suggested; its row can change it. */
+async function addSuggestion(host: string, level: SiteAccessLevel) {
+  if (adding.value) return;
+  adding.value = true;
+  try {
+    await save(host, level);
+  } finally {
+    adding.value = false;
+  }
 }
 
 // -- the list --------------------------------------------------------------------
@@ -69,7 +100,7 @@ let flashTimer: ReturnType<typeof setTimeout> | undefined;
 function flash(id: string) {
   justSaved.value = id;
   clearTimeout(flashTimer);
-  flashTimer = setTimeout(() => (justSaved.value = null), 1400);
+  flashTimer = setTimeout(() => (justSaved.value = null), SAVED_MS);
 }
 
 async function change(rule: SiteRule, level: SiteAccessLevel) {
@@ -92,13 +123,26 @@ async function remove(rule: SiteRule) {
     await access.removeSite(rule);
   } catch {
     toast.error(t('siteAccess.saveFailed'));
+    return;
   }
+  // A slip is one tap away from undone: the toast puts the site back as it was.
+  toast.info(t('siteAccess.list.removed', { host: rule.pattern }), {
+    timeout: UNDO_MS,
+    onClick: () => void save(rule.pattern, rule.access),
+  });
 }
+
+// -- every other site -----------------------------------------------------------
+const defaultSaved = ref(false);
+let defaultTimer: ReturnType<typeof setTimeout> | undefined;
 
 async function changeDefault(level: SiteAccessLevel) {
   if (defaultLevel.value === level) return;
   try {
     await access.setDefault(level);
+    defaultSaved.value = true;
+    clearTimeout(defaultTimer);
+    defaultTimer = setTimeout(() => (defaultSaved.value = false), SAVED_MS);
   } catch {
     toast.error(t('siteAccess.saveFailed'));
   }
@@ -114,6 +158,7 @@ async function answer(rule: SiteRule, approve: boolean) {
     await access.answer(rule, approve, answerLevels.value[rule.id]);
     const key = approve ? 'siteAccess.requests.approved' : 'siteAccess.requests.denied';
     toast.info(t(key, { host: rule.pattern }));
+    if (approve) flash(sites.value.find((s) => s.pattern === rule.pattern)?.id ?? rule.id);
   } catch {
     toast.error(t('siteAccess.saveFailed'));
   } finally {
@@ -125,24 +170,34 @@ async function answer(rule: SiteRule, approve: boolean) {
 const testAddress = ref('');
 const testResult = ref<SiteCheck | null>(null);
 const testing = ref(false);
-const testInvalid = ref(false);
+const testProblem = ref<'invalid' | 'failed' | null>(null);
 
 async function runTest() {
-  testInvalid.value = false;
-  testResult.value = null;
+  testProblem.value = null;
   if (!siteHost(testAddress.value)) {
-    testInvalid.value = true;
+    testResult.value = null;
+    testProblem.value = 'invalid';
     return;
   }
   testing.value = true;
   try {
     testResult.value = await access.check(testAddress.value);
   } catch {
-    testInvalid.value = true;
+    testResult.value = null;
+    testProblem.value = 'failed';
   } finally {
     testing.value = false;
   }
 }
+
+// A new address is a new question; a changed rule changes the answer on screen.
+watch(testAddress, () => {
+  testResult.value = null;
+  testProblem.value = null;
+});
+watch([sites, defaultLevel], () => {
+  if (testResult.value && !testing.value) void runTest();
+});
 
 function levelLabel(level: SiteAccessLevel) {
   return t(`siteAccess.levels.${level}`);
@@ -153,6 +208,10 @@ function monogram(host: string) {
     .replace(/^www\./, '')
     .charAt(0)
     .toUpperCase();
+}
+
+function onKey(event: KeyboardEvent) {
+  if (event.key === 'Escape' && confirming.value) confirming.value = null;
 }
 
 // While the panel is open, a request Jarvis makes during a call shows up here.
@@ -166,11 +225,12 @@ onMounted(() => {
 onUnmounted(() => {
   clearInterval(poll);
   clearTimeout(flashTimer);
+  clearTimeout(defaultTimer);
 });
 </script>
 
 <template>
-  <div class="panel-inner access-panel">
+  <div class="panel-inner access-panel" @keydown="onKey">
     <div class="panel-header">
       <iconify-icon :icon="panelIcons.access" class="panel-icon"></iconify-icon>
       <h2>{{ t('siteAccess.title') }}</h2>
@@ -188,15 +248,26 @@ onUnmounted(() => {
         </div>
         <div class="hero-text">
           <p class="hero-sub">{{ t('siteAccess.subtitle') }}</p>
+          <p class="hero-where">
+            <iconify-icon icon="ph:browsers-duotone"></iconify-icon>{{ t('siteAccess.where') }}
+          </p>
           <div class="hero-stats">
-            <span class="stat">
-              <strong>{{ sites.length }}</strong> {{ t('siteAccess.stats.sites') }}
-            </span>
-            <span class="stat danger">
-              <strong>{{ blockedCount }}</strong> {{ t('siteAccess.stats.blocked') }}
-            </span>
-            <span class="stat" :class="{ attention: pending.length > 0 }">
-              <strong>{{ pending.length }}</strong> {{ t('siteAccess.stats.requests') }}
+            <i18n-t
+              v-for="stat in stats"
+              :key="stat.key"
+              :keypath="`siteAccess.stats.${stat.key}`"
+              :plural="stat.n"
+              tag="span"
+              class="stat"
+              :class="stat.class"
+            >
+              <template #n>
+                <strong>{{ stat.n }}</strong>
+              </template>
+            </i18n-t>
+            <span v-if="stale" class="stat offline" role="status">
+              <iconify-icon icon="ph:wifi-slash-duotone"></iconify-icon>
+              {{ t('siteAccess.stale') }}
             </span>
           </div>
         </div>
@@ -267,6 +338,15 @@ onUnmounted(() => {
             show-hint
             @update:model-value="changeDefault"
           />
+          <p v-if="defaultLevel === 'blocked'" class="hint warn">
+            {{ t('siteAccess.default.onlyList') }}
+          </p>
+          <Transition name="fade">
+            <p v-if="defaultSaved" class="saved-note" role="status">
+              <iconify-icon icon="ph:check-circle-duotone"></iconify-icon
+              >{{ t('siteAccess.saved') }}
+            </p>
+          </Transition>
         </PanelSection>
 
         <!-- Add a site -->
@@ -282,6 +362,7 @@ onUnmounted(() => {
                 <iconify-icon v-else icon="ph:globe-simple"></iconify-icon>
               </span>
               <input
+                ref="addressInput"
                 v-model="newAddress"
                 type="text"
                 inputmode="url"
@@ -295,13 +376,21 @@ onUnmounted(() => {
               </span>
             </div>
             <p v-if="newInvalid" class="hint warn">{{ t('siteAccess.add.invalid') }}</p>
+            <p v-else-if="newExisting" class="hint">
+              {{
+                t('siteAccess.add.exists', {
+                  host: newExisting.pattern,
+                  level: levelLabel(newExisting.access),
+                })
+              }}
+            </p>
             <AccessLevelPicker v-model="newLevel" show-hint />
             <button class="btn primary wide" type="submit" :disabled="!newHost || adding">
               <iconify-icon
                 :icon="adding ? 'ph:spinner-gap' : 'ph:plus-bold'"
                 :class="{ spin: adding }"
               ></iconify-icon>
-              {{ t('siteAccess.add.button') }}
+              {{ newExisting ? t('siteAccess.add.change') : t('siteAccess.add.button') }}
             </button>
           </form>
           <div v-if="suggestions.length" class="suggestions">
@@ -311,7 +400,9 @@ onUnmounted(() => {
               :key="s.host"
               class="suggestion"
               type="button"
-              @click="useSuggestion(s.host, s.level)"
+              :disabled="adding"
+              :title="t('siteAccess.add.suggestionAs', { level: levelLabel(s.level) })"
+              @click="addSuggestion(s.host, s.level)"
             >
               <span class="dot" :style="{ background: SITE_ACCESS_META[s.level].color }"></span>
               {{ s.host }}
@@ -383,11 +474,16 @@ onUnmounted(() => {
               :placeholder="t('siteAccess.test.placeholder')"
               :aria-label="t('siteAccess.test.title')"
             />
-            <button class="btn ghost" type="submit" :disabled="testing">
+            <button class="btn ghost" type="submit" :disabled="testing || !testAddress.trim()">
               <iconify-icon icon="ph:play-duotone"></iconify-icon>{{ t('siteAccess.test.button') }}
             </button>
           </form>
-          <p v-if="testInvalid" class="hint warn">{{ t('siteAccess.add.invalid') }}</p>
+          <p v-if="testProblem === 'invalid'" class="hint warn">
+            {{ t('siteAccess.add.invalid') }}
+          </p>
+          <p v-else-if="testProblem === 'failed'" class="hint warn">
+            {{ t('siteAccess.test.failed') }}
+          </p>
           <Transition name="fade">
             <div
               v-if="testResult"
@@ -540,6 +636,29 @@ onUnmounted(() => {
 }
 .stat.attention strong {
   color: #fbbf24;
+}
+.stat.offline {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #fbbf24;
+  background: color-mix(in srgb, #fbbf24 12%, transparent);
+}
+.hero-where {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: -4px 0 8px;
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+.saved-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 2px 0;
+  font-size: 12px;
+  color: #34d399;
 }
 
 /* -- requests --------------------------------------------------------------------- */
@@ -791,9 +910,13 @@ onUnmounted(() => {
   cursor: pointer;
   transition: all var(--duration-fast) var(--ease-out);
 }
-.suggestion:hover {
+.suggestion:hover:not(:disabled) {
   color: var(--text-primary);
   border-color: var(--accent-primary);
+}
+.suggestion:disabled {
+  opacity: 0.55;
+  cursor: progress;
 }
 .dot {
   width: 6px;

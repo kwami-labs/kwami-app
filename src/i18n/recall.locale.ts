@@ -73,16 +73,16 @@ export const recallEn = {
 
 export const recallEs = {
   recall: {
-    confirmApply: 'Si, hazlo',
+    confirmApply: 'Sí, hazlo',
     confirmCancel: 'Cancelar',
 
     memoryLoadFailed: 'No se pudo leer lo que recuerda: {error}',
     memoriesFound: 'Se han encontrado {count} cosas recordadas.',
-    noMemories: 'Todavia no recuerda nada.',
-    forgetQueryRequired: 'Di que hay que olvidar.',
+    noMemories: 'Todavía no recuerda nada.',
+    forgetQueryRequired: 'Di qué hay que olvidar.',
     memoryNotFound: 'No hay nada recordado que coincida con "{query}".',
     memoryAmbiguous:
-      'Hay mas de una cosa recordada que coincide con "{query}": {list}. Pregunta a cual se refiere antes de olvidar nada.',
+      'Hay más de una cosa recordada que coincide con "{query}": {list}. Pregunta a cuál se refiere antes de olvidar nada.',
     confirmForgetTitle: 'Olvidar esto',
     confirmForgetBody: 'Esto olvida permanentemente: {text}',
     forgetCancelled: 'No se ha olvidado nada.',
@@ -95,46 +95,46 @@ export const recallEs = {
     forgotAll: 'Se ha borrado todo lo recordado.',
 
     sessionsFound: 'Hay {count} conversaciones anteriores.',
-    noSessions: 'Todavia no hay conversaciones anteriores.',
-    sessionTargetRequired: 'Di que conversacion, por numero o por su nombre.',
-    sessionNotFound: 'No hay ninguna conversacion anterior llamada "{name}".',
-    sessionOutOfRange: 'No existe la conversacion numero {position}. Hay {count}.',
+    noSessions: 'Todavía no hay conversaciones anteriores.',
+    sessionTargetRequired: 'Di qué conversación, por número o por su nombre.',
+    sessionNotFound: 'No hay ninguna conversación anterior llamada "{name}".',
+    sessionOutOfRange: 'No existe la conversación número {position}. Hay {count}.',
     sessionAmbiguous:
-      'Hay mas de una conversacion que coincide con "{name}": {list}. Pregunta a cual se refiere.',
-    openedSession: 'Mostrando la conversacion de {title}.',
-    alreadyLive: 'Ya se esta mostrando la conversacion en directo.',
-    returnedLive: 'De vuelta a la conversacion en directo.',
-    confirmDeleteSessionTitle: 'Eliminar esta conversacion',
-    confirmDeleteSessionBody: 'Esto elimina permanentemente la transcripcion de {title}.',
+      'Hay más de una conversación que coincide con "{name}": {list}. Pregunta a cuál se refiere.',
+    openedSession: 'Mostrando la conversación de {title}.',
+    alreadyLive: 'Ya se está mostrando la conversación en directo.',
+    returnedLive: 'De vuelta a la conversación en directo.',
+    confirmDeleteSessionTitle: 'Eliminar esta conversación',
+    confirmDeleteSessionBody: 'Esto elimina permanentemente la transcripción de {title}.',
     deleteSessionCancelled: 'No se ha eliminado nada.',
-    deletedSession: 'Se ha eliminado la conversacion de {title}.',
-    confirmClearTitle: 'Borrar la transcripcion',
-    confirmClearBody: 'Esto borra lo que hay en pantalla de esta conversacion.',
-    clearCancelled: 'La transcripcion se ha dejado como estaba.',
-    cleared: 'Transcripcion borrada.',
+    deletedSession: 'Se ha eliminado la conversación de {title}.',
+    confirmClearTitle: 'Borrar la transcripción',
+    confirmClearBody: 'Esto borra lo que hay en pantalla de esta conversación.',
+    clearCancelled: 'La transcripción se ha dejado como estaba.',
+    cleared: 'Transcripción borrada.',
 
     actionForgot: 'Algo olvidado',
     actionForgotAll: 'Memoria borrada',
-    actionOpenedSession: 'Conversacion anterior abierta',
-    actionDeletedSession: 'Conversacion eliminada',
-    actionCleared: 'Transcripcion borrada',
+    actionOpenedSession: 'Conversación anterior abierta',
+    actionDeletedSession: 'Conversación eliminada',
+    actionCleared: 'Transcripción borrada',
 
     toolDescListMemories:
-      'Lista lo que el Kwami recuerda del usuario, opcionalmente filtrado por una palabra de busqueda. Devuelve hechos y entidades juntos, porque el usuario no los distingue al hablar. Solo lectura. Esto lee el panel de memoria; recall_memories es la otra forma de consultar y suele ser mejor para responder una pregunta, mientras que esta sirve para ensenar al usuario lo que hay guardado y que pueda corregirlo.',
+      'Lista lo que el Kwami recuerda del usuario, opcionalmente filtrado por una palabra de búsqueda. Devuelve hechos y entidades juntos, porque el usuario no los distingue al hablar. Solo lectura. Esto lee el panel de memoria; recall_memories es la otra forma de consultar y suele ser mejor para responder una pregunta, mientras que esta sirve para enseñar al usuario lo que hay guardado y que pueda corregirlo.',
     toolDescForgetMemory:
-      'Olvida permanentemente una cosa que el Kwami recuerda, encontrada por una palabra de busqueda. Usalo cuando el usuario diga algo como olvida eso, o eso esta mal. Busca en hechos y entidades a la vez y se niega en lugar de elegir cuando coincide mas de uno, devolviendo los candidatos para que preguntes a cual se refiere. No se puede deshacer, asi que la app pide confirmacion y lee antes el elemento: espera el resultado y lee el campo forgotten en lugar de decir que ya no esta mientras el dialogo sigue abierto.',
+      'Olvida permanentemente una cosa que el Kwami recuerda, encontrada por una palabra de búsqueda. Úsalo cuando el usuario diga algo como olvida eso, o eso está mal. Busca en hechos y entidades a la vez y se niega en lugar de elegir cuando coincide más de uno, devolviendo los candidatos para que preguntes a cuál se refiere. No se puede deshacer, así que la app pide confirmación y lee antes el elemento: espera el resultado y lee el campo forgotten en lugar de decir que ya no está mientras el diálogo sigue abierto.',
     toolDescForgetEverything:
-      'Borra permanentemente todo lo que el Kwami recuerda del usuario. Es el boton de borrado del panel de memoria y no se puede deshacer. Usalo solo cuando el usuario pida claramente borrarlo todo, no cuando quiera olvidar una cosa, que es forget_memory. La app pide confirmacion; espera el resultado.',
+      'Borra permanentemente todo lo que el Kwami recuerda del usuario. Es el botón de borrado del panel de memoria y no se puede deshacer. Úsalo solo cuando el usuario pida claramente borrarlo todo, no cuando quiera olvidar una cosa, que es forget_memory. La app pide confirmación; espera el resultado.',
     toolDescListConversations:
-      'Lista las conversaciones anteriores con este Kwami, en el orden en que las muestra el panel, cada una con un numero empezando por 1. Solo lectura. Usalo antes de abrir o eliminar una para que los numeros signifiquen algo.',
+      'Lista las conversaciones anteriores con este Kwami, en el orden en que las muestra el panel, cada una con un número empezando por 1. Solo lectura. Úsalo antes de abrir o eliminar una para que los números signifiquen algo.',
     toolDescOpenConversation:
-      'Muestra una conversacion anterior en el panel de transcripcion, elegida por su numero de list_conversations o por su nombre. Mientras hay una abierta el panel muestra el historial y no lo que se esta diciendo ahora, asi que diselo al usuario y usa return_to_live_conversation cuando termine; si no, lo siguiente que digas parecera que se ha perdido.',
+      'Muestra una conversación anterior en el panel de transcripción, elegida por su número de list_conversations o por su nombre. Mientras hay una abierta el panel muestra el historial y no lo que se está diciendo ahora, así que díselo al usuario y usa return_to_live_conversation cuando termine; si no, lo siguiente que digas parecerá que se ha perdido.',
     toolDescReturnToLive:
-      'Vuelve a mostrar la conversacion en directo despues de mirar una anterior. Es seguro llamarlo aunque ya se este en directo.',
+      'Vuelve a mostrar la conversación en directo después de mirar una anterior. Es seguro llamarlo aunque ya se esté en directo.',
     toolDescDeleteConversation:
-      'Elimina permanentemente la transcripcion de una conversacion anterior, elegida por su numero o su nombre. No se puede deshacer, asi que la app pide confirmacion y nombra antes la conversacion. Espera el resultado en lugar de decir que ya no esta mientras el dialogo sigue abierto.',
+      'Elimina permanentemente la transcripción de una conversación anterior, elegida por su número o su nombre. No se puede deshacer, así que la app pide confirmación y nombra antes la conversación. Espera el resultado en lugar de decir que ya no está mientras el diálogo sigue abierto.',
     toolDescClearTranscript:
-      'Borra lo que hay en pantalla de la conversacion actual. Solo borra la vista de transcripcion y no afecta a lo que el Kwami recuerda, que es forget_memory. La app pide confirmacion primero.',
+      'Borra lo que hay en pantalla de la conversación actual. Solo borra la vista de transcripción y no afecta a lo que el Kwami recuerda, que es forget_memory. La app pide confirmación primero.',
   },
 } as const;
 

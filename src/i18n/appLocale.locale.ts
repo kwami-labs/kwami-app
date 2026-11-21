@@ -25,24 +25,20 @@ export const appLocaleEn = {
     changed: 'Switched the app to {language}.',
     unsupported: 'The app does not have "{language}". Available: {list}.',
     actionChanged: 'Changed app language',
-    toolDescGetAppLanguage:
-      'Read which language the app interface is currently in, and which languages it has. Read only.',
-    toolDescSetAppLanguage:
-      'Switch the language of the app interface itself, which is the selector in the account panel. This is not the same as change_language: that one retunes speech recognition and speech synthesis and leaves every label on screen untouched. If the user asks for the app or the interface to be in another language, or starts speaking another language and asks you to switch everything, use this as well as change_language. The choice is remembered for next time.',
+    toolDescAppLanguage:
+      'action get: Read which language the app interface is currently in, and which languages it has. Read only. · action set: Switch the language of the app interface itself, which is the selector in the account panel. This is not the same as change_language: that one retunes speech recognition and speech synthesis and leaves every label on screen untouched. If the user asks for the app or the interface to be in another language, or starts speaking another language and asks you to switch everything, use this as well as change_language. The choice is remembered for next time.',
   },
 } as const;
 
 export const appLocaleEs = {
   appLocale: {
-    current: 'La app esta en {language}.',
-    already: 'La app ya esta en {language}.',
+    current: 'La app está en {language}.',
+    already: 'La app ya está en {language}.',
     changed: 'Se ha cambiado la app a {language}.',
     unsupported: 'La app no tiene "{language}". Disponibles: {list}.',
     actionChanged: 'Idioma de la app cambiado',
-    toolDescGetAppLanguage:
-      'Consulta en que idioma esta la interfaz de la app ahora mismo, y que idiomas tiene. Solo lectura.',
-    toolDescSetAppLanguage:
-      'Cambia el idioma de la interfaz de la app, que es el selector del panel de cuenta. No es lo mismo que change_language: esa reajusta el reconocimiento y la sintesis de voz y deja sin tocar todas las etiquetas de la pantalla. Si el usuario pide que la app o la interfaz este en otro idioma, o empieza a hablar en otro idioma y pide cambiarlo todo, usa esta ademas de change_language. La eleccion se recuerda para la proxima vez.',
+    toolDescAppLanguage:
+      'action get: Consulta en qué idioma está la interfaz de la app ahora mismo, y qué idiomas tiene. Solo lectura. · action set: Cambia el idioma de la interfaz de la app, que es el selector del panel de cuenta. No es lo mismo que change_language: esa reajusta el reconocimiento y la síntesis de voz y deja sin tocar todas las etiquetas de la pantalla. Si el usuario pide que la app o la interfaz esté en otro idioma, o empieza a hablar en otro idioma y pide cambiarlo todo, usa esta además de change_language. La elección se recuerda para la próxima vez.',
   },
 } as const;
 
@@ -53,10 +49,8 @@ export const appLocaleFr = {
     changed: "L'app est passée en {language}.",
     unsupported: 'L\'app n\'a pas "{language}". Disponibles : {list}.',
     actionChanged: "Langue de l'app changée",
-    toolDescGetAppLanguage:
-      "Consulte dans quelle langue est l'interface de l'app en ce moment, et quelles langues elle propose. Lecture seule.",
-    toolDescSetAppLanguage:
-      "Change la langue de l'interface de l'app elle-même, c'est-à-dire le sélecteur du panneau de compte. Ce n'est pas la même chose que change_language : celle-là réajuste la reconnaissance et la synthèse vocales et ne touche à aucune étiquette à l'écran. Si l'utilisateur demande que l'app ou l'interface soit dans une autre langue, ou se met à parler une autre langue et demande de tout changer, utilise celle-ci en plus de change_language. Le choix est retenu pour la prochaine fois.",
+    toolDescAppLanguage:
+      "action get: Consulte dans quelle langue est l'interface de l'app en ce moment, et quelles langues elle propose. Lecture seule. · action set: Change la langue de l'interface de l'app elle-même, c'est-à-dire le sélecteur du panneau de compte. Ce n'est pas la même chose que change_language : celle-là réajuste la reconnaissance et la synthèse vocales et ne touche à aucune étiquette à l'écran. Si l'utilisateur demande que l'app ou l'interface soit dans une autre langue, ou se met à parler une autre langue et demande de tout changer, utilise celle-ci en plus de change_language. Le choix est retenu pour la prochaine fois.",
   },
 } as const;
 
@@ -67,10 +61,8 @@ export const appLocalePt = {
     changed: 'A app passou para {language}.',
     unsupported: 'A app não tem "{language}". Disponíveis: {list}.',
     actionChanged: 'Idioma da app alterado',
-    toolDescGetAppLanguage:
-      'Consulta em que idioma está a interface da app neste momento, e que idiomas tem. Apenas leitura.',
-    toolDescSetAppLanguage:
-      'Muda o idioma da própria interface da app, que é o seletor do painel de conta. Não é o mesmo que change_language: essa reajusta o reconhecimento e a síntese de voz e não toca em nenhuma etiqueta do ecrã. Se o utilizador pedir que a app ou a interface esteja noutro idioma, ou começar a falar outro idioma e pedir para mudar tudo, usa esta além de change_language. A escolha fica guardada para a próxima vez.',
+    toolDescAppLanguage:
+      'action get: Consulta em que idioma está a interface da app neste momento, e que idiomas tem. Apenas leitura. · action set: Muda o idioma da própria interface da app, que é o seletor do painel de conta. Não é o mesmo que change_language: essa reajusta o reconhecimento e a síntese de voz e não toca em nenhuma etiqueta do ecrã. Se o utilizador pedir que a app ou a interface esteja noutro idioma, ou começar a falar outro idioma e pedir para mudar tudo, usa esta além de change_language. A escolha fica guardada para a próxima vez.',
   },
 } as const;
 
@@ -81,9 +73,7 @@ export const appLocaleIt = {
     changed: "L'app è passata a {language}.",
     unsupported: 'L\'app non ha "{language}". Disponibili: {list}.',
     actionChanged: "Lingua dell'app cambiata",
-    toolDescGetAppLanguage:
-      "Controlla in che lingua è l'interfaccia dell'app in questo momento, e quali lingue ha. Sola lettura.",
-    toolDescSetAppLanguage:
-      "Cambia la lingua dell'interfaccia dell'app stessa, cioè il selettore del pannello account. Non è la stessa cosa di change_language: quella ritara il riconoscimento e la sintesi vocale e non tocca nessuna etichetta sullo schermo. Se l'utente chiede che l'app o l'interfaccia sia in un'altra lingua, o inizia a parlare un'altra lingua e chiede di cambiare tutto, usa questa oltre a change_language. La scelta viene ricordata per la prossima volta.",
+    toolDescAppLanguage:
+      "action get: Controlla in che lingua è l'interfaccia dell'app in questo momento, e quali lingue ha. Sola lettura. · action set: Cambia la lingua dell'interfaccia dell'app stessa, cioè il selettore del pannello account. Non è la stessa cosa di change_language: quella ritara il riconoscimento e la sintesi vocale e non tocca nessuna etichetta sullo schermo. Se l'utente chiede che l'app o l'interfaccia sia in un'altra lingua, o inizia a parlare un'altra lingua e chiede di cambiare tutto, usa questa oltre a change_language. La scelta viene ricordata per la prossima volta.",
   },
 } as const;

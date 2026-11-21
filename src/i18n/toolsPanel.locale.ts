@@ -138,6 +138,9 @@ export const toolsPanelEn = {
       groupOn: 'Available to the agent',
       groupOff: 'Switched off: the agent does not see these.',
       dropped: 'Does not reach the model',
+      shelved: 'On the shelf',
+      shelvedHint:
+        'The model takes at most {limit} tools, so this one waits on a shelf. Ask for it and the agent brings it in.',
       droppedHint:
         'Left out by the agent because the model takes at most {limit} tools. Switch off a group you do not use to make room.',
       offTool: 'Switched off with its group.',
@@ -153,6 +156,8 @@ export const toolsPanelEn = {
       dropped:
         'no tool is left out | 1 tool does not reach the model | {n} tools do not reach the model',
       droppedHint: 'Switch off groups you do not use to make room for them.',
+      shelvedHint:
+        'They wait on a shelf: when you ask for one, the agent brings it in for one it is not using.',
       unknown:
         'The agent has not reported its tools yet; it does once a call starts. The app offers {count}; the model takes {limit} in all, the agent’s own included.',
       asOf: 'Reported at {time}',
@@ -379,6 +384,9 @@ export const toolsPanelEs: typeof toolsPanelEn = {
       groupOn: 'Disponible para el agente',
       groupOff: 'Apagado: el agente no ve estas herramientas.',
       dropped: 'No llega al modelo',
+      shelved: 'En el estante',
+      shelvedHint:
+        'El modelo admite como mucho {limit} herramientas, así que esta espera en un estante. Pídela y el agente la trae.',
       droppedHint:
         'El agente la deja fuera porque el modelo admite como mucho {limit} herramientas. Apaga un grupo que no uses para hacerle sitio.',
       offTool: 'Apagada junto con su grupo.',
@@ -393,6 +401,8 @@ export const toolsPanelEs: typeof toolsPanelEn = {
       dropped:
         'no se queda fuera ninguna | 1 herramienta no llega al modelo | {n} herramientas no llegan al modelo',
       droppedHint: 'Apaga grupos que no uses para hacerles sitio.',
+      shelvedHint:
+        'Esperan en un estante: cuando pidas una, el agente la trae en lugar de otra que no esté usando.',
       unknown:
         'El agente aún no ha informado de sus herramientas; lo hace al empezar una llamada. La app ofrece {count}; el modelo admite {limit} en total, contando las del agente.',
       asOf: 'Informe de las {time}',
