@@ -248,12 +248,20 @@ describe('AccessPanel', () => {
     expect((input.element as HTMLInputElement).value).toBe('');
   });
 
-  it('fills the form from a suggestion', async () => {
+  it('adds a suggestion in one tap', async () => {
     vi.spyOn(api, 'get').mockResolvedValue({ default: 'account', sites: [], pending: [] } as never);
+    const put = vi.spyOn(api, 'put').mockResolvedValue({
+      id: 'g1',
+      pattern: 'google.com',
+      access: 'browse',
+      reason: null,
+    } as never);
     const wrapper = mountWithPinia(AccessPanel, global);
     await flushPromises();
     await wrapper.find('.suggestion').trigger('click');
-    expect((wrapper.find('.address input').element as HTMLInputElement).value).toBe('google.com');
+    await flushPromises();
+    expect(put).toHaveBeenCalledWith('/access/sites', { address: 'google.com', access: 'browse' });
+    expect(wrapper.findAll('.site')).toHaveLength(1);
   });
 
   it('asks twice before removing a site', async () => {
@@ -287,12 +295,14 @@ describe('AccessPanel', () => {
   });
 
   it('tests an address and names the rule that decides', async () => {
-    const get = vi.spyOn(api, 'get').mockImplementation(((path: string) =>
-      Promise.resolve(
-        path.startsWith('/access/check')
-          ? { host: 'api.github.com', access: 'write', pattern: 'github.com' }
-          : LIST,
-      )) as never);
+    const get = vi
+      .spyOn(api, 'get')
+      .mockImplementation(((path: string) =>
+        Promise.resolve(
+          path.startsWith('/access/check')
+            ? { host: 'api.github.com', access: 'write', pattern: 'github.com' }
+            : LIST,
+        )) as never);
     const wrapper = mountWithPinia(AccessPanel, global);
     await flushPromises();
 

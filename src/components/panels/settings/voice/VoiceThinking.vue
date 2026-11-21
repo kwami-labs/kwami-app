@@ -73,7 +73,9 @@ const director = computed(() => {
   const models = brain.value.models;
   return (
     models.find((m) => m.id === (brainStatus.value?.director || brain.value.director)) ??
-    models.find((m) => m.roles.includes('standard') && modelUsable(m, brainStatus.value))
+    models.find(
+      (m) => m.roles.includes('standard') && modelUsable(m, brainStatus.value, brain.value.billing),
+    )
   );
 });
 const thinks = computed(() => {

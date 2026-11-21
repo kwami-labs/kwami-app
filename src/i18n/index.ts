@@ -15,6 +15,7 @@ import { searchPanelEn, searchPanelEs } from './searchPanel.locale';
 import { avatarUnavailableEn, avatarUnavailableEs } from './avatarUnavailable.locale';
 import { toolsPanelEn, toolsPanelEs } from './toolsPanel.locale';
 import { siteAccessEn, siteAccessEs } from './siteAccess.locale';
+import { hudEn, hudEs } from './hud.locale';
 import { en } from './translations/en';
 import { es } from './translations/es';
 
@@ -70,6 +71,7 @@ export const messages = {
     ...enginesEn,
     ...toolsPanelEn,
     ...siteAccessEn,
+    ...hudEn,
   },
   es: {
     ...es,
@@ -89,6 +91,7 @@ export const messages = {
     ...enginesEs,
     ...toolsPanelEs,
     ...siteAccessEs,
+    ...hudEs,
   },
 } as const;
 

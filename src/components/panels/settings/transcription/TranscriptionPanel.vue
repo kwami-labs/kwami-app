@@ -8,6 +8,9 @@ import { useSearchResults } from '@/composables/useSearchResults';
 import PanelHeaderControls from '@/components/ui/PanelHeaderControls.vue';
 import { useThemeStore } from '@/stores/theme';
 import { intlLocaleTag, getCurrentLocale } from '@/i18n';
+import LinkifiedText from '@/components/hud/LinkifiedText.vue';
+import { useHudStore } from '@/stores/hud';
+import { titleOf } from '@/lib/hud/markdown';
 
 const { kwami } = useKwami();
 const { t } = useI18n();
@@ -40,6 +43,14 @@ const {
 } = useTranscriptionState();
 
 const isViewingHistory = computed(() => viewingHistoryId.value !== null);
+
+// A long answer reads better on Jarvis's screen, as a document that can be kept and edited.
+const hud = useHudStore();
+const LONG_ANSWER_CHARS = 280;
+function openOnScreen(content: string) {
+  const doc = hud.createDocument(titleOf(content, t('hud.doc.untitled')), content);
+  hud.openDocument(doc, 'user');
+}
 
 // Local-only UI state
 const inputMessage = ref('');
@@ -272,7 +283,16 @@ onUnmounted(() => {
               }}</span>
               <span class="message-time">{{ formatTime(msg.timestamp) }}</span>
             </div>
-            <p class="message-text">{{ msg.content }}</p>
+            <p class="message-text"><LinkifiedText :text="msg.content" /></p>
+            <button
+              v-if="msg.role === 'assistant' && msg.content.length > LONG_ANSWER_CHARS"
+              type="button"
+              class="message-hud-btn"
+              @click="openOnScreen(msg.content)"
+            >
+              <iconify-icon icon="ph:monitor-play-duotone"></iconify-icon>
+              {{ t('hud.transcript.openDoc') }}
+            </button>
           </div>
         </div>
       </div>
@@ -316,6 +336,23 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+.message-hud-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 3px 9px;
+  border: 1px solid rgba(var(--accent-primary-rgb), 0.35);
+  background: rgba(var(--accent-primary-rgb), 0.08);
+  color: var(--accent-primary);
+  font-size: 11.5px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.message-hud-btn:hover {
+  background: rgba(var(--accent-primary-rgb), 0.16);
+}
+
 .session-history {
   padding: 8px 12px 0;
   border-bottom: 1px solid var(--glass-border);

@@ -19,9 +19,9 @@ export const avatarUnavailableEs: typeof avatarUnavailableEn = {
   avatarUnavailable: {
     title: 'El avatar 3D no puede arrancar',
     webglBody:
-      'Este navegador no le da WebGL a la pagina, y el avatar lo necesita para dibujarse. Todo lo demas sigue funcionando.',
+      'Este navegador no le da WebGL a la página, y el avatar lo necesita para dibujarse. Todo lo demás sigue funcionando.',
     webglHint:
-      'En Chrome, abre Configuracion, luego Sistema, activa "Usar aceleracion de graficos cuando este disponible" y reinicia.',
-    errorBody: 'Algo fallo al arrancar el avatar. Recarga la pagina para intentarlo de nuevo.',
+      'En Chrome, abre Configuración, luego Sistema, activa "Usar aceleración de gráficos cuando esté disponible" y reinicia.',
+    errorBody: 'Algo falló al arrancar el avatar. Recarga la página para intentarlo de nuevo.',
   },
 };

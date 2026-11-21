@@ -1,0 +1,1033 @@
+/* =====================================================================
+   Jarvis HUD — the windows Jarvis opens on its own screen.
+
+   One language for every window: a chamfered glass panel with a hairline
+   frame, corner brackets, a ruled header with an identification code and a
+   status readout, and a faint scan pattern. Colour comes from the theme's
+   accent (--accent-primary-rgb), so the HUD follows the user's palette; amber
+   is work in progress, green done, red a failure.
+   ===================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&display=swap');
+
+.hud-layer {
+  --hud-rgb: var(--accent-primary-rgb);
+  --hud-accent: rgb(var(--hud-rgb));
+  --hud-line: rgba(var(--hud-rgb), 0.55);
+  --hud-line-soft: rgba(var(--hud-rgb), 0.2);
+  --hud-line-faint: rgba(var(--hud-rgb), 0.09);
+  /* How solid the glass is: the HUD settings write it on the layer. */
+  --hud-glass: 0.82;
+  --hud-fill: rgba(3, 12, 20, var(--hud-glass));
+  --hud-fill-strong: rgba(2, 8, 14, 0.94);
+  --hud-text: #e3f8ff;
+  --hud-dim: rgba(196, 232, 244, 0.64);
+  --hud-faint: rgba(196, 232, 244, 0.38);
+  --hud-amber: #ffb547;
+  --hud-amber-rgb: 255, 181, 71;
+  --hud-red: #ff5d6c;
+  --hud-red-rgb: 255, 93, 108;
+  --hud-green: #5dffb4;
+  --hud-green-rgb: 93, 255, 180;
+  --hud-cut: 14px;
+  --hud-font: 'Rajdhani', 'DM Sans', 'Segoe UI', sans-serif;
+  --hud-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Code', Consolas, monospace;
+
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  overflow: hidden;
+  color: var(--hud-text);
+  font-family: 'DM Sans', 'Segoe UI', sans-serif;
+}
+
+.hud-layer * {
+  box-sizing: border-box;
+}
+
+.hud-layer button {
+  font: inherit;
+  color: inherit;
+}
+
+/* ---------------------------------------------------------------- window */
+
+.hud-win {
+  position: absolute;
+  /* Placed with `translate` (HudWindow): moving it only moves a composited layer. */
+  left: 0;
+  top: 0;
+  pointer-events: auto;
+  display: flex;
+  /* Its parts fit themselves to the window's width (`@container hud-win`). */
+  container: hud-win / inline-size;
+  filter: drop-shadow(0 0 14px rgba(var(--hud-rgb), 0.14))
+    drop-shadow(0 18px 40px rgba(0, 0, 0, 0.55));
+  transform-origin: center center;
+  animation: hud-unfold 460ms cubic-bezier(0.2, 0.9, 0.25, 1) both;
+  /* Laid out again (tidied, sized, featured), a window glides there instead of jumping. */
+  transition:
+    opacity 0.25s ease,
+    filter 0.25s ease,
+    translate 0.26s cubic-bezier(0.2, 0.9, 0.25, 1),
+    width 0.26s cubic-bezier(0.2, 0.9, 0.25, 1),
+    height 0.26s cubic-bezier(0.2, 0.9, 0.25, 1);
+}
+
+.hud-win:not(.is-focused) {
+  opacity: 0.88;
+  filter: drop-shadow(0 12px 32px rgba(0, 0, 0, 0.5)) saturate(0.8);
+}
+
+.hud-win.is-focused {
+  filter: drop-shadow(0 0 22px rgba(var(--hud-rgb), 0.24))
+    drop-shadow(0 22px 48px rgba(0, 0, 0, 0.6));
+}
+
+/* No `animation: none` here: taking the unfold off and putting it back on replays it, and
+   the window folded to a sliver for half a second after every press on its header. */
+.hud-win.is-dragging {
+  transition: none;
+  cursor: grabbing;
+}
+
+/* Closed or folded: it goes at once, in a quick fade, rather than blinking out. */
+.hud-win-leave-active {
+  animation: none !important;
+  pointer-events: none;
+  transition:
+    opacity 0.16s ease,
+    transform 0.16s ease !important;
+}
+.hud-win-leave-to {
+  opacity: 0;
+  transform: scale(0.94);
+}
+
+/* While a window is dragged or resized, pages and videos do not take the pointer. */
+.hud-layer.is-manipulating iframe,
+.hud-layer.is-manipulating video {
+  pointer-events: none;
+}
+
+@keyframes hud-unfold {
+  0% {
+    opacity: 0;
+    transform: scale(0.35, 0.008);
+  }
+  38% {
+    opacity: 1;
+    transform: scale(1, 0.008);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.hud-shell {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  padding: 1px;
+  background: linear-gradient(
+    150deg,
+    rgba(var(--hud-rgb), 0.85),
+    rgba(var(--hud-rgb), 0.28) 30%,
+    rgba(var(--hud-rgb), 0.18) 70%,
+    rgba(var(--hud-rgb), 0.7)
+  );
+  clip-path: polygon(
+    var(--hud-cut) 0,
+    100% 0,
+    100% calc(100% - var(--hud-cut)),
+    calc(100% - var(--hud-cut)) 100%,
+    0 100%,
+    0 var(--hud-cut)
+  );
+}
+
+.hud-win.is-running .hud-shell {
+  background: linear-gradient(
+    150deg,
+    rgba(var(--hud-amber-rgb), 0.85),
+    rgba(var(--hud-rgb), 0.28) 30%,
+    rgba(var(--hud-rgb), 0.18) 70%,
+    rgba(var(--hud-amber-rgb), 0.55)
+  );
+}
+
+.hud-inner {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(120% 80% at 0% 0%, rgba(var(--hud-rgb), 0.09), transparent 55%),
+    radial-gradient(90% 70% at 100% 100%, rgba(var(--hud-rgb), 0.06), transparent 60%),
+    var(--hud-fill);
+  backdrop-filter: blur(16px) saturate(1.2);
+  clip-path: polygon(
+    calc(var(--hud-cut) - 0.5px) 0,
+    100% 0,
+    100% calc(100% - var(--hud-cut) + 0.5px),
+    calc(100% - var(--hud-cut) + 0.5px) 100%,
+    0 100%,
+    0 calc(var(--hud-cut) - 0.5px)
+  );
+  overflow: hidden;
+}
+
+/* A faint scan pattern over the whole panel, and a sweep while it is fresh. */
+.hud-inner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(var(--hud-rgb), 0.028) 0 1px,
+    transparent 1px 3px
+  );
+  z-index: 0;
+}
+
+.hud-inner::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -30%;
+  height: 30%;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent, rgba(var(--hud-rgb), 0.1), transparent);
+  animation: hud-sweep 1.4s ease-out 0.25s 1 both;
+  z-index: 3;
+}
+
+@keyframes hud-sweep {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(460%);
+    opacity: 0;
+  }
+}
+
+/* Corner brackets, outside the chamfer. */
+.hud-bracket {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  pointer-events: none;
+  border-color: var(--hud-accent);
+  border-style: solid;
+  border-width: 0;
+  opacity: 0.85;
+  z-index: 4;
+}
+.hud-bracket.tr {
+  top: -3px;
+  right: -3px;
+  border-top-width: 2px;
+  border-right-width: 2px;
+}
+.hud-bracket.bl {
+  bottom: -3px;
+  left: -3px;
+  border-bottom-width: 2px;
+  border-left-width: 2px;
+}
+.hud-win.is-running .hud-bracket {
+  border-color: var(--hud-amber);
+}
+
+/* ---------------------------------------------------------------- header */
+
+.hud-head {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 6px 8px 6px calc(var(--hud-cut) + 6px);
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  background: linear-gradient(90deg, rgba(var(--hud-rgb), 0.12), rgba(var(--hud-rgb), 0.02) 70%);
+}
+
+.hud-head::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 4px;
+  background: repeating-linear-gradient(90deg, var(--hud-line-soft) 0 1px, transparent 1px 9px);
+  mask-image: linear-gradient(90deg, #000 0, #000 60%, transparent);
+}
+
+.hud-code {
+  font-family: var(--hud-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--hud-accent);
+  opacity: 0.8;
+  white-space: nowrap;
+}
+
+.hud-head-icon {
+  font-size: 16px;
+  color: var(--hud-accent);
+  flex-shrink: 0;
+}
+
+/* As wide as its text: the rest of the header is for dragging, and a double click there
+   maximises (one on the text renames). */
+.hud-title {
+  flex: 0 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-family: var(--hud-font);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hud-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  font-family: var(--hud-font);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--hud-accent);
+  border: 1px solid var(--hud-line-soft);
+  background: rgba(var(--hud-rgb), 0.06);
+}
+
+.hud-status::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 8px currentColor;
+}
+
+.hud-status.running {
+  color: var(--hud-amber);
+  border-color: rgba(var(--hud-amber-rgb), 0.35);
+  background: rgba(var(--hud-amber-rgb), 0.08);
+}
+.hud-status.running::before,
+.hud-status.live::before {
+  animation: hud-pulse 1.1s ease-in-out infinite;
+}
+.hud-status.done {
+  color: var(--hud-green);
+  border-color: rgba(var(--hud-green-rgb), 0.35);
+  background: rgba(var(--hud-green-rgb), 0.07);
+}
+.hud-status.error {
+  color: var(--hud-red);
+  border-color: rgba(var(--hud-red-rgb), 0.4);
+  background: rgba(var(--hud-red-rgb), 0.08);
+}
+.hud-status.idle {
+  color: var(--hud-dim);
+}
+
+@keyframes hud-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.7);
+  }
+}
+
+/* The window's own buttons always stay in view; what sits before them gives way. */
+.hud-btns {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+/* A narrow window (a grid cell, a side column on a small screen) drops its code. */
+@container hud-win (max-width: 460px) {
+  .hud-code {
+    display: none;
+  }
+}
+/* Narrower still, pinning moves to the menu so the title keeps some room. */
+@container hud-win (max-width: 540px) {
+  .hud-pin-btn {
+    display: none;
+  }
+}
+
+.hud-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--hud-dim);
+  cursor: pointer;
+  font-size: 15px;
+  transition:
+    color 0.15s,
+    background 0.15s,
+    border-color 0.15s;
+}
+.hud-icon-btn:hover,
+.hud-icon-btn:focus-visible {
+  color: var(--hud-text);
+  background: rgba(var(--hud-rgb), 0.1);
+  border-color: var(--hud-line-soft);
+  outline: none;
+}
+.hud-icon-btn.is-on {
+  color: var(--hud-accent);
+}
+.hud-icon-btn.danger:hover {
+  color: var(--hud-red);
+  border-color: rgba(var(--hud-red-rgb), 0.4);
+  background: rgba(var(--hud-red-rgb), 0.1);
+}
+.hud-icon-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* ---------------------------------------------------------------- body */
+
+.hud-body {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.hud-foot {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 26px;
+  white-space: nowrap;
+  overflow: hidden;
+  padding: 4px calc(var(--hud-cut) + 6px) 4px 12px;
+  border-top: 1px solid var(--hud-line-faint);
+  font-family: var(--hud-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--hud-faint);
+}
+
+.hud-foot > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Resizing from every edge and corner: thin strips astride the frame, half outside it,
+   so a native web view over the body never hides them. */
+.hud-grip {
+  position: absolute;
+  z-index: 6;
+  touch-action: none;
+  pointer-events: auto;
+}
+.hud-grip.g-n,
+.hud-grip.g-s {
+  left: 16px;
+  right: 16px;
+  height: 10px;
+  cursor: ns-resize;
+}
+.hud-grip.g-n {
+  top: -5px;
+}
+.hud-grip.g-s {
+  bottom: -5px;
+}
+.hud-grip.g-e,
+.hud-grip.g-w {
+  top: 16px;
+  bottom: 16px;
+  width: 10px;
+  cursor: ew-resize;
+}
+.hud-grip.g-e {
+  right: -5px;
+}
+.hud-grip.g-w {
+  left: -5px;
+}
+.hud-grip.g-ne,
+.hud-grip.g-nw,
+.hud-grip.g-se,
+.hud-grip.g-sw {
+  width: 18px;
+  height: 18px;
+}
+.hud-grip.g-nw {
+  left: -6px;
+  top: -6px;
+  cursor: nwse-resize;
+}
+.hud-grip.g-ne {
+  right: -6px;
+  top: -6px;
+  cursor: nesw-resize;
+}
+.hud-grip.g-sw {
+  left: -6px;
+  bottom: -6px;
+  cursor: nesw-resize;
+}
+.hud-grip.g-se {
+  right: -6px;
+  bottom: -6px;
+  cursor: nwse-resize;
+}
+/* The corner that always shows: where most people look for it. */
+.hud-grip.g-se::after {
+  content: '';
+  position: absolute;
+  right: 9px;
+  bottom: 9px;
+  width: 9px;
+  height: 9px;
+  border-right: 2px solid var(--hud-line);
+  border-bottom: 2px solid var(--hud-line);
+  transition: border-color 0.15s;
+}
+.hud-win:hover .hud-grip.g-se::after,
+.hud-grip.g-se:hover::after {
+  border-color: var(--hud-accent);
+}
+/* Edit mode: every handle shows. */
+.hud-layer.is-editing .hud-grip::before {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  background: rgba(var(--hud-rgb), 0.45);
+  box-shadow: 0 0 8px rgba(var(--hud-rgb), 0.6);
+}
+.hud-layer.is-editing .hud-grip.g-n::before,
+.hud-layer.is-editing .hud-grip.g-s::before {
+  inset: 4px 30%;
+}
+.hud-layer.is-editing .hud-grip.g-e::before,
+.hud-layer.is-editing .hud-grip.g-w::before {
+  inset: 30% 4px;
+}
+
+/* The size while resizing. */
+.hud-readout {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  z-index: 9;
+  padding: 3px 8px;
+  font: 12px var(--hud-mono);
+  letter-spacing: 0.06em;
+  color: var(--hud-accent);
+  background: var(--hud-fill-strong);
+  border: 1px solid var(--hud-line);
+  pointer-events: none;
+}
+
+/* Edit mode over a window's body: drag it from anywhere, size it, put it centre stage,
+   pin, fold or close it, with controls big enough to hit at once. */
+.hud-edit {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px;
+  background: rgba(2, 10, 18, 0.62);
+  outline: 1px dashed var(--hud-line);
+  outline-offset: -6px;
+  cursor: move;
+  touch-action: none;
+}
+.hud-edit-size {
+  font: 13px var(--hud-mono);
+  letter-spacing: 0.08em;
+  color: var(--hud-accent);
+}
+.hud-edit-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+.hud-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--hud-line-soft);
+  background: rgba(var(--hud-rgb), 0.1);
+  color: var(--hud-text);
+  font: 600 15px var(--hud-font);
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    border-color 0.12s,
+    transform 0.12s;
+}
+.hud-edit-btn iconify-icon {
+  font-size: 19px;
+}
+.hud-edit-btn:hover,
+.hud-edit-btn:focus-visible {
+  background: rgba(var(--hud-rgb), 0.26);
+  border-color: var(--hud-line);
+}
+.hud-edit-btn:active {
+  transform: scale(0.94);
+}
+.hud-edit-btn.is-on {
+  color: var(--hud-accent);
+  border-color: var(--hud-line);
+}
+.hud-edit-btn.danger {
+  color: var(--hud-red);
+  border-color: rgba(var(--hud-red-rgb), 0.5);
+}
+.hud-edit-btn.danger:hover {
+  background: rgba(var(--hud-red-rgb), 0.22);
+}
+
+/* ---------------------------------------------------------------- shared bits */
+
+.hud-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--hud-line-faint);
+  background: rgba(var(--hud-rgb), 0.03);
+}
+
+.hud-sep {
+  width: 1px;
+  height: 18px;
+  margin: 0 6px;
+  background: var(--hud-line-soft);
+}
+
+.hud-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  font-family: var(--hud-mono);
+  font-size: 10.5px;
+  color: var(--hud-text);
+  border: 1px solid var(--hud-line-soft);
+  background: rgba(var(--hud-rgb), 0.06);
+  white-space: nowrap;
+}
+
+.hud-label {
+  font-family: var(--hud-font);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--hud-dim);
+}
+
+.hud-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px;
+  border: 1px solid var(--hud-line);
+  background: rgba(var(--hud-rgb), 0.1);
+  color: var(--hud-text);
+  font-family: var(--hud-font);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  transition:
+    background 0.15s,
+    box-shadow 0.15s;
+}
+.hud-action-btn:hover {
+  background: rgba(var(--hud-rgb), 0.2);
+  box-shadow: 0 0 16px rgba(var(--hud-rgb), 0.25) inset;
+}
+.hud-action-btn.danger {
+  border-color: rgba(var(--hud-red-rgb), 0.6);
+  background: rgba(var(--hud-red-rgb), 0.1);
+}
+.hud-action-btn.danger:hover {
+  background: rgba(var(--hud-red-rgb), 0.2);
+}
+.hud-action-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.hud-scroll {
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--hud-rgb), 0.35) transparent;
+}
+
+.hud-input {
+  min-width: 0;
+  padding: 5px 9px;
+  border: 1px solid var(--hud-line-soft);
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--hud-text);
+  font-family: var(--hud-mono);
+  font-size: 12px;
+  outline: none;
+}
+.hud-input:focus {
+  border-color: var(--hud-line);
+  box-shadow: 0 0 0 1px rgba(var(--hud-rgb), 0.25);
+}
+
+.hud-empty {
+  margin: auto;
+  padding: 24px;
+  text-align: center;
+  color: var(--hud-faint);
+  font-size: 13px;
+}
+
+.hud-spin {
+  animation: hud-spin 1s linear infinite;
+}
+@keyframes hud-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Rich text: documents and task results. */
+.hud-prose {
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: var(--hud-text);
+  word-wrap: break-word;
+}
+.hud-prose h1,
+.hud-prose h2,
+.hud-prose h3,
+.hud-prose h4 {
+  font-family: var(--hud-font);
+  letter-spacing: 0.03em;
+  line-height: 1.25;
+  margin: 1.1em 0 0.45em;
+  color: #fff;
+}
+.hud-prose h1 {
+  font-size: 1.75em;
+  padding-bottom: 0.25em;
+  border-bottom: 1px solid var(--hud-line-soft);
+}
+.hud-prose h2 {
+  font-size: 1.4em;
+  color: var(--hud-accent);
+}
+.hud-prose h3 {
+  font-size: 1.15em;
+}
+.hud-prose p {
+  margin: 0.55em 0;
+}
+.hud-prose a {
+  color: var(--hud-accent);
+  text-decoration: none;
+  border-bottom: 1px dashed rgba(var(--hud-rgb), 0.5);
+}
+.hud-prose a:hover {
+  border-bottom-style: solid;
+}
+.hud-prose ul,
+.hud-prose ol {
+  margin: 0.5em 0;
+  padding-left: 1.5em;
+}
+.hud-prose li {
+  margin: 0.2em 0;
+}
+.hud-prose li::marker {
+  color: var(--hud-accent);
+}
+.hud-prose blockquote {
+  margin: 0.8em 0;
+  padding: 0.4em 1em;
+  border-left: 2px solid var(--hud-accent);
+  background: rgba(var(--hud-rgb), 0.06);
+  color: var(--hud-dim);
+}
+.hud-prose code {
+  font-family: var(--hud-mono);
+  font-size: 0.86em;
+  padding: 0.1em 0.35em;
+  background: rgba(var(--hud-rgb), 0.1);
+  border: 1px solid var(--hud-line-faint);
+}
+.hud-prose pre {
+  margin: 0.8em 0;
+  padding: 0.9em 1em;
+  overflow: auto;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid var(--hud-line-faint);
+  border-left: 2px solid var(--hud-line);
+}
+.hud-prose pre code {
+  padding: 0;
+  border: 0;
+  background: none;
+}
+.hud-prose hr {
+  border: 0;
+  height: 1px;
+  margin: 1.4em 0;
+  background: linear-gradient(90deg, transparent, var(--hud-line), transparent);
+}
+.hud-prose table {
+  width: 100%;
+  margin: 0.9em 0;
+  border-collapse: collapse;
+  font-size: 0.92em;
+}
+.hud-prose th,
+.hud-prose td {
+  padding: 6px 10px;
+  border: 1px solid var(--hud-line-faint);
+  text-align: left;
+  vertical-align: top;
+}
+.hud-prose th {
+  font-family: var(--hud-font);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 0.85em;
+  color: var(--hud-accent);
+  background: rgba(var(--hud-rgb), 0.07);
+}
+.hud-prose img {
+  max-width: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hud-win,
+  .hud-inner::after,
+  .hud-status::before {
+    animation: none !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .hud-head {
+    cursor: default;
+  }
+  .hud-grip {
+    display: none;
+  }
+}
+
+/* ---------------------------------------------------------------- tabs, rename, menu */
+
+.hud-tabs {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  gap: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.hud-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 220px;
+  padding: 3px 4px 3px 9px;
+  border: 1px solid var(--hud-line-faint);
+  border-bottom: 0;
+  background: rgba(var(--hud-rgb), 0.04);
+  color: var(--hud-dim);
+  font-family: var(--hud-font);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  clip-path: polygon(6px 0, 100% 0, 100% 100%, 0 100%, 0 6px);
+}
+.hud-tab.active {
+  color: var(--hud-text);
+  background: rgba(var(--hud-rgb), 0.16);
+  border-color: var(--hud-line);
+  box-shadow: inset 0 -2px 0 var(--hud-accent);
+}
+.hud-tab iconify-icon {
+  flex-shrink: 0;
+  color: var(--hud-accent);
+}
+.tab-title {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.tab-btn {
+  display: inline-flex;
+  padding: 2px;
+  border: 0;
+  background: none;
+  color: var(--hud-faint);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.hud-tab:hover .tab-btn,
+.hud-tab.active .tab-btn {
+  opacity: 1;
+}
+.tab-btn:hover {
+  color: var(--hud-text);
+}
+
+.hud-title {
+  cursor: inherit;
+}
+
+.hud-title-input {
+  flex: 1;
+  min-width: 0;
+  padding: 2px 6px;
+  border: 1px solid var(--hud-line);
+  background: rgba(0, 0, 0, 0.4);
+  color: #fff;
+  font-family: var(--hud-font);
+  font-size: 15px;
+  font-weight: 600;
+  outline: none;
+}
+
+.hud-menu-wrap {
+  position: relative;
+}
+
+.hud-menu {
+  position: absolute;
+  top: 32px;
+  right: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  min-width: 220px;
+  padding: 6px;
+  border: 1px solid var(--hud-line);
+  background: var(--hud-fill-strong);
+  box-shadow:
+    0 0 20px rgba(var(--hud-rgb), 0.15),
+    0 14px 30px rgba(0, 0, 0, 0.55);
+  cursor: default;
+}
+.hud-menu > button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 9px;
+  border: 0;
+  background: none;
+  text-align: left;
+  font-size: 13px;
+  cursor: pointer;
+}
+.hud-menu > button:hover,
+.hud-menu-row button:hover {
+  background: rgba(var(--hud-rgb), 0.14);
+}
+.hud-menu-label {
+  margin: 6px 9px 2px;
+  font-family: var(--hud-font);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--hud-faint);
+}
+.hud-menu-row {
+  display: flex;
+  gap: 2px;
+  padding: 0 4px;
+}
+.hud-menu-row button {
+  flex: 1;
+  display: inline-flex;
+  justify-content: center;
+  padding: 6px 0;
+  border: 1px solid var(--hud-line-faint);
+  background: none;
+  color: var(--hud-dim);
+  cursor: pointer;
+}
+
+/* A window another is dragged onto, to take it as a tab. */
+.hud-win.is-drop-target .hud-head {
+  background: linear-gradient(90deg, rgba(var(--hud-rgb), 0.38), rgba(var(--hud-rgb), 0.1));
+  box-shadow: inset 0 0 0 1px var(--hud-accent);
+}
+
+/* Where a dragged window will snap. */
+.hud-snap-preview {
+  position: absolute;
+  pointer-events: none;
+  border: 1px solid var(--hud-accent);
+  background:
+    repeating-linear-gradient(135deg, rgba(var(--hud-rgb), 0.08) 0 10px, transparent 10px 20px),
+    rgba(var(--hud-rgb), 0.06);
+  box-shadow: 0 0 30px rgba(var(--hud-rgb), 0.25) inset;
+  transition: all 0.12s ease-out;
+  z-index: 1;
+}

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { SITE_ACCESS_LEVELS, SITE_ACCESS_META, type SiteAccessLevel } from '@/constants/siteAccess';
 
@@ -22,12 +22,26 @@ const fill = computed(() =>
   props.modelValue === 'blocked' ? 0 : (index.value / (SITE_ACCESS_LEVELS.length - 1)) * 100,
 );
 
+/** Arrows move the choice and the focus with it, Home and End go to the ends: a radio group. */
 function onKey(event: KeyboardEvent) {
-  const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
-  if (!step) return;
+  const last = SITE_ACCESS_LEVELS.length - 1;
+  const target =
+    event.key === 'ArrowRight' || event.key === 'ArrowDown'
+      ? index.value + 1
+      : event.key === 'ArrowLeft' || event.key === 'ArrowUp'
+        ? index.value - 1
+        : event.key === 'Home'
+          ? 0
+          : event.key === 'End'
+            ? last
+            : null;
+  if (target === null) return;
   event.preventDefault();
-  const next = SITE_ACCESS_LEVELS[index.value + step];
-  if (next) emit('update:modelValue', next);
+  const next = SITE_ACCESS_LEVELS[target];
+  if (!next || next === props.modelValue) return;
+  emit('update:modelValue', next);
+  const group = event.currentTarget as HTMLElement | null;
+  void nextTick(() => group?.querySelectorAll<HTMLButtonElement>('.segment')[target]?.focus());
 }
 </script>
 

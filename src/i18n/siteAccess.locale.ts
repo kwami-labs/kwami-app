@@ -1,17 +1,21 @@
 /**
  * Copy for the Access panel: the websites Jarvis may visit and what it may do there.
+ *
+ * The counts under the title are plural messages (`zero | one | many`, with `{n}`).
  */
 
 export const siteAccessEn = {
   siteAccess: {
     title: 'Access',
     subtitle: 'Where Jarvis may go on the web, and what it may do there.',
+    where: 'Applies in your Chrome and in Jarvis’s, by voice and in tasks.',
     unavailable: 'This server cannot keep a list of sites yet.',
     retry: 'Try again',
+    stale: 'No connection: showing the last list',
     stats: {
-      sites: 'sites',
-      blocked: 'blocked',
-      requests: 'requests',
+      sites: '{n} sites | {n} site | {n} sites',
+      blocked: '{n} blocked | {n} blocked | {n} blocked',
+      requests: '{n} requests | {n} request | {n} requests',
     },
     levels: {
       blocked: 'Blocked',
@@ -25,11 +29,12 @@ export const siteAccessEn = {
       read: 'Opens and reads pages. No clicks.',
       browse: 'Also clicks, scrolls and searches.',
       write: 'Also types and sends forms.',
-      account: 'Also uses your signed-in account.',
+      account: 'Also uses your signed-in account, and signs in.',
     },
     default: {
       title: 'Every other site',
       hint: 'What Jarvis may do on sites that are not in your list.',
+      onlyList: 'Jarvis will only go to the sites in your list.',
     },
     requests: {
       title: 'Jarvis is asking',
@@ -44,9 +49,13 @@ export const siteAccessEn = {
       title: 'Add a site',
       placeholder: 'github.com or a full address',
       button: 'Add',
+      change: 'Change level',
       invalid: 'That is not a site address.',
-      added: '{host} added.',
+      added: '{host} added: {level}.',
+      updated: '{host} changed to {level}.',
+      exists: '{host} is already in your list ({level}): this changes its level.',
       suggestions: 'Suggestions',
+      suggestionAs: 'Add as {level}',
     },
     list: {
       title: 'Your sites',
@@ -55,6 +64,7 @@ export const siteAccessEn = {
       noMatch: 'No site matches.',
       remove: 'Remove',
       confirmRemove: 'Remove?',
+      removed: '{host} removed. Tap here to undo.',
       covers: 'Includes subdomains',
     },
     test: {
@@ -64,6 +74,7 @@ export const siteAccessEn = {
       result: 'On {host} Jarvis can:',
       byRule: 'by the rule for {pattern}',
       byDefault: 'by the rule for every other site',
+      failed: 'Could not ask the server. Try again.',
     },
     legend: 'What each level allows',
     saveFailed: 'Could not save. Try again.',
@@ -74,13 +85,15 @@ export const siteAccessEn = {
 export const siteAccessEs: typeof siteAccessEn = {
   siteAccess: {
     title: 'Accesos',
-    subtitle: 'Donde puede entrar Jarvis en la web y que puede hacer alli.',
-    unavailable: 'Este servidor todavia no puede guardar una lista de sitios.',
+    subtitle: 'Dónde puede entrar Jarvis en la web y qué puede hacer allí.',
+    where: 'Vale en tu Chrome y en el de Jarvis, por voz y en las tareas.',
+    unavailable: 'Este servidor todavía no puede guardar una lista de sitios.',
     retry: 'Reintentar',
+    stale: 'Sin conexión: se ve la última lista',
     stats: {
-      sites: 'sitios',
-      blocked: 'bloqueados',
-      requests: 'solicitudes',
+      sites: '{n} sitios | {n} sitio | {n} sitios',
+      blocked: '{n} bloqueados | {n} bloqueado | {n} bloqueados',
+      requests: '{n} solicitudes | {n} solicitud | {n} solicitudes',
     },
     levels: {
       blocked: 'Bloqueado',
@@ -91,14 +104,15 @@ export const siteAccessEs: typeof siteAccessEn = {
     },
     levelHints: {
       blocked: 'Nunca lo abre.',
-      read: 'Abre y lee paginas. Sin clics.',
-      browse: 'Tambien hace clic, se desplaza y busca.',
-      write: 'Tambien escribe y envia formularios.',
-      account: 'Tambien usa tu cuenta con la sesion iniciada.',
+      read: 'Abre y lee páginas. Sin clics.',
+      browse: 'También hace clic, se desplaza y busca.',
+      write: 'También escribe y envía formularios.',
+      account: 'También usa tu cuenta con la sesión iniciada, e inicia sesión.',
     },
     default: {
       title: 'Resto de sitios',
-      hint: 'Lo que puede hacer Jarvis en los sitios que no estan en tu lista.',
+      hint: 'Lo que puede hacer Jarvis en los sitios que no están en tu lista.',
+      onlyList: 'Jarvis solo entrará en los sitios de tu lista.',
     },
     requests: {
       title: 'Jarvis te pide',
@@ -110,31 +124,37 @@ export const siteAccessEs: typeof siteAccessEn = {
       denied: 'Solicitud de {host} denegada.',
     },
     add: {
-      title: 'Anadir un sitio',
-      placeholder: 'github.com o una direccion completa',
-      button: 'Anadir',
-      invalid: 'Eso no es la direccion de un sitio.',
-      added: '{host} anadido.',
+      title: 'Añadir un sitio',
+      placeholder: 'github.com o una dirección completa',
+      button: 'Añadir',
+      change: 'Cambiar nivel',
+      invalid: 'Eso no es la dirección de un sitio.',
+      added: '{host} añadido: {level}.',
+      updated: '{host} pasa a {level}.',
+      exists: '{host} ya está en tu lista ({level}): esto le cambia el nivel.',
       suggestions: 'Sugerencias',
+      suggestionAs: 'Añadir como {level}',
     },
     list: {
       title: 'Tus sitios',
       search: 'Buscar sitios',
-      empty: 'Aun no hay sitios. Hasta que anadas uno, la regla de arriba vale para todos.',
-      noMatch: 'Ningun sitio coincide.',
+      empty: 'Aún no hay sitios. Hasta que añadas uno, la regla de arriba vale para todos.',
+      noMatch: 'Ningún sitio coincide.',
       remove: 'Quitar',
-      confirmRemove: 'Quitar?',
+      confirmRemove: '¿Quitar?',
+      removed: '{host} quitado. Toca aquí para deshacer.',
       covers: 'Incluye subdominios',
     },
     test: {
-      title: 'Probar una direccion',
+      title: 'Probar una dirección',
       placeholder: 'https://…',
       button: 'Probar',
       result: 'En {host} Jarvis puede:',
       byRule: 'por la regla de {pattern}',
       byDefault: 'por la regla del resto de sitios',
+      failed: 'No se pudo preguntar al servidor. Prueba otra vez.',
     },
-    legend: 'Que permite cada nivel',
+    legend: 'Qué permite cada nivel',
     saveFailed: 'No se pudo guardar. Prueba otra vez.',
     saved: 'Guardado',
   },
@@ -144,9 +164,15 @@ export const siteAccessFr: typeof siteAccessEn = {
   siteAccess: {
     title: 'Accès',
     subtitle: 'Où Jarvis peut aller sur le web, et ce qu’il peut y faire.',
+    where: 'S’applique dans votre Chrome et dans celui de Jarvis, à la voix et dans les tâches.',
     unavailable: 'Ce serveur ne peut pas encore garder une liste de sites.',
     retry: 'Réessayer',
-    stats: { sites: 'sites', blocked: 'bloqués', requests: 'demandes' },
+    stale: 'Pas de connexion : dernière liste affichée',
+    stats: {
+      sites: '{n} site | {n} site | {n} sites',
+      blocked: '{n} bloqué | {n} bloqué | {n} bloqués',
+      requests: '{n} demande | {n} demande | {n} demandes',
+    },
     levels: {
       blocked: 'Bloqué',
       read: 'Lire',
@@ -159,11 +185,12 @@ export const siteAccessFr: typeof siteAccessEn = {
       read: 'Ouvre et lit les pages. Sans clics.',
       browse: 'Clique, défile et cherche aussi.',
       write: 'Écrit et envoie aussi des formulaires.',
-      account: 'Utilise aussi votre compte connecté.',
+      account: 'Utilise aussi votre compte connecté, et se connecte.',
     },
     default: {
       title: 'Tous les autres sites',
       hint: 'Ce que Jarvis peut faire sur les sites absents de votre liste.',
+      onlyList: 'Jarvis n’ira que sur les sites de votre liste.',
     },
     requests: {
       title: 'Jarvis demande',
@@ -178,9 +205,13 @@ export const siteAccessFr: typeof siteAccessEn = {
       title: 'Ajouter un site',
       placeholder: 'github.com ou une adresse complète',
       button: 'Ajouter',
+      change: 'Changer le niveau',
       invalid: 'Ce n’est pas une adresse de site.',
-      added: '{host} ajouté.',
+      added: '{host} ajouté : {level}.',
+      updated: '{host} passe à {level}.',
+      exists: '{host} est déjà dans votre liste ({level}) : ceci change son niveau.',
       suggestions: 'Suggestions',
+      suggestionAs: 'Ajouter en {level}',
     },
     list: {
       title: 'Vos sites',
@@ -189,6 +220,7 @@ export const siteAccessFr: typeof siteAccessEn = {
       noMatch: 'Aucun site ne correspond.',
       remove: 'Retirer',
       confirmRemove: 'Retirer ?',
+      removed: '{host} retiré. Touchez ici pour annuler.',
       covers: 'Sous-domaines inclus',
     },
     test: {
@@ -198,6 +230,7 @@ export const siteAccessFr: typeof siteAccessEn = {
       result: 'Sur {host}, Jarvis peut :',
       byRule: 'par la règle de {pattern}',
       byDefault: 'par la règle des autres sites',
+      failed: 'Impossible de joindre le serveur. Réessayez.',
     },
     legend: 'Ce que permet chaque niveau',
     saveFailed: 'Échec de l’enregistrement. Réessayez.',
@@ -209,9 +242,15 @@ export const siteAccessIt: typeof siteAccessEn = {
   siteAccess: {
     title: 'Accessi',
     subtitle: 'Dove può andare Jarvis sul web e cosa può fare lì.',
+    where: 'Vale nel tuo Chrome e in quello di Jarvis, a voce e nelle attività.',
     unavailable: 'Questo server non può ancora tenere un elenco di siti.',
     retry: 'Riprova',
-    stats: { sites: 'siti', blocked: 'bloccati', requests: 'richieste' },
+    stale: 'Nessuna connessione: si vede l’ultimo elenco',
+    stats: {
+      sites: '{n} siti | {n} sito | {n} siti',
+      blocked: '{n} bloccati | {n} bloccato | {n} bloccati',
+      requests: '{n} richieste | {n} richiesta | {n} richieste',
+    },
     levels: {
       blocked: 'Bloccato',
       read: 'Leggere',
@@ -224,11 +263,12 @@ export const siteAccessIt: typeof siteAccessEn = {
       read: 'Apre e legge le pagine. Niente clic.',
       browse: 'Fa anche clic, scorre e cerca.',
       write: 'Scrive e invia anche moduli.',
-      account: 'Usa anche il tuo account con accesso.',
+      account: 'Usa anche il tuo account con accesso, e accede.',
     },
     default: {
       title: 'Tutti gli altri siti',
       hint: 'Cosa può fare Jarvis sui siti che non sono nel tuo elenco.',
+      onlyList: 'Jarvis andrà solo sui siti del tuo elenco.',
     },
     requests: {
       title: 'Jarvis chiede',
@@ -243,9 +283,13 @@ export const siteAccessIt: typeof siteAccessEn = {
       title: 'Aggiungi un sito',
       placeholder: 'github.com o un indirizzo completo',
       button: 'Aggiungi',
+      change: 'Cambia livello',
       invalid: 'Non è l’indirizzo di un sito.',
-      added: '{host} aggiunto.',
+      added: '{host} aggiunto: {level}.',
+      updated: '{host} passa a {level}.',
+      exists: '{host} è già nel tuo elenco ({level}): questo ne cambia il livello.',
       suggestions: 'Suggerimenti',
+      suggestionAs: 'Aggiungi come {level}',
     },
     list: {
       title: 'I tuoi siti',
@@ -254,6 +298,7 @@ export const siteAccessIt: typeof siteAccessEn = {
       noMatch: 'Nessun sito corrisponde.',
       remove: 'Rimuovi',
       confirmRemove: 'Rimuovere?',
+      removed: '{host} rimosso. Tocca qui per annullare.',
       covers: 'Include i sottodomini',
     },
     test: {
@@ -263,6 +308,7 @@ export const siteAccessIt: typeof siteAccessEn = {
       result: 'Su {host} Jarvis può:',
       byRule: 'per la regola di {pattern}',
       byDefault: 'per la regola degli altri siti',
+      failed: 'Impossibile contattare il server. Riprova.',
     },
     legend: 'Cosa permette ogni livello',
     saveFailed: 'Salvataggio non riuscito. Riprova.',

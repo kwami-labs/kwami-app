@@ -48,6 +48,6 @@ export const layoutEs: typeof layoutEn = {
     toolArrange:
       'Oculta, muestra o reordena los paneles de la barra lateral, o los restablece. panel es un id como avatar, audio, scene, models, voice, soul, memory, metrics, info, email o calendar. Theme, account y credits no se pueden ocultar.',
     toolNotifications:
-      'Activa o desactiva los informes de lunes, viernes y domingo, o cambia el telefono o el canal de los avisos. Pasa solo lo que cambie. La app siempre pregunta antes al usuario.',
+      'Activa o desactiva los informes de lunes, viernes y domingo, o cambia el teléfono o el canal de los avisos. Pasa solo lo que cambie. La app siempre pregunta antes al usuario.',
   },
 };

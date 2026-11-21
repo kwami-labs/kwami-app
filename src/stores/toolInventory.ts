@@ -19,6 +19,11 @@ export interface ToolInventory {
   client: number;
   /** Client tools the trim left out, in registration order. */
   dropped: string[];
+  /**
+   * The left-out tools wait on a shelf the model can search (`find_more_tools`),
+   * so it brings one in when the user asks for it. False from an older agent.
+   */
+  shelf: boolean;
   receivedAt: number;
 }
 
@@ -39,6 +44,7 @@ export function parseToolInventory(message: unknown, now = Date.now()): ToolInve
     builtin: strings(m.builtin),
     client: count(m.client),
     dropped: strings(m.dropped),
+    shelf: m.shelf === true,
     receivedAt: now,
   };
 }

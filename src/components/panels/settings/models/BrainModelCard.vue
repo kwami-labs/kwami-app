@@ -10,6 +10,7 @@ import {
   PROVIDER_ICONS,
   PROVIDER_KEY_NAME,
   PROVIDER_ROLES,
+  modelReach,
   modelUsable,
   type BrainAccess,
   type BrainModel,
@@ -28,20 +29,27 @@ const emit = defineEmits<{
   remove: [];
 }>();
 const { t } = useI18n();
-const { brainStatus } = storeToRefs(useVoiceStore());
+const { brain, brainStatus } = storeToRefs(useVoiceStore());
 
 /** Read once: emptying the text while writing must not close the box under the cursor. */
 const startOpen = !!props.model.instructions;
 const jobs = computed(() => PROVIDER_ROLES[props.model.provider]);
 const hasAccess = computed(() => props.model.provider === 'anthropic');
 const inCouncil = computed(() => props.model.provider !== 'local');
-const usable = computed(() => modelUsable(props.model, brainStatus.value));
+const usable = computed(() => modelUsable(props.model, brainStatus.value, brain.value.billing));
+/** "Only" in how the brain pays decides for every model: its own choice waits. */
+const lockedBy = computed(() =>
+  brain.value.billing === 'account_only' || brain.value.billing === 'api_only'
+    ? brain.value.billing
+    : '',
+);
 
 /** What it is missing, when it is on but cannot run. */
 const missing = computed(() => {
   if (!props.model.enabled || usable.value) return '';
   const claude = props.model.provider === 'anthropic' || props.model.provider === 'local';
-  return claude && props.model.access === 'account'
+  if (!claude && brain.value.billing === 'account_only') return t('mind.unavailablePlanOnly');
+  return claude && modelReach(props.model, brain.value.billing) === 'account'
     ? t('mind.unavailableAccount')
     : t('mind.unavailableKey', { key: PROVIDER_KEY_NAME[props.model.provider] });
 });
@@ -114,12 +122,14 @@ const accessHint: Record<BrainAccess, string> = {
             :key="a"
             class="segment"
             :class="{ active: model.access === a }"
+            :disabled="!!lockedBy"
             @click="emit('change', { access: a })"
           >
             {{ t(accessLabel[a]) }}
           </button>
         </div>
-        <p class="hint">{{ t(accessHint[model.access]) }}</p>
+        <p v-if="lockedBy" class="hint">{{ t(`mind.accessLocked.${lockedBy}`) }}</p>
+        <p v-else class="hint">{{ t(accessHint[model.access]) }}</p>
       </div>
 
       <details class="brief" :open="startOpen">

@@ -10,7 +10,7 @@ import { useAgentActionState } from '@/composables/useAgentActionState';
  * lines and is being edited concurrently; this registers onto the same `Kwami`
  * instance and behaves identically from the model's side.
  *
- * The control vocabulary is deliberately the same as `set_browser_panel`'s
+ * The control vocabulary is deliberately the same as the browser panel's (`set_ui_control`, domain `browser`)
  * (layout, expand, position, size, center, reset). Two panels that do the same
  * thing under different names is a tax the model pays on every call, and it
  * lets the agent describe both with one capability block.

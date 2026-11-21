@@ -57,7 +57,7 @@ export const searchPanelEn = {
     actionOpenResult: 'Opened search result',
 
     toolDescSetSearchPanel:
-      'Move, resize, expand or restore the search results panel. Controls: layout with the values orbit, floating or fullscreen; expand with true or false; position taking x and y; size taking width and height; center; and reset. Orbit is the default and arcs the result cards around the avatar. Floating is a draggable window that lists every result and can be scrolled. Fullscreen covers the screen for reading. This only changes how results are presented and never runs a new search, and it does not touch the live browser panel, which has its own set_browser_panel tool.',
+      'Move, resize, expand or restore the search results panel. Controls: layout with the values orbit, floating or fullscreen; expand with true or false; position taking x and y; size taking width and height; center; and reset. Orbit is the default and arcs the result cards around the avatar. Floating is a draggable window that lists every result and can be scrolled. Fullscreen covers the screen for reading. This only changes how results are presented and never runs a new search, and it does not touch the live browser panel, which has its own set_ui_control (domain browser) tool.',
     toolDescFocusSearchResult:
       'Point at one search result so the user can see which one is meant, counting from 1 in the order they are on screen. Use this when the user says something like the second one. It only highlights and never opens anything, so follow it with open_search_result if they want to read the page.',
     toolDescOpenSearchResult:
@@ -67,56 +67,56 @@ export const searchPanelEn = {
 
 export const searchPanelEs = {
   searchPanel: {
-    panelLabel: 'Resultados de busqueda',
-    untitled: 'Busqueda',
+    panelLabel: 'Resultados de búsqueda',
+    untitled: 'Búsqueda',
     searching: 'Buscando...',
-    noResults: 'Sin resultados para esta busqueda.',
+    noResults: 'Sin resultados para esta búsqueda.',
     openInBrowser: 'Abrir en el navegador',
-    openInTab: 'Abrir en una pestana nueva',
+    openInTab: 'Abrir en una pestaña nueva',
     dismiss: 'Descartar',
     clearAll: 'Borrar resultados',
-    moveHint: 'Arrastra para mover el panel de busqueda, o usa las flechas',
-    resizeHint: 'Arrastra para redimensionar el panel de busqueda, o usa las flechas',
-    centerHint: 'Centrar el panel de busqueda',
+    moveHint: 'Arrastra para mover el panel de búsqueda, o usa las flechas',
+    resizeHint: 'Arrastra para redimensionar el panel de búsqueda, o usa las flechas',
+    centerHint: 'Centrar el panel de búsqueda',
     floatHint: 'Mostrar los resultados en una ventana',
     dockHint: 'Mostrar los resultados alrededor del avatar',
-    expandHint: 'Ampliar el panel de busqueda',
-    collapseHint: 'Reducir el panel de busqueda',
+    expandHint: 'Ampliar el panel de búsqueda',
+    collapseHint: 'Reducir el panel de búsqueda',
 
     layoutSet: 'Los resultados se muestran ahora como: {layout}.',
     layoutAlready: 'Los resultados ya se muestran como: {layout}.',
-    layoutInvalid: 'Disposicion de busqueda desconocida. Usa orbit, floating o fullscreen.',
-    expanded: 'Panel de busqueda ampliado.',
-    collapsed: 'Panel de busqueda reducido.',
-    moved: 'Panel de busqueda movido.',
-    resized: 'Panel de busqueda redimensionado.',
-    centered: 'Panel de busqueda centrado.',
-    layoutReset: 'Panel de busqueda restablecido a su posicion por defecto.',
-    positionObject: 'Indica la posicion como un objeto con x e y numericos.',
-    sizeObject: 'Indica el tamano como un objeto con width y height numericos.',
+    layoutInvalid: 'Disposición de búsqueda desconocida. Usa orbit, floating o fullscreen.',
+    expanded: 'Panel de búsqueda ampliado.',
+    collapsed: 'Panel de búsqueda reducido.',
+    moved: 'Panel de búsqueda movido.',
+    resized: 'Panel de búsqueda redimensionado.',
+    centered: 'Panel de búsqueda centrado.',
+    layoutReset: 'Panel de búsqueda restablecido a su posición por defecto.',
+    positionObject: 'Indica la posición como un objeto con x e y numéricos.',
+    sizeObject: 'Indica el tamaño como un objeto con width y height numéricos.',
     notFloating:
-      'El panel de busqueda no esta en su disposicion flotante, asi que no hay nada que mover. Cambia layout a floating primero.',
-    unknownControl: 'Control del panel de busqueda desconocido "{control}". Usa uno de: {list}.',
-    controlString: 'Indica el control del panel de busqueda como texto.',
+      'El panel de búsqueda no está en su disposición flotante, así que no hay nada que mover. Cambia layout a floating primero.',
+    unknownControl: 'Control del panel de búsqueda desconocido "{control}". Usa uno de: {list}.',
+    controlString: 'Indica el control del panel de búsqueda como texto.',
 
     focusedResult: 'Resultado {position} destacado: {title}',
-    focusIndexNumber: 'Indica el numero de resultado como un numero, empezando por 1.',
+    focusIndexNumber: 'Indica el número de resultado como un número, empezando por 1.',
     focusOutOfRange:
-      'No existe el resultado numero {position}. Ahora mismo hay {count} resultados.',
-    noResultsToFocus: 'No hay resultados de busqueda en pantalla a los que apuntar.',
+      'No existe el resultado número {position}. Ahora mismo hay {count} resultados.',
+    noResultsToFocus: 'No hay resultados de búsqueda en pantalla a los que apuntar.',
     openedResult: 'Se ha pedido al navegador abrir el resultado {position}: {title}',
     openNoUrl: 'Ese resultado no tiene enlace que abrir.',
 
-    actionSearchPanel: 'Panel de busqueda cambiado',
+    actionSearchPanel: 'Panel de búsqueda cambiado',
     actionFocusResult: 'Resultado destacado',
     actionOpenResult: 'Resultado abierto',
 
     toolDescSetSearchPanel:
-      'Mueve, redimensiona, amplia o restaura el panel de resultados de busqueda. Controles: layout con los valores orbit, floating o fullscreen; expand con true o false; position con x e y; size con width y height; center; y reset. Orbit es el valor por defecto y coloca las tarjetas alrededor del avatar. Floating es una ventana arrastrable que lista todos los resultados y se puede desplazar. Fullscreen ocupa la pantalla para leer. Solo cambia como se presentan los resultados y nunca lanza una busqueda nueva, y no afecta al panel del navegador en vivo, que tiene su propia herramienta set_browser_panel.',
+      'Mueve, redimensiona, amplía o restaura el panel de resultados de búsqueda. Controles: layout con los valores orbit, floating o fullscreen; expand con true o false; position con x e y; size con width y height; center; y reset. Orbit es el valor por defecto y coloca las tarjetas alrededor del avatar. Floating es una ventana arrastrable que lista todos los resultados y se puede desplazar. Fullscreen ocupa la pantalla para leer. Solo cambia cómo se presentan los resultados y nunca lanza una búsqueda nueva, y no afecta al panel del navegador en vivo, que tiene su propia herramienta set_ui_control (domain browser).',
     toolDescFocusSearchResult:
-      'Senala un resultado de busqueda para que el usuario vea a cual te refieres, contando desde 1 en el orden en que aparecen. Usalo cuando el usuario diga algo como el segundo. Solo lo resalta y nunca abre nada, asi que continua con open_search_result si quiere leer la pagina.',
+      'Señala un resultado de búsqueda para que el usuario vea a cuál te refieres, contando desde 1 en el orden en que aparecen. Úsalo cuando el usuario diga algo como el segundo. Solo lo resalta y nunca abre nada, así que continúa con open_search_result si quiere leer la página.',
     toolDescOpenSearchResult:
-      'Abre un resultado de busqueda en el panel del navegador en vivo, contando desde 1. La pagina se carga en la sesion de navegador en la nube que conserva las sesiones iniciadas del usuario, asi que se abre con la sesion iniciada. Lee el mensaje devuelto en lugar de dar por hecho que funciono, y di que resultado se abrio por su titulo para que se pueda detectar una eleccion equivocada.',
+      'Abre un resultado de búsqueda en el panel del navegador en vivo, contando desde 1. La página se carga en la sesión de navegador en la nube que conserva las sesiones iniciadas del usuario, así que se abre con la sesión iniciada. Lee el mensaje devuelto en lugar de dar por hecho que funcionó, y di qué resultado se abrió por su título para que se pueda detectar una elección equivocada.',
   },
 } as const;
 
@@ -168,7 +168,7 @@ export const searchPanelFr = {
     actionOpenResult: 'Résultat de recherche ouvert',
 
     toolDescSetSearchPanel:
-      "Déplace, redimensionne, agrandit ou restaure le panneau de résultats de recherche. Contrôles : layout avec les valeurs orbit, floating ou fullscreen ; expand avec true ou false ; position prenant x et y ; size prenant width et height ; center ; et reset. Orbit est la valeur par défaut et dispose les cartes de résultats en arc autour de l'avatar. Floating est une fenêtre déplaçable qui liste tous les résultats et peut défiler. Fullscreen occupe l'écran pour la lecture. Cela change seulement la manière dont les résultats sont présentés et ne lance jamais une nouvelle recherche, et cela ne touche pas au panneau de navigateur en direct, qui a son propre outil set_browser_panel.",
+      "Déplace, redimensionne, agrandit ou restaure le panneau de résultats de recherche. Contrôles : layout avec les valeurs orbit, floating ou fullscreen ; expand avec true ou false ; position prenant x et y ; size prenant width et height ; center ; et reset. Orbit est la valeur par défaut et dispose les cartes de résultats en arc autour de l'avatar. Floating est une fenêtre déplaçable qui liste tous les résultats et peut défiler. Fullscreen occupe l'écran pour la lecture. Cela change seulement la manière dont les résultats sont présentés et ne lance jamais une nouvelle recherche, et cela ne touche pas au panneau de navigateur en direct, qui a son propre outil set_ui_control (domain browser).",
     toolDescFocusSearchResult:
       "Montre un résultat de recherche pour que l'utilisateur voie duquel il s'agit, en comptant à partir de 1 dans l'ordre où ils sont à l'écran. Utilise ceci quand l'utilisateur dit quelque chose comme le deuxième. Cela ne fait que mettre en avant et n'ouvre jamais rien, donc enchaîne avec open_search_result s'il veut lire la page.",
     toolDescOpenSearchResult:
@@ -223,7 +223,7 @@ export const searchPanelPt = {
     actionOpenResult: 'Resultado de pesquisa aberto',
 
     toolDescSetSearchPanel:
-      'Move, redimensiona, amplia ou restaura o painel de resultados de pesquisa. Controlos: layout com os valores orbit, floating ou fullscreen; expand com true ou false; position com x e y; size com width e height; center; e reset. Orbit é a predefinição e dispõe os cartões de resultado em arco à volta do avatar. Floating é uma janela arrastável que lista todos os resultados e pode ser percorrida. Fullscreen ocupa o ecrã para leitura. Isto só muda como os resultados são apresentados e nunca lança uma pesquisa nova, e não mexe no painel do navegador em direto, que tem a sua própria ferramenta set_browser_panel.',
+      'Move, redimensiona, amplia ou restaura o painel de resultados de pesquisa. Controlos: layout com os valores orbit, floating ou fullscreen; expand com true ou false; position com x e y; size com width e height; center; e reset. Orbit é a predefinição e dispõe os cartões de resultado em arco à volta do avatar. Floating é uma janela arrastável que lista todos os resultados e pode ser percorrida. Fullscreen ocupa o ecrã para leitura. Isto só muda como os resultados são apresentados e nunca lança uma pesquisa nova, e não mexe no painel do navegador em direto, que tem a sua própria ferramenta set_ui_control (domain browser).',
     toolDescFocusSearchResult:
       'Aponta para um resultado de pesquisa para que o utilizador veja a qual te referes, a contar a partir de 1 pela ordem em que estão no ecrã. Usa isto quando o utilizador disser algo como o segundo. Só destaca e nunca abre nada, por isso segue com open_search_result se ele quiser ler a página.',
     toolDescOpenSearchResult:
@@ -279,7 +279,7 @@ export const searchPanelIt = {
     actionOpenResult: 'Risultato di ricerca aperto',
 
     toolDescSetSearchPanel:
-      "Sposta, ridimensiona, espande o ripristina il pannello dei risultati di ricerca. Controlli: layout con i valori orbit, floating o fullscreen; expand con true o false; position che prende x e y; size che prende width e height; center; e reset. Orbit è il valore predefinito e dispone le schede dei risultati ad arco attorno all'avatar. Floating è una finestra trascinabile che elenca tutti i risultati e si può scorrere. Fullscreen occupa lo schermo per la lettura. Questo cambia solo il modo in cui i risultati sono presentati e non avvia mai una nuova ricerca, e non tocca il pannello del browser dal vivo, che ha il suo strumento set_browser_panel.",
+      "Sposta, ridimensiona, espande o ripristina il pannello dei risultati di ricerca. Controlli: layout con i valori orbit, floating o fullscreen; expand con true o false; position che prende x e y; size che prende width e height; center; e reset. Orbit è il valore predefinito e dispone le schede dei risultati ad arco attorno all'avatar. Floating è una finestra trascinabile che elenca tutti i risultati e si può scorrere. Fullscreen occupa lo schermo per la lettura. Questo cambia solo il modo in cui i risultati sono presentati e non avvia mai una nuova ricerca, e non tocca il pannello del browser dal vivo, che ha il suo strumento set_ui_control (domain browser).",
     toolDescFocusSearchResult:
       "Indica un risultato di ricerca perché l'utente veda a quale ti riferisci, contando da 1 nell'ordine in cui stanno sullo schermo. Usa questo quando l'utente dice qualcosa come il secondo. Si limita a evidenziare e non apre mai nulla, quindi prosegui con open_search_result se vuole leggere la pagina.",
     toolDescOpenSearchResult:
