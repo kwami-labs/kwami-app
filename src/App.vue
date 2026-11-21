@@ -17,6 +17,7 @@ import SidebarModeSwitch from '@/components/sidebar/SidebarModeSwitch.vue';
 import BrowserPanel from '@/components/panels/BrowserPanel.vue';
 import HudLayer from '@/components/hud/HudLayer.vue';
 import { useHud } from '@/composables/useHud';
+import { useDownloadNotices } from '@/composables/useDownloadNotices';
 import AvatarUnavailable from '@/components/AvatarUnavailable.vue';
 import { isWebGLAvailable, type AvatarUnavailableReason } from '@/lib/webgl';
 
@@ -199,6 +200,8 @@ useUiLayoutSync();
 useBrowserFrames();
 // Jarvis's own screen: tasks, reports, videos and pages it opens as it works.
 useHud();
+// Where each download went, and a click to its folder in the desktop app.
+useDownloadNotices();
 
 // Sync per-kwami config: apply config when switching kwami, debounced save to DB
 useKwamiConfigWatchers();

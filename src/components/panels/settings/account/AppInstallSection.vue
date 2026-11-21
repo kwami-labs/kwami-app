@@ -3,6 +3,7 @@ import { useI18n } from 'vue-i18n';
 import PanelSection from '@/components/ui/PanelSection.vue';
 import BaseButton from '@/components/ui/BaseButton.vue';
 import { usePwaInstall } from '@/composables/usePwaInstall';
+import { openUrl } from '@tauri-apps/plugin-opener';
 import { computed, onMounted, ref } from 'vue';
 import {
   detectDevice,
@@ -43,6 +44,15 @@ const OS_ICONS: Record<string, string> = {
   android: 'ph:android-logo-duotone',
 };
 
+// Inside the native app the PWA's button cannot work: the page goes to the system browser,
+// where it installs. From a browser, a native app already installed opens through its scheme.
+const WEB_URL = 'https://kwami.io';
+const NATIVE_OPEN_URL = 'kwami://open';
+
+async function openWebInBrowser() {
+  await openUrl(WEB_URL);
+}
+
 function handleNativeDownload() {
   if (nativeBuild.value) downloadNativeBuild(nativeBuild.value);
 }
@@ -82,9 +92,20 @@ async function copyLink() {
           </div>
         </div>
 
-        <p v-if="insideNative" class="install-steps" data-testid="pwa-inside-native">
-          {{ t('account.pwaInsideNative') }}
-        </p>
+        <template v-if="insideNative">
+          <p class="install-steps" data-testid="pwa-inside-native">
+            {{ t('account.pwaInsideNative') }}
+          </p>
+          <BaseButton
+            variant="secondary"
+            icon="ph:arrow-square-out-duotone"
+            block
+            data-testid="pwa-open-browser"
+            @click="openWebInBrowser"
+          >
+            {{ t('account.pwaOpenInBrowser') }}
+          </BaseButton>
+        </template>
 
         <template v-else>
           <div v-if="isInstalled" class="installed-badge" data-testid="pwa-installed">
@@ -182,6 +203,10 @@ async function copyLink() {
           <p class="install-steps" data-testid="native-steps">
             {{ t(`account.nativeSteps.${nativeBuild.os}`) }}
           </p>
+          <a class="native-open" :href="NATIVE_OPEN_URL" data-testid="native-open-installed">
+            <iconify-icon icon="ph:arrow-square-out-duotone"></iconify-icon>
+            {{ t('account.nativeOpenInstalled') }}
+          </a>
         </template>
 
         <p v-else-if="device.os === 'ios'" class="install-steps" data-testid="native-unsupported">
@@ -230,6 +255,19 @@ async function copyLink() {
 }
 
 .install-icon--web {
+  color: var(--accent-primary);
+}
+
+.native-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+
+.native-open:hover {
   color: var(--accent-primary);
 }
 
