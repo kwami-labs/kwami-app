@@ -4,7 +4,15 @@ import { useI18n } from 'vue-i18n';
 import HudWindow from '../HudWindow.vue';
 import { useHudStore, type HudWidget } from '@/stores/hud';
 import { hostOf, safeHttpUrl } from '@/lib/hud/media';
-import { nativeWeb, nativeWebAvailable, onNativeWebEvent } from '@/lib/hud/nativeWeb';
+import {
+  claimNative,
+  nativeRect,
+  nativeWeb,
+  nativeWebAvailable,
+  onNativeWebEvent,
+  ownsNative,
+  releaseNative,
+} from '@/lib/hud/nativeWeb';
 import { openExternal } from '@/lib/hud/external';
 
 /**
@@ -24,6 +32,9 @@ const hud = useHudStore();
 /** The native view, until it fails to open: then the iframe, rather than a blank window. */
 const native = ref(nativeWebAvailable());
 const label = computed(() => props.widget.id.replace(/[^A-Za-z0-9-]/g, '-'));
+/** This mount: the view is driven by its newest window only (lib/hud/nativeWeb). */
+const owner = Symbol('hud-web');
+const mine = () => ownsNative(label.value, owner);
 const code = computed(() => `WEB-${String(props.index + 1).padStart(2, '0')}`);
 
 const address = ref(props.widget.url ?? '');
@@ -61,12 +72,16 @@ function unfolding(): boolean {
 let frame = 0;
 /** What the view was last told, so an unchanged frame costs no call to the app. */
 let told = '';
+/** Opens that failed so far: a few are retried before the window falls back to an iframe. */
+let failures = 0;
+const OPEN_RETRIES = 3;
 /** Unmounted: an open still in flight must close what it opens. */
 let disposed = false;
 function sync() {
-  if (!native.value || frame) return;
+  if (!native.value || frame || disposed) return;
   frame = requestAnimationFrame(async () => {
     frame = 0;
+    if (!mine()) return;
     const box = bounds();
     if (!box) return;
     if (unfolding()) {
@@ -78,10 +93,8 @@ function sync() {
         if (!shown.value) return;
         await nativeWeb.open(label.value, shown.value, box);
         opened.value = true;
-        if (disposed) {
-          await nativeWeb.close(label.value);
-          return;
-        }
+        failures = 0;
+        if (disposed || !mine()) return;
         told = `${Math.round(box.x)},${Math.round(box.y)},${Math.round(box.width)},${Math.round(box.height)}`;
         if (!visibleNow.value) {
           await nativeWeb.place(label.value, box, false);
@@ -97,11 +110,21 @@ function sync() {
       told = wanted;
       await nativeWeb.place(label.value, box, onScreen);
     } catch (e) {
-      console.warn('[HUD] web view', e);
-      if (!opened.value) {
-        native.value = false;
-        shown.value = address.value;
+      if (opened.value || disposed || !mine()) {
+        // A move the view missed: the next one sends it again.
+        told = '';
+        return;
       }
+      failures += 1;
+      if (failures < OPEN_RETRIES) {
+        setTimeout(sync, 250 * 2 ** failures);
+        return;
+      }
+      console.warn('[HUD] web view could not open; showing the page in a frame', e);
+      // Never both: a view half made by the failed opens would lie over the frame.
+      void nativeWeb.close(label.value).catch(() => {});
+      native.value = false;
+      shown.value = address.value;
     }
   });
 }
@@ -137,7 +160,51 @@ function setZoom(delta: number) {
 let stopEvents: (() => void) | null = null;
 let observer: ResizeObserver | null = null;
 
+/** Send the bounds again, whatever was sent last: after the app comes back to the front. */
+function resync() {
+  told = '';
+  sync();
+}
+
+/**
+ * Every few seconds, whether the view is really over the window (in physical pixels),
+ * and put it back if not: the one thing that cannot be allowed is a page lying
+ * somewhere else on the app, whatever moved it there.
+ */
+const WATCH_MS = 3000;
+let watchdog: ReturnType<typeof setInterval> | null = null;
+async function check() {
+  if (!native.value || !opened.value || !visibleNow.value || document.hidden || !mine()) return;
+  const box = bounds();
+  const real = await nativeRect(label.value);
+  if (!box || !real) return;
+  const dpr = window.devicePixelRatio || 1;
+  const off =
+    Math.abs(real.x - box.x * dpr) > 3 ||
+    Math.abs(real.y - box.y * dpr) > 3 ||
+    Math.abs(real.width - box.width * dpr) > 3 ||
+    Math.abs(real.height - box.height * dpr) > 3;
+  if (off) resync();
+}
+
+function onVisibility() {
+  if (!document.hidden) resync();
+}
+
+function stopListening() {
+  stopEvents?.();
+  stopEvents = null;
+}
+
 onMounted(async () => {
+  // A view left by this window's previous mount is taken over, not opened again.
+  if (native.value && claimNative(label.value, owner)) opened.value = true;
+  watchdog = setInterval(() => void check(), WATCH_MS);
+  window.addEventListener('focus', resync);
+  document.addEventListener('visibilitychange', onVisibility);
+  // A reload unmounts nothing: the page-load listener would stay registered in the app,
+  // and every later page load of the view would warn of a callback that is gone.
+  window.addEventListener('pagehide', stopListening);
   observer = new ResizeObserver(() => sync());
   if (body.value) observer.observe(body.value);
   body.value?.closest('.hud-win')?.addEventListener('animationend', sync);
@@ -157,11 +224,15 @@ onBeforeUnmount(() => {
   if (frame) cancelAnimationFrame(frame);
   observer?.disconnect();
   window.removeEventListener('resize', sync);
-  stopEvents?.();
+  window.removeEventListener('focus', resync);
+  document.removeEventListener('visibilitychange', onVisibility);
+  window.removeEventListener('pagehide', stopListening);
+  if (watchdog) clearInterval(watchdog);
+  stopListening();
   disposed = true;
-  // Closed even when not yet open: the open may be on its way, and closing a view
-  // that is not there is harmless.
-  if (native.value) void nativeWeb.close(label.value);
+  // Closed a moment later, unless this window mounts again and takes it over; closed
+  // even when not yet open, since the open may be on its way.
+  if (native.value) releaseNative(label.value, owner);
 });
 
 watch(

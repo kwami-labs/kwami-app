@@ -39,6 +39,7 @@ import { useSearchPanelAgentTools } from '@/composables/useSearchPanelAgentTools
 import { useCommsAgentTools } from '@/composables/useCommsAgentTools';
 import { useAssistantAgentTools } from '@/composables/useAssistantAgentTools';
 import { useMcpAgentControls } from '@/composables/useMcpAgentControls';
+import { parseScaleChoice, useUiScale } from '@/composables/useUiScale';
 import { useGoogleWorkspaceAgentTools } from '@/composables/useGoogleWorkspaceAgentTools';
 import { useLayoutAgentTools } from '@/composables/useLayoutAgentTools';
 import { useHudAgentTools } from '@/composables/useHudAgentTools';
@@ -259,6 +260,7 @@ export function useWorkspaceAgentTools() {
   const { t } = useI18n();
   const { kwami, rendererType, isConnected } = useKwami();
   const mcpControls = useMcpAgentControls();
+  const uiScale = useUiScale();
 
   function humanizePanel(panel: WorkspacePanel): string {
     return t(`workspaceAgentTools.panels.${panel}`);
@@ -2403,6 +2405,31 @@ export function useWorkspaceAgentTools() {
     };
   }
 
+  /** The whole interface bigger or smaller on this desktop (composables/useUiScale). */
+  function setInterfaceSize(value: unknown) {
+    if (!uiScale.available.value) {
+      return { success: false, message: t('workspaceAgentTools.interfaceSizeUnavailable') };
+    }
+    const word = typeof value === 'string' ? normalizeKey(value) : '';
+    if (word === 'bigger' || word === 'larger' || word === 'up') uiScale.step(1);
+    else if (word === 'smaller' || word === 'down') uiScale.step(-1);
+    else {
+      const choice = parseScaleChoice(value);
+      if (!choice) {
+        return { success: false, message: t('workspaceAgentTools.interfaceSizeInvalid') };
+      }
+      uiScale.setChoice(choice);
+    }
+    const message = t('workspaceAgentTools.interfaceSizeSet', {
+      size:
+        uiScale.choice.value === 'auto'
+          ? 'auto'
+          : `${Math.round(Number(uiScale.choice.value) * 100)}%`,
+    });
+    actionState.recordAction(message);
+    return { success: true, message, size: uiScale.choice.value };
+  }
+
   async function setUiControl(domain: unknown, control: unknown, value: unknown, confirm: unknown) {
     const normalizedDomain = normalizeDomain(domain);
     if (!normalizedDomain) {
@@ -2444,6 +2471,9 @@ export function useWorkspaceAgentTools() {
       if (normalizedControl === 'renderer') return setRenderer(value);
       if (normalizedControl === 'responselength') return setResponseLength(value, confirm);
       if (normalizedControl === 'status') return showWorkspaceStatus();
+      if (normalizedControl === 'interfacesize' || normalizedControl === 'uiscale') {
+        return setInterfaceSize(value);
+      }
       if (normalizedControl === 'listcontrols') return listUiControls();
       return {
         success: false,

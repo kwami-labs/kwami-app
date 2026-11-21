@@ -450,7 +450,6 @@ const statusLabel = computed(() =>
           :src="embedSrc"
           title="YouTube"
           allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
-          allowfullscreen
           referrerpolicy="strict-origin-when-cross-origin"
           @load="onYoutubeLoad"
         ></iframe>

@@ -93,6 +93,26 @@
 }
 
 /* Closed or folded: it goes at once, in a quick fade, rather than blinking out. */
+/* A screen coming into view: a short fade, not every window unfolding again; the
+   windows of the screen left go at once, never over the new screen's. */
+.hud-layer.screen-in .hud-win:not(.is-dragging) {
+  animation: hud-screen-in 200ms ease-out both;
+}
+.hud-layer.screen-in .hud-win.hud-win-leave-active {
+  transition: none;
+  animation: none;
+}
+@keyframes hud-screen-in {
+  from {
+    opacity: 0;
+    filter: brightness(1.6);
+  }
+  to {
+    opacity: 1;
+    filter: none;
+  }
+}
+
 .hud-win-leave-active {
   animation: none !important;
   pointer-events: none;
