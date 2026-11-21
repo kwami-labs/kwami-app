@@ -257,6 +257,7 @@ onUnmounted(() => {
               :key="stat.key"
               :keypath="`siteAccess.stats.${stat.key}`"
               :plural="stat.n"
+              scope="global"
               tag="span"
               class="stat"
               :class="stat.class"

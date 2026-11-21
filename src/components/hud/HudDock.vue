@@ -2,6 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useHudStore, type HudKind, type HudPrefs } from '@/stores/hud';
+import { UI_SCALE_MAX, UI_SCALE_MIN, useUiScale } from '@/composables/useUiScale';
 
 /**
  * The bar along the bottom of the HUD: every window folded away, the archive of
@@ -10,6 +11,7 @@ import { useHudStore, type HudKind, type HudPrefs } from '@/stores/hud';
  */
 const { t, d } = useI18n();
 const hud = useHudStore();
+const ui = useUiScale();
 
 const ICONS: Record<HudKind, string> = {
   task: 'ph:brain-duotone',
@@ -101,10 +103,14 @@ const position = computed(() => {
         v-for="(screen, i) in hud.screens"
         :key="screen.id"
         class="screen-tab"
-        :class="{ active: screen.id === hud.activeScreen }"
+        :class="{
+          active: screen.id === hud.activeScreen,
+          'drop-here': screen.id === hud.dropScreen,
+        }"
+        :data-screen-id="screen.id"
         role="tab"
         :aria-selected="screen.id === hud.activeScreen"
-        :title="`${screenLabel(i)} · Ctrl+Alt+${i + 1}`"
+        :title="`${screenLabel(i)} · Ctrl+Alt+${i + 1}. ${t('hud.screens.dropHere')}`"
         @click="hud.switchScreen(screen.id)"
         @dblclick="startRename(screen.id, i)"
       >
@@ -283,6 +289,39 @@ const position = computed(() => {
           @input="hud.setPref('glass', Number(($event.target as HTMLInputElement).value))"
         />
       </label>
+      <div v-if="ui.available.value" class="pref size">
+        <span>{{ t('hud.prefs.interfaceSize') }}</span>
+        <div class="size-ctl">
+          <button
+            type="button"
+            class="hud-icon-btn"
+            :title="t('hud.prefs.smaller')"
+            :disabled="ui.applied.value <= UI_SCALE_MIN"
+            @click="ui.step(-1)"
+          >
+            <iconify-icon icon="ph:minus"></iconify-icon>
+          </button>
+          <span class="size-val">{{ ui.percent.value }}%</span>
+          <button
+            type="button"
+            class="hud-icon-btn"
+            :title="t('hud.prefs.bigger')"
+            :disabled="ui.applied.value >= UI_SCALE_MAX"
+            @click="ui.step(1)"
+          >
+            <iconify-icon icon="ph:plus"></iconify-icon>
+          </button>
+          <button
+            type="button"
+            class="size-auto"
+            :class="{ 'is-on': ui.choice.value === 'auto' }"
+            :title="t('hud.prefs.sizeAutoHint', { n: Math.round(ui.autoValue.value * 100) })"
+            @click="ui.setChoice('auto')"
+          >
+            {{ t('hud.prefs.sizeAuto') }}
+          </button>
+        </div>
+      </div>
       <p class="pref-hint">{{ t('hud.prefs.arrangeHint') }}</p>
     </div>
   </nav>
@@ -331,6 +370,12 @@ const position = computed(() => {
 .screen-tab:hover {
   color: var(--hud-text);
   background: rgba(var(--hud-rgb), 0.08);
+}
+.screen-tab.drop-here {
+  border-color: var(--hud-accent);
+  background: rgba(var(--hud-rgb), 0.28);
+  box-shadow: 0 0 18px rgba(var(--hud-rgb), 0.45);
+  transform: translateY(-3px);
 }
 .screen-tab.active {
   color: var(--hud-text);
@@ -579,6 +624,40 @@ const position = computed(() => {
 .pref.glass input {
   width: 130px;
 }
+/* The interface size: smaller, the size, bigger, and auto. */
+.pref.size {
+  justify-content: space-between;
+}
+.size-ctl {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.size-val {
+  min-width: 44px;
+  text-align: center;
+  font-family: var(--hud-mono);
+  font-size: 12px;
+  color: var(--hud-text);
+}
+.size-auto {
+  height: 24px;
+  padding: 0 8px;
+  border: 1px solid var(--hud-line-soft);
+  background: transparent;
+  color: var(--hud-dim);
+  font-family: var(--hud-mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.size-auto.is-on,
+.size-auto:hover {
+  color: var(--hud-text);
+  border-color: var(--hud-line);
+  background: rgba(var(--hud-rgb), 0.12);
+}
+
 .pref-hint {
   margin: 4px 0 0;
   font-size: 11.5px;

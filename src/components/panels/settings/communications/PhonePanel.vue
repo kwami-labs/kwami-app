@@ -218,6 +218,7 @@ const {
         <i18n-t
           v-if="selectedVoiceChannel && voiceOutboundCapabilityStale"
           keypath="communications.voiceOutboundStaleWarning"
+          scope="global"
           tag="p"
           class="warning-text"
         >

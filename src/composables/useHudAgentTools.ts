@@ -91,6 +91,56 @@ const KIND_WORDS: Record<string, string[]> = {
   tool: ['tool', 'herramienta', 'widget', 'panel', 'mcp'],
 };
 
+/** Screens said by their place, as people say them: "la segunda", "screen two". */
+const ORDINALS: Record<string, number> = {
+  primera: 1,
+  primero: 1,
+  uno: 1,
+  una: 1,
+  first: 1,
+  one: 1,
+  segunda: 2,
+  segundo: 2,
+  dos: 2,
+  second: 2,
+  two: 2,
+  tercera: 3,
+  tercero: 3,
+  tres: 3,
+  third: 3,
+  three: 3,
+  cuarta: 4,
+  cuarto: 4,
+  cuatro: 4,
+  fourth: 4,
+  four: 4,
+  quinta: 5,
+  quinto: 5,
+  cinco: 5,
+  fifth: 5,
+  five: 5,
+  sexta: 6,
+  sexto: 6,
+  seis: 6,
+  sixth: 6,
+  six: 6,
+  septima: 7,
+  septimo: 7,
+  siete: 7,
+  seventh: 7,
+  seven: 7,
+  octava: 8,
+  octavo: 8,
+  ocho: 8,
+  eighth: 8,
+  eight: 8,
+  novena: 9,
+  noveno: 9,
+  nueve: 9,
+  ninth: 9,
+  nine: 9,
+};
+
 /** How long a spoken reply waits for a tool window's first answer. */
 const FIRST_RUN_WAIT_MS = 20_000;
 
@@ -146,15 +196,37 @@ export function useHudAgentTools() {
     );
   }
 
-  /** A screen by number (from 1), id or name. */
+  /**
+   * A screen as the user named it: its number ("2", "la segunda", "pantalla dos"), its
+   * id, its name, or what is on it ("la del vídeo", "where the report is").
+   */
   function findScreen(ref: string): string | undefined {
     const wanted = ref.trim();
     if (!wanted) return undefined;
-    const n = Number(wanted);
-    if (Number.isInteger(n) && n >= 1 && hud.screens[n - 1]) return hud.screens[n - 1].id;
+    const at = (n: number) => (Number.isInteger(n) && n >= 1 ? hud.screens[n - 1]?.id : undefined);
+    const byNumber = at(Number(wanted));
+    if (byNumber) return byNumber;
     const byId = hud.screens.find((s) => s.id === wanted);
     if (byId) return byId.id;
-    return hud.screens.find((s) => s.name && fold(s.name).includes(fold(wanted)))?.id;
+    const words = fold(wanted);
+    const byName = hud.screens.find((s) => s.name && fold(s.name).includes(words));
+    if (byName) return byName.id;
+    // The whole phrase a place: "la segunda", "pantalla dos", "second screen". Not any
+    // word in it: "una más" is a new screen's name, not the first one.
+    const spoken = words.match(
+      /^(?:(?:la|el|the)\s+)?(?:pantalla\s+|screen\s+)?([a-z0-9]+)(?:\s+(?:pantalla|screen))?$/,
+    );
+    if (spoken) {
+      const found = at(ORDINALS[spoken[1]] ?? Number(spoken[1]));
+      if (found) return found;
+    }
+    // What is on it, when said that way ("la del vídeo", "the one with the report"): a
+    // window's title or kind, as with any window. Only then, so a new screen's name that
+    // happens to match a window's title still makes a new screen.
+    const onIt = wanted.match(
+      /^(?:(?:la|el|the)\s+)?(?:pantalla\s+|screen\s+)?(?:del?|con|donde|with|where|one with)\s+(.+)$/i,
+    );
+    return onIt ? findWindow(onIt[1])?.screen : undefined;
   }
 
   function screenName(id: string): string {
@@ -175,6 +247,7 @@ export function useHudAgentTools() {
       kind: widget.kind,
       title: widget.title,
       screen: screenName(widget.screen),
+      screenNumber: hud.screens.findIndex((s) => s.id === widget.screen) + 1,
       state,
       tabs: widget.group ? hud.membersOf(widget).length : 1,
       // Where it is and how big, in % of the free screen: what `place` takes back.
@@ -351,6 +424,14 @@ export function useHudAgentTools() {
           success: true,
           screen: screenName(hud.activeScreen),
           screens: hud.screens.map((s) => screenName(s.id)),
+          // Each by number as the dock shows it, with how many windows: "the second
+          // screen", "the one with the video" can be told apart.
+          screenDetails: hud.screens.map((s, i) => ({
+            n: i + 1,
+            name: screenName(s.id),
+            windows: hud.windowsOn(s.id),
+            ...(s.id === hud.activeScreen ? { shown: true } : {}),
+          })),
           windows: hud.widgets.map(describe),
           figure: figure(),
           likedPlaces: liked(),
