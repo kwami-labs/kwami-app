@@ -191,9 +191,17 @@ function readJson<T>(key: string, fallback: T): T {
   }
 }
 
+/**
+ * Write a value, unless it is what the key already holds. The desktop app's web view
+ * writes localStorage to disk later, and less often the more it is written to; every
+ * focus, drag and keystroke rewrote the whole layout and every document, and what had
+ * not reached the disk was lost when the app was killed (2026-11-21).
+ */
 function writeJson(key: string, value: unknown): void {
   try {
-    localStorage.setItem(key, JSON.stringify(value));
+    const text = JSON.stringify(value);
+    if (localStorage.getItem(key) === text) return;
+    localStorage.setItem(key, text);
   } catch {
     // Storage full or blocked: the HUD keeps working from memory.
   }
@@ -263,6 +271,13 @@ export const useHudStore = defineStore('hud', () => {
   /** While a window is dragged: where it would snap, and the window it would join as a tab. */
   const snapPreview = ref<HudRect | null>(null);
   const dropTarget = ref<string | null>(null);
+  /** The dock's screen tab a dragged window is over: dropped there, it moves to that screen. */
+  const dropScreen = ref<string | null>(null);
+  /**
+   * Said on screen as a screen comes into view, or a window is sent to another: which
+   * one it is, by number and name, so the user always knows where they are.
+   */
+  const screenNotice = ref<{ screen: string; moved?: string; at: number } | null>(null);
   /**
    * Arranging by hand: every window shows its handles and big controls, and can be
    * dragged from anywhere. The native web views step aside meanwhile.
@@ -606,6 +621,7 @@ export const useHudStore = defineStore('hud', () => {
     screens.value = [...screens.value, screen];
     activeScreen.value = screen.id;
     focusedId.value = null;
+    screenNotice.value = { screen: screen.id, at: Date.now() };
     return screen;
   }
 
@@ -629,7 +645,17 @@ export const useHudStore = defineStore('hud', () => {
     if (!screens.value.some((s) => s.id === id) || activeScreen.value === id) return;
     activeScreen.value = id;
     focusedId.value = null;
+    screenNotice.value = { screen: id, at: Date.now() };
     settle();
+  }
+
+  /** A window dropped on a screen's tab: it goes there as it was, and the user is told. */
+  function sendToScreen(id: string, screenId: string, rect?: HudRect): void {
+    const widget = byId(id);
+    if (!widget || widget.screen === screenId) return;
+    if (rect) setRect(id, rect, true);
+    moveToScreen(id, screenId);
+    screenNotice.value = { screen: screenId, moved: widget.title, at: Date.now() };
   }
 
   /** The next or previous screen, round the end. */
@@ -1061,6 +1087,15 @@ export const useHudStore = defineStore('hud', () => {
     },
     { deep: true },
   );
+  // Leaving the page (a reload, the app closing): what is still waiting is written now.
+  if (typeof window !== 'undefined') {
+    window.addEventListener('pagehide', () => {
+      if (!saveTimer) return;
+      clearTimeout(saveTimer);
+      saveTimer = null;
+      saveLayout();
+    });
+  }
 
   return {
     nativeHidden,
@@ -1077,6 +1112,9 @@ export const useHudStore = defineStore('hud', () => {
     activeTabs,
     snapPreview,
     dropTarget,
+    dropScreen,
+    screenNotice,
+    sendToScreen,
     documents,
     actions,
     prefs,

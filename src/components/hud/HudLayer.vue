@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, type Component } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch, type Component } from 'vue';
 import './hud.css';
 import { storeToRefs } from 'pinia';
 import { useHudStore, type HudKind, type HudWidget } from '@/stores/hud';
 import { useVoiceStore } from '@/stores/voice';
 import HudActionLog from './HudActionLog.vue';
 import HudDock from './HudDock.vue';
+import HudScreenBanner from './HudScreenBanner.vue';
 import TaskWidget from './widgets/TaskWidget.vue';
 import DocumentWidget from './widgets/DocumentWidget.vue';
 import VideoWidget from './widgets/VideoWidget.vue';
@@ -27,6 +28,21 @@ import { useAvatarAside } from '@/composables/useAvatarAside';
  */
 const hud = useHudStore();
 useAvatarAside();
+
+/**
+ * A screen coming into view: its windows fade in quickly instead of each unfolding as if
+ * it had just opened, so going from screen to screen is one quick motion.
+ */
+const screenIn = ref(false);
+let screenInTimer: ReturnType<typeof setTimeout> | null = null;
+watch(
+  () => hud.activeScreen,
+  () => {
+    screenIn.value = true;
+    if (screenInTimer) clearTimeout(screenInTimer);
+    screenInTimer = setTimeout(() => (screenIn.value = false), 260);
+  },
+);
 const { brainStatus } = storeToRefs(useVoiceStore());
 
 const WIDGETS: Record<HudKind, Component> = {
@@ -171,7 +187,11 @@ const tethers = computed(() => {
   <div
     ref="root"
     class="hud-layer"
-    :class="{ 'is-editing': hud.editing, 'is-manipulating': hud.manipulating > 0 }"
+    :class="{
+      'is-editing': hud.editing,
+      'is-manipulating': hud.manipulating > 0,
+      'screen-in': screenIn,
+    }"
     :style="{ '--hud-glass': String(hud.prefs.glass) }"
   >
     <template v-if="hud.prefs.enabled">
@@ -208,6 +228,7 @@ const tethers = computed(() => {
       </TransitionGroup>
 
       <HudActionLog v-if="hud.prefs.actionLog" />
+      <HudScreenBanner />
     </template>
     <HudDock />
   </div>

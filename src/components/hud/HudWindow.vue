@@ -155,6 +155,15 @@ function headerUnder(x: number, y: number): string | null {
   return null;
 }
 
+/** The dock's screen tab under the pointer: a window dropped there goes to that screen. */
+function screenUnder(x: number, y: number): string | null {
+  for (const el of document.elementsFromPoint(x, y)) {
+    const tab = el.closest<HTMLElement>('[data-screen-id]');
+    if (tab?.dataset.screenId) return tab.dataset.screenId;
+  }
+  return null;
+}
+
 function apply() {
   frame = 0;
   if (!origin || !pending) return;
@@ -170,9 +179,11 @@ function apply() {
     hud.setRect(props.widget.id, next, true);
     const x = pending.x - (layerBox?.left ?? 0);
     const y = pending.y - (layerBox?.top ?? 0);
-    hud.dropTarget = headerUnder(pending.x, pending.y);
+    const screen = screenUnder(pending.x, pending.y);
+    hud.dropScreen = screen && screen !== props.widget.screen ? screen : null;
+    hud.dropTarget = hud.dropScreen ? null : headerUnder(pending.x, pending.y);
     // An edge snaps only when the drag went toward it, not because the header began near it.
-    zone = hud.dropTarget ? null : snapZoneAt(x, y, view, { dx, dy });
+    zone = hud.dropTarget || hud.dropScreen ? null : snapZoneAt(x, y, view, { dx, dy });
     hud.snapPreview = zone ? snapRect(zone, view) : null;
   } else {
     let next = resizeRect(origin, mode, dx, dy, view);
@@ -188,11 +199,21 @@ function end() {
   apply();
   frame = 0;
   const target = hud.dropTarget;
-  if (moved && mode === 'move' && target) hud.joinTabs(props.widget.id, target);
+  const screen = hud.dropScreen;
+  if (moved && mode === 'move' && screen && origin) {
+    // It keeps the place it had: it was carried to the tab, not put down there.
+    hud.sendToScreen(props.widget.id, screen, {
+      x: origin.x,
+      y: origin.y,
+      w: origin.w,
+      h: origin.h,
+    });
+  } else if (moved && mode === 'move' && target) hud.joinTabs(props.widget.id, target);
   else if (moved && mode === 'move' && zone) hud.snap(props.widget.id, zone);
   // Where the user put it by hand is where they like that kind of window.
-  if (moved && !target) hud.learnPlacement(props.widget.id);
+  if (moved && !target && !screen) hud.learnPlacement(props.widget.id);
   hud.dropTarget = null;
+  hud.dropScreen = null;
   hud.snapPreview = null;
   zone = null;
   origin = null;
