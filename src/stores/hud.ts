@@ -37,8 +37,9 @@ import {
  *
  * The user arranges it as they like: several screens to switch between, windows
  * gathered as tabs of one window, snapped to halves and quarters, tiled, renamed,
- * more or less see-through. Documents and that arrangement are kept (localStorage,
- * per device); windows of the session (tasks, Jarvis's browser) are not.
+ * more or less see-through. Documents and that arrangement are kept on the device
+ * (localStorage) and in the account (`HudAccountState`, see `useUiLayoutSync`), so
+ * they follow the user; windows of the session (tasks, Jarvis's browser) are not.
  */
 
 export type { HudKind, HudRect, SizePreset, SnapZone } from '@/lib/hud/layout';
@@ -218,9 +219,82 @@ function fallbackViewport(): Viewport {
   return { width: window.innerWidth, height: window.innerHeight };
 }
 
+/**
+ * The HUD as it is kept in the user's account (`user_app_settings.ui.hud`), so that
+ * whatever device they sign in on, it is as they left it: the screens, the windows
+ * worth reopening, the documents, the settings and where they like each kind of window.
+ */
+export interface HudAccountState {
+  v: 1;
+  screens: HudScreen[];
+  active: string;
+  windows: HudWidget[];
+  documents: HudDocument[];
+  prefs: HudPrefs;
+  learned: Partial<Record<HudKind, ShareRect>>;
+}
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function checkDocuments(value: unknown): HudDocument[] {
+  return (Array.isArray(value) ? value : [])
+    .filter(
+      (d): d is HudDocument =>
+        typeof d?.id === 'string' &&
+        typeof d?.title === 'string' &&
+        typeof d?.markdown === 'string' &&
+        typeof d?.createdAt === 'number' &&
+        typeof d?.updatedAt === 'number',
+    )
+    .slice(0, MAX_DOCUMENTS);
+}
+
+/** Saved settings over the defaults: a setting of the wrong type keeps its default. */
+function checkPrefs(value: unknown): HudPrefs {
+  const prefs = { ...DEFAULT_PREFS };
+  if (!isObject(value)) return prefs;
+  for (const key of Object.keys(DEFAULT_PREFS) as (keyof HudPrefs)[]) {
+    if (typeof value[key] === typeof DEFAULT_PREFS[key]) {
+      (prefs as Record<string, unknown>)[key] = value[key];
+    }
+  }
+  return prefs;
+}
+
+function checkLearned(value: unknown): Partial<Record<HudKind, ShareRect>> {
+  if (!isObject(value)) return {};
+  const learned: Partial<Record<HudKind, ShareRect>> = {};
+  for (const [kind, share] of Object.entries(value)) {
+    if (isObject(share) && ['x', 'y', 'w', 'h'].every((k) => typeof share[k] === 'number')) {
+      learned[kind as HudKind] = share as unknown as ShareRect;
+    }
+  }
+  return learned;
+}
+
+/**
+ * Nothing the user made: no window, document, named or extra screen, learnt place or
+ * changed setting. A device that has never been used must not replace, in the
+ * account, what another one has.
+ */
+export function isBlankHudState(state: HudAccountState): boolean {
+  return (
+    state.windows.length === 0 &&
+    state.documents.length === 0 &&
+    state.screens.every((s) => s.id === FIRST_SCREEN.id && !s.name && !s.tiled) &&
+    Object.keys(checkLearned(state.learned)).length === 0 &&
+    JSON.stringify(checkPrefs(state.prefs)) === JSON.stringify(DEFAULT_PREFS)
+  );
+}
+
 /** A saved layout, checked: anything malformed is dropped rather than trusted. */
 function readLayout(): SavedLayout {
-  const saved = readJson<Partial<SavedLayout>>(LAYOUT_KEY, {});
+  return checkLayout(readJson<Partial<SavedLayout>>(LAYOUT_KEY, {}));
+}
+
+function checkLayout(saved: Partial<SavedLayout>): SavedLayout {
   const screens = (Array.isArray(saved.screens) ? saved.screens : []).filter(
     (s): s is HudScreen => typeof s?.id === 'string' && typeof s?.name === 'string',
   );
@@ -245,13 +319,13 @@ export const useHudStore = defineStore('hud', () => {
   const activeScreen = ref<string>(layout.active);
   /** Which tab of each group is in front. */
   const activeTabs = ref<Record<string, string>>({});
-  const documents = ref<HudDocument[]>(readJson<HudDocument[]>(DOCS_KEY, []));
+  const documents = ref<HudDocument[]>(checkDocuments(readJson<unknown>(DOCS_KEY, [])));
   // A saved window whose document was deleted meanwhile has nothing to show.
   widgets.value = widgets.value.filter(
     (w) => w.kind !== 'document' || documents.value.some((d) => d.id === w.docId),
   );
   const actions = ref<HudAction[]>([]);
-  const prefs = ref<HudPrefs>({ ...DEFAULT_PREFS, ...readJson<Partial<HudPrefs>>(PREFS_KEY, {}) });
+  const prefs = ref<HudPrefs>(checkPrefs(readJson<unknown>(PREFS_KEY, {})));
   /** The full answer of each finished task, for its report (brain_status carries the start). */
   const taskResults = ref<Record<string, { result: string; sources: string[]; title: string }>>({});
   const viewport = ref<Viewport>(fallbackViewport());
@@ -292,16 +366,22 @@ export const useHudStore = defineStore('hud', () => {
    * hand (in shares of the screen): the next one Jarvis opens goes there.
    */
   const learned = ref<Partial<Record<HudKind, ShareRect>>>(
-    readJson<Partial<Record<HudKind, ShareRect>>>(LEARNED_KEY, {}),
+    checkLearned(readJson<unknown>(LEARNED_KEY, {})),
   );
   let topZ = Math.max(10, ...layout.windows.map((w) => w.z));
 
   // Tabs come back as they were; a group left with one window is just that window.
-  for (const widget of widgets.value) {
-    if (!widget.group) continue;
-    if (widgets.value.filter((w) => w.group === widget.group).length < 2) widget.group = undefined;
-    else activeTabs.value[widget.group] ??= widget.id;
+  function regroup(): void {
+    for (const widget of widgets.value) {
+      if (!widget.group) continue;
+      if (widgets.value.filter((w) => w.group === widget.group).length < 2) {
+        widget.group = undefined;
+      } else if (!byId(activeTabs.value[widget.group] ?? '')) {
+        activeTabs.value[widget.group] = widget.id;
+      }
+    }
   }
+  regroup();
 
   // -- what is where -----------------------------------------------------------------
 
@@ -1097,6 +1177,61 @@ export const useHudStore = defineStore('hud', () => {
     });
   }
 
+  // -- the account's copy --------------------------------------------------------------
+
+  /** What goes to the account: everything kept here, the windows of a call excepted. */
+  function accountState(): HudAccountState {
+    return JSON.parse(
+      JSON.stringify({
+        v: 1,
+        screens: screens.value,
+        active: activeScreen.value,
+        windows: widgets.value.filter((w) => KEPT_KINDS.includes(w.kind)),
+        documents: documents.value.slice(0, MAX_DOCUMENTS),
+        prefs: prefs.value,
+        learned: learned.value,
+      }),
+    ) as HudAccountState;
+  }
+
+  /**
+   * Take the account's HUD over this device's: what the user left on another device is
+   * what they find here. The windows of a call in progress (a task, Jarvis's browser)
+   * stay, on their screen if it still exists. Windows are fitted to this screen's size.
+   * Returns false, changing nothing, when there is nothing usable to take.
+   */
+  function adoptAccountState(state: unknown): boolean {
+    if (!isObject(state)) return false;
+    const layout = checkLayout(state as Partial<SavedLayout>);
+    const docs = checkDocuments(state.documents);
+    const ids = new Set(layout.screens.map((s) => s.id));
+    const kept = layout.windows
+      .filter((w) => w.kind !== 'document' || docs.some((d) => d.id === w.docId))
+      .map((w) => ({
+        ...w,
+        rect: w.maximized ? maximizedRect(viewport.value) : clampRect(w.rect, viewport.value),
+      }));
+    const session = widgets.value
+      .filter((w) => !KEPT_KINDS.includes(w.kind))
+      .map((w) => (ids.has(w.screen) ? w : { ...w, screen: FIRST_SCREEN.id }));
+    screens.value = layout.screens;
+    activeScreen.value = layout.active;
+    documents.value = docs;
+    widgets.value = [...kept, ...session];
+    prefs.value = checkPrefs(state.prefs);
+    learned.value = checkLearned(state.learned);
+    activeTabs.value = {};
+    regroup();
+    topZ = Math.max(10, ...widgets.value.map((w) => w.z));
+    if (focusedId.value && !byId(focusedId.value)) focusedId.value = null;
+    if (stageId.value && !byId(stageId.value)) stageId.value = null;
+    saveDocuments();
+    writeJson(PREFS_KEY, prefs.value);
+    writeJson(LEARNED_KEY, learned.value);
+    saveLayout();
+    return true;
+  }
+
   return {
     nativeHidden,
     cover,
@@ -1184,5 +1319,7 @@ export const useHudStore = defineStore('hud', () => {
     clearActions,
     setPref,
     rememberResult,
+    accountState,
+    adoptAccountState,
   };
 });
